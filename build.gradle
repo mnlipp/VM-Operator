@@ -1,0 +1,13 @@
+
+plugins {
+    id 'eclipse'
+}
+
+eclipse {
+    project {
+        file {
+            project.natures += 'org.eclipse.buildship.core.gradleprojectnature'
+            project.buildCommand 'org.eclipse.buildship.core.gradleprojectbuilder'
+        }
+    }
+}

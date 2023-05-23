@@ -1,0 +1,61 @@
+"swtpm":
+  # Candidate paths for the executable 
+  "executable": [ "/usr/bin/swtpm" ]
+  
+  # Arguments may be specified as nested lists for better readability.
+  # The arguments are flattened before being passed to the process.
+  "arguments":
+    - "socket"
+    - "--tpm2"
+    - [ "--tpmstate", "dir=${ runtimeDir }" ]
+    - [ "--ctrl", "type=unixio,path=${ runtimeDir }/swtpm-sock,mode=0600" ]
+    - "--terminate"
+
+"qemu":
+  # Candidate paths for the executable 
+  "executable": [ "/usr/bin/qemu-system-x86_64" ]
+
+  # Arguments may be specified as nested lists for better readability.
+  # The arguments are flattened before being passed to the process.
+  # Unless otherwise noted, flags can be found on
+  # https://www.qemu.org/docs/master/system/invocation.html
+  #
+  # Useful links:
+  #   - https://joonas.fi/2021/02/uefi-pc-boot-process-and-uefi-with-qemu/
+  "arguments":
+    - "-no-user-config"
+    - [ "-name", "guest=${ vm.name },debug-threads=on" ]
+    - [ "-uuid", "${ vm.uuid }"]
+    # Configure "modern" machine (pc-q35-7.0). USB is off, because we
+    # configure (better) xhci later. No VMWare IO port (obviously). 
+    # For smm=on see https://scumjr.github.io/2016/01/04/playing-with-smm-and-qemu/.
+    # Configure ROM/EEPROM for UEFI.
+    - [ "-machine", "pc-q35-7.0,usb=off,vmport=off,dump-guest-core=off\
+        <#if vm.bootMode == "secure">,smm=on</#if>\
+        <#if vm.bootMode != "bios">,pflash0=fw-rom-device\
+        ,pflash1=fw-eeprom-device</#if>,memory-backend=pc.ram,hpet=off" ]
+    # {{- if .Values.vm.secureBoot }}
+    # -global driver=cfi.pflash01,property=secure,value=on 
+    # -object '{"qom-type":"secret","id":"masterKey0","format":"raw","file":"/var/local/qemu/master-key.aes"}'
+    # {{- end }}
+    <#if vm.bootMode != "bios">
+    # Provide ROM/EEPROM devices (instead of built-in BIOS)
+    - [ "-blockdev", "node-name=fw-rom-file,driver=file,\
+        filename=${ firmwareRom },auto-read-only=true,discard=unmap" ]
+    - [ "-blockdev", "node-name=fw-rom-device,driver=raw,\
+        read-only=true,file=fw-rom-file" ]
+    - [ "-blockdev", "node-name=fw-eeprom-file,driver=file,\
+        filename=${ firmwareFlash },auto-read-only=true,discard=unmap" ]
+    - [ "-blockdev", "node-name=fw-eeprom-device,driver=raw,\
+        read-only=false,file=fw-eeprom-file" ]
+    </#if>            
+    # Provide RAM
+    - [ "-object", "memory-backend-ram,id=pc.ram,\
+        size=${ vm.maximumRam!"512M" }" ]
+
+    - [ "-chardev", "socket,id=charmonitor,path=${ runtimeDir }/monitor.sock,server=on,wait=off" ]
+    - [ "-mon", "chardev=charmonitor,id=monitor,mode=control" ]
+    # - [ "-spice", "port=5900,disable-ticketing=on" ]
+
+"monitorMessages":
+  "connect": '{ "execute": "qmp_capabilities" }'

@@ -1,0 +1,30 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "Manager",
+            "request": "launch",
+            "mainClass": "org.jdrupes.vmoperator.manager.Manager",
+            "projectName": "org.jdrupes.vmoperator.manager"
+        },
+        {
+            "type": "java",
+            "name": "Runner",
+            "request": "launch",
+            "mainClass": "org.jdrupes.vmoperator.runner.qemu.Runner",
+            "projectName": "org.jdrupes.vmoperator.runner.qemu",
+            "cwd": "${workspaceFolder}/org.jdrupes.vmoperator.runner.qemu",
+            "vmArgs": "-ea -Djava.util.logging.config.file=jul-debug.properties -Dorg.jdrupes.vmoperator.runner.qemu.config=./config.yaml"
+        }
+    ]
+}

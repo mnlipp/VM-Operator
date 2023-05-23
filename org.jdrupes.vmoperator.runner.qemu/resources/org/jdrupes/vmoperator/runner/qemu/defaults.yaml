@@ -1,0 +1,12 @@
+# Candidate paths for code and templates for firmware rom and flash 
+"firmware":
+  "rom":
+    - "/usr/share/OVMF/OVMF_CODE.fd"
+    - "/usr/share/edk2/x64/OVMF_CODE.fd"
+  "flash":
+    - "/usr/share/edk2/ovmf/OVMF_VARS.fd"
+    - "/usr/share/edk2/x64/OVMF_CODE.fd"
+  "secure":
+    "flash":
+      - "/usr/share/edk2/ovmf/OVMF_CODE.secboot.fd"
+      - "/usr/share/edk2/x64/OVMF_CODE.secboot.fd"

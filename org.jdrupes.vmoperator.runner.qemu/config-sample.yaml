@@ -1,0 +1,49 @@
+# The values in comments are the defaults.
+
+"/Runner":
+  # The directory used to store data files. Defaults to (depending on 
+  # values available):
+  #  * $XDG_DATA_HOME/vmrunner/${vm.name}
+  #  * $HOME/.local/share/vmrunner/${vm.name}
+  #  * ./${vm.name}
+  # "dataDir": "$XDG_DATA_HOME"
+  
+  # The directory used to store runtime files. Defaults to (depending on 
+  # values available):
+  #  * $XDG_RUNTIME_DIR/vmrunner/${vm.name}
+  #  * /tmp/${USER}/vmrunner/${vm.name}
+  #  * /tmp/vmrunner/${vm.name}
+  # "runtimeDir": "$XDG_RUNTIME_DIR/vmrunner/${vm.name}"
+  
+  # The template to use. Resolved relative to /usr/share/vmrunner/templates.
+  # "template": "Standard-VM-latest.ftl.yaml"
+
+  # The template is copied to the data diretory when the VM starts for
+  # the first time. Subsequent starts use the copy unless this option is set.
+  # "updateTemplate": false
+
+  # Define the VM (required)
+  "vm":
+    # The VM's name (required)
+    "name": "test-vm"
+    
+    # The machine's uuid. If none is specified, a uuid is generated
+    # and stored in the data directory. If the uuid is important
+    # (e.g. because licenses depend on it) it is recommaned to specify
+    # it here explicitly or to carefully backup the data directory.
+    # "uuid": "generated uuid"
+    
+    # Whether to provide a software TPM (defaults to false)
+    # "useTpm": false
+    
+    # How to boot:
+    #  * bios
+    #  * uefi
+    #  * secure
+    # "bootMode": "uefi"
+    
+    # RAM settings
+    # "maximumRam": "512M"
+    # "currentRam": "512M"
+    
+    
