@@ -52,7 +52,24 @@
     # Provide RAM
     - [ "-object", "memory-backend-ram,id=pc.ram,\
         size=${ vm.maximumRam!"512M" }" ]
-
+    <#if vm.useTpm>
+    # Attach TPM
+    - [ "-chardev", "socket,id=chrtpm,path=${ runtimeDir }/swtpm-sock" ]
+    - [ "-tpmdev", "emulator,id=tpm0,chardev=chrtpm" ]
+    - [ "-device", "tpm-tis,tpmdev=tpm0" ]
+    </#if>    
+    - [ "-cpu", "${ vm.cpuModel }" ]
+    <#if vm.maximumCpus gt 1>
+    - [ "-smp", "${ vm.currentCpus },maxcpus=${ vm.maximumCpus }\
+        <#if vm.cpuSockets gt 0>,sockets=${ vm.cpuSockets }</#if>\
+        <#if vm.diesPerSocket gt 0>,cores=${ vm.diesPerSocket }</#if>\
+        <#if vm.coresPerDie gt 0>,cores=${ vm.coresPerDie }</#if>\
+        <#if vm.threadsPerCore gt 0>,cores=${ vm.threadsPerCore }</#if>" ]
+    </#if>
+    <#if vm.accelerator != "none">
+    - [ "-accel", "${ vm.accelerator }"]
+    </#if>
+        
     - [ "-chardev", "socket,id=charmonitor,path=${ runtimeDir }/monitor.sock,server=on,wait=off" ]
     - [ "-mon", "chardev=charmonitor,id=monitor,mode=control" ]
     # - [ "-spice", "port=5900,disable-ticketing=on" ]

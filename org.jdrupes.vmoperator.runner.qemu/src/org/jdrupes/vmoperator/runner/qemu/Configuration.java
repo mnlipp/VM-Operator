@@ -61,6 +61,14 @@ class Configuration implements Dto {
         public String bootMode = "uefi";
         public String maximumRam;
         public String currentRam;
+        public String cpuModel = "host";
+        public int maximumCpus = 1;
+        public int currentCpus = 1;
+        public int cpuSockets;
+        public int diesPerSocket;
+        public int coresPerDie;
+        public int threadsPerCore;
+        public String accelerator = "kvm";
     }
 
     /**
@@ -78,6 +86,11 @@ class Configuration implements Dto {
         }
         if (!checkRuntimeDir() || !checkDataDir() || !checkUuid()) {
             return false;
+        }
+
+        // Adjust max cpus if necessary
+        if (vm.currentCpus > vm.maximumCpus) {
+            vm.maximumCpus = vm.currentCpus;
         }
 
         return true;

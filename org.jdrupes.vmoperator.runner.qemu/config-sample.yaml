@@ -46,4 +46,17 @@
     # "maximumRam": "512M"
     # "currentRam": "512M"
     
+    # CPU settings
+    # "cpuModel": "host"
+    # Setting maximumCpus to 1 omits the "-smp" options. The defaults (0)
+    # cause the corresponding property to be omitted from the "-smp" option.
+    # If currentCpus is greater than maximumCpus, the latter is adjusted.
+    # "maximumCpus": 1
+    # "currentCpus": 1
+    # "cpuSockets": 0
+    # "diesPerSocket": 0
+    # "coresPerSocket": 0
+    # "threadsPerCore": 0
+    # "accelertor": "kvm"
+    
     
