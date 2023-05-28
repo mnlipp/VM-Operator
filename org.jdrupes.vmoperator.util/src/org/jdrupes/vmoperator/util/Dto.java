@@ -18,6 +18,15 @@
 
 package org.jdrupes.vmoperator.util;
 
+/**
+ * Marks a class as the definition of a data transfer object.
+ * DTOs have public attributes and usually no behavior (though
+ * the can have e.g. methods for checking the consistency.
+ * 
+ * The DTO marker affects the conversion of objects to other
+ * representations.
+ */
+@SuppressWarnings("PMD.ShortClassName")
 public interface Dto {
 
 }

@@ -18,31 +18,31 @@
 
 package org.jdrupes.vmoperator.util;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import freemarker.template.DefaultObjectWrapper;
 import freemarker.template.TemplateModel;
 import freemarker.template.TemplateModelException;
 import freemarker.template.Version;
-import java.util.Map;
 
+/**
+ * Provides an object wrapper that handles {@link Dto}s.
+ */
 public class ExtendedObjectWrapper extends DefaultObjectWrapper {
 
-    private ObjectMapper mapper;
-
-    public ExtendedObjectWrapper(Version incompatibleImprovements,
-            ObjectMapper mapper) {
+    /**
+     * Instantiates a new extended object wrapper.
+     *
+     * @param incompatibleImprovements the incompatible improvements
+     */
+    public ExtendedObjectWrapper(Version incompatibleImprovements) {
         super(incompatibleImprovements);
-        this.mapper = mapper;
     }
 
     @Override
     protected TemplateModel handleUnknownType(final Object obj)
             throws TemplateModelException {
-        if (obj instanceof Dto) {
-            var asMap = mapper.convertValue(obj, Map.class);
-            return this.wrap(asMap);
+        if (obj instanceof Dto dto) {
+            return new DtoTemplateModel(this, dto);
         }
         return super.handleUnknownType(obj);
     }
-
 }
