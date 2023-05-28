@@ -23,23 +23,38 @@
   # Useful links:
   #   - https://joonas.fi/2021/02/uefi-pc-boot-process-and-uefi-with-qemu/
   "arguments":
+    # Qemu configuration
     - "-no-user-config"
+    # * https://www.kernel.org/doc/Documentation/virtual/kvm/api.txt
+    - [ "-global", "kvm-pit.lost_tick_policy=delay" ]
+    - [ "-sandbox", "on,obsolete=deny,elevateprivileges=deny,\
+        spawn=allow,resourcecontrol=deny" ] 
+    - [ "-msg", "timestamp=on" ]
+    # * Qemu monitor connection          
+    - [ "-chardev", "socket,id=charmonitor,\
+        path=${ runtimeDir }/monitor.sock,server=on,wait=off" ]
+    - [ "-mon", "chardev=charmonitor,id=monitor,mode=control" ]
+    
+    # VM configuration
     - [ "-name", "guest=${ vm.name },debug-threads=on" ]
     - [ "-uuid", "${ vm.uuid }"]
-    # Configure "modern" machine (pc-q35-7.0). USB is off, because we
-    # configure (better) xhci later. No VMWare IO port (obviously). 
-    # For smm=on see https://scumjr.github.io/2016/01/04/playing-with-smm-and-qemu/.
-    # Configure ROM/EEPROM for UEFI.
+    # * Configure "modern" machine (pc-q35-7.0). USB is off, because we
+    #   configure (better) xhci later. No VMWare IO port (obviously). 
+    #   For smm=on see https://scumjr.github.io/2016/01/04/playing-with-smm-and-qemu/.
+    #   Configure ROM/EEPROM for UEFI.
     - [ "-machine", "pc-q35-7.0,usb=off,vmport=off,dump-guest-core=off\
         <#if vm.bootMode == "secure">,smm=on</#if>\
         <#if vm.bootMode != "bios">,pflash0=fw-rom-device\
         ,pflash1=fw-eeprom-device</#if>,memory-backend=pc.ram,hpet=off" ]
+    # * https://bugzilla.redhat.com/show_bug.cgi?id=1170533, may be unnecessary
+    - [ "-global", "ICH9-LPC.disable_s3=1" ]
+    - [ "-global", "ICH9-LPC.disable_s4=1" ]
     # {{- if .Values.vm.secureBoot }}
     # -global driver=cfi.pflash01,property=secure,value=on 
     # -object '{"qom-type":"secret","id":"masterKey0","format":"raw","file":"/var/local/qemu/master-key.aes"}'
     # {{- end }}
     <#if vm.bootMode != "bios">
-    # Provide ROM/EEPROM devices (instead of built-in BIOS)
+    # * Provide ROM/EEPROM devices (instead of built-in BIOS)
     - [ "-blockdev", "node-name=fw-rom-file,driver=file,\
         filename=${ firmwareRom },auto-read-only=true,discard=unmap" ]
     - [ "-blockdev", "node-name=fw-rom-device,driver=raw,\
@@ -49,9 +64,10 @@
     - [ "-blockdev", "node-name=fw-eeprom-device,driver=raw,\
         read-only=false,file=fw-eeprom-file" ]
     </#if>            
-    # Provide RAM
+    # * Provide RAM
     - [ "-object", "memory-backend-ram,id=pc.ram,\
-        size=${ vm.maximumRam!"512M" }" ]
+        size=${ vm.maximumRam!"1G" }" ]
+    - [ "-m", "${ vm.maximumRam!"1G" }" ]
     <#if vm.useTpm>
     # Attach TPM
     - [ "-chardev", "socket,id=chrtpm,path=${ runtimeDir }/swtpm-sock" ]
@@ -69,10 +85,73 @@
     <#if vm.accelerator != "none">
     - [ "-accel", "${ vm.accelerator }"]
     </#if>
-        
-    - [ "-chardev", "socket,id=charmonitor,path=${ runtimeDir }/monitor.sock,server=on,wait=off" ]
-    - [ "-mon", "chardev=charmonitor,id=monitor,mode=control" ]
+    # (More devices:) 
+    # * RTC
+    - [ "-rtc", "base=${ vm.rtcBase },clock=${ vm.rtcClock },driftfix=slew" ]
+    # On-board serial, made available as pty on host (not used)
+    - [ "-chardev", "pty,id=ptyserial0" ]
+    - [ "-device", "isa-serial,chardev=ptyserial0,id=serial0,index=0" ]
+    # * PCI Serial device(s) (more in SPICE configuration below)
+    #   Best explanation found: 
+    #   https://fedoraproject.org/wiki/Features/VirtioSerial
+    - [ "-device", "virtio-serial-pci,id=virtio-serial0" ]
+    #   - Guest agent serial connection
+    - [ "-chardev","socket,id=guest-agent-socket,\
+        path=${ runtimeDir }/org.qemu.guest_agent.0,server=on,wait=off" ]
+    - [ "-device", "virtserialport,bus=virtio-serial0.0,nr=1,\
+        chardev=guest-agent-socket,id=channel0,name=org.qemu.guest_agent.0" ]
+    # * USB Hub and devices (more in SPICE configuration below)
+    #   https://qemu-project.gitlab.io/qemu/system/devices/usb.html
+    #   https://github.com/qemu/qemu/blob/master/hw/usb/hcd-xhci.c
+    - [ "-device", "qemu-xhci,p2=15,p3=15,id=usb" ]
+    - [ "-device", "usb-tablet" ]
+    # * Random number generator
+    - [ "-object", "rng-random,id=objrng0,filename=/dev/random" ]
+    - [ "-device", "virtio-rng-pci,rng=objrng0,id=rng0" ]
+    # * Graphics and Audio Card
+    - [ "-device", "virtio-vga,id=video0,max_outputs=1" ]
+    - [ "-device", "ich9-intel-hda,id=sound0" ]
+    # Drives
+    # * CD-Drives
+    <#assign cdCounter = 0/>
+    <#list vm.drives![] as drive>
+    <#if (drive.type!"hdd") == "ide-cd">
+    - [ "-drive", "id=drive-cdrom${ cdCounter },if=none,media=cdrom\
+        <#if drive.file??>,file=${ drive.file }</#if>" ]
+    #   (IDE is old, but faster than usb-storage. virtio-blk-pci does not  
+    #    work without file [empty drive])
+    - [ "-device", "ide-cd,id=cd${ cdCounter },drive=drive-cdrom${ cdCounter }\
+        <#if drive.bootindex??>,bootindex=${ drive.bootindex }</#if>" ]
+    <#assign cdCounter += 1/>
+    </#if>
+    </#list>
+    
+    #   - how to access the resource on the host (a file)
+#    - [ "-blockdev", "node-name=blockdev-cdrom-file,driver=file,\
+#        filename=/home/mnl/Downloads/archlinux-2023.05.03-x86_64.iso" ]
+    #   - how to use the file (as sequence of literal blocks)
+#    - [ "-blockdev", "node-name=blockdev-cdrom-backend,driver=raw,\
+#        read-only=true,file=blockdev-cdrom-file" ]
+    #   - the driver (what the guest sees)
+#    - [ "-device", "virtio-blk-pci,id=virtio-disk-cdrom,\
+#        drive=blockdev-cdrom-backend,bootindex=1" ]
+
+    
+    # SPICE (display, channels ...)    
     # - [ "-spice", "port=5900,disable-ticketing=on" ]
+#        -chardev spicevmc,id=charchannel1,name=vdagent
+#        -device virtserialport,bus=virtio-serial0.0,nr=2,chardev=charchannel1,id=channel1,name=com.redhat.spice.0
+#        -audiodev '{"id":"audio1","driver":"spice"}'
+#    - [ "-device", "hda-duplex,\
+#        id=sound0-codec0,bus=sound0.0,cad=0,audiodev=audio1" ]
+#        -spice port={{ .Values.vm.spicePort }},addr=0.0.0.0,disable-ticketing=on,seamless-migration=on
+#        -chardev spicevmc,id=charredir0,name=usbredir
+#        -device usb-redir,chardev=charredir0,id=redir0,bus=usb.0,port=2
+#        -chardev spicevmc,id=charredir1,name=usbredir
+#        -device usb-redir,chardev=charredir1,id=redir1,bus=usb.0,port=3
+#        -device virtio-balloon-pci,id=balloon0
+
+        
 
 "monitorMessages":
   "connect": '{ "execute": "qmp_capabilities" }'

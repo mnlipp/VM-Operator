@@ -53,7 +53,7 @@ class Configuration implements Dto {
     /**
      * Subsection "vm".
      */
-    @SuppressWarnings("PMD.ShortClassName")
+    @SuppressWarnings({ "PMD.ShortClassName", "PMD.TooManyFields" })
     public static class Vm implements Dto {
         public String name;
         public String uuid;
@@ -69,6 +69,18 @@ class Configuration implements Dto {
         public int coresPerDie;
         public int threadsPerCore;
         public String accelerator = "kvm";
+        public String rtcBase = "utc";
+        public String rtcClock = "rt";
+        public Drive[] drives;
+    }
+
+    /**
+     * Subsection "drive".
+     */
+    public static class Drive implements Dto {
+        public String type;
+        public Integer bootindex;
+        public String file;
     }
 
     /**
@@ -76,9 +88,6 @@ class Configuration implements Dto {
      *
      * @return true, if successful
      */
-    @SuppressWarnings({ "PMD.AvoidDeeplyNestedIfStmts",
-        "PMD.CognitiveComplexity", "PMD.CyclomaticComplexity",
-        "PMD.NPathComplexity" })
     public boolean check() {
         if (vm == null || vm.name == null) {
             logger.severe(() -> "Configuration is missing mandatory entries.");
@@ -127,6 +136,7 @@ class Configuration implements Dto {
         return true;
     }
 
+    @SuppressWarnings("PMD.AvoidDeeplyNestedIfStmts")
     private boolean checkDataDir() {
         // Data directory
         if (dataDir == null) {

@@ -43,8 +43,8 @@
     # "bootMode": "uefi"
     
     # RAM settings
-    # "maximumRam": "512M"
-    # "currentRam": "512M"
+    # "maximumRam": "1G"
+    # "currentRam": "1G"
     
     # CPU settings
     # "cpuModel": "host"
@@ -59,4 +59,12 @@
     # "threadsPerCore": 0
     # "accelertor": "kvm"
     
+    # RTC settings.
+    # "rtcBase": "utc"
+    # "rtcClock": "rt"
     
+    "drives":
+    - "type": "ide-cd"
+      "bootindex": (undefined)
+      "file": (undefined)
+      

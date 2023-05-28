@@ -19,6 +19,7 @@
 package org.jdrupes.vmoperator.runner.qemu;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -143,6 +144,9 @@ public class Runner extends Component {
      */
     public Runner() throws IOException {
         super(new Context());
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+            false);
+
         // Get defaults
         defaults = mapper.readValue(
             Runner.class.getResourceAsStream("defaults.yaml"), JsonNode.class);
@@ -153,7 +157,7 @@ public class Runner extends Component {
         fmConfig.setDirectoryForTemplateLoading(new File("/"));
         fmConfig.setDefaultEncoding("utf-8");
         fmConfig.setObjectWrapper(new ExtendedObjectWrapper(
-            fmConfig.getIncompatibleImprovements(), mapper));
+            fmConfig.getIncompatibleImprovements()));
         fmConfig.setTemplateExceptionHandler(
             TemplateExceptionHandler.RETHROW_HANDLER);
         fmConfig.setLogTemplateExceptions(false);
