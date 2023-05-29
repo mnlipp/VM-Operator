@@ -243,11 +243,13 @@ public class Runner extends Component {
         }
     }
 
+    @SuppressWarnings({ "PMD.CognitiveComplexity",
+        "PMD.DataflowAnomalyAnalysis" })
     private void setFirmwarePaths() throws IOException {
         // Get file for firmware ROM
         JsonNode codePaths = defaults.path("firmware").path("rom");
-        for (var paths = codePaths.elements(); paths.hasNext();) {
-            var path = Path.of(paths.next().asText());
+        for (var p : codePaths) {
+            var path = Path.of(p.asText());
             if (Files.exists(path)) {
                 config.firmwareRom = path;
                 break;
@@ -265,8 +267,8 @@ public class Runner extends Component {
             }
             // If UEFI boot, srcPaths != null
             if (srcPaths != null) {
-                for (var paths = srcPaths.elements(); paths.hasNext();) {
-                    var path = Path.of(paths.next().asText());
+                for (var p : srcPaths) {
+                    var path = Path.of(p.asText());
                     if (Files.exists(path)) {
                         Files.copy(path, config.firmwareFlash);
                         break;
@@ -449,6 +451,12 @@ public class Runner extends Component {
         }
     }
 
+    /**
+     * Called when a connection attempt fails.
+     *
+     * @param event the event
+     * @param channel the channel
+     */
     @Handler
     public void onConnectError(ConnectError event, SocketIOChannel channel) {
         if (event.event() instanceof OpenSocketConnection openEvent
