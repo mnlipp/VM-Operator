@@ -55,11 +55,11 @@
     # {{- end }}
     <#if vm.bootMode != "bios">
     # * Provide ROM/EEPROM devices (instead of built-in BIOS)
-    - [ "-blockdev", "node-name=fw-rom-file,driver=file,\
+    - [ "-blockdev", "node-name=fw-rom-file,driver=file,cache.direct=on,\
         filename=${ firmwareRom },auto-read-only=true,discard=unmap" ]
     - [ "-blockdev", "node-name=fw-rom-device,driver=raw,\
         read-only=true,file=fw-rom-file" ]
-    - [ "-blockdev", "node-name=fw-eeprom-file,driver=file,\
+    - [ "-blockdev", "node-name=fw-eeprom-file,driver=file,cache.direct=on,\
         filename=${ firmwareFlash },auto-read-only=true,discard=unmap" ]
     - [ "-blockdev", "node-name=fw-eeprom-device,driver=raw,\
         read-only=false,file=fw-eeprom-file" ]
@@ -68,6 +68,7 @@
     - [ "-object", "memory-backend-ram,id=pc.ram,\
         size=${ vm.maximumRam!"1G" }" ]
     - [ "-m", "${ vm.maximumRam!"1G" }" ]
+    - [ "-device", "virtio-balloon-pci,id=balloon0" ]
     <#if vm.useTpm>
     # Attach TPM
     - [ "-chardev", "socket,id=chrtpm,path=${ runtimeDir }/swtpm-sock" ]
@@ -96,10 +97,10 @@
     #   https://fedoraproject.org/wiki/Features/VirtioSerial
     - [ "-device", "virtio-serial-pci,id=virtio-serial0" ]
     #   - Guest agent serial connection
+    - [ "-device", "virtserialport,id=channel0,name=org.qemu.guest_agent.0,\
+        chardev=guest-agent-socket" ]
     - [ "-chardev","socket,id=guest-agent-socket,\
         path=${ runtimeDir }/org.qemu.guest_agent.0,server=on,wait=off" ]
-    - [ "-device", "virtserialport,bus=virtio-serial0.0,nr=1,\
-        chardev=guest-agent-socket,id=channel0,name=org.qemu.guest_agent.0" ]
     # * USB Hub and devices (more in SPICE configuration below)
     #   https://qemu-project.gitlab.io/qemu/system/devices/usb.html
     #   https://github.com/qemu/qemu/blob/master/hw/usb/hcd-xhci.c
@@ -116,7 +117,7 @@
     <#assign cdCounter = 0/>
     <#list vm.drives![] as drive>
     <#if (drive.type!"hdd") == "ide-cd">
-    - [ "-drive", "id=drive-cdrom${ cdCounter },if=none,media=cdrom\
+    - [ "-drive", "id=drive-cdrom${ cdCounter },if=none,media=cdrom,cache=none\
         <#if drive.file??>,file=${ drive.file }</#if>" ]
     #   (IDE is old, but faster than usb-storage. virtio-blk-pci does not  
     #    work without file [empty drive])
@@ -135,21 +136,21 @@
     #   - the driver (what the guest sees)
 #    - [ "-device", "virtio-blk-pci,id=virtio-disk-cdrom,\
 #        drive=blockdev-cdrom-backend,bootindex=1" ]
-
     
-    # SPICE (display, channels ...)    
-    # - [ "-spice", "port=5900,disable-ticketing=on" ]
-#        -chardev spicevmc,id=charchannel1,name=vdagent
-#        -device virtserialport,bus=virtio-serial0.0,nr=2,chardev=charchannel1,id=channel1,name=com.redhat.spice.0
-#        -audiodev '{"id":"audio1","driver":"spice"}'
-#    - [ "-device", "hda-duplex,\
-#        id=sound0-codec0,bus=sound0.0,cad=0,audiodev=audio1" ]
-#        -spice port={{ .Values.vm.spicePort }},addr=0.0.0.0,disable-ticketing=on,seamless-migration=on
-#        -chardev spicevmc,id=charredir0,name=usbredir
-#        -device usb-redir,chardev=charredir0,id=redir0,bus=usb.0,port=2
-#        -chardev spicevmc,id=charredir1,name=usbredir
-#        -device usb-redir,chardev=charredir1,id=redir1,bus=usb.0,port=3
-#        -device virtio-balloon-pci,id=balloon0
+    # SPICE (display, channels ...)
+    # https://www.linux-kvm.org/page/SPICE
+    - [ "-spice", "port=5900,disable-ticketing=on,seamless-migration=on" ]
+    - [ "-chardev", "spicevmc,id=vdagentdev,name=vdagent" ]
+    - [ "-device", "virtserialport,name=com.redhat.spice.0,\
+        chardev=vdagentdev" ]
+    # * Audio
+    - [ "-audiodev", "driver=spice,id=audio1" ]
+    - [ "-device", "hda-duplex,audiodev=audio1" ]
+    # * USB redirection
+    - [ "-chardev", "spicevmc,id=charredir0,name=usbredir" ]
+    - [ "-device", "usb-redir,chardev=charredir0,id=redir0" ]
+    - [ "-chardev", "spicevmc,id=charredir1,name=usbredir" ]
+    - [ "-device", "usb-redir,chardev=charredir1,id=redir1" ]
 
         
 
