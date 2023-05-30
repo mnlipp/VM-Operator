@@ -68,3 +68,7 @@
       "bootindex": (undefined)
       "file": (undefined)
       
+    # "spice":
+    #   "port": 5900
+    #   "usbRedirects": 2
+      

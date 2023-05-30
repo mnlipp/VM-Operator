@@ -139,7 +139,8 @@
     
     # SPICE (display, channels ...)
     # https://www.linux-kvm.org/page/SPICE
-    - [ "-spice", "port=5900,disable-ticketing=on,seamless-migration=on" ]
+    - [ "-spice", "port=${ vm.spice.port?c },disable-ticketing=on\
+        ,seamless-migration=on" ]
     - [ "-chardev", "spicevmc,id=vdagentdev,name=vdagent" ]
     - [ "-device", "virtserialport,name=com.redhat.spice.0,\
         chardev=vdagentdev" ]
@@ -147,10 +148,10 @@
     - [ "-audiodev", "driver=spice,id=audio1" ]
     - [ "-device", "hda-duplex,audiodev=audio1" ]
     # * USB redirection
-    - [ "-chardev", "spicevmc,id=charredir0,name=usbredir" ]
-    - [ "-device", "usb-redir,chardev=charredir0,id=redir0" ]
-    - [ "-chardev", "spicevmc,id=charredir1,name=usbredir" ]
-    - [ "-device", "usb-redir,chardev=charredir1,id=redir1" ]
+    <#list 0..<vm.spice.usbRedirects as index>
+    - [ "-chardev", "spicevmc,id=charredir${ index },name=usbredir" ]
+    - [ "-device", "usb-redir,id=redir${ index },chardev=charredir${ index }" ]
+    </#list>
 
         
 

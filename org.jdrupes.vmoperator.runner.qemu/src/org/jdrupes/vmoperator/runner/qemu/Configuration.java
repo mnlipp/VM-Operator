@@ -72,6 +72,7 @@ class Configuration implements Dto {
         public String rtcBase = "utc";
         public String rtcClock = "rt";
         public Drive[] drives;
+        public Spice spice;
     }
 
     /**
@@ -81,6 +82,14 @@ class Configuration implements Dto {
         public String type;
         public Integer bootindex;
         public String file;
+    }
+
+    /**
+     * Subsection "spice".
+     */
+    public static class Spice implements Dto {
+        public int port = 5900;
+        public int usbRedirects = 2;
     }
 
     /**
