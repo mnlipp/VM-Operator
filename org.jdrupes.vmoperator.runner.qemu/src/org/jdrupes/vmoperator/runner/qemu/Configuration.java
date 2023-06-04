@@ -18,7 +18,6 @@
 
 package org.jdrupes.vmoperator.runner.qemu;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -46,7 +45,6 @@ class Configuration implements Dto {
     public Path monitorSocket;
     public Path firmwareRom;
     public Path firmwareFlash;
-    public JsonNode monitorMessages;
     @SuppressWarnings("PMD.ShortVariable")
     public Vm vm;
 
@@ -126,10 +124,8 @@ class Configuration implements Dto {
                 }
             }
             runtimeDir += "/vmrunner/" + vm.name;
-            swtpmSocket
-                = Path.of(runtimeDir, "swtpm-sock");
-            monitorSocket
-                = Path.of(runtimeDir, "monitor.sock");
+            swtpmSocket = Path.of(runtimeDir, "swtpm-sock");
+            monitorSocket = Path.of(runtimeDir, "monitor.sock");
         }
         Path runtimePath = Path.of(runtimeDir);
         if (!Files.exists(runtimePath)) {

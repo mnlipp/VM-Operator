@@ -152,8 +152,3 @@
     - [ "-chardev", "spicevmc,id=charredir${ index },name=usbredir" ]
     - [ "-device", "usb-redir,id=redir${ index },chardev=charredir${ index }" ]
     </#list>
-
-        
-
-"monitorMessages":
-  "connect": '{ "execute": "qmp_capabilities" }'

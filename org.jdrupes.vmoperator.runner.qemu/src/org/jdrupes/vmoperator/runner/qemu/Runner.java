@@ -33,17 +33,18 @@ import java.io.File;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.io.Writer;
-import java.net.UnixDomainSocketAddress;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import static org.jdrupes.vmoperator.runner.qemu.Configuration.BOOT_MODE_SECURE;
 import static org.jdrupes.vmoperator.runner.qemu.Configuration.BOOT_MODE_UEFI;
+import org.jdrupes.vmoperator.runner.qemu.StateController.State;
 import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
@@ -51,36 +52,34 @@ import org.jgrapes.core.Components;
 import org.jgrapes.core.TypedIdKey;
 import org.jgrapes.core.annotation.Handler;
 import org.jgrapes.core.events.Start;
+import org.jgrapes.core.events.Started;
 import org.jgrapes.core.events.Stop;
 import org.jgrapes.io.NioDispatcher;
-import org.jgrapes.io.events.ConnectError;
 import org.jgrapes.io.events.Input;
-import org.jgrapes.io.events.OpenSocketConnection;
 import org.jgrapes.io.events.ProcessExited;
 import org.jgrapes.io.events.ProcessStarted;
 import org.jgrapes.io.events.StartProcess;
 import org.jgrapes.io.process.ProcessManager;
 import org.jgrapes.io.process.ProcessManager.ProcessChannel;
-import org.jgrapes.io.util.ByteBufferWriter;
 import org.jgrapes.io.util.LineCollector;
 import org.jgrapes.net.SocketConnector;
-import org.jgrapes.net.SocketIOChannel;
-import org.jgrapes.net.events.ClientConnected;
 import org.jgrapes.util.FileSystemWatcher;
 import org.jgrapes.util.YamlConfigurationStore;
 import org.jgrapes.util.events.ConfigurationUpdate;
 import org.jgrapes.util.events.FileChanged;
 import org.jgrapes.util.events.FileChanged.Kind;
+import org.jgrapes.util.events.InitialConfiguration;
 import org.jgrapes.util.events.WatchFile;
 
 /**
  * The Runner.
  * 
  * @startuml
- * [*] --> Setup
- * Setup --> Setup: InitialConfiguration/configure Runner
+ * [*] --> Initializing
+ * Initializing -> Initializing: InitialConfiguration/configure Runner
+ * Initializing -> Initializing: Start/start Runner
  * 
- * state Startup {
+ * state "Starting (Processes)" as StartingProcess {
  * 
  *     state which <<choice>>
  *     state "Start swtpm" as swtpm
@@ -105,9 +104,9 @@ import org.jgrapes.util.events.WatchFile;
  *     monitor --> error: ConnectError[for monitor]
  * }
  * 
- * Setup --> which: Start
+ * Initializing --> which: Started
  * 
- * success --> Run
+ * success --> Running
  * error --> [*]
  *
  * @enduml
@@ -124,18 +123,15 @@ public class Runner extends Component {
     private static final String SAVED_TEMPLATE = "VM.ftl.yaml";
     private static final String FW_FLASH = "fw-flash.fd";
 
-    @SuppressWarnings({ "PMD.FieldNamingConventions",
-        "PMD.VariableNamingConventions" })
-    private static final Logger monitorLog
-        = Logger.getLogger(Runner.class.getPackageName() + ".monitor");
-
-    private static Runner app;
-
     private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
     private final JsonNode defaults;
     @SuppressWarnings("PMD.UseConcurrentHashMap")
     private Configuration config = new Configuration();
     private final freemarker.template.Configuration fmConfig;
+    private final StateController state;
+    private CommandDefinition swtpmDefinition;
+    private CommandDefinition qemuDefinition;
+    private final QemuMonitor qemuMonitor;
 
     /**
      * Instantiates a new runner.
@@ -143,7 +139,7 @@ public class Runner extends Component {
      * @throws IOException Signals that an I/O exception has occurred.
      */
     public Runner() throws IOException {
-        super(new Context());
+        state = new StateController(this);
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
             false);
 
@@ -167,6 +163,7 @@ public class Runner extends Component {
         attach(new FileSystemWatcher(channel()));
         attach(new ProcessManager(channel()));
         attach(new SocketConnector(channel()));
+        attach(qemuMonitor = new QemuMonitor(channel()));
 
         // Configuration store with file in /etc (default)
         File config = new File(System.getProperty(
@@ -174,6 +171,10 @@ public class Runner extends Component {
             "/etc/vmrunner/config.yaml"));
         attach(new YamlConfigurationStore(channel(), config, false));
         fire(new WatchFile(config.toPath()));
+    }
+
+    /* default */ ObjectMapper mapper() {
+        return mapper;
     }
 
     /**
@@ -184,15 +185,29 @@ public class Runner extends Component {
     @Handler
     public void onConfigurationUpdate(ConfigurationUpdate event) {
         event.structured(componentPath()).ifPresent(c -> {
-            try {
-                config = mapper.convertValue(c, Configuration.class);
-            } catch (IllegalArgumentException e) {
-                logger.log(Level.SEVERE, e, () -> "Invalid configuration: "
-                    + e.getMessage());
-                // Don't use default configuration
-                config = null;
+            if (event instanceof InitialConfiguration) {
+                processInitialConfiguration(c);
             }
         });
+    }
+
+    private void processInitialConfiguration(
+            Map<String, Object> runnerConfiguration) {
+        try {
+            config = mapper.convertValue(runnerConfiguration,
+                Configuration.class);
+            if (!config.check()) {
+                // Invalid configuration, not used, problems already logged.
+                config = null;
+            }
+            // Forward some values to child components
+            qemuMonitor.configure(config.monitorSocket);
+        } catch (IllegalArgumentException e) {
+            logger.log(Level.SEVERE, e, () -> "Invalid configuration: "
+                + e.getMessage());
+            // Don't use default configuration
+            config = null;
+        }
     }
 
     /**
@@ -201,41 +216,33 @@ public class Runner extends Component {
      * @param event the event
      */
     @Handler
-    @SuppressWarnings({ "PMD.SystemPrintln" })
     public void onStart(Start event) {
         try {
-            if (config == null || !config.check()) {
-                // Invalid configuration, fail
+            if (config == null) {
+                // Missing configuration, fail
                 fire(new Stop());
                 return;
+            }
+
+            // Store process id
+            try (var pidFile = Files.newBufferedWriter(
+                Path.of(config.runtimeDir, "runner.pid"))) {
+                pidFile.write(ProcessHandle.current().pid() + "\n");
             }
 
             // Prepare firmware files and add to config
             setFirmwarePaths();
 
-            // Obtain more data from template
+            // Obtain more context data from template
             var tplData = dataFromTemplate();
-
-            // Get process definitions etc. from processed data
-            Context context = (Context) channel();
-            context.swtpmDefinition = Optional.ofNullable(tplData.get("swtpm"))
+            swtpmDefinition = Optional.ofNullable(tplData.get("swtpm"))
                 .map(d -> new CommandDefinition("swtpm", d)).orElse(null);
-            context.qemuDefinition = Optional.ofNullable(tplData.get("qemu"))
+            qemuDefinition = Optional.ofNullable(tplData.get("qemu"))
                 .map(d -> new CommandDefinition("qemu", d)).orElse(null);
-            config.monitorMessages = tplData.get("monitorMessages");
 
             // Files to watch for
             Files.deleteIfExists(config.swtpmSocket);
             fire(new WatchFile(config.swtpmSocket));
-            Files.deleteIfExists(config.monitorSocket);
-            fire(new WatchFile(config.monitorSocket));
-
-            // Start first
-            if (config.vm.useTpm && context.swtpmDefinition != null) {
-                startProcess(context, context.swtpmDefinition);
-                return;
-            }
-            startProcess(context, context.qemuDefinition);
         } catch (IOException | TemplateException e) {
             logger.log(Level.SEVERE, e,
                 () -> "Cannot configure runner: " + e.getMessage());
@@ -307,12 +314,27 @@ public class Runner extends Component {
         return mapper.readValue(out.toString(), JsonNode.class);
     }
 
-    private boolean startProcess(Context context, CommandDefinition toStart) {
+    /**
+     * Handle the started event.
+     *
+     * @param event the event
+     */
+    @Handler
+    public void onStarted(Started event) {
+        state.set(State.STARTING);
+        // Start first process
+        if (config.vm.useTpm && swtpmDefinition != null) {
+            startProcess(swtpmDefinition);
+            return;
+        }
+        startProcess(qemuDefinition);
+    }
+
+    private boolean startProcess(CommandDefinition toStart) {
         logger.fine(
             () -> "Starting process: " + String.join(" ", toStart.command));
         fire(new StartProcess(toStart.command)
-            .setAssociated(Context.class, context)
-            .setAssociated(CommandDefinition.class, toStart), channel());
+            .setAssociated(CommandDefinition.class, toStart));
         return true;
     }
 
@@ -324,21 +346,12 @@ public class Runner extends Component {
      * @param context the context
      */
     @Handler
-    public void onFileChanged(FileChanged event, Context context) {
+    public void onFileChanged(FileChanged event) {
         if (event.change() == Kind.CREATED
-            && event.path()
-                .equals(Path.of(config.runtimeDir, "swtpm-sock"))) {
+            && event.path().equals(config.swtpmSocket)) {
             // swtpm running, start qemu
-            startProcess(context, context.qemuDefinition);
+            startProcess(qemuDefinition);
             return;
-        }
-        var monSockPath = Path.of(config.runtimeDir, "monitor.sock");
-        if (event.change() == Kind.CREATED
-            && event.path().equals(monSockPath)) {
-            // qemu running, open socket
-            fire(new OpenSocketConnection(
-                UnixDomainSocketAddress.of(monSockPath))
-                    .setAssociated(Context.class, context));
         }
     }
 
@@ -355,34 +368,27 @@ public class Runner extends Component {
         "PMD.TooFewBranchesForASwitchStatement" })
     public void onProcessStarted(ProcessStarted event, ProcessChannel channel)
             throws InterruptedException {
-        event.startEvent().associated(Context.class).ifPresent(context -> {
-            // Associate the process channel with the general context
-            // and with its process definition (both carried over by
-            // the start event).
-            channel.setAssociated(Context.class, context);
-            CommandDefinition procDef
-                = event.startEvent().associated(CommandDefinition.class).get();
-            channel.setAssociated(CommandDefinition.class, procDef);
+        event.startEvent().associated(CommandDefinition.class)
+            .ifPresent(procDef -> {
+                channel.setAssociated(CommandDefinition.class, procDef);
+                try (var pidFile = Files.newBufferedWriter(
+                    Path.of(config.runtimeDir, procDef.name + ".pid"))) {
+                    pidFile.write(channel.process().toHandle().pid() + "\n");
+                } catch (IOException e) {
+                    throw new UndeclaredThrowableException(e);
+                }
 
-            // Associate the channel with a line collector (one for
-            // each stream) for logging the process's output.
-            TypedIdKey.associate(channel, 1, new LineCollector().nativeCharset()
-                .consumer(line -> logger
-                    .info(() -> procDef.name() + "(out): " + line)));
-            TypedIdKey.associate(channel, 2, new LineCollector().nativeCharset()
-                .consumer(line -> logger
-                    .info(() -> procDef.name() + "(err): " + line)));
-
-            // Register the channel in the context.
-            switch (procDef.name) {
-            case "swtpm":
-                context.swtpmChannel = channel;
-                break;
-            case "qemu":
-                context.qemuChannel = channel;
-                break;
-            }
-        });
+                // Associate the channel with a line collector (one for
+                // each stream) for logging the process's output.
+                TypedIdKey.associate(channel, 1,
+                    new LineCollector().nativeCharset()
+                        .consumer(line -> logger
+                            .info(() -> procDef.name() + "(out): " + line)));
+                TypedIdKey.associate(channel, 2,
+                    new LineCollector().nativeCharset()
+                        .consumer(line -> logger
+                            .info(() -> procDef.name() + "(err): " + line)));
+            });
     }
 
     /**
@@ -399,16 +405,14 @@ public class Runner extends Component {
     }
 
     /**
-     * Handle data from qemu monitor connection.
+     * On qemu monitor started.
      *
      * @param event the event
-     * @param channel the channel
+     * @param context the context
      */
     @Handler
-    public void onInput(Input<?> event, SocketIOChannel channel) {
-        channel.associated(LineCollector.class).ifPresent(collector -> {
-            collector.feed(event);
-        });
+    public void onQemuMonitorOpened(QemuMonitorOpened event) {
+        state.set(State.RUNNING);
     }
 
     /**
@@ -423,84 +427,19 @@ public class Runner extends Component {
     }
 
     /**
-     * Check if this is from opening the monitor socket and if true,
-     * save the socket in the context and associate the channel with
-     * the context. Then send the initial message to the socket.
+     * On stop.
      *
      * @param event the event
-     * @param channel the channel
      */
     @Handler
-    public void onClientConnected(ClientConnected event,
-            SocketIOChannel channel) {
-        if (event.openEvent().address() instanceof UnixDomainSocketAddress addr
-            && addr.getPath()
-                .equals(Path.of(config.runtimeDir, "monitor.sock"))) {
-            event.openEvent().associated(Context.class).ifPresent(context -> {
-                context.monitorChannel = channel;
-                channel.setAssociated(Context.class, context);
-                channel.setAssociated(LineCollector.class,
-                    new LineCollector().consumer(line -> {
-                        monitorLog.fine(() -> "monitor(in): " + line);
-                    }));
-                channel.setAssociated(Writer.class, new ByteBufferWriter(
-                    channel).nativeCharset());
-                writeToMonitor(context,
-                    config.monitorMessages.get("connect").asText());
-            });
-        }
-    }
-
-    /**
-     * Called when a connection attempt fails.
-     *
-     * @param event the event
-     * @param channel the channel
-     */
-    @Handler
-    public void onConnectError(ConnectError event, SocketIOChannel channel) {
-        if (event.event() instanceof OpenSocketConnection openEvent
-            && openEvent.address() instanceof UnixDomainSocketAddress addr
-            && addr.getPath()
-                .equals(Path.of(config.runtimeDir, "monitor.sock"))) {
-            openEvent.associated(Context.class).ifPresent(context -> {
-                fire(new Stop());
-            });
-        }
-    }
-
-    private void writeToMonitor(Context context, String message) {
-        monitorLog.fine(() -> "monitor(out): " + message);
-        context.monitorChannel.associated(Writer.class)
-            .ifPresent(writer -> {
-                try {
-                    writer.append(message).append('\n').flush();
-                } catch (IOException e) {
-                    // Cannot happen, but...
-                    logger.log(Level.WARNING, e, () -> e.getMessage());
-                }
-            });
-    }
-
-    /**
-     * The context.
-     */
-    private static class Context implements Channel {
-        public CommandDefinition swtpmDefinition;
-        public CommandDefinition qemuDefinition;
-        public ProcessChannel swtpmChannel;
-        public ProcessChannel qemuChannel;
-        public SocketIOChannel monitorChannel;
-
-        @Override
-        public Object defaultCriterion() {
-            return "ProcMgr";
-        }
-
-        @Override
-        public String toString() {
-            return "ProcMgr";
-        }
+    public void onStop(Stop event) {
+//        Context context = (Context) channel();
+//        if (context.qemuChannel != null) {
+//            event.suspendHandling();
+//            context.suspendedStop = event;
+//            writeToMonitor(context,
+//                config.monitorMessages.get("powerdown").asText());
+//        }
     }
 
     /**
@@ -511,7 +450,7 @@ public class Runner extends Component {
     public static void main(String[] args) {
         // The Runner is the root component
         try {
-            app = new Runner();
+            var app = new Runner();
 
             // Prepare Stop
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -529,6 +468,5 @@ public class Runner extends Component {
             Logger.getLogger(Runner.class.getName()).log(Level.SEVERE, e,
                 () -> "Failed to start runner: " + e.getMessage());
         }
-
     }
 }
