@@ -1,0 +1,3 @@
+org.jdrupes.vmoperator.manager
+org.jdrupes.vmoperator.runner.qemu
+org.jdrupes.vmoperator.util
