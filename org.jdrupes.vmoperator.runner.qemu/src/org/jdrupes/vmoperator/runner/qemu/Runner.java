@@ -200,35 +200,6 @@ public class Runner extends Component {
                 // Invalid configuration, not used, problems already logged.
                 config = null;
             }
-            // Forward some values to child components
-            qemuMonitor.configure(config.monitorSocket);
-        } catch (IllegalArgumentException e) {
-            logger.log(Level.SEVERE, e, () -> "Invalid configuration: "
-                + e.getMessage());
-            // Don't use default configuration
-            config = null;
-        }
-    }
-
-    /**
-     * Handle the start event.
-     *
-     * @param event the event
-     */
-    @Handler
-    public void onStart(Start event) {
-        try {
-            if (config == null) {
-                // Missing configuration, fail
-                fire(new Stop());
-                return;
-            }
-
-            // Store process id
-            try (var pidFile = Files.newBufferedWriter(
-                Path.of(config.runtimeDir, "runner.pid"))) {
-                pidFile.write(ProcessHandle.current().pid() + "\n");
-            }
 
             // Prepare firmware files and add to config
             setFirmwarePaths();
@@ -240,13 +211,14 @@ public class Runner extends Component {
             qemuDefinition = Optional.ofNullable(tplData.get("qemu"))
                 .map(d -> new CommandDefinition("qemu", d)).orElse(null);
 
-            // Files to watch for
-            Files.deleteIfExists(config.swtpmSocket);
-            fire(new WatchFile(config.swtpmSocket));
-        } catch (IOException | TemplateException e) {
-            logger.log(Level.SEVERE, e,
-                () -> "Cannot configure runner: " + e.getMessage());
-            fire(new Stop());
+            // Forward some values to child components
+            qemuMonitor.configure(config.monitorSocket,
+                config.vm.powerdownTimeout);
+        } catch (IllegalArgumentException | IOException | TemplateException e) {
+            logger.log(Level.SEVERE, e, () -> "Invalid configuration: "
+                + e.getMessage());
+            // Don't use default configuration
+            config = null;
         }
     }
 
@@ -312,6 +284,36 @@ public class Runner extends Component {
         StringWriter out = new StringWriter();
         fmTemplate.process(model, out);
         return mapper.readValue(out.toString(), JsonNode.class);
+    }
+
+    /**
+     * Handle the start event.
+     *
+     * @param event the event
+     */
+    @Handler
+    public void onStart(Start event) {
+        try {
+            if (config == null) {
+                // Missing configuration, fail
+                fire(new Stop());
+                return;
+            }
+
+            // Store process id
+            try (var pidFile = Files.newBufferedWriter(
+                Path.of(config.runtimeDir, "runner.pid"))) {
+                pidFile.write(ProcessHandle.current().pid() + "\n");
+            }
+
+            // Files to watch for
+            Files.deleteIfExists(config.swtpmSocket);
+            fire(new WatchFile(config.swtpmSocket));
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, e,
+                () -> "Cannot start runner: " + e.getMessage());
+            fire(new Stop());
+        }
     }
 
     /**

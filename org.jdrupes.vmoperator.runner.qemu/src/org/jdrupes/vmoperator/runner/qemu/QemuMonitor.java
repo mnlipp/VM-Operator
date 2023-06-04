@@ -67,9 +67,8 @@ public class QemuMonitor extends Component {
         "powerdown", "{ \"execute\": \"system_powerdown\" }"));
 
     private Path socketPath;
-
+    private int powerdownTimeout;
     private SocketIOChannel monitorChannel;
-
     private Stop suspendedStop;
 
     /**
@@ -88,9 +87,11 @@ public class QemuMonitor extends Component {
      * {@link Runner} instead.
      *
      * @param socketPath the socket path
+     * @param powerdownTimeout 
      */
-    /* default */ void configure(Path socketPath) {
+    /* default */ void configure(Path socketPath, int powerdownTimeout) {
         this.socketPath = socketPath;
+        this.powerdownTimeout = powerdownTimeout;
     }
 
     /**
@@ -245,7 +246,7 @@ public class QemuMonitor extends Component {
                         suspendedStop = null;
                     }
                 }
-            }, Duration.ofMillis(5000));
+            }, Duration.ofSeconds(powerdownTimeout));
         }
     }
 }

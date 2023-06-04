@@ -69,6 +69,7 @@ class Configuration implements Dto {
         public String accelerator = "kvm";
         public String rtcBase = "utc";
         public String rtcClock = "rt";
+        public int powerdownTimeout = 60;
         public Drive[] drives;
         public Spice spice;
     }

@@ -42,6 +42,11 @@
     #  * secure
     # "bootMode": "uefi"
     
+    # When terminating, a graceful powerdown is attempted. If it
+    # doesn't succeed within the given timeout (seconds) SIGTERM
+    # is sent to Qemu.
+    # "powerdownTimeout": 60
+    
     # RAM settings
     # "maximumRam": "1G"
     # "currentRam": "1G"
