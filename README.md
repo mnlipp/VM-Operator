@@ -1,3 +1,5 @@
+[![Java CI with Gradle](https://github.com/mnlipp/VM-Operator/actions/workflows/gradle.yml/badge.svg)](https://github.com/mnlipp/VM-Operator/actions/workflows/gradle.yml)
+
 # Run Qemu in Kubernetes Pods
 
 The goal of this project is to provide the means for running Qemu
