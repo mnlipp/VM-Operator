@@ -16,6 +16,22 @@ plugins {
 
 project.group = 'org.jdrupes.vmoperator'
 
+task stage {
+    description = 'To be executed by CI, build and update JavaDoc.'
+    group = 'build'
+
+    // Build everything first
+    gradle.projectsEvaluated {
+        dependsOn subprojects.tasks.collect { 
+            tc -> tc.findByName("build") }.flatten()
+    }
+    
+    if (JavaVersion.current() == JavaVersion.VERSION_17) {
+        // Publish JavaDoc
+        dependsOn gitPublishPush
+    }
+}
+
 eclipse {
     project {
         file {
