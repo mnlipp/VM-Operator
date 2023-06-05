@@ -132,6 +132,8 @@ import org.jgrapes.util.events.WatchFile;
  * }
  * 
  * Running --> qemuPowerdown: Stop
+ * Running --> which2: ProcessExited[process qemu]
+ * 
  * terminated --> [*]
  *
  * @enduml
@@ -356,7 +358,7 @@ public class Runner extends Component {
     }
 
     private boolean startProcess(CommandDefinition toStart) {
-        logger.fine(
+        logger.info(
             () -> "Starting process: " + String.join(" ", toStart.command));
         fire(new StartProcess(toStart.command)
             .setAssociated(CommandDefinition.class, toStart));
@@ -446,7 +448,14 @@ public class Runner extends Component {
      */
     @Handler
     public void onProcessExited(ProcessExited event, ProcessChannel channel) {
-        int i = 0;
+        channel.associated(CommandDefinition.class).ifPresent(procDef -> {
+            if (procDef.equals(qemuDefinition)
+                && state.get() == State.RUNNING) {
+                fire(new Stop());
+            }
+            logger.info(() -> "Process " + procDef.name
+                + " has exited with value " + event.exitValue());
+        });
     }
 
     /**

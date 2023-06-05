@@ -34,6 +34,11 @@ package org.jdrupes.vmoperator.runner.qemu;
 
     private State state = State.INITIALIZING;
 
+    /**
+     * Instantiates a new state controller.
+     *
+     * @param runner the runner
+     */
     public StateController(Runner runner) {
         this.runner = runner;
     }
@@ -45,6 +50,15 @@ package org.jdrupes.vmoperator.runner.qemu;
      */
     public void set(State state) {
         this.state = state;
+    }
+
+    /**
+     * Returns the state.
+     *
+     * @return the state
+     */
+    public State get() {
+        return state;
     }
 
     @Override
