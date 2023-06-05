@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: doc_generation
+  cancel-in-progress: false
+
 jobs:
   build:
 
