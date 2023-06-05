@@ -8,6 +8,9 @@ plugins {
     // Apply the java Plugin to add support for Java.
     id 'java'
     
+    // Git based versioning
+    id 'pl.allegro.tech.build.axion-release'
+    
     // Apply eclipse plugin
     id 'eclipse'
 }
@@ -51,6 +54,17 @@ java {
         languageVersion = JavaLanguageVersion.of(17)
     }
 }
+
+scmVersion {
+    versionIncrementer 'incrementMinor'
+    tag {
+        def shortened = project.name.startsWith(project.group + ".") ?
+            project.name.substring(project.group.length() + 1) : project.name
+        prefix = shortened.replace('.', '-') + "-"
+    }
+}
+version = scmVersion.version
+ext.isSnapshot = version.endsWith('-SNAPSHOT')
 
 eclipse {
 

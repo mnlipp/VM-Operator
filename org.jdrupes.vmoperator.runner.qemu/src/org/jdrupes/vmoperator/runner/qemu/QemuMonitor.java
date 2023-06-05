@@ -111,7 +111,6 @@ public class QemuMonitor extends Component {
      * qemu process if it has been created.
      *
      * @param event the event
-     * @param context the context
      */
     @Handler
     public void onFileChanged(FileChanged event) {

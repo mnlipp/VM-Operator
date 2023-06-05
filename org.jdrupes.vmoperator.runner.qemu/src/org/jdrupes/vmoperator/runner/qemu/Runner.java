@@ -72,9 +72,16 @@ import org.jgrapes.util.events.InitialConfiguration;
 import org.jgrapes.util.events.WatchFile;
 
 /**
- * The Runner.
+ * The Runner is responsible for manageing the Qemu process and
+ * optionally a process that emulates a TPM (software TPM). It
+ * it's function is best described by a state diagram.
  * 
- * @startuml
+ * ![Runner state diagram](RunnerStates.svg)
+ * 
+ * If the log level for `org.jdrupes.vmoperator.runner.qemu.monitor`
+ * is set to fine, the messages exchanged on the monitor socket are logged.
+ * 
+ * @startuml RunnerStates.svg
  * [*] --> Initializing
  * Initializing -> Initializing: InitialConfiguration/configure Runner
  * Initializing -> Initializing: Start/start Runner
@@ -92,27 +99,43 @@ import org.jgrapes.util.events.WatchFile;
  *     which --> qemu: [else]
  * 
  *     swtpm: entry/start swtpm
- *     swtpm --> error: StartProcessError/stop
+ *     swtpm -> error: StartProcessError/stop
  *     swtpm -> qemu: FileChanged[swtpm socket created]
  * 
  *     qemu: entry/start qemu
- *     qemu --> error: StartProcessError/stop
+ *     qemu -> error: StartProcessError/stop
  *     qemu --> monitor : FileChanged[monitor socket created] 
  * 
  *     monitor: entry/fire OpenSocketConnection
  *     monitor --> success: ClientConnected[for monitor]
- *     monitor --> error: ConnectError[for monitor]
+ *     monitor -> error: ConnectError[for monitor]
  * }
  * 
  * Initializing --> which: Started
  * 
  * success --> Running
  * error --> [*]
+ * 
+ * state Terminating {
+ *     state terminated <<exitPoint>>
+ *     state which2 <<choice>>
+ * 
+ *     state "Powerdown qemu" as qemuPowerdown
+ *     state "Await process termination" as terminateProcesses
+ *     qemuPowerdown: entry/suspend Stop, send powerdown to qemu, start timer
+ *     
+ *     qemuPowerdown --> which2: Closed[for monitor]/resume Stop
+ *     qemuPowerdown --> terminateProcesses: Timeout/resume Stop
+ *     which2 --> terminateProcesses: [use swtmp]
+ *     which2 --> terminated: [else]
+ *     terminateProcesses --> terminated
+ * }
+ * 
+ * Running --> qemuPowerdown: Stop
+ * terminated --> [*]
  *
  * @enduml
  * 
- * If the log level for `org.jdrupes.vmoperator.runner.qemu.monitor`
- * is set to fine, the messages exchanged on the monitor socket are logged.
  */
 @SuppressWarnings("PMD.ExcessiveImports")
 public class Runner extends Component {
@@ -345,7 +368,6 @@ public class Runner extends Component {
      * qemu process if it has been created.
      *
      * @param event the event
-     * @param context the context
      */
     @Handler
     public void onFileChanged(FileChanged event) {
@@ -410,7 +432,6 @@ public class Runner extends Component {
      * On qemu monitor started.
      *
      * @param event the event
-     * @param context the context
      */
     @Handler
     public void onQemuMonitorOpened(QemuMonitorOpened event) {
@@ -433,15 +454,9 @@ public class Runner extends Component {
      *
      * @param event the event
      */
-    @Handler
+    @Handler(priority = 10_000)
     public void onStop(Stop event) {
-//        Context context = (Context) channel();
-//        if (context.qemuChannel != null) {
-//            event.suspendHandling();
-//            context.suspendedStop = event;
-//            writeToMonitor(context,
-//                config.monitorMessages.get("powerdown").asText());
-//        }
+        state.set(State.TERMINATING);
     }
 
     /**

@@ -1,7 +1,20 @@
+buildscript {
+    repositories {
+        gradlePluginPortal()
+    }
+    dependencies {
+        classpath 'org.ajoberstar.grgit:grgit-gradle:4.1.0'
+        classpath 'org.ajoberstar:gradle-git-publish:3.0.0'
+    }
+}
 
 plugins {
+    id 'pl.allegro.tech.build.axion-release' version '1.15.0' apply false
+    id 'org.jdrupes.vmoperator.java-doc-conventions'
     id 'eclipse'
 }
+
+project.group = 'org.jdrupes.vmoperator'
 
 eclipse {
     project {
