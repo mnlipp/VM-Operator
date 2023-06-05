@@ -20,9 +20,16 @@ package org.jdrupes.vmoperator.util;
 
 import java.util.logging.LogManager;
 
+/**
+ * A logging manager that isn't disabled by a shutdown hook.
+ */
 public class LongLoggingManager extends LogManager {
     private static LongLoggingManager instance;
 
+    /**
+     * Instantiates a new long logging manager.
+     */
+    @SuppressWarnings("PMD.AssignmentToNonFinalStatic")
     public LongLoggingManager() {
         instance = this;
     }
@@ -36,6 +43,9 @@ public class LongLoggingManager extends LogManager {
         super.reset();
     }
 
+    /**
+     * Reset finally.
+     */
     public static void resetFinally() {
         instance.reset0();
     }

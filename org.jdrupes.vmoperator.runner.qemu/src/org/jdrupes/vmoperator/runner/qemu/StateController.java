@@ -23,7 +23,7 @@ package org.jdrupes.vmoperator.runner.qemu;
  */
 /* default */ class StateController {
 
-    private Runner runner;
+    private final Runner runner;
 
     /**
      * The state.
