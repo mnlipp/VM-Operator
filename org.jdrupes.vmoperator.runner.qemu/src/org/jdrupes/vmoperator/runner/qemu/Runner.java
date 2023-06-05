@@ -99,11 +99,9 @@ import org.jgrapes.util.events.WatchFile;
  *     which --> qemu: [else]
  * 
  *     swtpm: entry/start swtpm
- *     swtpm -> error: StartProcessError/stop
  *     swtpm -> qemu: FileChanged[swtpm socket created]
  * 
  *     qemu: entry/start qemu
- *     qemu -> error: StartProcessError/stop
  *     qemu --> monitor : FileChanged[monitor socket created] 
  * 
  *     monitor: entry/fire OpenSocketConnection
@@ -114,25 +112,30 @@ import org.jgrapes.util.events.WatchFile;
  * Initializing --> which: Started
  * 
  * success --> Running
- * error --> [*]
  * 
  * state Terminating {
+ *     state terminate <<entryPoint>>
+ *     state qemuRunning <<choice>>
  *     state terminated <<exitPoint>>
- *     state which2 <<choice>>
- * 
  *     state "Powerdown qemu" as qemuPowerdown
  *     state "Await process termination" as terminateProcesses
+ * 
+ *     terminate --> qemuRunning
+ *     qemuRunning --> qemuPowerdown:[qemu monitor open]
+ *     qemuRunning --> terminateProcesses:[else]
+ * 
  *     qemuPowerdown: entry/suspend Stop, send powerdown to qemu, start timer
  *     
- *     qemuPowerdown --> which2: Closed[for monitor]/resume Stop
+ *     qemuPowerdown --> terminateProcesses: Closed[for monitor]/resume Stop
  *     qemuPowerdown --> terminateProcesses: Timeout/resume Stop
- *     which2 --> terminateProcesses: [use swtmp]
- *     which2 --> terminated: [else]
  *     terminateProcesses --> terminated
  * }
  * 
- * Running --> qemuPowerdown: Stop
- * Running --> which2: ProcessExited[process qemu]
+ * Running --> terminate: Stop
+ * Running --> terminate: ProcessExited[process qemu]
+ * error --> terminate
+ * StartingProcess --> terminate: ProcessExited
+ * 
  * 
  * terminated --> [*]
  *
@@ -449,6 +452,14 @@ public class Runner extends Component {
     @Handler
     public void onProcessExited(ProcessExited event, ProcessChannel channel) {
         channel.associated(CommandDefinition.class).ifPresent(procDef -> {
+            // No process(es) may exit during startup
+            if (state.get() == State.STARTING) {
+                logger.severe(() -> "Process " + procDef.name
+                    + " has exited with value " + event.exitValue()
+                    + " during startup.");
+                fire(new Stop());
+                return;
+            }
             if (procDef.equals(qemuDefinition)
                 && state.get() == State.RUNNING) {
                 fire(new Stop());
