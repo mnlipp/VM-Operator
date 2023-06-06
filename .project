@@ -4,11 +4,26 @@
 	<comment></comment>
 	<projects/>
 	<natures>
+		<nature>org.eclipse.jdt.core.javanature</nature>
 		<nature>org.eclipse.buildship.core.gradleprojectnature</nature>
+		<nature>net.sf.eclipsecs.core.CheckstyleNature</nature>
+		<nature>ch.acanda.eclipse.pmd.builder.PMDNature</nature>
 	</natures>
 	<buildSpec>
 		<buildCommand>
+			<name>org.eclipse.jdt.core.javabuilder</name>
+			<arguments/>
+		</buildCommand>
+		<buildCommand>
 			<name>org.eclipse.buildship.core.gradleprojectbuilder</name>
+			<arguments/>
+		</buildCommand>
+		<buildCommand>
+			<name>net.sf.eclipsecs.core.CheckstyleBuilder</name>
+			<arguments/>
+		</buildCommand>
+		<buildCommand>
+			<name>ch.acanda.eclipse.pmd.builder.PMDBuilder</name>
 			<arguments/>
 		</buildCommand>
 	</buildSpec>

@@ -42,6 +42,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import static org.jdrupes.vmoperator.runner.qemu.Configuration.BOOT_MODE_SECURE;
 import static org.jdrupes.vmoperator.runner.qemu.Configuration.BOOT_MODE_UEFI;
 import org.jdrupes.vmoperator.runner.qemu.StateController.State;
@@ -160,10 +165,11 @@ public class Runner extends Component {
 
     /**
      * Instantiates a new runner.
+     * @param cmdLine 
      *
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    public Runner() throws IOException {
+    public Runner(CommandLine cmdLine) throws IOException {
         state = new StateController(this);
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
             false);
@@ -191,8 +197,7 @@ public class Runner extends Component {
         attach(qemuMonitor = new QemuMonitor(channel()));
 
         // Configuration store with file in /etc (default)
-        File config = new File(System.getProperty(
-            getClass().getPackageName().toString() + ".config",
+        File config = new File(cmdLine.getOptionValue('C',
             "/etc/vmrunner/config.yaml"));
         attach(new YamlConfigurationStore(channel(), config, false));
         fire(new WatchFile(config.toPath()));
@@ -484,7 +489,13 @@ public class Runner extends Component {
     public static void main(String[] args) {
         // The Runner is the root component
         try {
-            var app = new Runner();
+            CommandLineParser parser = new DefaultParser();
+            // parse the command line arguments
+            final Options options = new Options();
+            options.addOption(new Option("C", "config", true, "The confi"
+                + "guration file (defaults to /etc/vmrunner/config.yaml)."));
+            CommandLine cmd = parser.parse(options, args);
+            var app = new Runner(cmd);
 
             // Prepare Stop
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -498,7 +509,8 @@ public class Runner extends Component {
 
             // Start the application
             Components.start(app);
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException | InterruptedException
+                | org.apache.commons.cli.ParseException e) {
             Logger.getLogger(Runner.class.getName()).log(Level.SEVERE, e,
                 () -> "Failed to start runner: " + e.getMessage());
         }
