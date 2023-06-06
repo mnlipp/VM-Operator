@@ -29,7 +29,7 @@ a container. You can start and use it as an ordinary process on any
 system, provided that you have the required commands (qemu, swtpm) 
 installed.
 
-## Configuration
+## Stand-alone Configuration
 
 Upon startup, the runner reads its main configuration file 
 which defaults to `/etc/vmrunner/config.yaml` and may be changed
@@ -39,8 +39,37 @@ A sample configuration file with annotated options can be found
 [here](https://github.com/mnlipp/VM-Operator/blob/main/org.jdrupes.vmoperator.runner.qemu/config-sample.yaml).
 As the runner implementation uses the 
 [JGrapes](https://mnlipp.github.io/jgrapes/) framework, the file 
-follows the frameworks 
-[conventions](https://mnlipp.github.io/jgrapes/latest-release/javadoc/org/jgrapes/util/YamlConfigurationStore.html). The top level "`/Runner`" addresses
-the component to be configured. Nested within is the actual information.
+follows the framework's 
+[conventions](https://mnlipp.github.io/jgrapes/latest-release/javadoc/org/jgrapes/util/YamlConfigurationStore.html). The top level "`/Runner`" selects
+the component to be configured. Nested within is the information
+to be applied to the component.
 
+The main entries in the configuration file are the "template" and
+the "vm" information. The runner processes the 
+[freemarker template](https://freemarker.apache.org/), using the
+"vm" information to derive the qemu command. The idea is that 
+the "vm" section provides high level information such as the boot
+mode, the number of CPUs, the RAM size and the disks. The template
+defines a particular VM type, i.e. it contains the "nasty details"
+that do not need to be modified for some given set of VM instances.
 
+The templates provided with the runner can be found 
+[here](https://github.com/mnlipp/VM-Operator/tree/main/org.jdrupes.vmoperator.runner.qemu/templates). When details 
+of the VM configuration need modification, a new VM type
+(i.e. a new template) has to be defined. Authoring a new 
+template requires some knowledge about the 
+[qemu invocation](https://www.qemu.org/docs/master/system/invocation.html).
+Despite many "warnings" that you find in the web, configuring the
+invocation arguments of qemu is only a bit (but not much) more
+challenging than editing libvirt's XML.
+
+## Running in a Pod
+
+When running in a Kubernetes pod, `/etc/vmrunner/config.yaml` should be
+provided by a
+[ConfigMap](https://kubernetes.io/docs/concepts/configuration/configmap/).
+
+If additional templates are required, some ReadOnlyMany PV should
+be mounted in `/usr/share/vmrunner/templates`. The PV should contain copies
+of the standard templates as well as the additional templates. Of course, 
+a ConfigMap can be used for this purpose again.
