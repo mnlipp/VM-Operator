@@ -72,14 +72,11 @@ import org.jgrapes.util.events.InitialConfiguration;
 import org.jgrapes.util.events.WatchFile;
 
 /**
- * The Runner is responsible for manageing the Qemu process and
- * optionally a process that emulates a TPM (software TPM). It
- * it's function is best described by a state diagram.
+ * The Runner is responsible for managing the Qemu process and
+ * optionally a process that emulates a TPM (software TPM). It's
+ * main function is best described by the following state diagram.
  * 
  * ![Runner state diagram](RunnerStates.svg)
- * 
- * If the log level for `org.jdrupes.vmoperator.runner.qemu.monitor`
- * is set to fine, the messages exchanged on the monitor socket are logged.
  * 
  * @startuml RunnerStates.svg
  * [*] --> Initializing

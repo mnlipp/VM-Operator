@@ -53,12 +53,15 @@ import org.jgrapes.util.events.WatchFile;
 /**
  * A component that handles the communication over the Qemu monitor
  * socket.
+ * 
+ * If the log level for this class is set to fine, the messages 
+ * exchanged on the monitor socket are logged.
  */
 public class QemuMonitor extends Component {
 
     @SuppressWarnings({ "PMD.FieldNamingConventions",
         "PMD.VariableNamingConventions" })
-    private static final Logger monitorLog
+    private static final Logger logger
         = Logger.getLogger(QemuMonitor.class.getName());
 
     @SuppressWarnings("PMD.UseConcurrentHashMap")
@@ -165,7 +168,7 @@ public class QemuMonitor extends Component {
     }
 
     private void writeToMonitor(String message) {
-        monitorLog.fine(() -> "monitor(out): " + message);
+        logger.fine(() -> "monitor(out): " + message);
         monitorChannel.associated(Writer.class).ifPresent(writer -> {
             try {
                 writer.append(message).append('\n').flush();
@@ -194,7 +197,7 @@ public class QemuMonitor extends Component {
 
     private void processMonitorInput(String line)
             throws IOException {
-        monitorLog.fine(() -> "monitor(in): " + line);
+        logger.fine(() -> "monitor(in): " + line);
         try {
             var response
                 = ((Runner) channel()).mapper().readValue(line, JsonNode.class);
