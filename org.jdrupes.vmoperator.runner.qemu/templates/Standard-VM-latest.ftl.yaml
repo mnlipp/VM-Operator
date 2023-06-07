@@ -27,6 +27,7 @@
     - "-no-user-config"
     # * https://www.kernel.org/doc/Documentation/virtual/kvm/api.txt
     - [ "-global", "kvm-pit.lost_tick_policy=delay" ]
+    # * Allow spawn for network setup (tap/bridge)
     - [ "-sandbox", "on,obsolete=deny,elevateprivileges=deny,\
         spawn=allow,resourcecontrol=deny" ] 
     - [ "-msg", "timestamp=on" ]
