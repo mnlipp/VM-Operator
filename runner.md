@@ -73,3 +73,11 @@ If additional templates are required, some ReadOnlyMany PV should
 be mounted in `/usr/share/vmrunner/templates`. The PV should contain copies
 of the standard templates as well as the additional templates. Of course, 
 a ConfigMap can be used for this purpose again.
+
+Networking options are rather limited. The assumption is that in general
+the VM wants full network connectivity. To achieve this, the pod must
+run with host networking and the host's networking must provide a
+bridge that the VM can attach to. The only currently supported 
+alternative is the less performant
+"[user networking](https://wiki.qemu.org/Documentation/Networking#User_Networking_(SLIRP))",
+which may be used in a stand-alone development configuration.
