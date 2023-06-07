@@ -112,6 +112,24 @@
     # * Graphics and Audio Card
     - [ "-device", "virtio-vga,id=video0,max_outputs=1" ]
     - [ "-device", "ich9-intel-hda,id=sound0" ]
+    # Network
+    <#assign nwCounter = 0/>
+    <#list vm.network![] as itf>
+    <#switch itf.type!"tap">
+    <#case "tap">
+    - [ "-netdev", "bridge,id=hostnet${ nwCounter }" ]
+    - [ "-device", "${ itf.device },netdev=hostnet${ nwCounter }\
+        <#if itf.mac??>,mac=${ itf.mac }</#if>" ]
+    <#break>
+    <#case "user">
+    - [ "-netdev", "user,id=hostnet${ nwCounter }\
+        <#if itf.net??>,net=${ itf.net }</#if>" ]
+    - [ "-device", "${ itf.device },netdev=hostnet${ nwCounter }\
+        <#if itf.mac??>,mac=${ itf.mac }</#if>" ]
+    <#break>
+    </#switch>
+    <#assign nwCounter += 1/>
+    </#list>
     # Drives
     # * CD-Drives
     <#assign cdCounter = 0/>

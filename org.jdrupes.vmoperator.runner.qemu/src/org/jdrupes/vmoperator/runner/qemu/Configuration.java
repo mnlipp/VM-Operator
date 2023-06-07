@@ -70,8 +70,20 @@ class Configuration implements Dto {
         public String rtcBase = "utc";
         public String rtcClock = "rt";
         public int powerdownTimeout = 60;
+        public Network[] network = { new Network() };
         public Drive[] drives;
         public Spice spice;
+    }
+
+    /**
+     * Subsection "network".
+     */
+    public static class Network implements Dto {
+        public String type = "tap";
+        public String bridge = "br0";
+        public String device = "virtio-net";
+        public String mac;
+        public String net;
     }
 
     /**

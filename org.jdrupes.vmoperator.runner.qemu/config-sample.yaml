@@ -68,6 +68,16 @@
     # "rtcBase": "utc"
     # "rtcClock": "rt"
     
+    # Network settings
+    # Supported types are "tap" and "user" (for debugging). Type "user"
+    # supports only the property "net".
+    # "network":
+    # - "type": "tap"
+    #   "bridge": "br0"
+    #   "device": "virtio-net"
+    #   "mac": (undefined)
+    
+    
     "drives":
     - "type": "ide-cd"
       "bootindex": (undefined)
