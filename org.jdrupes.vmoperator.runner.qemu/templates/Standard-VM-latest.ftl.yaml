@@ -143,7 +143,8 @@
         <#if drive.file??>,file=${ drive.file }</#if>" ]
     #   (IDE is old, but faster than usb-storage. virtio-blk-pci does not  
     #    work without file [empty drive])
-    - [ "-device", "ide-cd,id=cd${ cdCounter },drive=drive-cdrom${ cdCounter }\
+    - [ "-device", "ide-cd,id=cd${ cdCounter },bus=ide.${ cdCounter },\
+        drive=drive-cdrom${ cdCounter }\
         <#if drive.bootindex??>,bootindex=${ drive.bootindex }</#if>" ]
     <#assign cdCounter += 1/>
     </#if>
