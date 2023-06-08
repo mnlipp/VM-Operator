@@ -105,6 +105,9 @@ public class QemuMonitor extends Component {
      */
     @Handler
     public void onStart(Start event) throws IOException {
+        if (socketPath == null) {
+            return;
+        }
         Files.deleteIfExists(socketPath);
         fire(new WatchFile(socketPath));
     }
