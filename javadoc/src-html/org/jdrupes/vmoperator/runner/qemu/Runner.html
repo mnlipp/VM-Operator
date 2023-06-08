@@ -60,475 +60,466 @@
 <span class="source-line-no">047</span><span id="line-47">import org.apache.commons.cli.DefaultParser;</span>
 <span class="source-line-no">048</span><span id="line-48">import org.apache.commons.cli.Option;</span>
 <span class="source-line-no">049</span><span id="line-49">import org.apache.commons.cli.Options;</span>
-<span class="source-line-no">050</span><span id="line-50">import static org.jdrupes.vmoperator.runner.qemu.Configuration.BOOT_MODE_SECURE;</span>
-<span class="source-line-no">051</span><span id="line-51">import static org.jdrupes.vmoperator.runner.qemu.Configuration.BOOT_MODE_UEFI;</span>
-<span class="source-line-no">052</span><span id="line-52">import org.jdrupes.vmoperator.runner.qemu.StateController.State;</span>
-<span class="source-line-no">053</span><span id="line-53">import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;</span>
-<span class="source-line-no">054</span><span id="line-54">import org.jgrapes.core.Channel;</span>
-<span class="source-line-no">055</span><span id="line-55">import org.jgrapes.core.Component;</span>
-<span class="source-line-no">056</span><span id="line-56">import org.jgrapes.core.Components;</span>
-<span class="source-line-no">057</span><span id="line-57">import org.jgrapes.core.TypedIdKey;</span>
-<span class="source-line-no">058</span><span id="line-58">import org.jgrapes.core.annotation.Handler;</span>
-<span class="source-line-no">059</span><span id="line-59">import org.jgrapes.core.events.Start;</span>
-<span class="source-line-no">060</span><span id="line-60">import org.jgrapes.core.events.Started;</span>
-<span class="source-line-no">061</span><span id="line-61">import org.jgrapes.core.events.Stop;</span>
-<span class="source-line-no">062</span><span id="line-62">import org.jgrapes.io.NioDispatcher;</span>
-<span class="source-line-no">063</span><span id="line-63">import org.jgrapes.io.events.Input;</span>
-<span class="source-line-no">064</span><span id="line-64">import org.jgrapes.io.events.ProcessExited;</span>
-<span class="source-line-no">065</span><span id="line-65">import org.jgrapes.io.events.ProcessStarted;</span>
-<span class="source-line-no">066</span><span id="line-66">import org.jgrapes.io.events.StartProcess;</span>
-<span class="source-line-no">067</span><span id="line-67">import org.jgrapes.io.process.ProcessManager;</span>
-<span class="source-line-no">068</span><span id="line-68">import org.jgrapes.io.process.ProcessManager.ProcessChannel;</span>
-<span class="source-line-no">069</span><span id="line-69">import org.jgrapes.io.util.LineCollector;</span>
-<span class="source-line-no">070</span><span id="line-70">import org.jgrapes.net.SocketConnector;</span>
-<span class="source-line-no">071</span><span id="line-71">import org.jgrapes.util.FileSystemWatcher;</span>
-<span class="source-line-no">072</span><span id="line-72">import org.jgrapes.util.YamlConfigurationStore;</span>
-<span class="source-line-no">073</span><span id="line-73">import org.jgrapes.util.events.ConfigurationUpdate;</span>
-<span class="source-line-no">074</span><span id="line-74">import org.jgrapes.util.events.FileChanged;</span>
-<span class="source-line-no">075</span><span id="line-75">import org.jgrapes.util.events.FileChanged.Kind;</span>
-<span class="source-line-no">076</span><span id="line-76">import org.jgrapes.util.events.InitialConfiguration;</span>
-<span class="source-line-no">077</span><span id="line-77">import org.jgrapes.util.events.WatchFile;</span>
-<span class="source-line-no">078</span><span id="line-78"></span>
-<span class="source-line-no">079</span><span id="line-79">/**</span>
-<span class="source-line-no">080</span><span id="line-80"> * The Runner is responsible for managing the Qemu process and</span>
-<span class="source-line-no">081</span><span id="line-81"> * optionally a process that emulates a TPM (software TPM). It's</span>
-<span class="source-line-no">082</span><span id="line-82"> * main function is best described by the following state diagram.</span>
+<span class="source-line-no">050</span><span id="line-50">import org.jdrupes.vmoperator.runner.qemu.StateController.State;</span>
+<span class="source-line-no">051</span><span id="line-51">import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;</span>
+<span class="source-line-no">052</span><span id="line-52">import org.jgrapes.core.Channel;</span>
+<span class="source-line-no">053</span><span id="line-53">import org.jgrapes.core.Component;</span>
+<span class="source-line-no">054</span><span id="line-54">import org.jgrapes.core.Components;</span>
+<span class="source-line-no">055</span><span id="line-55">import org.jgrapes.core.TypedIdKey;</span>
+<span class="source-line-no">056</span><span id="line-56">import org.jgrapes.core.annotation.Handler;</span>
+<span class="source-line-no">057</span><span id="line-57">import org.jgrapes.core.events.Start;</span>
+<span class="source-line-no">058</span><span id="line-58">import org.jgrapes.core.events.Started;</span>
+<span class="source-line-no">059</span><span id="line-59">import org.jgrapes.core.events.Stop;</span>
+<span class="source-line-no">060</span><span id="line-60">import org.jgrapes.io.NioDispatcher;</span>
+<span class="source-line-no">061</span><span id="line-61">import org.jgrapes.io.events.Input;</span>
+<span class="source-line-no">062</span><span id="line-62">import org.jgrapes.io.events.ProcessExited;</span>
+<span class="source-line-no">063</span><span id="line-63">import org.jgrapes.io.events.ProcessStarted;</span>
+<span class="source-line-no">064</span><span id="line-64">import org.jgrapes.io.events.StartProcess;</span>
+<span class="source-line-no">065</span><span id="line-65">import org.jgrapes.io.process.ProcessManager;</span>
+<span class="source-line-no">066</span><span id="line-66">import org.jgrapes.io.process.ProcessManager.ProcessChannel;</span>
+<span class="source-line-no">067</span><span id="line-67">import org.jgrapes.io.util.LineCollector;</span>
+<span class="source-line-no">068</span><span id="line-68">import org.jgrapes.net.SocketConnector;</span>
+<span class="source-line-no">069</span><span id="line-69">import org.jgrapes.util.FileSystemWatcher;</span>
+<span class="source-line-no">070</span><span id="line-70">import org.jgrapes.util.YamlConfigurationStore;</span>
+<span class="source-line-no">071</span><span id="line-71">import org.jgrapes.util.events.ConfigurationUpdate;</span>
+<span class="source-line-no">072</span><span id="line-72">import org.jgrapes.util.events.FileChanged;</span>
+<span class="source-line-no">073</span><span id="line-73">import org.jgrapes.util.events.FileChanged.Kind;</span>
+<span class="source-line-no">074</span><span id="line-74">import org.jgrapes.util.events.InitialConfiguration;</span>
+<span class="source-line-no">075</span><span id="line-75">import org.jgrapes.util.events.WatchFile;</span>
+<span class="source-line-no">076</span><span id="line-76"></span>
+<span class="source-line-no">077</span><span id="line-77">/**</span>
+<span class="source-line-no">078</span><span id="line-78"> * The Runner is responsible for managing the Qemu process and</span>
+<span class="source-line-no">079</span><span id="line-79"> * optionally a process that emulates a TPM (software TPM). It's</span>
+<span class="source-line-no">080</span><span id="line-80"> * main function is best described by the following state diagram.</span>
+<span class="source-line-no">081</span><span id="line-81"> * </span>
+<span class="source-line-no">082</span><span id="line-82"> * ![Runner state diagram](RunnerStates.svg)</span>
 <span class="source-line-no">083</span><span id="line-83"> * </span>
-<span class="source-line-no">084</span><span id="line-84"> * ![Runner state diagram](RunnerStates.svg)</span>
-<span class="source-line-no">085</span><span id="line-85"> * </span>
-<span class="source-line-no">086</span><span id="line-86"> * @startuml RunnerStates.svg</span>
-<span class="source-line-no">087</span><span id="line-87"> * [*] --&gt; Initializing</span>
-<span class="source-line-no">088</span><span id="line-88"> * Initializing -&gt; Initializing: InitialConfiguration/configure Runner</span>
-<span class="source-line-no">089</span><span id="line-89"> * Initializing -&gt; Initializing: Start/start Runner</span>
+<span class="source-line-no">084</span><span id="line-84"> * @startuml RunnerStates.svg</span>
+<span class="source-line-no">085</span><span id="line-85"> * [*] --&gt; Initializing</span>
+<span class="source-line-no">086</span><span id="line-86"> * Initializing -&gt; Initializing: InitialConfiguration/configure Runner</span>
+<span class="source-line-no">087</span><span id="line-87"> * Initializing -&gt; Initializing: Start/start Runner</span>
+<span class="source-line-no">088</span><span id="line-88"> * </span>
+<span class="source-line-no">089</span><span id="line-89"> * state "Starting (Processes)" as StartingProcess {</span>
 <span class="source-line-no">090</span><span id="line-90"> * </span>
-<span class="source-line-no">091</span><span id="line-91"> * state "Starting (Processes)" as StartingProcess {</span>
-<span class="source-line-no">092</span><span id="line-92"> * </span>
-<span class="source-line-no">093</span><span id="line-93"> *     state which &lt;&lt;choice&gt;&gt;</span>
-<span class="source-line-no">094</span><span id="line-94"> *     state "Start swtpm" as swtpm</span>
-<span class="source-line-no">095</span><span id="line-95"> *     state "Start qemu" as qemu</span>
-<span class="source-line-no">096</span><span id="line-96"> *     state "Open monitor" as monitor</span>
-<span class="source-line-no">097</span><span id="line-97"> *     state success &lt;&lt;exitPoint&gt;&gt;</span>
-<span class="source-line-no">098</span><span id="line-98"> *     state error &lt;&lt;exitPoint&gt;&gt;</span>
-<span class="source-line-no">099</span><span id="line-99"> *      </span>
-<span class="source-line-no">100</span><span id="line-100"> *     which --&gt; swtpm: [use swtpm]</span>
-<span class="source-line-no">101</span><span id="line-101"> *     which --&gt; qemu: [else]</span>
-<span class="source-line-no">102</span><span id="line-102"> * </span>
-<span class="source-line-no">103</span><span id="line-103"> *     swtpm: entry/start swtpm</span>
-<span class="source-line-no">104</span><span id="line-104"> *     swtpm -&gt; qemu: FileChanged[swtpm socket created]</span>
-<span class="source-line-no">105</span><span id="line-105"> * </span>
-<span class="source-line-no">106</span><span id="line-106"> *     qemu: entry/start qemu</span>
-<span class="source-line-no">107</span><span id="line-107"> *     qemu --&gt; monitor : FileChanged[monitor socket created] </span>
-<span class="source-line-no">108</span><span id="line-108"> * </span>
-<span class="source-line-no">109</span><span id="line-109"> *     monitor: entry/fire OpenSocketConnection</span>
-<span class="source-line-no">110</span><span id="line-110"> *     monitor --&gt; success: ClientConnected[for monitor]</span>
-<span class="source-line-no">111</span><span id="line-111"> *     monitor -&gt; error: ConnectError[for monitor]</span>
-<span class="source-line-no">112</span><span id="line-112"> * }</span>
+<span class="source-line-no">091</span><span id="line-91"> *     state which &lt;&lt;choice&gt;&gt;</span>
+<span class="source-line-no">092</span><span id="line-92"> *     state "Start swtpm" as swtpm</span>
+<span class="source-line-no">093</span><span id="line-93"> *     state "Start qemu" as qemu</span>
+<span class="source-line-no">094</span><span id="line-94"> *     state "Open monitor" as monitor</span>
+<span class="source-line-no">095</span><span id="line-95"> *     state success &lt;&lt;exitPoint&gt;&gt;</span>
+<span class="source-line-no">096</span><span id="line-96"> *     state error &lt;&lt;exitPoint&gt;&gt;</span>
+<span class="source-line-no">097</span><span id="line-97"> *      </span>
+<span class="source-line-no">098</span><span id="line-98"> *     which --&gt; swtpm: [use swtpm]</span>
+<span class="source-line-no">099</span><span id="line-99"> *     which --&gt; qemu: [else]</span>
+<span class="source-line-no">100</span><span id="line-100"> * </span>
+<span class="source-line-no">101</span><span id="line-101"> *     swtpm: entry/start swtpm</span>
+<span class="source-line-no">102</span><span id="line-102"> *     swtpm -&gt; qemu: FileChanged[swtpm socket created]</span>
+<span class="source-line-no">103</span><span id="line-103"> * </span>
+<span class="source-line-no">104</span><span id="line-104"> *     qemu: entry/start qemu</span>
+<span class="source-line-no">105</span><span id="line-105"> *     qemu --&gt; monitor : FileChanged[monitor socket created] </span>
+<span class="source-line-no">106</span><span id="line-106"> * </span>
+<span class="source-line-no">107</span><span id="line-107"> *     monitor: entry/fire OpenSocketConnection</span>
+<span class="source-line-no">108</span><span id="line-108"> *     monitor --&gt; success: ClientConnected[for monitor]</span>
+<span class="source-line-no">109</span><span id="line-109"> *     monitor -&gt; error: ConnectError[for monitor]</span>
+<span class="source-line-no">110</span><span id="line-110"> * }</span>
+<span class="source-line-no">111</span><span id="line-111"> * </span>
+<span class="source-line-no">112</span><span id="line-112"> * Initializing --&gt; which: Started</span>
 <span class="source-line-no">113</span><span id="line-113"> * </span>
-<span class="source-line-no">114</span><span id="line-114"> * Initializing --&gt; which: Started</span>
+<span class="source-line-no">114</span><span id="line-114"> * success --&gt; Running</span>
 <span class="source-line-no">115</span><span id="line-115"> * </span>
-<span class="source-line-no">116</span><span id="line-116"> * success --&gt; Running</span>
-<span class="source-line-no">117</span><span id="line-117"> * </span>
-<span class="source-line-no">118</span><span id="line-118"> * state Terminating {</span>
-<span class="source-line-no">119</span><span id="line-119"> *     state terminate &lt;&lt;entryPoint&gt;&gt;</span>
-<span class="source-line-no">120</span><span id="line-120"> *     state qemuRunning &lt;&lt;choice&gt;&gt;</span>
-<span class="source-line-no">121</span><span id="line-121"> *     state terminated &lt;&lt;exitPoint&gt;&gt;</span>
-<span class="source-line-no">122</span><span id="line-122"> *     state "Powerdown qemu" as qemuPowerdown</span>
-<span class="source-line-no">123</span><span id="line-123"> *     state "Await process termination" as terminateProcesses</span>
-<span class="source-line-no">124</span><span id="line-124"> * </span>
-<span class="source-line-no">125</span><span id="line-125"> *     terminate --&gt; qemuRunning</span>
-<span class="source-line-no">126</span><span id="line-126"> *     qemuRunning --&gt; qemuPowerdown:[qemu monitor open]</span>
-<span class="source-line-no">127</span><span id="line-127"> *     qemuRunning --&gt; terminateProcesses:[else]</span>
-<span class="source-line-no">128</span><span id="line-128"> * </span>
-<span class="source-line-no">129</span><span id="line-129"> *     qemuPowerdown: entry/suspend Stop, send powerdown to qemu, start timer</span>
-<span class="source-line-no">130</span><span id="line-130"> *     </span>
-<span class="source-line-no">131</span><span id="line-131"> *     qemuPowerdown --&gt; terminateProcesses: Closed[for monitor]/resume Stop</span>
-<span class="source-line-no">132</span><span id="line-132"> *     qemuPowerdown --&gt; terminateProcesses: Timeout/resume Stop</span>
-<span class="source-line-no">133</span><span id="line-133"> *     terminateProcesses --&gt; terminated</span>
-<span class="source-line-no">134</span><span id="line-134"> * }</span>
-<span class="source-line-no">135</span><span id="line-135"> * </span>
-<span class="source-line-no">136</span><span id="line-136"> * Running --&gt; terminate: Stop</span>
-<span class="source-line-no">137</span><span id="line-137"> * Running --&gt; terminate: ProcessExited[process qemu]</span>
-<span class="source-line-no">138</span><span id="line-138"> * error --&gt; terminate</span>
-<span class="source-line-no">139</span><span id="line-139"> * StartingProcess --&gt; terminate: ProcessExited</span>
-<span class="source-line-no">140</span><span id="line-140"> * </span>
-<span class="source-line-no">141</span><span id="line-141"> * </span>
-<span class="source-line-no">142</span><span id="line-142"> * terminated --&gt; [*]</span>
-<span class="source-line-no">143</span><span id="line-143"> *</span>
-<span class="source-line-no">144</span><span id="line-144"> * @enduml</span>
-<span class="source-line-no">145</span><span id="line-145"> * </span>
-<span class="source-line-no">146</span><span id="line-146"> */</span>
-<span class="source-line-no">147</span><span id="line-147">@SuppressWarnings("PMD.ExcessiveImports")</span>
-<span class="source-line-no">148</span><span id="line-148">public class Runner extends Component {</span>
-<span class="source-line-no">149</span><span id="line-149"></span>
-<span class="source-line-no">150</span><span id="line-150">    private static final String TEMPLATE_DIR = "/usr/share/vmrunner/templates";</span>
-<span class="source-line-no">151</span><span id="line-151">    private static final String DEFAULT_TEMPLATE</span>
-<span class="source-line-no">152</span><span id="line-152">        = "Standard-VM-latest.ftl.yaml";</span>
-<span class="source-line-no">153</span><span id="line-153">    private static final String SAVED_TEMPLATE = "VM.ftl.yaml";</span>
-<span class="source-line-no">154</span><span id="line-154">    private static final String FW_FLASH = "fw-flash.fd";</span>
-<span class="source-line-no">155</span><span id="line-155"></span>
-<span class="source-line-no">156</span><span id="line-156">    private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());</span>
-<span class="source-line-no">157</span><span id="line-157">    private final JsonNode defaults;</span>
-<span class="source-line-no">158</span><span id="line-158">    @SuppressWarnings("PMD.UseConcurrentHashMap")</span>
-<span class="source-line-no">159</span><span id="line-159">    private Configuration config = new Configuration();</span>
-<span class="source-line-no">160</span><span id="line-160">    private final freemarker.template.Configuration fmConfig;</span>
-<span class="source-line-no">161</span><span id="line-161">    private final StateController state;</span>
-<span class="source-line-no">162</span><span id="line-162">    private CommandDefinition swtpmDefinition;</span>
-<span class="source-line-no">163</span><span id="line-163">    private CommandDefinition qemuDefinition;</span>
-<span class="source-line-no">164</span><span id="line-164">    private final QemuMonitor qemuMonitor;</span>
-<span class="source-line-no">165</span><span id="line-165"></span>
-<span class="source-line-no">166</span><span id="line-166">    /**</span>
-<span class="source-line-no">167</span><span id="line-167">     * Instantiates a new runner.</span>
-<span class="source-line-no">168</span><span id="line-168">     * @param cmdLine </span>
-<span class="source-line-no">169</span><span id="line-169">     *</span>
-<span class="source-line-no">170</span><span id="line-170">     * @throws IOException Signals that an I/O exception has occurred.</span>
-<span class="source-line-no">171</span><span id="line-171">     */</span>
-<span class="source-line-no">172</span><span id="line-172">    public Runner(CommandLine cmdLine) throws IOException {</span>
-<span class="source-line-no">173</span><span id="line-173">        state = new StateController(this);</span>
-<span class="source-line-no">174</span><span id="line-174">        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,</span>
-<span class="source-line-no">175</span><span id="line-175">            false);</span>
-<span class="source-line-no">176</span><span id="line-176"></span>
-<span class="source-line-no">177</span><span id="line-177">        // Get defaults</span>
-<span class="source-line-no">178</span><span id="line-178">        defaults = mapper.readValue(</span>
-<span class="source-line-no">179</span><span id="line-179">            Runner.class.getResourceAsStream("defaults.yaml"), JsonNode.class);</span>
-<span class="source-line-no">180</span><span id="line-180"></span>
-<span class="source-line-no">181</span><span id="line-181">        // Configure freemarker library</span>
-<span class="source-line-no">182</span><span id="line-182">        fmConfig = new freemarker.template.Configuration(</span>
-<span class="source-line-no">183</span><span id="line-183">            freemarker.template.Configuration.VERSION_2_3_32);</span>
-<span class="source-line-no">184</span><span id="line-184">        fmConfig.setDirectoryForTemplateLoading(new File("/"));</span>
-<span class="source-line-no">185</span><span id="line-185">        fmConfig.setDefaultEncoding("utf-8");</span>
-<span class="source-line-no">186</span><span id="line-186">        fmConfig.setObjectWrapper(new ExtendedObjectWrapper(</span>
-<span class="source-line-no">187</span><span id="line-187">            fmConfig.getIncompatibleImprovements()));</span>
-<span class="source-line-no">188</span><span id="line-188">        fmConfig.setTemplateExceptionHandler(</span>
-<span class="source-line-no">189</span><span id="line-189">            TemplateExceptionHandler.RETHROW_HANDLER);</span>
-<span class="source-line-no">190</span><span id="line-190">        fmConfig.setLogTemplateExceptions(false);</span>
-<span class="source-line-no">191</span><span id="line-191"></span>
-<span class="source-line-no">192</span><span id="line-192">        // Prepare component tree</span>
-<span class="source-line-no">193</span><span id="line-193">        attach(new NioDispatcher());</span>
-<span class="source-line-no">194</span><span id="line-194">        attach(new FileSystemWatcher(channel()));</span>
-<span class="source-line-no">195</span><span id="line-195">        attach(new ProcessManager(channel()));</span>
-<span class="source-line-no">196</span><span id="line-196">        attach(new SocketConnector(channel()));</span>
-<span class="source-line-no">197</span><span id="line-197">        attach(qemuMonitor = new QemuMonitor(channel()));</span>
-<span class="source-line-no">198</span><span id="line-198"></span>
-<span class="source-line-no">199</span><span id="line-199">        // Configuration store with file in /etc (default)</span>
-<span class="source-line-no">200</span><span id="line-200">        File config = new File(cmdLine.getOptionValue('C',</span>
-<span class="source-line-no">201</span><span id="line-201">            "/etc/vmrunner/config.yaml"));</span>
-<span class="source-line-no">202</span><span id="line-202">        attach(new YamlConfigurationStore(channel(), config, false));</span>
-<span class="source-line-no">203</span><span id="line-203">        fire(new WatchFile(config.toPath()));</span>
-<span class="source-line-no">204</span><span id="line-204">    }</span>
-<span class="source-line-no">205</span><span id="line-205"></span>
-<span class="source-line-no">206</span><span id="line-206">    /* default */ ObjectMapper mapper() {</span>
-<span class="source-line-no">207</span><span id="line-207">        return mapper;</span>
-<span class="source-line-no">208</span><span id="line-208">    }</span>
-<span class="source-line-no">209</span><span id="line-209"></span>
-<span class="source-line-no">210</span><span id="line-210">    /**</span>
-<span class="source-line-no">211</span><span id="line-211">     * On configuration update.</span>
-<span class="source-line-no">212</span><span id="line-212">     *</span>
-<span class="source-line-no">213</span><span id="line-213">     * @param event the event</span>
-<span class="source-line-no">214</span><span id="line-214">     */</span>
-<span class="source-line-no">215</span><span id="line-215">    @Handler</span>
-<span class="source-line-no">216</span><span id="line-216">    public void onConfigurationUpdate(ConfigurationUpdate event) {</span>
-<span class="source-line-no">217</span><span id="line-217">        event.structured(componentPath()).ifPresent(c -&gt; {</span>
-<span class="source-line-no">218</span><span id="line-218">            if (event instanceof InitialConfiguration) {</span>
-<span class="source-line-no">219</span><span id="line-219">                processInitialConfiguration(c);</span>
-<span class="source-line-no">220</span><span id="line-220">            }</span>
-<span class="source-line-no">221</span><span id="line-221">        });</span>
-<span class="source-line-no">222</span><span id="line-222">    }</span>
-<span class="source-line-no">223</span><span id="line-223"></span>
-<span class="source-line-no">224</span><span id="line-224">    private void processInitialConfiguration(</span>
-<span class="source-line-no">225</span><span id="line-225">            Map&lt;String, Object&gt; runnerConfiguration) {</span>
-<span class="source-line-no">226</span><span id="line-226">        try {</span>
-<span class="source-line-no">227</span><span id="line-227">            config = mapper.convertValue(runnerConfiguration,</span>
-<span class="source-line-no">228</span><span id="line-228">                Configuration.class);</span>
-<span class="source-line-no">229</span><span id="line-229">            if (!config.check()) {</span>
-<span class="source-line-no">230</span><span id="line-230">                // Invalid configuration, not used, problems already logged.</span>
-<span class="source-line-no">231</span><span id="line-231">                config = null;</span>
-<span class="source-line-no">232</span><span id="line-232">            }</span>
-<span class="source-line-no">233</span><span id="line-233"></span>
-<span class="source-line-no">234</span><span id="line-234">            // Prepare firmware files and add to config</span>
-<span class="source-line-no">235</span><span id="line-235">            setFirmwarePaths();</span>
-<span class="source-line-no">236</span><span id="line-236"></span>
-<span class="source-line-no">237</span><span id="line-237">            // Obtain more context data from template</span>
-<span class="source-line-no">238</span><span id="line-238">            var tplData = dataFromTemplate();</span>
-<span class="source-line-no">239</span><span id="line-239">            swtpmDefinition = Optional.ofNullable(tplData.get("swtpm"))</span>
-<span class="source-line-no">240</span><span id="line-240">                .map(d -&gt; new CommandDefinition("swtpm", d)).orElse(null);</span>
-<span class="source-line-no">241</span><span id="line-241">            qemuDefinition = Optional.ofNullable(tplData.get("qemu"))</span>
-<span class="source-line-no">242</span><span id="line-242">                .map(d -&gt; new CommandDefinition("qemu", d)).orElse(null);</span>
-<span class="source-line-no">243</span><span id="line-243"></span>
-<span class="source-line-no">244</span><span id="line-244">            // Forward some values to child components</span>
-<span class="source-line-no">245</span><span id="line-245">            qemuMonitor.configure(config.monitorSocket,</span>
-<span class="source-line-no">246</span><span id="line-246">                config.vm.powerdownTimeout);</span>
-<span class="source-line-no">247</span><span id="line-247">        } catch (IllegalArgumentException | IOException | TemplateException e) {</span>
-<span class="source-line-no">248</span><span id="line-248">            logger.log(Level.SEVERE, e, () -&gt; "Invalid configuration: "</span>
-<span class="source-line-no">249</span><span id="line-249">                + e.getMessage());</span>
-<span class="source-line-no">250</span><span id="line-250">            // Don't use default configuration</span>
-<span class="source-line-no">251</span><span id="line-251">            config = null;</span>
-<span class="source-line-no">252</span><span id="line-252">        }</span>
-<span class="source-line-no">253</span><span id="line-253">    }</span>
-<span class="source-line-no">254</span><span id="line-254"></span>
-<span class="source-line-no">255</span><span id="line-255">    @SuppressWarnings({ "PMD.CognitiveComplexity",</span>
-<span class="source-line-no">256</span><span id="line-256">        "PMD.DataflowAnomalyAnalysis" })</span>
-<span class="source-line-no">257</span><span id="line-257">    private void setFirmwarePaths() throws IOException {</span>
-<span class="source-line-no">258</span><span id="line-258">        // Get file for firmware ROM</span>
-<span class="source-line-no">259</span><span id="line-259">        JsonNode codePaths = defaults.path("firmware").path("rom");</span>
-<span class="source-line-no">260</span><span id="line-260">        for (var p : codePaths) {</span>
-<span class="source-line-no">261</span><span id="line-261">            var path = Path.of(p.asText());</span>
-<span class="source-line-no">262</span><span id="line-262">            if (Files.exists(path)) {</span>
-<span class="source-line-no">263</span><span id="line-263">                config.firmwareRom = path;</span>
-<span class="source-line-no">264</span><span id="line-264">                break;</span>
-<span class="source-line-no">265</span><span id="line-265">            }</span>
-<span class="source-line-no">266</span><span id="line-266">        }</span>
-<span class="source-line-no">267</span><span id="line-267">        // Get file for firmware flash, if necessary</span>
-<span class="source-line-no">268</span><span id="line-268">        config.firmwareFlash = Path.of(config.dataDir, FW_FLASH);</span>
-<span class="source-line-no">269</span><span id="line-269">        if (!Files.exists(config.firmwareFlash)) {</span>
-<span class="source-line-no">270</span><span id="line-270">            JsonNode srcPaths = null;</span>
-<span class="source-line-no">271</span><span id="line-271">            if (BOOT_MODE_UEFI.equals(config.vm.bootMode)) {</span>
-<span class="source-line-no">272</span><span id="line-272">                srcPaths = defaults.path("firmware").path("flash");</span>
-<span class="source-line-no">273</span><span id="line-273">            } else if (BOOT_MODE_SECURE.equals(config.vm.bootMode)) {</span>
-<span class="source-line-no">274</span><span id="line-274">                srcPaths = defaults.path("firmware")</span>
-<span class="source-line-no">275</span><span id="line-275">                    .path("secure").path("flash");</span>
-<span class="source-line-no">276</span><span id="line-276">            }</span>
-<span class="source-line-no">277</span><span id="line-277">            // If UEFI boot, srcPaths != null</span>
-<span class="source-line-no">278</span><span id="line-278">            if (srcPaths != null) {</span>
-<span class="source-line-no">279</span><span id="line-279">                for (var p : srcPaths) {</span>
-<span class="source-line-no">280</span><span id="line-280">                    var path = Path.of(p.asText());</span>
-<span class="source-line-no">281</span><span id="line-281">                    if (Files.exists(path)) {</span>
-<span class="source-line-no">282</span><span id="line-282">                        Files.copy(path, config.firmwareFlash);</span>
-<span class="source-line-no">283</span><span id="line-283">                        break;</span>
-<span class="source-line-no">284</span><span id="line-284">                    }</span>
-<span class="source-line-no">285</span><span id="line-285">                }</span>
-<span class="source-line-no">286</span><span id="line-286">            }</span>
-<span class="source-line-no">287</span><span id="line-287">        }</span>
-<span class="source-line-no">288</span><span id="line-288">    }</span>
-<span class="source-line-no">289</span><span id="line-289"></span>
-<span class="source-line-no">290</span><span id="line-290">    private JsonNode dataFromTemplate()</span>
-<span class="source-line-no">291</span><span id="line-291">            throws IOException, TemplateNotFoundException,</span>
-<span class="source-line-no">292</span><span id="line-292">            MalformedTemplateNameException, ParseException, TemplateException,</span>
-<span class="source-line-no">293</span><span id="line-293">            JsonProcessingException, JsonMappingException {</span>
-<span class="source-line-no">294</span><span id="line-294">        // Try saved template, copy if not there (or to be updated)</span>
-<span class="source-line-no">295</span><span id="line-295">        Path templatePath = Path.of(config.dataDir, SAVED_TEMPLATE);</span>
-<span class="source-line-no">296</span><span id="line-296">        if (!Files.isReadable(templatePath) || config.updateTemplate) {</span>
-<span class="source-line-no">297</span><span id="line-297">            // Get template</span>
-<span class="source-line-no">298</span><span id="line-298">            Path sourcePath = Paths.get(TEMPLATE_DIR).resolve(Optional</span>
-<span class="source-line-no">299</span><span id="line-299">                .ofNullable(config.template).orElse(DEFAULT_TEMPLATE));</span>
-<span class="source-line-no">300</span><span id="line-300">            Files.deleteIfExists(templatePath);</span>
-<span class="source-line-no">301</span><span id="line-301">            Files.copy(sourcePath, templatePath);</span>
-<span class="source-line-no">302</span><span id="line-302">        }</span>
-<span class="source-line-no">303</span><span id="line-303"></span>
-<span class="source-line-no">304</span><span id="line-304">        // Configure data model</span>
-<span class="source-line-no">305</span><span id="line-305">        var model = new HashMap&lt;String, Object&gt;();</span>
-<span class="source-line-no">306</span><span id="line-306">        model.put("runtimeDir", config.runtimeDir);</span>
-<span class="source-line-no">307</span><span id="line-307">        model.put("firmwareRom", config.firmwareRom.toString());</span>
-<span class="source-line-no">308</span><span id="line-308">        model.put("firmwareFlash", config.firmwareFlash.toString());</span>
-<span class="source-line-no">309</span><span id="line-309">        model.put("vm", config.vm);</span>
-<span class="source-line-no">310</span><span id="line-310"></span>
-<span class="source-line-no">311</span><span id="line-311">        // Combine template and data and parse result</span>
-<span class="source-line-no">312</span><span id="line-312">        // (tempting, but no need to use a pipe here)</span>
-<span class="source-line-no">313</span><span id="line-313">        var fmTemplate = fmConfig.getTemplate(templatePath.toString());</span>
-<span class="source-line-no">314</span><span id="line-314">        StringWriter out = new StringWriter();</span>
-<span class="source-line-no">315</span><span id="line-315">        fmTemplate.process(model, out);</span>
-<span class="source-line-no">316</span><span id="line-316">        return mapper.readValue(out.toString(), JsonNode.class);</span>
-<span class="source-line-no">317</span><span id="line-317">    }</span>
-<span class="source-line-no">318</span><span id="line-318"></span>
-<span class="source-line-no">319</span><span id="line-319">    /**</span>
-<span class="source-line-no">320</span><span id="line-320">     * Handle the start event.</span>
-<span class="source-line-no">321</span><span id="line-321">     *</span>
-<span class="source-line-no">322</span><span id="line-322">     * @param event the event</span>
-<span class="source-line-no">323</span><span id="line-323">     */</span>
-<span class="source-line-no">324</span><span id="line-324">    @Handler</span>
-<span class="source-line-no">325</span><span id="line-325">    public void onStart(Start event) {</span>
-<span class="source-line-no">326</span><span id="line-326">        try {</span>
-<span class="source-line-no">327</span><span id="line-327">            if (config == null) {</span>
-<span class="source-line-no">328</span><span id="line-328">                // Missing configuration, fail</span>
-<span class="source-line-no">329</span><span id="line-329">                fire(new Stop());</span>
-<span class="source-line-no">330</span><span id="line-330">                return;</span>
-<span class="source-line-no">331</span><span id="line-331">            }</span>
-<span class="source-line-no">332</span><span id="line-332"></span>
-<span class="source-line-no">333</span><span id="line-333">            // Store process id</span>
-<span class="source-line-no">334</span><span id="line-334">            try (var pidFile = Files.newBufferedWriter(</span>
-<span class="source-line-no">335</span><span id="line-335">                Path.of(config.runtimeDir, "runner.pid"))) {</span>
-<span class="source-line-no">336</span><span id="line-336">                pidFile.write(ProcessHandle.current().pid() + "\n");</span>
-<span class="source-line-no">337</span><span id="line-337">            }</span>
-<span class="source-line-no">338</span><span id="line-338"></span>
-<span class="source-line-no">339</span><span id="line-339">            // Files to watch for</span>
-<span class="source-line-no">340</span><span id="line-340">            Files.deleteIfExists(config.swtpmSocket);</span>
-<span class="source-line-no">341</span><span id="line-341">            fire(new WatchFile(config.swtpmSocket));</span>
-<span class="source-line-no">342</span><span id="line-342">        } catch (IOException e) {</span>
-<span class="source-line-no">343</span><span id="line-343">            logger.log(Level.SEVERE, e,</span>
-<span class="source-line-no">344</span><span id="line-344">                () -&gt; "Cannot start runner: " + e.getMessage());</span>
-<span class="source-line-no">345</span><span id="line-345">            fire(new Stop());</span>
-<span class="source-line-no">346</span><span id="line-346">        }</span>
-<span class="source-line-no">347</span><span id="line-347">    }</span>
-<span class="source-line-no">348</span><span id="line-348"></span>
-<span class="source-line-no">349</span><span id="line-349">    /**</span>
-<span class="source-line-no">350</span><span id="line-350">     * Handle the started event.</span>
-<span class="source-line-no">351</span><span id="line-351">     *</span>
-<span class="source-line-no">352</span><span id="line-352">     * @param event the event</span>
-<span class="source-line-no">353</span><span id="line-353">     */</span>
-<span class="source-line-no">354</span><span id="line-354">    @Handler</span>
-<span class="source-line-no">355</span><span id="line-355">    public void onStarted(Started event) {</span>
-<span class="source-line-no">356</span><span id="line-356">        state.set(State.STARTING);</span>
-<span class="source-line-no">357</span><span id="line-357">        // Start first process</span>
-<span class="source-line-no">358</span><span id="line-358">        if (config.vm.useTpm &amp;&amp; swtpmDefinition != null) {</span>
-<span class="source-line-no">359</span><span id="line-359">            startProcess(swtpmDefinition);</span>
-<span class="source-line-no">360</span><span id="line-360">            return;</span>
-<span class="source-line-no">361</span><span id="line-361">        }</span>
-<span class="source-line-no">362</span><span id="line-362">        startProcess(qemuDefinition);</span>
-<span class="source-line-no">363</span><span id="line-363">    }</span>
-<span class="source-line-no">364</span><span id="line-364"></span>
-<span class="source-line-no">365</span><span id="line-365">    private boolean startProcess(CommandDefinition toStart) {</span>
-<span class="source-line-no">366</span><span id="line-366">        logger.info(</span>
-<span class="source-line-no">367</span><span id="line-367">            () -&gt; "Starting process: " + String.join(" ", toStart.command));</span>
-<span class="source-line-no">368</span><span id="line-368">        fire(new StartProcess(toStart.command)</span>
-<span class="source-line-no">369</span><span id="line-369">            .setAssociated(CommandDefinition.class, toStart));</span>
-<span class="source-line-no">370</span><span id="line-370">        return true;</span>
-<span class="source-line-no">371</span><span id="line-371">    }</span>
-<span class="source-line-no">372</span><span id="line-372"></span>
-<span class="source-line-no">373</span><span id="line-373">    /**</span>
-<span class="source-line-no">374</span><span id="line-374">     * Watch for the creation of the swtpm socket and start the</span>
-<span class="source-line-no">375</span><span id="line-375">     * qemu process if it has been created.</span>
-<span class="source-line-no">376</span><span id="line-376">     *</span>
-<span class="source-line-no">377</span><span id="line-377">     * @param event the event</span>
-<span class="source-line-no">378</span><span id="line-378">     */</span>
-<span class="source-line-no">379</span><span id="line-379">    @Handler</span>
-<span class="source-line-no">380</span><span id="line-380">    public void onFileChanged(FileChanged event) {</span>
-<span class="source-line-no">381</span><span id="line-381">        if (event.change() == Kind.CREATED</span>
-<span class="source-line-no">382</span><span id="line-382">            &amp;&amp; event.path().equals(config.swtpmSocket)) {</span>
-<span class="source-line-no">383</span><span id="line-383">            // swtpm running, start qemu</span>
-<span class="source-line-no">384</span><span id="line-384">            startProcess(qemuDefinition);</span>
-<span class="source-line-no">385</span><span id="line-385">            return;</span>
-<span class="source-line-no">386</span><span id="line-386">        }</span>
-<span class="source-line-no">387</span><span id="line-387">    }</span>
-<span class="source-line-no">388</span><span id="line-388"></span>
-<span class="source-line-no">389</span><span id="line-389">    /**</span>
-<span class="source-line-no">390</span><span id="line-390">     * Associate required data with the process channel and register the</span>
-<span class="source-line-no">391</span><span id="line-391">     * channel in the context.</span>
-<span class="source-line-no">392</span><span id="line-392">     *</span>
-<span class="source-line-no">393</span><span id="line-393">     * @param event the event</span>
-<span class="source-line-no">394</span><span id="line-394">     * @param channel the channel</span>
-<span class="source-line-no">395</span><span id="line-395">     * @throws InterruptedException the interrupted exception</span>
-<span class="source-line-no">396</span><span id="line-396">     */</span>
-<span class="source-line-no">397</span><span id="line-397">    @Handler</span>
-<span class="source-line-no">398</span><span id="line-398">    @SuppressWarnings({ "PMD.SwitchStmtsShouldHaveDefault",</span>
-<span class="source-line-no">399</span><span id="line-399">        "PMD.TooFewBranchesForASwitchStatement" })</span>
-<span class="source-line-no">400</span><span id="line-400">    public void onProcessStarted(ProcessStarted event, ProcessChannel channel)</span>
-<span class="source-line-no">401</span><span id="line-401">            throws InterruptedException {</span>
-<span class="source-line-no">402</span><span id="line-402">        event.startEvent().associated(CommandDefinition.class)</span>
-<span class="source-line-no">403</span><span id="line-403">            .ifPresent(procDef -&gt; {</span>
-<span class="source-line-no">404</span><span id="line-404">                channel.setAssociated(CommandDefinition.class, procDef);</span>
-<span class="source-line-no">405</span><span id="line-405">                try (var pidFile = Files.newBufferedWriter(</span>
-<span class="source-line-no">406</span><span id="line-406">                    Path.of(config.runtimeDir, procDef.name + ".pid"))) {</span>
-<span class="source-line-no">407</span><span id="line-407">                    pidFile.write(channel.process().toHandle().pid() + "\n");</span>
-<span class="source-line-no">408</span><span id="line-408">                } catch (IOException e) {</span>
-<span class="source-line-no">409</span><span id="line-409">                    throw new UndeclaredThrowableException(e);</span>
-<span class="source-line-no">410</span><span id="line-410">                }</span>
-<span class="source-line-no">411</span><span id="line-411"></span>
-<span class="source-line-no">412</span><span id="line-412">                // Associate the channel with a line collector (one for</span>
-<span class="source-line-no">413</span><span id="line-413">                // each stream) for logging the process's output.</span>
-<span class="source-line-no">414</span><span id="line-414">                TypedIdKey.associate(channel, 1,</span>
-<span class="source-line-no">415</span><span id="line-415">                    new LineCollector().nativeCharset()</span>
-<span class="source-line-no">416</span><span id="line-416">                        .consumer(line -&gt; logger</span>
-<span class="source-line-no">417</span><span id="line-417">                            .info(() -&gt; procDef.name() + "(out): " + line)));</span>
-<span class="source-line-no">418</span><span id="line-418">                TypedIdKey.associate(channel, 2,</span>
-<span class="source-line-no">419</span><span id="line-419">                    new LineCollector().nativeCharset()</span>
-<span class="source-line-no">420</span><span id="line-420">                        .consumer(line -&gt; logger</span>
-<span class="source-line-no">421</span><span id="line-421">                            .info(() -&gt; procDef.name() + "(err): " + line)));</span>
-<span class="source-line-no">422</span><span id="line-422">            });</span>
-<span class="source-line-no">423</span><span id="line-423">    }</span>
-<span class="source-line-no">424</span><span id="line-424"></span>
-<span class="source-line-no">425</span><span id="line-425">    /**</span>
-<span class="source-line-no">426</span><span id="line-426">     * Forward output from the processes to to the log.</span>
-<span class="source-line-no">427</span><span id="line-427">     *</span>
-<span class="source-line-no">428</span><span id="line-428">     * @param event the event</span>
-<span class="source-line-no">429</span><span id="line-429">     * @param channel the channel</span>
-<span class="source-line-no">430</span><span id="line-430">     */</span>
-<span class="source-line-no">431</span><span id="line-431">    @Handler</span>
-<span class="source-line-no">432</span><span id="line-432">    public void onInput(Input&lt;?&gt; event, ProcessChannel channel) {</span>
-<span class="source-line-no">433</span><span id="line-433">        event.associated(FileDescriptor.class, Integer.class).ifPresent(</span>
-<span class="source-line-no">434</span><span id="line-434">            fd -&gt; TypedIdKey.associated(channel, LineCollector.class, fd)</span>
-<span class="source-line-no">435</span><span id="line-435">                .ifPresent(lc -&gt; lc.feed(event)));</span>
-<span class="source-line-no">436</span><span id="line-436">    }</span>
-<span class="source-line-no">437</span><span id="line-437"></span>
-<span class="source-line-no">438</span><span id="line-438">    /**</span>
-<span class="source-line-no">439</span><span id="line-439">     * On qemu monitor started.</span>
-<span class="source-line-no">440</span><span id="line-440">     *</span>
-<span class="source-line-no">441</span><span id="line-441">     * @param event the event</span>
-<span class="source-line-no">442</span><span id="line-442">     */</span>
-<span class="source-line-no">443</span><span id="line-443">    @Handler</span>
-<span class="source-line-no">444</span><span id="line-444">    public void onQemuMonitorOpened(QemuMonitorOpened event) {</span>
-<span class="source-line-no">445</span><span id="line-445">        state.set(State.RUNNING);</span>
-<span class="source-line-no">446</span><span id="line-446">    }</span>
-<span class="source-line-no">447</span><span id="line-447"></span>
-<span class="source-line-no">448</span><span id="line-448">    /**</span>
-<span class="source-line-no">449</span><span id="line-449">     * On process exited.</span>
-<span class="source-line-no">450</span><span id="line-450">     *</span>
-<span class="source-line-no">451</span><span id="line-451">     * @param event the event</span>
-<span class="source-line-no">452</span><span id="line-452">     * @param channel the channel</span>
-<span class="source-line-no">453</span><span id="line-453">     */</span>
-<span class="source-line-no">454</span><span id="line-454">    @Handler</span>
-<span class="source-line-no">455</span><span id="line-455">    public void onProcessExited(ProcessExited event, ProcessChannel channel) {</span>
-<span class="source-line-no">456</span><span id="line-456">        channel.associated(CommandDefinition.class).ifPresent(procDef -&gt; {</span>
-<span class="source-line-no">457</span><span id="line-457">            // No process(es) may exit during startup</span>
-<span class="source-line-no">458</span><span id="line-458">            if (state.get() == State.STARTING) {</span>
-<span class="source-line-no">459</span><span id="line-459">                logger.severe(() -&gt; "Process " + procDef.name</span>
-<span class="source-line-no">460</span><span id="line-460">                    + " has exited with value " + event.exitValue()</span>
-<span class="source-line-no">461</span><span id="line-461">                    + " during startup.");</span>
-<span class="source-line-no">462</span><span id="line-462">                fire(new Stop());</span>
-<span class="source-line-no">463</span><span id="line-463">                return;</span>
-<span class="source-line-no">464</span><span id="line-464">            }</span>
-<span class="source-line-no">465</span><span id="line-465">            if (procDef.equals(qemuDefinition)</span>
-<span class="source-line-no">466</span><span id="line-466">                &amp;&amp; state.get() == State.RUNNING) {</span>
-<span class="source-line-no">467</span><span id="line-467">                fire(new Stop());</span>
-<span class="source-line-no">468</span><span id="line-468">            }</span>
-<span class="source-line-no">469</span><span id="line-469">            logger.info(() -&gt; "Process " + procDef.name</span>
-<span class="source-line-no">470</span><span id="line-470">                + " has exited with value " + event.exitValue());</span>
-<span class="source-line-no">471</span><span id="line-471">        });</span>
-<span class="source-line-no">472</span><span id="line-472">    }</span>
-<span class="source-line-no">473</span><span id="line-473"></span>
-<span class="source-line-no">474</span><span id="line-474">    /**</span>
-<span class="source-line-no">475</span><span id="line-475">     * On stop.</span>
-<span class="source-line-no">476</span><span id="line-476">     *</span>
-<span class="source-line-no">477</span><span id="line-477">     * @param event the event</span>
-<span class="source-line-no">478</span><span id="line-478">     */</span>
-<span class="source-line-no">479</span><span id="line-479">    @Handler(priority = 10_000)</span>
-<span class="source-line-no">480</span><span id="line-480">    public void onStop(Stop event) {</span>
-<span class="source-line-no">481</span><span id="line-481">        state.set(State.TERMINATING);</span>
-<span class="source-line-no">482</span><span id="line-482">    }</span>
-<span class="source-line-no">483</span><span id="line-483"></span>
-<span class="source-line-no">484</span><span id="line-484">    /**</span>
-<span class="source-line-no">485</span><span id="line-485">     * The main method.</span>
-<span class="source-line-no">486</span><span id="line-486">     *</span>
-<span class="source-line-no">487</span><span id="line-487">     * @param args the command</span>
-<span class="source-line-no">488</span><span id="line-488">     */</span>
-<span class="source-line-no">489</span><span id="line-489">    public static void main(String[] args) {</span>
-<span class="source-line-no">490</span><span id="line-490">        // The Runner is the root component</span>
-<span class="source-line-no">491</span><span id="line-491">        try {</span>
-<span class="source-line-no">492</span><span id="line-492">            CommandLineParser parser = new DefaultParser();</span>
-<span class="source-line-no">493</span><span id="line-493">            // parse the command line arguments</span>
-<span class="source-line-no">494</span><span id="line-494">            final Options options = new Options();</span>
-<span class="source-line-no">495</span><span id="line-495">            options.addOption(new Option("C", "config", true, "The confi"</span>
-<span class="source-line-no">496</span><span id="line-496">                + "guration file (defaults to /etc/vmrunner/config.yaml)."));</span>
-<span class="source-line-no">497</span><span id="line-497">            CommandLine cmd = parser.parse(options, args);</span>
-<span class="source-line-no">498</span><span id="line-498">            var app = new Runner(cmd);</span>
-<span class="source-line-no">499</span><span id="line-499"></span>
-<span class="source-line-no">500</span><span id="line-500">            // Prepare Stop</span>
-<span class="source-line-no">501</span><span id="line-501">            Runtime.getRuntime().addShutdownHook(new Thread(() -&gt; {</span>
-<span class="source-line-no">502</span><span id="line-502">                try {</span>
-<span class="source-line-no">503</span><span id="line-503">                    app.fire(new Stop(), Channel.BROADCAST);</span>
-<span class="source-line-no">504</span><span id="line-504">                    Components.awaitExhaustion();</span>
-<span class="source-line-no">505</span><span id="line-505">                } catch (InterruptedException e) {</span>
-<span class="source-line-no">506</span><span id="line-506">                    // Cannot do anything about this.</span>
-<span class="source-line-no">507</span><span id="line-507">                }</span>
-<span class="source-line-no">508</span><span id="line-508">            }));</span>
-<span class="source-line-no">509</span><span id="line-509"></span>
-<span class="source-line-no">510</span><span id="line-510">            // Start the application</span>
-<span class="source-line-no">511</span><span id="line-511">            Components.start(app);</span>
-<span class="source-line-no">512</span><span id="line-512">        } catch (IOException | InterruptedException</span>
-<span class="source-line-no">513</span><span id="line-513">                | org.apache.commons.cli.ParseException e) {</span>
-<span class="source-line-no">514</span><span id="line-514">            Logger.getLogger(Runner.class.getName()).log(Level.SEVERE, e,</span>
-<span class="source-line-no">515</span><span id="line-515">                () -&gt; "Failed to start runner: " + e.getMessage());</span>
-<span class="source-line-no">516</span><span id="line-516">        }</span>
-<span class="source-line-no">517</span><span id="line-517">    }</span>
-<span class="source-line-no">518</span><span id="line-518">}</span>
+<span class="source-line-no">116</span><span id="line-116"> * state Terminating {</span>
+<span class="source-line-no">117</span><span id="line-117"> *     state terminate &lt;&lt;entryPoint&gt;&gt;</span>
+<span class="source-line-no">118</span><span id="line-118"> *     state qemuRunning &lt;&lt;choice&gt;&gt;</span>
+<span class="source-line-no">119</span><span id="line-119"> *     state terminated &lt;&lt;exitPoint&gt;&gt;</span>
+<span class="source-line-no">120</span><span id="line-120"> *     state "Powerdown qemu" as qemuPowerdown</span>
+<span class="source-line-no">121</span><span id="line-121"> *     state "Await process termination" as terminateProcesses</span>
+<span class="source-line-no">122</span><span id="line-122"> * </span>
+<span class="source-line-no">123</span><span id="line-123"> *     terminate --&gt; qemuRunning</span>
+<span class="source-line-no">124</span><span id="line-124"> *     qemuRunning --&gt; qemuPowerdown:[qemu monitor open]</span>
+<span class="source-line-no">125</span><span id="line-125"> *     qemuRunning --&gt; terminateProcesses:[else]</span>
+<span class="source-line-no">126</span><span id="line-126"> * </span>
+<span class="source-line-no">127</span><span id="line-127"> *     qemuPowerdown: entry/suspend Stop, send powerdown to qemu, start timer</span>
+<span class="source-line-no">128</span><span id="line-128"> *     </span>
+<span class="source-line-no">129</span><span id="line-129"> *     qemuPowerdown --&gt; terminateProcesses: Closed[for monitor]/resume Stop</span>
+<span class="source-line-no">130</span><span id="line-130"> *     qemuPowerdown --&gt; terminateProcesses: Timeout/resume Stop</span>
+<span class="source-line-no">131</span><span id="line-131"> *     terminateProcesses --&gt; terminated</span>
+<span class="source-line-no">132</span><span id="line-132"> * }</span>
+<span class="source-line-no">133</span><span id="line-133"> * </span>
+<span class="source-line-no">134</span><span id="line-134"> * Running --&gt; terminate: Stop</span>
+<span class="source-line-no">135</span><span id="line-135"> * Running --&gt; terminate: ProcessExited[process qemu]</span>
+<span class="source-line-no">136</span><span id="line-136"> * error --&gt; terminate</span>
+<span class="source-line-no">137</span><span id="line-137"> * StartingProcess --&gt; terminate: ProcessExited</span>
+<span class="source-line-no">138</span><span id="line-138"> * </span>
+<span class="source-line-no">139</span><span id="line-139"> * </span>
+<span class="source-line-no">140</span><span id="line-140"> * terminated --&gt; [*]</span>
+<span class="source-line-no">141</span><span id="line-141"> *</span>
+<span class="source-line-no">142</span><span id="line-142"> * @enduml</span>
+<span class="source-line-no">143</span><span id="line-143"> * </span>
+<span class="source-line-no">144</span><span id="line-144"> */</span>
+<span class="source-line-no">145</span><span id="line-145">@SuppressWarnings("PMD.ExcessiveImports")</span>
+<span class="source-line-no">146</span><span id="line-146">public class Runner extends Component {</span>
+<span class="source-line-no">147</span><span id="line-147"></span>
+<span class="source-line-no">148</span><span id="line-148">    private static final String TEMPLATE_DIR = "/usr/share/vmrunner/templates";</span>
+<span class="source-line-no">149</span><span id="line-149">    private static final String DEFAULT_TEMPLATE</span>
+<span class="source-line-no">150</span><span id="line-150">        = "Standard-VM-latest.ftl.yaml";</span>
+<span class="source-line-no">151</span><span id="line-151">    private static final String SAVED_TEMPLATE = "VM.ftl.yaml";</span>
+<span class="source-line-no">152</span><span id="line-152">    private static final String FW_VARS = "fw-vars.fd";</span>
+<span class="source-line-no">153</span><span id="line-153"></span>
+<span class="source-line-no">154</span><span id="line-154">    private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());</span>
+<span class="source-line-no">155</span><span id="line-155">    private final JsonNode defaults;</span>
+<span class="source-line-no">156</span><span id="line-156">    @SuppressWarnings("PMD.UseConcurrentHashMap")</span>
+<span class="source-line-no">157</span><span id="line-157">    private Configuration config = new Configuration();</span>
+<span class="source-line-no">158</span><span id="line-158">    private final freemarker.template.Configuration fmConfig;</span>
+<span class="source-line-no">159</span><span id="line-159">    private final StateController state;</span>
+<span class="source-line-no">160</span><span id="line-160">    private CommandDefinition swtpmDefinition;</span>
+<span class="source-line-no">161</span><span id="line-161">    private CommandDefinition qemuDefinition;</span>
+<span class="source-line-no">162</span><span id="line-162">    private final QemuMonitor qemuMonitor;</span>
+<span class="source-line-no">163</span><span id="line-163"></span>
+<span class="source-line-no">164</span><span id="line-164">    /**</span>
+<span class="source-line-no">165</span><span id="line-165">     * Instantiates a new runner.</span>
+<span class="source-line-no">166</span><span id="line-166">     * @param cmdLine </span>
+<span class="source-line-no">167</span><span id="line-167">     *</span>
+<span class="source-line-no">168</span><span id="line-168">     * @throws IOException Signals that an I/O exception has occurred.</span>
+<span class="source-line-no">169</span><span id="line-169">     */</span>
+<span class="source-line-no">170</span><span id="line-170">    public Runner(CommandLine cmdLine) throws IOException {</span>
+<span class="source-line-no">171</span><span id="line-171">        state = new StateController(this);</span>
+<span class="source-line-no">172</span><span id="line-172">        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,</span>
+<span class="source-line-no">173</span><span id="line-173">            false);</span>
+<span class="source-line-no">174</span><span id="line-174"></span>
+<span class="source-line-no">175</span><span id="line-175">        // Get defaults</span>
+<span class="source-line-no">176</span><span id="line-176">        defaults = mapper.readValue(</span>
+<span class="source-line-no">177</span><span id="line-177">            Runner.class.getResourceAsStream("defaults.yaml"), JsonNode.class);</span>
+<span class="source-line-no">178</span><span id="line-178"></span>
+<span class="source-line-no">179</span><span id="line-179">        // Configure freemarker library</span>
+<span class="source-line-no">180</span><span id="line-180">        fmConfig = new freemarker.template.Configuration(</span>
+<span class="source-line-no">181</span><span id="line-181">            freemarker.template.Configuration.VERSION_2_3_32);</span>
+<span class="source-line-no">182</span><span id="line-182">        fmConfig.setDirectoryForTemplateLoading(new File("/"));</span>
+<span class="source-line-no">183</span><span id="line-183">        fmConfig.setDefaultEncoding("utf-8");</span>
+<span class="source-line-no">184</span><span id="line-184">        fmConfig.setObjectWrapper(new ExtendedObjectWrapper(</span>
+<span class="source-line-no">185</span><span id="line-185">            fmConfig.getIncompatibleImprovements()));</span>
+<span class="source-line-no">186</span><span id="line-186">        fmConfig.setTemplateExceptionHandler(</span>
+<span class="source-line-no">187</span><span id="line-187">            TemplateExceptionHandler.RETHROW_HANDLER);</span>
+<span class="source-line-no">188</span><span id="line-188">        fmConfig.setLogTemplateExceptions(false);</span>
+<span class="source-line-no">189</span><span id="line-189"></span>
+<span class="source-line-no">190</span><span id="line-190">        // Prepare component tree</span>
+<span class="source-line-no">191</span><span id="line-191">        attach(new NioDispatcher());</span>
+<span class="source-line-no">192</span><span id="line-192">        attach(new FileSystemWatcher(channel()));</span>
+<span class="source-line-no">193</span><span id="line-193">        attach(new ProcessManager(channel()));</span>
+<span class="source-line-no">194</span><span id="line-194">        attach(new SocketConnector(channel()));</span>
+<span class="source-line-no">195</span><span id="line-195">        attach(qemuMonitor = new QemuMonitor(channel()));</span>
+<span class="source-line-no">196</span><span id="line-196"></span>
+<span class="source-line-no">197</span><span id="line-197">        // Configuration store with file in /etc (default)</span>
+<span class="source-line-no">198</span><span id="line-198">        File config = new File(cmdLine.getOptionValue('C',</span>
+<span class="source-line-no">199</span><span id="line-199">            "/etc/vmrunner/config.yaml"));</span>
+<span class="source-line-no">200</span><span id="line-200">        attach(new YamlConfigurationStore(channel(), config, false));</span>
+<span class="source-line-no">201</span><span id="line-201">        fire(new WatchFile(config.toPath()));</span>
+<span class="source-line-no">202</span><span id="line-202">    }</span>
+<span class="source-line-no">203</span><span id="line-203"></span>
+<span class="source-line-no">204</span><span id="line-204">    /* default */ ObjectMapper mapper() {</span>
+<span class="source-line-no">205</span><span id="line-205">        return mapper;</span>
+<span class="source-line-no">206</span><span id="line-206">    }</span>
+<span class="source-line-no">207</span><span id="line-207"></span>
+<span class="source-line-no">208</span><span id="line-208">    /**</span>
+<span class="source-line-no">209</span><span id="line-209">     * On configuration update.</span>
+<span class="source-line-no">210</span><span id="line-210">     *</span>
+<span class="source-line-no">211</span><span id="line-211">     * @param event the event</span>
+<span class="source-line-no">212</span><span id="line-212">     */</span>
+<span class="source-line-no">213</span><span id="line-213">    @Handler</span>
+<span class="source-line-no">214</span><span id="line-214">    public void onConfigurationUpdate(ConfigurationUpdate event) {</span>
+<span class="source-line-no">215</span><span id="line-215">        event.structured(componentPath()).ifPresent(c -&gt; {</span>
+<span class="source-line-no">216</span><span id="line-216">            if (event instanceof InitialConfiguration) {</span>
+<span class="source-line-no">217</span><span id="line-217">                processInitialConfiguration(c);</span>
+<span class="source-line-no">218</span><span id="line-218">            }</span>
+<span class="source-line-no">219</span><span id="line-219">        });</span>
+<span class="source-line-no">220</span><span id="line-220">    }</span>
+<span class="source-line-no">221</span><span id="line-221"></span>
+<span class="source-line-no">222</span><span id="line-222">    private void processInitialConfiguration(</span>
+<span class="source-line-no">223</span><span id="line-223">            Map&lt;String, Object&gt; runnerConfiguration) {</span>
+<span class="source-line-no">224</span><span id="line-224">        try {</span>
+<span class="source-line-no">225</span><span id="line-225">            config = mapper.convertValue(runnerConfiguration,</span>
+<span class="source-line-no">226</span><span id="line-226">                Configuration.class);</span>
+<span class="source-line-no">227</span><span id="line-227">            if (!config.check()) {</span>
+<span class="source-line-no">228</span><span id="line-228">                // Invalid configuration, not used, problems already logged.</span>
+<span class="source-line-no">229</span><span id="line-229">                config = null;</span>
+<span class="source-line-no">230</span><span id="line-230">            }</span>
+<span class="source-line-no">231</span><span id="line-231"></span>
+<span class="source-line-no">232</span><span id="line-232">            // Prepare firmware files and add to config</span>
+<span class="source-line-no">233</span><span id="line-233">            setFirmwarePaths();</span>
+<span class="source-line-no">234</span><span id="line-234"></span>
+<span class="source-line-no">235</span><span id="line-235">            // Obtain more context data from template</span>
+<span class="source-line-no">236</span><span id="line-236">            var tplData = dataFromTemplate();</span>
+<span class="source-line-no">237</span><span id="line-237">            swtpmDefinition = Optional.ofNullable(tplData.get("swtpm"))</span>
+<span class="source-line-no">238</span><span id="line-238">                .map(d -&gt; new CommandDefinition("swtpm", d)).orElse(null);</span>
+<span class="source-line-no">239</span><span id="line-239">            qemuDefinition = Optional.ofNullable(tplData.get("qemu"))</span>
+<span class="source-line-no">240</span><span id="line-240">                .map(d -&gt; new CommandDefinition("qemu", d)).orElse(null);</span>
+<span class="source-line-no">241</span><span id="line-241"></span>
+<span class="source-line-no">242</span><span id="line-242">            // Forward some values to child components</span>
+<span class="source-line-no">243</span><span id="line-243">            qemuMonitor.configure(config.monitorSocket,</span>
+<span class="source-line-no">244</span><span id="line-244">                config.vm.powerdownTimeout);</span>
+<span class="source-line-no">245</span><span id="line-245">        } catch (IllegalArgumentException | IOException | TemplateException e) {</span>
+<span class="source-line-no">246</span><span id="line-246">            logger.log(Level.SEVERE, e, () -&gt; "Invalid configuration: "</span>
+<span class="source-line-no">247</span><span id="line-247">                + e.getMessage());</span>
+<span class="source-line-no">248</span><span id="line-248">            // Don't use default configuration</span>
+<span class="source-line-no">249</span><span id="line-249">            config = null;</span>
+<span class="source-line-no">250</span><span id="line-250">        }</span>
+<span class="source-line-no">251</span><span id="line-251">    }</span>
+<span class="source-line-no">252</span><span id="line-252"></span>
+<span class="source-line-no">253</span><span id="line-253">    @SuppressWarnings({ "PMD.CognitiveComplexity",</span>
+<span class="source-line-no">254</span><span id="line-254">        "PMD.DataflowAnomalyAnalysis" })</span>
+<span class="source-line-no">255</span><span id="line-255">    private void setFirmwarePaths() throws IOException {</span>
+<span class="source-line-no">256</span><span id="line-256">        JsonNode firmware = defaults.path("firmware").path(config.vm.firmware);</span>
+<span class="source-line-no">257</span><span id="line-257">        // Get file for firmware ROM</span>
+<span class="source-line-no">258</span><span id="line-258">        JsonNode codePaths = firmware.path("rom");</span>
+<span class="source-line-no">259</span><span id="line-259">        for (var p : codePaths) {</span>
+<span class="source-line-no">260</span><span id="line-260">            var path = Path.of(p.asText());</span>
+<span class="source-line-no">261</span><span id="line-261">            if (Files.exists(path)) {</span>
+<span class="source-line-no">262</span><span id="line-262">                config.firmwareRom = path;</span>
+<span class="source-line-no">263</span><span id="line-263">                break;</span>
+<span class="source-line-no">264</span><span id="line-264">            }</span>
+<span class="source-line-no">265</span><span id="line-265">        }</span>
+<span class="source-line-no">266</span><span id="line-266">        // Get file for firmware vars, if necessary</span>
+<span class="source-line-no">267</span><span id="line-267">        config.firmwareVars = Path.of(config.dataDir, FW_VARS);</span>
+<span class="source-line-no">268</span><span id="line-268">        if (!Files.exists(config.firmwareVars)) {</span>
+<span class="source-line-no">269</span><span id="line-269">            for (var p : firmware.path("vars")) {</span>
+<span class="source-line-no">270</span><span id="line-270">                var path = Path.of(p.asText());</span>
+<span class="source-line-no">271</span><span id="line-271">                if (Files.exists(path)) {</span>
+<span class="source-line-no">272</span><span id="line-272">                    Files.copy(path, config.firmwareVars);</span>
+<span class="source-line-no">273</span><span id="line-273">                    break;</span>
+<span class="source-line-no">274</span><span id="line-274">                }</span>
+<span class="source-line-no">275</span><span id="line-275">            }</span>
+<span class="source-line-no">276</span><span id="line-276">        }</span>
+<span class="source-line-no">277</span><span id="line-277">    }</span>
+<span class="source-line-no">278</span><span id="line-278"></span>
+<span class="source-line-no">279</span><span id="line-279">    private JsonNode dataFromTemplate()</span>
+<span class="source-line-no">280</span><span id="line-280">            throws IOException, TemplateNotFoundException,</span>
+<span class="source-line-no">281</span><span id="line-281">            MalformedTemplateNameException, ParseException, TemplateException,</span>
+<span class="source-line-no">282</span><span id="line-282">            JsonProcessingException, JsonMappingException {</span>
+<span class="source-line-no">283</span><span id="line-283">        // Try saved template, copy if not there (or to be updated)</span>
+<span class="source-line-no">284</span><span id="line-284">        Path templatePath = Path.of(config.dataDir, SAVED_TEMPLATE);</span>
+<span class="source-line-no">285</span><span id="line-285">        if (!Files.isReadable(templatePath) || config.updateTemplate) {</span>
+<span class="source-line-no">286</span><span id="line-286">            // Get template</span>
+<span class="source-line-no">287</span><span id="line-287">            Path sourcePath = Paths.get(TEMPLATE_DIR).resolve(Optional</span>
+<span class="source-line-no">288</span><span id="line-288">                .ofNullable(config.template).orElse(DEFAULT_TEMPLATE));</span>
+<span class="source-line-no">289</span><span id="line-289">            Files.deleteIfExists(templatePath);</span>
+<span class="source-line-no">290</span><span id="line-290">            Files.copy(sourcePath, templatePath);</span>
+<span class="source-line-no">291</span><span id="line-291">        }</span>
+<span class="source-line-no">292</span><span id="line-292"></span>
+<span class="source-line-no">293</span><span id="line-293">        // Configure data model</span>
+<span class="source-line-no">294</span><span id="line-294">        var model = new HashMap&lt;String, Object&gt;();</span>
+<span class="source-line-no">295</span><span id="line-295">        model.put("runtimeDir", config.runtimeDir);</span>
+<span class="source-line-no">296</span><span id="line-296">        model.put("firmwareRom", Optional.ofNullable(config.firmwareRom)</span>
+<span class="source-line-no">297</span><span id="line-297">            .map(Object::toString).orElse(null));</span>
+<span class="source-line-no">298</span><span id="line-298">        model.put("firmwareVars", Optional.ofNullable(config.firmwareVars)</span>
+<span class="source-line-no">299</span><span id="line-299">            .map(Object::toString).orElse(null));</span>
+<span class="source-line-no">300</span><span id="line-300">        model.put("vm", config.vm);</span>
+<span class="source-line-no">301</span><span id="line-301"></span>
+<span class="source-line-no">302</span><span id="line-302">        // Combine template and data and parse result</span>
+<span class="source-line-no">303</span><span id="line-303">        // (tempting, but no need to use a pipe here)</span>
+<span class="source-line-no">304</span><span id="line-304">        var fmTemplate = fmConfig.getTemplate(templatePath.toString());</span>
+<span class="source-line-no">305</span><span id="line-305">        StringWriter out = new StringWriter();</span>
+<span class="source-line-no">306</span><span id="line-306">        fmTemplate.process(model, out);</span>
+<span class="source-line-no">307</span><span id="line-307">        return mapper.readValue(out.toString(), JsonNode.class);</span>
+<span class="source-line-no">308</span><span id="line-308">    }</span>
+<span class="source-line-no">309</span><span id="line-309"></span>
+<span class="source-line-no">310</span><span id="line-310">    /**</span>
+<span class="source-line-no">311</span><span id="line-311">     * Handle the start event.</span>
+<span class="source-line-no">312</span><span id="line-312">     *</span>
+<span class="source-line-no">313</span><span id="line-313">     * @param event the event</span>
+<span class="source-line-no">314</span><span id="line-314">     */</span>
+<span class="source-line-no">315</span><span id="line-315">    @Handler</span>
+<span class="source-line-no">316</span><span id="line-316">    public void onStart(Start event) {</span>
+<span class="source-line-no">317</span><span id="line-317">        try {</span>
+<span class="source-line-no">318</span><span id="line-318">            if (config == null) {</span>
+<span class="source-line-no">319</span><span id="line-319">                // Missing configuration, fail</span>
+<span class="source-line-no">320</span><span id="line-320">                fire(new Stop());</span>
+<span class="source-line-no">321</span><span id="line-321">                return;</span>
+<span class="source-line-no">322</span><span id="line-322">            }</span>
+<span class="source-line-no">323</span><span id="line-323"></span>
+<span class="source-line-no">324</span><span id="line-324">            // Store process id</span>
+<span class="source-line-no">325</span><span id="line-325">            try (var pidFile = Files.newBufferedWriter(</span>
+<span class="source-line-no">326</span><span id="line-326">                Path.of(config.runtimeDir, "runner.pid"))) {</span>
+<span class="source-line-no">327</span><span id="line-327">                pidFile.write(ProcessHandle.current().pid() + "\n");</span>
+<span class="source-line-no">328</span><span id="line-328">            }</span>
+<span class="source-line-no">329</span><span id="line-329"></span>
+<span class="source-line-no">330</span><span id="line-330">            // Files to watch for</span>
+<span class="source-line-no">331</span><span id="line-331">            Files.deleteIfExists(config.swtpmSocket);</span>
+<span class="source-line-no">332</span><span id="line-332">            fire(new WatchFile(config.swtpmSocket));</span>
+<span class="source-line-no">333</span><span id="line-333">        } catch (IOException e) {</span>
+<span class="source-line-no">334</span><span id="line-334">            logger.log(Level.SEVERE, e,</span>
+<span class="source-line-no">335</span><span id="line-335">                () -&gt; "Cannot start runner: " + e.getMessage());</span>
+<span class="source-line-no">336</span><span id="line-336">            fire(new Stop());</span>
+<span class="source-line-no">337</span><span id="line-337">        }</span>
+<span class="source-line-no">338</span><span id="line-338">    }</span>
+<span class="source-line-no">339</span><span id="line-339"></span>
+<span class="source-line-no">340</span><span id="line-340">    /**</span>
+<span class="source-line-no">341</span><span id="line-341">     * Handle the started event.</span>
+<span class="source-line-no">342</span><span id="line-342">     *</span>
+<span class="source-line-no">343</span><span id="line-343">     * @param event the event</span>
+<span class="source-line-no">344</span><span id="line-344">     */</span>
+<span class="source-line-no">345</span><span id="line-345">    @Handler</span>
+<span class="source-line-no">346</span><span id="line-346">    public void onStarted(Started event) {</span>
+<span class="source-line-no">347</span><span id="line-347">        state.set(State.STARTING);</span>
+<span class="source-line-no">348</span><span id="line-348">        // Start first process</span>
+<span class="source-line-no">349</span><span id="line-349">        if (config.vm.useTpm &amp;&amp; swtpmDefinition != null) {</span>
+<span class="source-line-no">350</span><span id="line-350">            startProcess(swtpmDefinition);</span>
+<span class="source-line-no">351</span><span id="line-351">            return;</span>
+<span class="source-line-no">352</span><span id="line-352">        }</span>
+<span class="source-line-no">353</span><span id="line-353">        startProcess(qemuDefinition);</span>
+<span class="source-line-no">354</span><span id="line-354">    }</span>
+<span class="source-line-no">355</span><span id="line-355"></span>
+<span class="source-line-no">356</span><span id="line-356">    private boolean startProcess(CommandDefinition toStart) {</span>
+<span class="source-line-no">357</span><span id="line-357">        logger.info(</span>
+<span class="source-line-no">358</span><span id="line-358">            () -&gt; "Starting process: " + String.join(" ", toStart.command));</span>
+<span class="source-line-no">359</span><span id="line-359">        fire(new StartProcess(toStart.command)</span>
+<span class="source-line-no">360</span><span id="line-360">            .setAssociated(CommandDefinition.class, toStart));</span>
+<span class="source-line-no">361</span><span id="line-361">        return true;</span>
+<span class="source-line-no">362</span><span id="line-362">    }</span>
+<span class="source-line-no">363</span><span id="line-363"></span>
+<span class="source-line-no">364</span><span id="line-364">    /**</span>
+<span class="source-line-no">365</span><span id="line-365">     * Watch for the creation of the swtpm socket and start the</span>
+<span class="source-line-no">366</span><span id="line-366">     * qemu process if it has been created.</span>
+<span class="source-line-no">367</span><span id="line-367">     *</span>
+<span class="source-line-no">368</span><span id="line-368">     * @param event the event</span>
+<span class="source-line-no">369</span><span id="line-369">     */</span>
+<span class="source-line-no">370</span><span id="line-370">    @Handler</span>
+<span class="source-line-no">371</span><span id="line-371">    public void onFileChanged(FileChanged event) {</span>
+<span class="source-line-no">372</span><span id="line-372">        if (event.change() == Kind.CREATED</span>
+<span class="source-line-no">373</span><span id="line-373">            &amp;&amp; event.path().equals(config.swtpmSocket)) {</span>
+<span class="source-line-no">374</span><span id="line-374">            // swtpm running, start qemu</span>
+<span class="source-line-no">375</span><span id="line-375">            startProcess(qemuDefinition);</span>
+<span class="source-line-no">376</span><span id="line-376">            return;</span>
+<span class="source-line-no">377</span><span id="line-377">        }</span>
+<span class="source-line-no">378</span><span id="line-378">    }</span>
+<span class="source-line-no">379</span><span id="line-379"></span>
+<span class="source-line-no">380</span><span id="line-380">    /**</span>
+<span class="source-line-no">381</span><span id="line-381">     * Associate required data with the process channel and register the</span>
+<span class="source-line-no">382</span><span id="line-382">     * channel in the context.</span>
+<span class="source-line-no">383</span><span id="line-383">     *</span>
+<span class="source-line-no">384</span><span id="line-384">     * @param event the event</span>
+<span class="source-line-no">385</span><span id="line-385">     * @param channel the channel</span>
+<span class="source-line-no">386</span><span id="line-386">     * @throws InterruptedException the interrupted exception</span>
+<span class="source-line-no">387</span><span id="line-387">     */</span>
+<span class="source-line-no">388</span><span id="line-388">    @Handler</span>
+<span class="source-line-no">389</span><span id="line-389">    @SuppressWarnings({ "PMD.SwitchStmtsShouldHaveDefault",</span>
+<span class="source-line-no">390</span><span id="line-390">        "PMD.TooFewBranchesForASwitchStatement" })</span>
+<span class="source-line-no">391</span><span id="line-391">    public void onProcessStarted(ProcessStarted event, ProcessChannel channel)</span>
+<span class="source-line-no">392</span><span id="line-392">            throws InterruptedException {</span>
+<span class="source-line-no">393</span><span id="line-393">        event.startEvent().associated(CommandDefinition.class)</span>
+<span class="source-line-no">394</span><span id="line-394">            .ifPresent(procDef -&gt; {</span>
+<span class="source-line-no">395</span><span id="line-395">                channel.setAssociated(CommandDefinition.class, procDef);</span>
+<span class="source-line-no">396</span><span id="line-396">                try (var pidFile = Files.newBufferedWriter(</span>
+<span class="source-line-no">397</span><span id="line-397">                    Path.of(config.runtimeDir, procDef.name + ".pid"))) {</span>
+<span class="source-line-no">398</span><span id="line-398">                    pidFile.write(channel.process().toHandle().pid() + "\n");</span>
+<span class="source-line-no">399</span><span id="line-399">                } catch (IOException e) {</span>
+<span class="source-line-no">400</span><span id="line-400">                    throw new UndeclaredThrowableException(e);</span>
+<span class="source-line-no">401</span><span id="line-401">                }</span>
+<span class="source-line-no">402</span><span id="line-402"></span>
+<span class="source-line-no">403</span><span id="line-403">                // Associate the channel with a line collector (one for</span>
+<span class="source-line-no">404</span><span id="line-404">                // each stream) for logging the process's output.</span>
+<span class="source-line-no">405</span><span id="line-405">                TypedIdKey.associate(channel, 1,</span>
+<span class="source-line-no">406</span><span id="line-406">                    new LineCollector().nativeCharset()</span>
+<span class="source-line-no">407</span><span id="line-407">                        .consumer(line -&gt; logger</span>
+<span class="source-line-no">408</span><span id="line-408">                            .info(() -&gt; procDef.name() + "(out): " + line)));</span>
+<span class="source-line-no">409</span><span id="line-409">                TypedIdKey.associate(channel, 2,</span>
+<span class="source-line-no">410</span><span id="line-410">                    new LineCollector().nativeCharset()</span>
+<span class="source-line-no">411</span><span id="line-411">                        .consumer(line -&gt; logger</span>
+<span class="source-line-no">412</span><span id="line-412">                            .info(() -&gt; procDef.name() + "(err): " + line)));</span>
+<span class="source-line-no">413</span><span id="line-413">            });</span>
+<span class="source-line-no">414</span><span id="line-414">    }</span>
+<span class="source-line-no">415</span><span id="line-415"></span>
+<span class="source-line-no">416</span><span id="line-416">    /**</span>
+<span class="source-line-no">417</span><span id="line-417">     * Forward output from the processes to to the log.</span>
+<span class="source-line-no">418</span><span id="line-418">     *</span>
+<span class="source-line-no">419</span><span id="line-419">     * @param event the event</span>
+<span class="source-line-no">420</span><span id="line-420">     * @param channel the channel</span>
+<span class="source-line-no">421</span><span id="line-421">     */</span>
+<span class="source-line-no">422</span><span id="line-422">    @Handler</span>
+<span class="source-line-no">423</span><span id="line-423">    public void onInput(Input&lt;?&gt; event, ProcessChannel channel) {</span>
+<span class="source-line-no">424</span><span id="line-424">        event.associated(FileDescriptor.class, Integer.class).ifPresent(</span>
+<span class="source-line-no">425</span><span id="line-425">            fd -&gt; TypedIdKey.associated(channel, LineCollector.class, fd)</span>
+<span class="source-line-no">426</span><span id="line-426">                .ifPresent(lc -&gt; lc.feed(event)));</span>
+<span class="source-line-no">427</span><span id="line-427">    }</span>
+<span class="source-line-no">428</span><span id="line-428"></span>
+<span class="source-line-no">429</span><span id="line-429">    /**</span>
+<span class="source-line-no">430</span><span id="line-430">     * On qemu monitor started.</span>
+<span class="source-line-no">431</span><span id="line-431">     *</span>
+<span class="source-line-no">432</span><span id="line-432">     * @param event the event</span>
+<span class="source-line-no">433</span><span id="line-433">     */</span>
+<span class="source-line-no">434</span><span id="line-434">    @Handler</span>
+<span class="source-line-no">435</span><span id="line-435">    public void onQemuMonitorOpened(QemuMonitorOpened event) {</span>
+<span class="source-line-no">436</span><span id="line-436">        state.set(State.RUNNING);</span>
+<span class="source-line-no">437</span><span id="line-437">    }</span>
+<span class="source-line-no">438</span><span id="line-438"></span>
+<span class="source-line-no">439</span><span id="line-439">    /**</span>
+<span class="source-line-no">440</span><span id="line-440">     * On process exited.</span>
+<span class="source-line-no">441</span><span id="line-441">     *</span>
+<span class="source-line-no">442</span><span id="line-442">     * @param event the event</span>
+<span class="source-line-no">443</span><span id="line-443">     * @param channel the channel</span>
+<span class="source-line-no">444</span><span id="line-444">     */</span>
+<span class="source-line-no">445</span><span id="line-445">    @Handler</span>
+<span class="source-line-no">446</span><span id="line-446">    public void onProcessExited(ProcessExited event, ProcessChannel channel) {</span>
+<span class="source-line-no">447</span><span id="line-447">        channel.associated(CommandDefinition.class).ifPresent(procDef -&gt; {</span>
+<span class="source-line-no">448</span><span id="line-448">            // No process(es) may exit during startup</span>
+<span class="source-line-no">449</span><span id="line-449">            if (state.get() == State.STARTING) {</span>
+<span class="source-line-no">450</span><span id="line-450">                logger.severe(() -&gt; "Process " + procDef.name</span>
+<span class="source-line-no">451</span><span id="line-451">                    + " has exited with value " + event.exitValue()</span>
+<span class="source-line-no">452</span><span id="line-452">                    + " during startup.");</span>
+<span class="source-line-no">453</span><span id="line-453">                fire(new Stop());</span>
+<span class="source-line-no">454</span><span id="line-454">                return;</span>
+<span class="source-line-no">455</span><span id="line-455">            }</span>
+<span class="source-line-no">456</span><span id="line-456">            if (procDef.equals(qemuDefinition)</span>
+<span class="source-line-no">457</span><span id="line-457">                &amp;&amp; state.get() == State.RUNNING) {</span>
+<span class="source-line-no">458</span><span id="line-458">                fire(new Stop());</span>
+<span class="source-line-no">459</span><span id="line-459">            }</span>
+<span class="source-line-no">460</span><span id="line-460">            logger.info(() -&gt; "Process " + procDef.name</span>
+<span class="source-line-no">461</span><span id="line-461">                + " has exited with value " + event.exitValue());</span>
+<span class="source-line-no">462</span><span id="line-462">        });</span>
+<span class="source-line-no">463</span><span id="line-463">    }</span>
+<span class="source-line-no">464</span><span id="line-464"></span>
+<span class="source-line-no">465</span><span id="line-465">    /**</span>
+<span class="source-line-no">466</span><span id="line-466">     * On stop.</span>
+<span class="source-line-no">467</span><span id="line-467">     *</span>
+<span class="source-line-no">468</span><span id="line-468">     * @param event the event</span>
+<span class="source-line-no">469</span><span id="line-469">     */</span>
+<span class="source-line-no">470</span><span id="line-470">    @Handler(priority = 10_000)</span>
+<span class="source-line-no">471</span><span id="line-471">    public void onStop(Stop event) {</span>
+<span class="source-line-no">472</span><span id="line-472">        state.set(State.TERMINATING);</span>
+<span class="source-line-no">473</span><span id="line-473">    }</span>
+<span class="source-line-no">474</span><span id="line-474"></span>
+<span class="source-line-no">475</span><span id="line-475">    /**</span>
+<span class="source-line-no">476</span><span id="line-476">     * The main method.</span>
+<span class="source-line-no">477</span><span id="line-477">     *</span>
+<span class="source-line-no">478</span><span id="line-478">     * @param args the command</span>
+<span class="source-line-no">479</span><span id="line-479">     */</span>
+<span class="source-line-no">480</span><span id="line-480">    public static void main(String[] args) {</span>
+<span class="source-line-no">481</span><span id="line-481">        // The Runner is the root component</span>
+<span class="source-line-no">482</span><span id="line-482">        try {</span>
+<span class="source-line-no">483</span><span id="line-483">            CommandLineParser parser = new DefaultParser();</span>
+<span class="source-line-no">484</span><span id="line-484">            // parse the command line arguments</span>
+<span class="source-line-no">485</span><span id="line-485">            final Options options = new Options();</span>
+<span class="source-line-no">486</span><span id="line-486">            options.addOption(new Option("C", "config", true, "The confi"</span>
+<span class="source-line-no">487</span><span id="line-487">                + "guration file (defaults to /etc/vmrunner/config.yaml)."));</span>
+<span class="source-line-no">488</span><span id="line-488">            CommandLine cmd = parser.parse(options, args);</span>
+<span class="source-line-no">489</span><span id="line-489">            var app = new Runner(cmd);</span>
+<span class="source-line-no">490</span><span id="line-490"></span>
+<span class="source-line-no">491</span><span id="line-491">            // Prepare Stop</span>
+<span class="source-line-no">492</span><span id="line-492">            Runtime.getRuntime().addShutdownHook(new Thread(() -&gt; {</span>
+<span class="source-line-no">493</span><span id="line-493">                try {</span>
+<span class="source-line-no">494</span><span id="line-494">                    app.fire(new Stop(), Channel.BROADCAST);</span>
+<span class="source-line-no">495</span><span id="line-495">                    Components.awaitExhaustion();</span>
+<span class="source-line-no">496</span><span id="line-496">                } catch (InterruptedException e) {</span>
+<span class="source-line-no">497</span><span id="line-497">                    // Cannot do anything about this.</span>
+<span class="source-line-no">498</span><span id="line-498">                }</span>
+<span class="source-line-no">499</span><span id="line-499">            }));</span>
+<span class="source-line-no">500</span><span id="line-500"></span>
+<span class="source-line-no">501</span><span id="line-501">            // Start the application</span>
+<span class="source-line-no">502</span><span id="line-502">            Components.start(app);</span>
+<span class="source-line-no">503</span><span id="line-503">        } catch (IOException | InterruptedException</span>
+<span class="source-line-no">504</span><span id="line-504">                | org.apache.commons.cli.ParseException e) {</span>
+<span class="source-line-no">505</span><span id="line-505">            Logger.getLogger(Runner.class.getName()).log(Level.SEVERE, e,</span>
+<span class="source-line-no">506</span><span id="line-506">                () -&gt; "Failed to start runner: " + e.getMessage());</span>
+<span class="source-line-no">507</span><span id="line-507">        }</span>
+<span class="source-line-no">508</span><span id="line-508">    }</span>
+<span class="source-line-no">509</span><span id="line-509">}</span>
 
 
 
