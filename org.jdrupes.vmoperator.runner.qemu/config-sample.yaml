@@ -76,12 +76,15 @@
     #   "bridge": "br0"
     #   "device": "virtio-net"
     #   "mac": (undefined)
-    
-    
-    "drives":
-    - "type": "ide-cd"
-      "bootindex": (undefined)
-      "file": (undefined)
+
+    # There are no default drives. The supported types are "ide-cd"
+    # and "raw". All types support a "bootindex" property.
+    # Type "raw" can have a property "file" (if backed by a file on
+    # the host) or a property "device" (if backed by a device).    
+    # "drives":
+    # - "type": "ide-cd"
+    #   "bootindex": (undefined)
+    #   "file": (undefined)
       
     # "spice":
     #   "port": 5900

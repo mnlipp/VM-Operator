@@ -50,10 +50,6 @@
     # * https://bugzilla.redhat.com/show_bug.cgi?id=1170533, may be unnecessary
     - [ "-global", "ICH9-LPC.disable_s3=1" ]
     - [ "-global", "ICH9-LPC.disable_s4=1" ]
-    # {{- if .Values.vm.secureBoot }}
-    # -global driver=cfi.pflash01,property=secure,value=on 
-    # -object '{"qom-type":"secret","id":"masterKey0","format":"raw","file":"/var/local/qemu/master-key.aes"}'
-    # {{- end }}
     <#if firmwareRom??>
     # * Provide ROM/EEPROM devices (instead of built-in BIOS)
     - [ "-blockdev", "node-name=fw-rom-file,driver=file,cache.direct=on,\
@@ -65,7 +61,9 @@
     - [ "-blockdev", "node-name=fw-eeprom-device,driver=raw,\
         read-only=false,file=fw-eeprom-file" ]
     </#if>
-    # https://wiki.debian.org/SecureBoot/VirtualMachine
+    # * Driver tuning for secure boot
+    #   https://wiki.debian.org/SecureBoot/VirtualMachine
+    #   http://www.linux-kvm.org/downloads/lersek/ovmf-whitepaper-c770f8c.txt
     <#if vm.firmware?starts_with("secure")>
     - [ "-global", "driver=cfi.pflash01,property=secure,value=on" ]
     </#if>
@@ -115,6 +113,7 @@
     - [ "-object", "rng-random,id=objrng0,filename=/dev/random" ]
     - [ "-device", "virtio-rng-pci,rng=objrng0,id=rng0" ]
     # * Graphics and Audio Card
+    #   This is the only video "card" without a flickering cursor.
     - [ "-device", "virtio-vga,id=video0,max_outputs=1" ]
     - [ "-device", "ich9-intel-hda,id=sound0" ]
     # Network
@@ -139,7 +138,7 @@
     # * CD-Drives
     <#assign cdCounter = 0/>
     <#list vm.drives![] as drive>
-    <#if (drive.type!"hdd") == "ide-cd">
+    <#if (drive.type!"") == "ide-cd">
     - [ "-drive", "id=drive-cdrom${ cdCounter },if=none,media=cdrom,cache=none\
         <#if drive.file??>,file=${ drive.file }</#if>" ]
     #   (IDE is old, but faster than usb-storage. virtio-blk-pci does not  
@@ -149,16 +148,32 @@
     <#assign cdCounter += 1/>
     </#if>
     </#list>
-    
-    #   - how to access the resource on the host (a file)
-#    - [ "-blockdev", "node-name=blockdev-cdrom-file,driver=file,\
-#        filename=/home/mnl/Downloads/archlinux-2023.05.03-x86_64.iso" ]
+    # * Disks
+    <#assign drvCounter = 0/>
+    <#list vm.drives![] as drive>
+    <#switch (drive.type!"raw")>
+    <#case "raw">
+    #   - how to access the resource on the host (a file or a block device)
+    <#if drive.file??>
+    - [ "-blockdev", "node-name=drive-${ drvCounter }-host-resource,\
+        driver=file,filename=${ drive.file }" ]
+    </#if>
+    <#if drive.device??>
+    - [ "-blockdev", "node-name=drive-${ drvCounter }-host-resource,\
+        driver=host_device,filename=${ drive.device },\
+        aio=native,cache.direct=on,cache.no-flush=off,\
+        auto-read-only=true,discard=unmap" ]
+    </#if>
     #   - how to use the file (as sequence of literal blocks)
-#    - [ "-blockdev", "node-name=blockdev-cdrom-backend,driver=raw,\
-#        read-only=true,file=blockdev-cdrom-file" ]
+    - [ "-blockdev", "node-name=drive-${ drvCounter }-backend,driver=raw,\
+        file=drive-${ drvCounter }-host-resource" ]
     #   - the driver (what the guest sees)
-#    - [ "-device", "virtio-blk-pci,id=virtio-disk-cdrom,\
-#        drive=blockdev-cdrom-backend,bootindex=1" ]
+    - [ "-device", "virtio-blk-pci,drive=drive-${ drvCounter }-backend\
+        <#if drive.bootindex??>,bootindex=${ drive.bootindex }</#if>" ]
+    <#assign drvCounter += 1/>
+    <#break>
+    </#switch>
+    </#list>
     
     # SPICE (display, channels ...)
     # https://www.linux-kvm.org/page/SPICE

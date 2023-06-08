@@ -89,6 +89,7 @@ class Configuration implements Dto {
     public static class Drive implements Dto {
         public String type;
         public Integer bootindex;
+        public String device;
         public String file;
     }
 
