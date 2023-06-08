@@ -1,12 +1,33 @@
-# Candidate paths for code and templates for firmware rom and flash 
+# Candidate paths for code and templates for firmware rom and vars 
 "firmware":
-  "rom":
-    - "/usr/share/OVMF/OVMF_CODE.fd"
-    - "/usr/share/edk2/x64/OVMF_CODE.fd"
-  "flash":
-    - "/usr/share/edk2/ovmf/OVMF_VARS.fd"
-    - "/usr/share/edk2/x64/OVMF_CODE.fd"
+  "bios":
+    "rom": []
+    "vars": []
+  "uefi":
+    "rom":
+      - "/usr/share/edk2/ovmf/OVMF_CODE.fd"
+      - "/usr/share/edk2/x64/OVMF_CODE.fd"
+    "vars":
+      - "/usr/share/edk2/ovmf/OVMF_VARS.fd"
+      - "/usr/share/edk2/x64/OVMF_VARS.fd"
+  "uefi-4m":
+    "rom":
+      - "/usr/share/edk2/ovmf-4m/OVMF_CODE.fd"
+      - "/usr/share/edk2/x64/OVMF_CODE.4m.fd"
+    "vars":
+      - "/usr/share/edk2/ovmf-4m/OVMF_VARS.fd"
+      - "/usr/share/edk2/x64/OVMF_VARS.4m.fd"
   "secure":
-    "flash":
+    "rom":
       - "/usr/share/edk2/ovmf/OVMF_CODE.secboot.fd"
       - "/usr/share/edk2/x64/OVMF_CODE.secboot.fd"
+    "vars":
+      - "/usr/share/edk2/ovmf/OVMF_VARS.secboot.fd"
+      - "/usr/share/edk2/x64/OVMF_VARS.fd"
+  "secure-4m":
+    "rom":
+      - "/usr/share/edk2/ovmf-4m/OVMF_CODE.secboot.fd"
+      - "/usr/share/edk2/x64/OVMF_CODE.secboot.4m.fd"
+    "vars":
+      - "/usr/share/edk2/ovmf-4m/OVMF_CODE.secboot.fd"
+      - "/usr/share/edk2/x64/OVMF_VARS.4m.fd"

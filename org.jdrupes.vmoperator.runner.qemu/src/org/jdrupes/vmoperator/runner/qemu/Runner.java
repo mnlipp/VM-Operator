@@ -47,8 +47,6 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import static org.jdrupes.vmoperator.runner.qemu.Configuration.BOOT_MODE_SECURE;
-import static org.jdrupes.vmoperator.runner.qemu.Configuration.BOOT_MODE_UEFI;
 import org.jdrupes.vmoperator.runner.qemu.StateController.State;
 import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
 import org.jgrapes.core.Channel;
@@ -151,7 +149,7 @@ public class Runner extends Component {
     private static final String DEFAULT_TEMPLATE
         = "Standard-VM-latest.ftl.yaml";
     private static final String SAVED_TEMPLATE = "VM.ftl.yaml";
-    private static final String FW_FLASH = "fw-flash.fd";
+    private static final String FW_VARS = "fw-vars.fd";
 
     private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
     private final JsonNode defaults;
@@ -255,8 +253,9 @@ public class Runner extends Component {
     @SuppressWarnings({ "PMD.CognitiveComplexity",
         "PMD.DataflowAnomalyAnalysis" })
     private void setFirmwarePaths() throws IOException {
+        JsonNode firmware = defaults.path("firmware").path(config.vm.firmware);
         // Get file for firmware ROM
-        JsonNode codePaths = defaults.path("firmware").path("rom");
+        JsonNode codePaths = firmware.path("rom");
         for (var p : codePaths) {
             var path = Path.of(p.asText());
             if (Files.exists(path)) {
@@ -264,24 +263,14 @@ public class Runner extends Component {
                 break;
             }
         }
-        // Get file for firmware flash, if necessary
-        config.firmwareFlash = Path.of(config.dataDir, FW_FLASH);
-        if (!Files.exists(config.firmwareFlash)) {
-            JsonNode srcPaths = null;
-            if (BOOT_MODE_UEFI.equals(config.vm.bootMode)) {
-                srcPaths = defaults.path("firmware").path("flash");
-            } else if (BOOT_MODE_SECURE.equals(config.vm.bootMode)) {
-                srcPaths = defaults.path("firmware")
-                    .path("secure").path("flash");
-            }
-            // If UEFI boot, srcPaths != null
-            if (srcPaths != null) {
-                for (var p : srcPaths) {
-                    var path = Path.of(p.asText());
-                    if (Files.exists(path)) {
-                        Files.copy(path, config.firmwareFlash);
-                        break;
-                    }
+        // Get file for firmware vars, if necessary
+        config.firmwareVars = Path.of(config.dataDir, FW_VARS);
+        if (!Files.exists(config.firmwareVars)) {
+            for (var p : firmware.path("vars")) {
+                var path = Path.of(p.asText());
+                if (Files.exists(path)) {
+                    Files.copy(path, config.firmwareVars);
+                    break;
                 }
             }
         }
@@ -304,8 +293,10 @@ public class Runner extends Component {
         // Configure data model
         var model = new HashMap<String, Object>();
         model.put("runtimeDir", config.runtimeDir);
-        model.put("firmwareRom", config.firmwareRom.toString());
-        model.put("firmwareFlash", config.firmwareFlash.toString());
+        model.put("firmwareRom", Optional.ofNullable(config.firmwareRom)
+            .map(Object::toString).orElse(null));
+        model.put("firmwareVars", Optional.ofNullable(config.firmwareVars)
+            .map(Object::toString).orElse(null));
         model.put("vm", config.vm);
 
         // Combine template and data and parse result

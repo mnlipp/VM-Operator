@@ -36,11 +36,11 @@
     # Whether to provide a software TPM (defaults to false)
     # "useTpm": false
     
-    # How to boot:
+    # How to boot (see https://github.com/mnlipp/VM-Operator/blob/main/org.jdrupes.vmoperator.runner.qemu/resources/org/jdrupes/vmoperator/runner/qemu/defaults.yaml):
     #  * bios
-    #  * uefi
-    #  * secure
-    # "bootMode": "uefi"
+    #  * uefi[-4m]
+    #  * secure[-4m]
+    # "firmware": "uefi"
     
     # When terminating, a graceful powerdown is attempted. If it
     # doesn't succeed within the given timeout (seconds) SIGTERM

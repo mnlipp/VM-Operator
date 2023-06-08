@@ -34,9 +34,6 @@ class Configuration implements Dto {
     @SuppressWarnings("PMD.FieldNamingConventions")
     protected final Logger logger = Logger.getLogger(getClass().getName());
 
-    public static final Object BOOT_MODE_UEFI = "uefi";
-    public static final Object BOOT_MODE_SECURE = "secure";
-
     public String dataDir;
     public String runtimeDir;
     public String template;
@@ -44,7 +41,7 @@ class Configuration implements Dto {
     public Path swtpmSocket;
     public Path monitorSocket;
     public Path firmwareRom;
-    public Path firmwareFlash;
+    public Path firmwareVars;
     @SuppressWarnings("PMD.ShortVariable")
     public Vm vm;
 
@@ -56,7 +53,7 @@ class Configuration implements Dto {
         public String name;
         public String uuid;
         public boolean useTpm;
-        public String bootMode = "uefi";
+        public String firmware = "uefi";
         public String maximumRam;
         public String currentRam;
         public String cpuModel = "host";

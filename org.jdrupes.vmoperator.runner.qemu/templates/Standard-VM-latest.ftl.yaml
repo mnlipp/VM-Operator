@@ -44,8 +44,8 @@
     #   For smm=on see https://scumjr.github.io/2016/01/04/playing-with-smm-and-qemu/.
     #   Configure ROM/EEPROM for UEFI.
     - [ "-machine", "pc-q35-7.0,usb=off,vmport=off,dump-guest-core=off\
-        <#if vm.bootMode == "secure">,smm=on</#if>\
-        <#if vm.bootMode != "bios">,pflash0=fw-rom-device\
+        <#if vm.firmware?starts_with("secure")>,smm=on</#if>\
+        <#if firmwareRom??>,pflash0=fw-rom-device\
         ,pflash1=fw-eeprom-device</#if>,memory-backend=pc.ram,hpet=off" ]
     # * https://bugzilla.redhat.com/show_bug.cgi?id=1170533, may be unnecessary
     - [ "-global", "ICH9-LPC.disable_s3=1" ]
@@ -54,17 +54,21 @@
     # -global driver=cfi.pflash01,property=secure,value=on 
     # -object '{"qom-type":"secret","id":"masterKey0","format":"raw","file":"/var/local/qemu/master-key.aes"}'
     # {{- end }}
-    <#if vm.bootMode != "bios">
+    <#if firmwareRom??>
     # * Provide ROM/EEPROM devices (instead of built-in BIOS)
     - [ "-blockdev", "node-name=fw-rom-file,driver=file,cache.direct=on,\
         filename=${ firmwareRom },auto-read-only=true,discard=unmap" ]
     - [ "-blockdev", "node-name=fw-rom-device,driver=raw,\
         read-only=true,file=fw-rom-file" ]
     - [ "-blockdev", "node-name=fw-eeprom-file,driver=file,cache.direct=on,\
-        filename=${ firmwareFlash },auto-read-only=true,discard=unmap" ]
+        filename=${ firmwareVars },auto-read-only=true,discard=unmap" ]
     - [ "-blockdev", "node-name=fw-eeprom-device,driver=raw,\
         read-only=false,file=fw-eeprom-file" ]
-    </#if>            
+    </#if>
+    # https://wiki.debian.org/SecureBoot/VirtualMachine
+    <#if vm.firmware?starts_with("secure")>
+    - [ "-global", "driver=cfi.pflash01,property=secure,value=on" ]
+    </#if>
     # * Provide RAM
     - [ "-object", "memory-backend-ram,id=pc.ram,\
         size=${ vm.maximumRam!"1G" }" ]
