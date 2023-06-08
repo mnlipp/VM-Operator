@@ -24,6 +24,19 @@ dependencies {
 }
 
 application {
+    applicationDefaultJvmArgs = ['-Xms50m',
+        '-Djava.util.logging.manager=org.jdrupes.vmoperator.util.LongLoggingManager'
+        ]
     // Define the main class for the application.
     mainClass = 'org.jdrupes.vmoperator.runner.qemu.Runner'
 }
+
+distributions {
+    main {
+        distributionBaseName = 'runner-qemu'
+//        contents {
+//            from 'src/readme'
+//        }
+    }
+}
+
