@@ -26,6 +26,7 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jdrupes.vmoperator.util.Dto;
+import org.jdrupes.vmoperator.util.FsdUtils;
 
 /**
  * The configuration information from the configuration file.
@@ -34,8 +35,8 @@ class Configuration implements Dto {
     @SuppressWarnings("PMD.FieldNamingConventions")
     protected final Logger logger = Logger.getLogger(getClass().getName());
 
-    public String dataDir;
-    public String runtimeDir;
+    public Path dataDir;
+    public Path runtimeDir;
     public String template;
     public boolean updateTemplate;
     public Path swtpmSocket;
@@ -127,22 +128,14 @@ class Configuration implements Dto {
     private boolean checkRuntimeDir() {
         // Runtime directory (sockets)
         if (runtimeDir == null) {
-            runtimeDir = System.getenv("XDG_RUNTIME_DIR");
-            if (runtimeDir == null) {
-                runtimeDir = "/tmp";
-                if (System.getenv("USER") != null) {
-                    runtimeDir += "/" + System.getenv("USER");
-                }
-            }
-            runtimeDir += "/vmrunner/" + vm.name;
-            swtpmSocket = Path.of(runtimeDir, "swtpm-sock");
-            monitorSocket = Path.of(runtimeDir, "monitor.sock");
+            runtimeDir = FsdUtils.runtimeDir(Runner.APP_NAME).resolve(vm.name);
+            swtpmSocket = runtimeDir.resolve("swtpm-sock");
+            monitorSocket = runtimeDir.resolve("monitor.sock");
         }
-        Path runtimePath = Path.of(runtimeDir);
-        if (!Files.exists(runtimePath)) {
-            runtimePath.toFile().mkdirs();
+        if (!Files.exists(runtimeDir)) {
+            runtimeDir.toFile().mkdirs();
         }
-        if (!Files.isDirectory(runtimePath) || !Files.isWritable(runtimePath)) {
+        if (!Files.isDirectory(runtimeDir) || !Files.isWritable(runtimeDir)) {
             logger.severe(() -> String.format(
                 "Configured runtime directory \"%s\""
                     + " does not exist or isn't writable.",
@@ -156,20 +149,12 @@ class Configuration implements Dto {
     private boolean checkDataDir() {
         // Data directory
         if (dataDir == null) {
-            dataDir = System.getenv("XDG_DATA_HOME");
-            if (dataDir == null) {
-                dataDir = ".";
-                if (System.getenv("HOME") != null) {
-                    dataDir = System.getenv("HOME") + "/.local/share";
-                }
-            }
-            dataDir += "/vmrunner/" + vm.name;
+            dataDir = FsdUtils.dataHome(Runner.APP_NAME).resolve(vm.name);
         }
-        Path dataPath = Path.of(dataDir);
-        if (!Files.exists(dataPath)) {
-            dataPath.toFile().mkdirs();
+        if (!Files.exists(dataDir)) {
+            dataDir.toFile().mkdirs();
         }
-        if (!Files.isDirectory(dataPath) || !Files.isWritable(dataPath)) {
+        if (!Files.isDirectory(dataDir) || !Files.isWritable(dataDir)) {
             logger.severe(() -> String.format(
                 "Configured data directory \"%s\""
                     + " does not exist or isn't writable.",
@@ -186,7 +171,7 @@ class Configuration implements Dto {
         }
 
         // Try to read stored uuid.
-        Path uuidPath = Path.of(dataDir, "uuid.txt");
+        Path uuidPath = dataDir.resolve("uuid.txt");
         if (Files.isReadable(uuidPath)) {
             try {
                 var stored

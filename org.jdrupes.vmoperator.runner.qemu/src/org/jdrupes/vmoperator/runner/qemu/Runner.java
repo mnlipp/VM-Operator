@@ -32,6 +32,7 @@ import freemarker.template.TemplateNotFoundException;
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringWriter;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.nio.file.Files;
@@ -41,6 +42,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
+import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -49,6 +51,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.jdrupes.vmoperator.runner.qemu.StateController.State;
 import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
+import org.jdrupes.vmoperator.util.FsdUtils;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.Components;
@@ -142,10 +145,12 @@ import org.jgrapes.util.events.WatchFile;
  * @enduml
  * 
  */
-@SuppressWarnings("PMD.ExcessiveImports")
+@SuppressWarnings({ "PMD.ExcessiveImports", "PMD.AvoidPrintStackTrace" })
 public class Runner extends Component {
 
-    private static final String TEMPLATE_DIR = "/usr/share/vmrunner/templates";
+    public static final String APP_NAME = "vmrunner";
+    private static final String TEMPLATE_DIR
+        = "/usr/share/" + APP_NAME + "/templates";
     private static final String DEFAULT_TEMPLATE
         = "Standard-VM-latest.ftl.yaml";
     private static final String SAVED_TEMPLATE = "VM.ftl.yaml";
@@ -167,6 +172,7 @@ public class Runner extends Component {
      *
      * @throws IOException Signals that an I/O exception has occurred.
      */
+    @SuppressWarnings("PMD.SystemPrintln")
     public Runner(CommandLine cmdLine) throws IOException {
         state = new StateController(this);
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
@@ -195,9 +201,13 @@ public class Runner extends Component {
         attach(qemuMonitor = new QemuMonitor(channel()));
 
         // Configuration store with file in /etc (default)
-        File config = new File(cmdLine.getOptionValue('C',
-            "/etc/vmrunner/config.yaml"));
-        attach(new YamlConfigurationStore(channel(), config, false));
+        File config = new File(cmdLine.getOptionValue('c',
+            "/etc/" + APP_NAME + "/config.yaml"));
+        try {
+            attach(new YamlConfigurationStore(channel(), config, false));
+        } catch (IOException e) {
+            System.err.println("Cannot open configuration file " + config);
+        }
         fire(new WatchFile(config.toPath()));
     }
 
@@ -264,7 +274,7 @@ public class Runner extends Component {
             }
         }
         // Get file for firmware vars, if necessary
-        config.firmwareVars = Path.of(config.dataDir, FW_VARS);
+        config.firmwareVars = config.dataDir.resolve(FW_VARS);
         if (!Files.exists(config.firmwareVars)) {
             for (var p : firmware.path("vars")) {
                 var path = Path.of(p.asText());
@@ -281,7 +291,7 @@ public class Runner extends Component {
             MalformedTemplateNameException, ParseException, TemplateException,
             JsonProcessingException, JsonMappingException {
         // Try saved template, copy if not there (or to be updated)
-        Path templatePath = Path.of(config.dataDir, SAVED_TEMPLATE);
+        Path templatePath = config.dataDir.resolve(SAVED_TEMPLATE);
         if (!Files.isReadable(templatePath) || config.updateTemplate) {
             // Get template
             Path sourcePath = Paths.get(TEMPLATE_DIR).resolve(Optional
@@ -323,7 +333,7 @@ public class Runner extends Component {
 
             // Store process id
             try (var pidFile = Files.newBufferedWriter(
-                Path.of(config.runtimeDir, "runner.pid"))) {
+                config.runtimeDir.resolve("runner.pid"))) {
                 pidFile.write(ProcessHandle.current().pid() + "\n");
             }
 
@@ -394,7 +404,7 @@ public class Runner extends Component {
             .ifPresent(procDef -> {
                 channel.setAssociated(CommandDefinition.class, procDef);
                 try (var pidFile = Files.newBufferedWriter(
-                    Path.of(config.runtimeDir, procDef.name + ".pid"))) {
+                    config.runtimeDir.resolve(procDef.name + ".pid"))) {
                     pidFile.write(channel.process().toHandle().pid() + "\n");
                 } catch (IOException e) {
                     throw new UndeclaredThrowableException(e);
@@ -472,6 +482,22 @@ public class Runner extends Component {
         state.set(State.TERMINATING);
     }
 
+    static {
+        try {
+            InputStream props;
+            var path = FsdUtils.findConfigFile(Runner.APP_NAME,
+                "logging.properties");
+            if (path.isPresent()) {
+                props = Files.newInputStream(path.get());
+            } else {
+                props = Runner.class.getResourceAsStream("logging.properties");
+            }
+            LogManager.getLogManager().readConfiguration(props);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     /**
      * The main method.
      *
@@ -483,7 +509,7 @@ public class Runner extends Component {
             CommandLineParser parser = new DefaultParser();
             // parse the command line arguments
             final Options options = new Options();
-            options.addOption(new Option("C", "config", true, "The confi"
+            options.addOption(new Option("c", "config", true, "The confi"
                 + "guration file (defaults to /etc/vmrunner/config.yaml)."));
             CommandLine cmd = parser.parse(options, args);
             var app = new Runner(cmd);

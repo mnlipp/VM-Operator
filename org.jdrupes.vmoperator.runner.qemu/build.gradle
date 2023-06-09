@@ -24,6 +24,7 @@ dependencies {
 }
 
 application {
+    applicationName = 'vm-runner.qemu'
     applicationDefaultJvmArgs = ['-Xms50m',
         '-Djava.util.logging.manager=org.jdrupes.vmoperator.util.LongLoggingManager'
         ]
@@ -33,7 +34,7 @@ application {
 
 distributions {
     main {
-        distributionBaseName = 'runner-qemu'
+        //distributionBaseName = 'runner-qemu'
 //        contents {
 //            from 'src/readme'
 //        }
