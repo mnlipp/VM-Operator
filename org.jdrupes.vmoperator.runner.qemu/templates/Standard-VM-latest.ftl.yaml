@@ -7,7 +7,7 @@
   "arguments":
     - "socket"
     - "--tpm2"
-    - [ "--tpmstate", "dir=${ runtimeDir }" ]
+    - [ "--tpmstate", "dir=${ dataDir }" ]
     - [ "--ctrl", "type=unixio,path=${ runtimeDir }/swtpm-sock,mode=0600" ]
     - "--terminate"
 

@@ -303,6 +303,7 @@ public class Runner extends Component {
 
         // Configure data model
         var model = new HashMap<String, Object>();
+        model.put("dataDir", config.dataDir);
         model.put("runtimeDir", config.runtimeDir);
         model.put("firmwareRom", Optional.ofNullable(config.firmwareRom)
             .map(Object::toString).orElse(null));
