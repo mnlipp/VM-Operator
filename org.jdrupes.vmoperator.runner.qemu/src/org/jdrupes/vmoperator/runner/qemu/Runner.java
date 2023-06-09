@@ -203,11 +203,12 @@ public class Runner extends Component {
         // Configuration store with file in /etc (default)
         File config = new File(cmdLine.getOptionValue('c',
             "/etc/" + APP_NAME + "/config.yaml"));
-        try {
-            attach(new YamlConfigurationStore(channel(), config, false));
-        } catch (IOException e) {
-            System.err.println("Cannot open configuration file " + config);
+        // Don't rely on night config to produce a good exception
+        // for this simple case
+        if (!Files.isReadable(config.toPath())) {
+            throw new IOException("Cannot read configuration file " + config);
         }
+        attach(new YamlConfigurationStore(channel(), config, false));
         fire(new WatchFile(config.toPath()));
     }
 
