@@ -32,12 +32,46 @@ application {
     mainClass = 'org.jdrupes.vmoperator.runner.qemu.Runner'
 }
 
-distributions {
-    main {
-        //distributionBaseName = 'runner-qemu'
-//        contents {
-//            from 'src/readme'
-//        }
-    }
+task buildArchContainer(type: Exec) {
+    dependsOn installDist
+    inputs.files 'src/org/jdrupes/vmoperator/runner/qemu/Containerfile.arch'
+    
+    commandLine 'podman', 'build', '-t', "${project.name}:${project.version}",\
+        '-f', 'src/org/jdrupes/vmoperator/runner/qemu/Containerfile.arch', '.'
+}
+
+task tagArchContainer(type: Exec) {
+    dependsOn buildArchContainer
+    
+    commandLine 'podman', 'tag', "${project.name}:${project.version}",\
+        "${project.name}:latest"
+}
+
+task buildContainer {
+    dependsOn buildArchContainer
+    dependsOn tagArchContainer
+}
+
+task pushArchContainer(type: Exec) {
+    dependsOn buildContainer
+
+    commandLine 'podman', 'push', '--tls-verify=false', \
+        "localhost/${project.name}:${project.version}", \
+        "${project.rootProject.properties['docker.registry']}" \
+            + "/vmoperator/${project.name}:${project.version}"
+}
+
+task pushArchContainerAsLatest(type: Exec) {
+    dependsOn buildContainer
+
+    commandLine 'podman', 'push', '--tls-verify=false', \
+        "localhost/${project.name}:${project.version}", \
+        "${project.rootProject.properties['docker.registry']}" \
+            + "/vmoperator/${project.name}:latest"
+}
+
+task pushContainer {
+    dependsOn pushArchContainer
+    dependsOn pushArchContainerAsLatest
 }
 

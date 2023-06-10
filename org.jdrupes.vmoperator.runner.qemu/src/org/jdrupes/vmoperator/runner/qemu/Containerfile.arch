@@ -1,0 +1,24 @@
+FROM archlinux/archlinux
+
+RUN systemd-firstboot --setup-machine-id
+
+RUN pacman -Suy --noconfirm \
+    && pacman -S --noconfirm which qemu-base virtiofsd \
+        edk2-ovmf swtpm iproute2 bridge-utils jre17-openjdk-headless \
+    && pacman -Scc --noconfirm
+
+# Remove all targets.
+RUN (cd /lib/systemd/system/sysinit.target.wants/; \
+        for i in *; do [ $i == systemd-tmpfiles-setup.service ] || rm -f $i; done); \
+    rm -f /lib/systemd/system/multi-user.target.wants/*;\
+    rm -f /etc/systemd/system/*.wants/*;\
+    rm -f /lib/systemd/system/local-fs.target.wants/*; \
+    rm -f /lib/systemd/system/sockets.target.wants/*udev*; \
+    rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
+    rm -f /lib/systemd/system/basic.target.wants/*;\
+    rm -f /lib/systemd/system/anaconda.target.wants/*; \
+    systemctl set-default multi-user.target
+
+COPY build/install/vm-runner.qemu /opt/vmrunner
+
+CMD ["/opt/vmrunner/bin/vm-runner.qemu"]
