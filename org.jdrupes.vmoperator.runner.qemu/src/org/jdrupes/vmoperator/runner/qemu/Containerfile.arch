@@ -20,5 +20,6 @@ RUN (cd /lib/systemd/system/sysinit.target.wants/; \
     systemctl set-default multi-user.target
 
 COPY build/install/vm-runner.qemu /opt/vmrunner
+COPY templates/* /opt/vmrunner/templates/
 
 CMD ["/opt/vmrunner/bin/vm-runner.qemu"]
