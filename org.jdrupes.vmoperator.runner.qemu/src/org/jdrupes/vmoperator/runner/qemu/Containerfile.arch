@@ -19,6 +19,8 @@ RUN (cd /lib/systemd/system/sysinit.target.wants/; \
     rm -f /lib/systemd/system/anaconda.target.wants/*; \
     systemctl set-default multi-user.target
 
+RUN mkdir -p /etc/qemu && echo "allow all" > /etc/qemu/bridge.conf
+
 COPY build/install/vm-runner.qemu /opt/vmrunner
 COPY templates/* /opt/vmrunner/templates/
 
