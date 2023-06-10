@@ -150,7 +150,7 @@ public class Runner extends Component {
 
     public static final String APP_NAME = "vmrunner";
     private static final String TEMPLATE_DIR
-        = "/usr/share/" + APP_NAME + "/templates";
+        = "/opt/" + APP_NAME + "/templates";
     private static final String DEFAULT_TEMPLATE
         = "Standard-VM-latest.ftl.yaml";
     private static final String SAVED_TEMPLATE = "VM.ftl.yaml";
@@ -202,7 +202,7 @@ public class Runner extends Component {
 
         // Configuration store with file in /etc (default)
         File config = new File(cmdLine.getOptionValue('c',
-            "/etc/" + APP_NAME + "/config.yaml"));
+            "/etc/opt/" + APP_NAME + "/config.yaml"));
         // Don't rely on night config to produce a good exception
         // for this simple case
         if (!Files.isReadable(config.toPath())) {
@@ -511,8 +511,8 @@ public class Runner extends Component {
             CommandLineParser parser = new DefaultParser();
             // parse the command line arguments
             final Options options = new Options();
-            options.addOption(new Option("c", "config", true, "The confi"
-                + "guration file (defaults to /etc/vmrunner/config.yaml)."));
+            options.addOption(new Option("c", "config", true, "The configu"
+                + "ration file (defaults to /etc/opt/vmrunner/config.yaml)."));
             CommandLine cmd = parser.parse(options, args);
             var app = new Runner(cmd);
 
