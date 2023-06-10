@@ -15,7 +15,7 @@
   #  * /tmp/vmrunner/${vm.name}
   # "runtimeDir": "$XDG_RUNTIME_DIR/vmrunner/${vm.name}"
   
-  # The template to use. Resolved relative to /usr/share/vmrunner/templates.
+  # The template to use. Resolved relative to /opt/vmrunner/templates.
   # "template": "Standard-VM-latest.ftl.yaml"
 
   # The template is copied to the data diretory when the VM starts for
