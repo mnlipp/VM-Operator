@@ -69,8 +69,8 @@
     </#if>
     # * Provide RAM
     - [ "-object", "memory-backend-ram,id=pc.ram,\
-        size=${ vm.maximumRam!"1G" }" ]
-    - [ "-m", "${ vm.maximumRam!"1G" }" ]
+        size=${ (vm.maximumRam!1073741824)?c }" ]
+    - [ "-m", "${ ((vm.maximumRam!1073741824)/1048576)?c }" ]
     - [ "-device", "virtio-balloon-pci,id=balloon0" ]
     <#if vm.useTpm>
     # Attach TPM
