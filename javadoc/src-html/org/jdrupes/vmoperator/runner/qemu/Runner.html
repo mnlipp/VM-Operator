@@ -163,7 +163,7 @@
 <span class="source-line-no">150</span><span id="line-150"></span>
 <span class="source-line-no">151</span><span id="line-151">    public static final String APP_NAME = "vmrunner";</span>
 <span class="source-line-no">152</span><span id="line-152">    private static final String TEMPLATE_DIR</span>
-<span class="source-line-no">153</span><span id="line-153">        = "/usr/share/" + APP_NAME + "/templates";</span>
+<span class="source-line-no">153</span><span id="line-153">        = "/opt/" + APP_NAME + "/templates";</span>
 <span class="source-line-no">154</span><span id="line-154">    private static final String DEFAULT_TEMPLATE</span>
 <span class="source-line-no">155</span><span id="line-155">        = "Standard-VM-latest.ftl.yaml";</span>
 <span class="source-line-no">156</span><span id="line-156">    private static final String SAVED_TEMPLATE = "VM.ftl.yaml";</span>
@@ -215,7 +215,7 @@
 <span class="source-line-no">202</span><span id="line-202"></span>
 <span class="source-line-no">203</span><span id="line-203">        // Configuration store with file in /etc (default)</span>
 <span class="source-line-no">204</span><span id="line-204">        File config = new File(cmdLine.getOptionValue('c',</span>
-<span class="source-line-no">205</span><span id="line-205">            "/etc/" + APP_NAME + "/config.yaml"));</span>
+<span class="source-line-no">205</span><span id="line-205">            "/etc/opt/" + APP_NAME + "/config.yaml"));</span>
 <span class="source-line-no">206</span><span id="line-206">        // Don't rely on night config to produce a good exception</span>
 <span class="source-line-no">207</span><span id="line-207">        // for this simple case</span>
 <span class="source-line-no">208</span><span id="line-208">        if (!Files.isReadable(config.toPath())) {</span>
@@ -524,8 +524,8 @@
 <span class="source-line-no">511</span><span id="line-511">            CommandLineParser parser = new DefaultParser();</span>
 <span class="source-line-no">512</span><span id="line-512">            // parse the command line arguments</span>
 <span class="source-line-no">513</span><span id="line-513">            final Options options = new Options();</span>
-<span class="source-line-no">514</span><span id="line-514">            options.addOption(new Option("c", "config", true, "The confi"</span>
-<span class="source-line-no">515</span><span id="line-515">                + "guration file (defaults to /etc/vmrunner/config.yaml)."));</span>
+<span class="source-line-no">514</span><span id="line-514">            options.addOption(new Option("c", "config", true, "The configu"</span>
+<span class="source-line-no">515</span><span id="line-515">                + "ration file (defaults to /etc/opt/vmrunner/config.yaml)."));</span>
 <span class="source-line-no">516</span><span id="line-516">            CommandLine cmd = parser.parse(options, args);</span>
 <span class="source-line-no">517</span><span id="line-517">            var app = new Runner(cmd);</span>
 <span class="source-line-no">518</span><span id="line-518"></span>
