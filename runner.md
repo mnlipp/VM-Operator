@@ -32,7 +32,7 @@ installed.
 ## Stand-alone Configuration
 
 Upon startup, the runner reads its main configuration file 
-which defaults to `/etc/vmrunner/config.yaml` and may be changed
+which defaults to `/etc/opt/vmrunner/config.yaml` and may be changed
 using the `-C` (or `--config`) command line option.
 
 A sample configuration file with annotated options can be found
@@ -65,12 +65,12 @@ challenging than editing libvirt's XML.
 
 ## Running in a Pod
 
-When running in a Kubernetes pod, `/etc/vmrunner/config.yaml` should be
+When running in a Kubernetes pod, `/etc/opt/vmrunner/config.yaml` should be
 provided by a
 [ConfigMap](https://kubernetes.io/docs/concepts/configuration/configmap/).
 
 If additional templates are required, some ReadOnlyMany PV should
-be mounted in `/usr/share/vmrunner/templates`. The PV should contain copies
+be mounted in `/opt/vmrunner/templates`. The PV should contain copies
 of the standard templates as well as the additional templates. Of course, 
 a ConfigMap can be used for this purpose again.
 
