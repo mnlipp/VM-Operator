@@ -19,12 +19,17 @@
 package org.jdrupes.vmoperator.runner.qemu;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import org.jdrupes.vmoperator.util.Dto;
 import org.jdrupes.vmoperator.util.FsdUtils;
 
@@ -34,6 +39,32 @@ import org.jdrupes.vmoperator.util.FsdUtils;
 class Configuration implements Dto {
     @SuppressWarnings("PMD.FieldNamingConventions")
     protected final Logger logger = Logger.getLogger(getClass().getName());
+
+    @SuppressWarnings({ "PMD.UseConcurrentHashMap",
+        "PMD.FieldNamingConventions", "PMD.VariableNamingConventions" })
+    private static final Map<String, BigInteger> unitMap = new HashMap<>();
+    @SuppressWarnings({ "PMD.FieldNamingConventions",
+        "PMD.VariableNamingConventions" })
+    private static final Pattern memorySize
+        = Pattern.compile("\\s*(\\d+)\\s*([^\\s]*)");
+
+    static {
+        // SI units and common abbreviations
+        BigInteger factor = BigInteger.ONE;
+        BigInteger scale = BigInteger.valueOf(1000);
+        for (var unit : List.of("B", "kB", "MB", "GB", "TB", "PB", "EB")) {
+            unitMap.put(unit, factor);
+            unitMap.put(unit.substring(0, unit.length() - 1), factor);
+            factor = factor.multiply(scale);
+        }
+        // Binary units
+        factor = BigInteger.valueOf(1024);
+        scale = BigInteger.valueOf(1024);
+        for (var unit : List.of("KiB", "MiB", "GiB", "TiB", "PiB", "EiB")) {
+            unitMap.put(unit, factor);
+            factor = factor.multiply(scale);
+        }
+    }
 
     public Path dataDir;
     public Path runtimeDir;
@@ -47,6 +78,34 @@ class Configuration implements Dto {
     public Vm vm;
 
     /**
+     * Parses a memory size specification.
+     *
+     * @param amount the amount
+     * @return the big integer
+     */
+    public static BigInteger parseMemory(Object amount) {
+        if (amount == null) {
+            return (BigInteger) amount;
+        }
+        if (amount instanceof BigInteger number) {
+            return number;
+        }
+        if (amount instanceof Number number) {
+            return BigInteger.valueOf(number.longValue());
+        }
+        var matcher = memorySize.matcher(amount.toString());
+        if (!matcher.matches()) {
+            throw new NumberFormatException(amount.toString());
+        }
+        var unit = unitMap.get(matcher.group(2));
+        if (unit == null) {
+            throw new NumberFormatException(amount.toString());
+        }
+        var number = matcher.group(1);
+        return new BigInteger(number).multiply(unit);
+    }
+
+    /**
      * Subsection "vm".
      */
     @SuppressWarnings({ "PMD.ShortClassName", "PMD.TooManyFields" })
@@ -55,8 +114,8 @@ class Configuration implements Dto {
         public String uuid;
         public boolean useTpm;
         public String firmware = "uefi";
-        public String maximumRam;
-        public String currentRam;
+        public Object maximumRam;
+        public Object currentRam;
         public String cpuModel = "host";
         public int maximumCpus = 1;
         public int currentCpus = 1;
@@ -120,6 +179,10 @@ class Configuration implements Dto {
         if (vm.currentCpus > vm.maximumCpus) {
             vm.maximumCpus = vm.currentCpus;
         }
+
+        // Adjust memory specifications
+        vm.maximumRam = parseMemory(vm.maximumRam);
+        vm.currentRam = parseMemory(vm.currentRam);
 
         return true;
     }
