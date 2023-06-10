@@ -1,0 +1,28 @@
+# Default values for vmrunner helm test.
+
+image:
+  repository: docker-registry.domain.com
+  path: vmoperator/org.jdrupes.vmoperator.runner.qemu
+  version: latest
+  pullPolicy: IfNotPresent
+
+vm:
+  # machineUuid: "No default"
+  # host: "No default"
+  useTpm: false
+  firmware: "uefi"
+  cpuModel: "host"
+  maximumCpus: 4
+  currentCpus: 2
+  maximumMemory: "1G"
+  # currentMemory: "Optional"
+  rtcBase: "utc"
+  spicePort: 5901
+  disks:
+  - device: /dev/vg/lv
+    size: 40Gi
+  networks:
+  - bridge: {}
+      # name: br0
+      # mac: "Optional"
+  powerdownTimeout: 60

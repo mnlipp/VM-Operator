@@ -1,0 +1,17 @@
+{{- range $index, $disk := .Values.vm.disks }}
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  namespace: {{ $.Release.Namespace }}
+  name: {{ $.Release.Name }}-pvc-{{ $index }}
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: ""
+  volumeMode: Block
+  resources:
+    requests:
+      storage: {{ .size }}
+{{- end }}
+

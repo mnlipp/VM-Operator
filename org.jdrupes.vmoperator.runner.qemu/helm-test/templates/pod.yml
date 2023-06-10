@@ -1,0 +1,60 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ .Release.Name }}
+  labels:
+    app: qemu-vm
+    vm: {{ .Release.Name }}
+spec:
+  containers:
+  - name: {{ .Release.Name }}
+    image: {{ .Values.image.repository }}/{{ .Values.image.path }}:{{ .Values.image.version }}
+    resources: {}
+    imagePullPolicy: {{ .Values.image.pullPolicy }}
+    volumeMounts:
+    # Not needed because pod is priviledged:
+    # - mountPath: /dev/kvm
+    #   name: dev-kvm
+    # - mountPath: /dev/net/tun
+    #   name: dev-tun
+    # - mountPath: /sys/fs/cgroup
+    #   name: cgroup
+    - mountPath: /etc/opt/vmrunner
+      name: config
+    - mountPath: /var/local/vm-data
+      name: vm-data
+    volumeDevices:
+    {{- range $index, $disk := .Values.vm.disks }}
+    - devicePath: /dev/disk-{{ $index }}
+      name: disk-{{ $index }}
+    {{- end }}
+    securityContext:
+      privileged: true
+  volumes:
+  # Not needed because pod is priviledged:
+  # - name: dev-kvm
+  #   hostPath:
+  #     path: /dev/kvm
+  #     type: CharDevice
+  # - hostPath:
+  #     path: /dev/net/tun
+  #     type: CharDevice
+  #   name: dev-tun
+  # - name: cgroup
+  #   hostPath:
+  #     path: /sys/fs/cgroup
+  - name: config
+    configMap:
+      name: {{ $.Release.Name }}
+  - name: vm-data
+    hostPath:
+      path: /var/local/vmrunner/{{ .Release.Name }}
+  {{- range $index, $disk := .Values.vm.disks }}
+  - name: disk-{{ $index }}
+    persistentVolumeClaim:
+      claimName: {{ $.Release.Name }}-pvc-{{ $index }}
+  {{- end }}
+  hostNetwork: true
+  terminationGracePeriodSeconds: 60
+  restartPolicy: Never

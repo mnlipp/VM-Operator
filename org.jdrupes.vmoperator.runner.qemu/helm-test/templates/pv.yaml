@@ -1,0 +1,28 @@
+{{- range $index, $disk := .Values.vm.disks }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ $.Release.Name }}-pv-{{ $index }}
+spec:
+  capacity:
+    storage: {{ .size }}
+  volumeMode: Block
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  claimRef:
+    name: {{ $.Release.Name }}-pvc-{{ $index }}
+    namespace: {{ $.Release.Namespace }}
+  local:
+    path: {{ .device }}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - {{ required "Valid .Values.vm.host entry required" $.Values.vm.host }}
+{{- end }}

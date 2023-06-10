@@ -1,0 +1,7 @@
+apiVersion: v2
+name: vmrunner-qemu-test
+description: Create a vmrunner controlled qemu VM (from fixed resources)
+type: application
+
+# This is the chart version.
+version: "1.0.0"
