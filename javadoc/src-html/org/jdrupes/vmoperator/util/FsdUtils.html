@@ -159,26 +159,28 @@
 <span class="source-line-no">146</span><span id="line-146">     * </span>
 <span class="source-line-no">147</span><span id="line-147">     * 1. the current working directory,</span>
 <span class="source-line-no">148</span><span id="line-148">     * 1. the {@link #configHome(String)}</span>
-<span class="source-line-no">149</span><span id="line-149">     * 1. the subdirectory `appName` of `/etc`</span>
-<span class="source-line-no">150</span><span id="line-150">     *</span>
-<span class="source-line-no">151</span><span id="line-151">     * @param appName the application name</span>
-<span class="source-line-no">152</span><span id="line-152">     * @param filename the filename</span>
-<span class="source-line-no">153</span><span id="line-153">     * @return the optional</span>
-<span class="source-line-no">154</span><span id="line-154">     */</span>
-<span class="source-line-no">155</span><span id="line-155">    public static Optional&lt;Path&gt; findConfigFile(String appName,</span>
-<span class="source-line-no">156</span><span id="line-156">            String filename) {</span>
-<span class="source-line-no">157</span><span id="line-157">        var candidates = List.of(Path.of(filename),</span>
-<span class="source-line-no">158</span><span id="line-158">            configHome(appName).resolve(filename),</span>
-<span class="source-line-no">159</span><span id="line-159">            Path.of("/etc").resolve(appName).resolve(filename));</span>
-<span class="source-line-no">160</span><span id="line-160">        for (var candidate : candidates) {</span>
-<span class="source-line-no">161</span><span id="line-161">            if (Files.exists(candidate)) {</span>
-<span class="source-line-no">162</span><span id="line-162">                return Optional.of(candidate);</span>
-<span class="source-line-no">163</span><span id="line-163">            }</span>
-<span class="source-line-no">164</span><span id="line-164">        }</span>
-<span class="source-line-no">165</span><span id="line-165">        return Optional.empty();</span>
-<span class="source-line-no">166</span><span id="line-166">    }</span>
-<span class="source-line-no">167</span><span id="line-167"></span>
-<span class="source-line-no">168</span><span id="line-168">}</span>
+<span class="source-line-no">149</span><span id="line-149">     * 1. the subdirectory `appName` of `/etc/opt`</span>
+<span class="source-line-no">150</span><span id="line-150">     * 1. the subdirectory `appName` of `/etc`</span>
+<span class="source-line-no">151</span><span id="line-151">     *</span>
+<span class="source-line-no">152</span><span id="line-152">     * @param appName the application name</span>
+<span class="source-line-no">153</span><span id="line-153">     * @param filename the filename</span>
+<span class="source-line-no">154</span><span id="line-154">     * @return the optional</span>
+<span class="source-line-no">155</span><span id="line-155">     */</span>
+<span class="source-line-no">156</span><span id="line-156">    public static Optional&lt;Path&gt; findConfigFile(String appName,</span>
+<span class="source-line-no">157</span><span id="line-157">            String filename) {</span>
+<span class="source-line-no">158</span><span id="line-158">        var candidates = List.of(Path.of(filename),</span>
+<span class="source-line-no">159</span><span id="line-159">            configHome(appName).resolve(filename),</span>
+<span class="source-line-no">160</span><span id="line-160">            Path.of("/etc").resolve("opt").resolve(appName).resolve(filename),</span>
+<span class="source-line-no">161</span><span id="line-161">            Path.of("/etc").resolve(appName).resolve(filename));</span>
+<span class="source-line-no">162</span><span id="line-162">        for (var candidate : candidates) {</span>
+<span class="source-line-no">163</span><span id="line-163">            if (Files.exists(candidate)) {</span>
+<span class="source-line-no">164</span><span id="line-164">                return Optional.of(candidate);</span>
+<span class="source-line-no">165</span><span id="line-165">            }</span>
+<span class="source-line-no">166</span><span id="line-166">        }</span>
+<span class="source-line-no">167</span><span id="line-167">        return Optional.empty();</span>
+<span class="source-line-no">168</span><span id="line-168">    }</span>
+<span class="source-line-no">169</span><span id="line-169"></span>
+<span class="source-line-no">170</span><span id="line-170">}</span>
 
 
 
