@@ -33,7 +33,7 @@ installed.
 
 Upon startup, the runner reads its main configuration file 
 which defaults to `/etc/opt/vmrunner/config.yaml` and may be changed
-using the `-C` (or `--config`) command line option.
+using the `-c` (or `--config`) command line option.
 
 A sample configuration file with annotated options can be found
 [here](https://github.com/mnlipp/VM-Operator/blob/main/org.jdrupes.vmoperator.runner.qemu/config-sample.yaml).
