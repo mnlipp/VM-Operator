@@ -47,7 +47,11 @@ data:
         #  * bios
         #  * uefi[-4m]
         #  * secure[-4m]
+        {{- if and (hasKey .Values.vm "efiBoot") (not .Values.vm.efiBoot) }}
+        "firmware": "bios"
+        {{- else }}
         "firmware": "{{ .Values.vm.firmware }}"
+        {{- end }}
         
         # When terminating, a graceful powerdown is attempted. If it
         # doesn't succeed within the given timeout (seconds) SIGTERM
@@ -56,7 +60,7 @@ data:
         
         # RAM settings
         "maximumRam": "{{ .Values.vm.maximumMemory }}"
-        # "currentRam": "1G"
+        "currentRam": "{{ .Values.vm.currentMemory }}"
         
         # CPU settings
         "cpuModel": "{{ .Values.vm.cpuModel }}"
