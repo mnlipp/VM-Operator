@@ -30,7 +30,6 @@
     # * Allow spawn for network setup (tap/bridge)
     - [ "-sandbox", "on,obsolete=deny,elevateprivileges=deny,\
         spawn=allow,resourcecontrol=deny" ] 
-    - [ "-msg", "timestamp=on" ]
     # * Qemu monitor connection          
     - [ "-chardev", "socket,id=charmonitor,\
         path=${ runtimeDir }/monitor.sock,server=on,wait=off" ]
