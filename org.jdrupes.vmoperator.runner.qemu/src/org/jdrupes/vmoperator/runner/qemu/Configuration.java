@@ -63,6 +63,7 @@ class Configuration implements Dto {
         scale = BigInteger.valueOf(1024);
         for (var unit : List.of("KiB", "MiB", "GiB", "TiB", "PiB", "EiB")) {
             unitMap.put(unit, factor);
+            unitMap.put(unit.substring(0, 2), factor);
             factor = factor.multiply(scale);
         }
     }
