@@ -42,10 +42,13 @@
     #  * secure[-4m]
     # "firmware": "uefi"
     
+    # Whether to show a boot menu.
+    # "bootMenu": false
+    
     # When terminating, a graceful powerdown is attempted. If it
     # doesn't succeed within the given timeout (seconds) SIGTERM
     # is sent to Qemu.
-    # "powerdownTimeout": 60
+    # "powerdownTimeout": 900
     
     # RAM settings
     # "maximumRam": "1G"

@@ -114,6 +114,7 @@ class Configuration implements Dto {
         public String name;
         public String uuid;
         public boolean useTpm;
+        public boolean bootMenu;
         public String firmware = "uefi";
         public BigInteger maximumRam;
         public BigInteger currentRam;
@@ -127,7 +128,7 @@ class Configuration implements Dto {
         public String accelerator = "kvm";
         public String rtcBase = "utc";
         public String rtcClock = "rt";
-        public int powerdownTimeout = 60;
+        public int powerdownTimeout = 900;
         public Network[] network = { new Network() };
         public Drive[] drives;
         public Spice spice;

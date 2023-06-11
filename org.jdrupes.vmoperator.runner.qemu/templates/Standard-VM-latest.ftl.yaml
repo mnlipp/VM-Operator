@@ -67,6 +67,9 @@
     <#if vm.firmware?starts_with("secure")>
     - [ "-global", "driver=cfi.pflash01,property=secure,value=on" ]
     </#if>
+    <#if vm.bootMenu>
+    - [ "-boot", "menu=on" ]
+    </#if>
     # * Provide RAM
     - [ "-object", "memory-backend-ram,id=pc.ram,\
         size=${ (vm.maximumRam!1073741824)?c }" ]
