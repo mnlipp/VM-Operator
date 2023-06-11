@@ -22,7 +22,7 @@ tool to configure and run Qemu. But some of its functionality, notably
 the management of storage for the VMs and networking is already provided
 by Kubernetes. Therefore this project takes a fresh approach of
 running Qemu in a pod using a simple, lightweight manager called "runner".
-The runner makes use of the Kubernetes features for resource management as
+Providing resources to the VM is left to Kubernetes mechanisms as
 much as possible.
 
 The project does in no way attempt to replace kubevirt. Its goal is 
