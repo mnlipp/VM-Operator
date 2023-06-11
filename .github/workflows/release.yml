@@ -1,4 +1,4 @@
-name: Java CI with Gradle
+name: Push Container Image with Gradle
 
 on:
   release:
