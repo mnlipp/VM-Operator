@@ -34,6 +34,7 @@ import java.util.logging.Logger;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.Components;
+import org.jgrapes.core.Components.Timer;
 import org.jgrapes.core.annotation.Handler;
 import org.jgrapes.core.events.Start;
 import org.jgrapes.core.events.Stop;
@@ -73,6 +74,8 @@ public class QemuMonitor extends Component {
     private int powerdownTimeout;
     private SocketIOChannel monitorChannel;
     private Stop suspendedStop;
+
+    private Timer powerdownTimer;
 
     /**
      * Instantiates a new qemu monitor.
@@ -223,6 +226,7 @@ public class QemuMonitor extends Component {
             monitorChannel = null;
             synchronized (this) {
                 if (suspendedStop != null) {
+                    powerdownTimer.cancel();
                     suspendedStop.resumeHandling();
                     suspendedStop = null;
                 }
@@ -244,7 +248,7 @@ public class QemuMonitor extends Component {
             writeToMonitor(monitorMessages.get("powerdown"));
 
             // Schedule timer as fallback
-            Components.schedule(t -> {
+            powerdownTimer = Components.schedule(t -> {
                 synchronized (this) {
                     if (suspendedStop != null) {
                         suspendedStop.resumeHandling();
