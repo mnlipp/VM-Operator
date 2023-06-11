@@ -200,7 +200,7 @@ public class Runner extends Component {
         attach(new SocketConnector(channel()));
         attach(qemuMonitor = new QemuMonitor(channel()));
 
-        // Configuration store with file in /etc (default)
+        // Configuration store with file in /etc/opt (default)
         File config = new File(cmdLine.getOptionValue('c',
             "/etc/opt/" + APP_NAME + "/config.yaml"));
         // Don't rely on night config to produce a good exception

@@ -117,3 +117,16 @@ data:
         "spice":
           "port": {{ .Values.vm.spicePort }}
         #   "usbRedirects": 2
+
+  logging.properties: |
+    handlers=java.util.logging.ConsoleHandler
+    
+    #org.jgrapes.level=FINE
+    #org.jgrapes.core.handlerTracking.level=FINER
+    
+    org.jdrupes.vmoperator.runner.qemu.level=FINE
+    
+    java.util.logging.ConsoleHandler.level=ALL
+    java.util.logging.ConsoleHandler.formatter=java.util.logging.SimpleFormatter
+    java.util.logging.SimpleFormatter.format=%1$tb %1$td %1$tT %4$s %5$s%6$s%n
+    

@@ -146,6 +146,7 @@ public class FsdUtils {
      * 
      * 1. the current working directory,
      * 1. the {@link #configHome(String)}
+     * 1. the subdirectory `appName` of `/etc/opt`
      * 1. the subdirectory `appName` of `/etc`
      *
      * @param appName the application name
@@ -156,6 +157,7 @@ public class FsdUtils {
             String filename) {
         var candidates = List.of(Path.of(filename),
             configHome(appName).resolve(filename),
+            Path.of("/etc").resolve("opt").resolve(appName).resolve(filename),
             Path.of("/etc").resolve(appName).resolve(filename));
         for (var candidate : candidates) {
             if (Files.exists(candidate)) {
