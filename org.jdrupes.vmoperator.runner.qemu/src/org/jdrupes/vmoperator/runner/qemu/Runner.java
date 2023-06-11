@@ -446,7 +446,6 @@ public class Runner extends Component {
     @Handler
     public void onQemuMonitorOpened(QemuMonitorOpened event) {
         Optional.ofNullable(config.vm.currentRam)
-            .map(Configuration::parseMemory)
             .ifPresent(qemuMonitor::setCurrentRam);
         state.set(State.RUNNING);
     }

@@ -108,14 +108,15 @@ class Configuration implements Dto {
     /**
      * Subsection "vm".
      */
-    @SuppressWarnings({ "PMD.ShortClassName", "PMD.TooManyFields" })
+    @SuppressWarnings({ "PMD.ShortClassName", "PMD.TooManyFields",
+        "PMD.DataClass" })
     public static class Vm implements Dto {
         public String name;
         public String uuid;
         public boolean useTpm;
         public String firmware = "uefi";
-        public Object maximumRam;
-        public Object currentRam;
+        public BigInteger maximumRam;
+        public BigInteger currentRam;
         public String cpuModel = "host";
         public int maximumCpus = 1;
         public int currentCpus = 1;
@@ -130,6 +131,24 @@ class Configuration implements Dto {
         public Network[] network = { new Network() };
         public Drive[] drives;
         public Spice spice;
+
+        /**
+         * Convert value from JSON parser.
+         *
+         * @param value the new maximum ram
+         */
+        public void setMaximumRam(String value) {
+            maximumRam = parseMemory(value);
+        }
+
+        /**
+         * Convert value from JSON parser.
+         *
+         * @param value the new current ram
+         */
+        public void setCurrentRam(String value) {
+            currentRam = parseMemory(value);
+        }
     }
 
     /**
@@ -179,10 +198,6 @@ class Configuration implements Dto {
         if (vm.currentCpus > vm.maximumCpus) {
             vm.maximumCpus = vm.currentCpus;
         }
-
-        // Adjust memory specifications
-        vm.maximumRam = parseMemory(vm.maximumRam);
-        vm.currentRam = parseMemory(vm.currentRam);
 
         return true;
     }
