@@ -52,10 +52,10 @@ class Configuration implements Dto {
     static {
         // SI units and common abbreviations
         BigInteger factor = BigInteger.ONE;
+        unitMap.put("", factor);
         BigInteger scale = BigInteger.valueOf(1000);
         for (var unit : List.of("B", "kB", "MB", "GB", "TB", "PB", "EB")) {
             unitMap.put(unit, factor);
-            unitMap.put(unit.substring(0, unit.length() - 1), factor);
             factor = factor.multiply(scale);
         }
         // Binary units
