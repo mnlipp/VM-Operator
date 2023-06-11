@@ -1,8 +1,8 @@
 # Default values for vmrunner helm test.
 
 image:
-  repository: docker-registry.domain.com
-  path: vmoperator/org.jdrupes.vmoperator.runner.qemu
+  repository: ghcr.io
+  path: mnlipp/org.jdrupes.vmoperator.runner.qemu-arch
   version: latest
   pullPolicy: IfNotPresent
 
