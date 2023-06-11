@@ -108,7 +108,7 @@ import org.jgrapes.util.events.WatchFile;
  *     qemu --> monitor : FileChanged[monitor socket created] 
  * 
  *     monitor: entry/fire OpenSocketConnection
- *     monitor --> success: ClientConnected[for monitor]
+ *     monitor --> success: ClientConnected[for monitor]/set balloon value
  *     monitor -> error: ConnectError[for monitor]
  * }
  * 
@@ -129,7 +129,7 @@ import org.jgrapes.util.events.WatchFile;
  * 
  *     qemuPowerdown: entry/suspend Stop, send powerdown to qemu, start timer
  *     
- *     qemuPowerdown --> terminateProcesses: Closed[for monitor]/resume Stop
+ *     qemuPowerdown --> terminateProcesses: Closed[for monitor]/resume Stop,\ncancel Timer
  *     qemuPowerdown --> terminateProcesses: Timeout/resume Stop
  *     terminateProcesses --> terminated
  * }
@@ -445,6 +445,9 @@ public class Runner extends Component {
      */
     @Handler
     public void onQemuMonitorOpened(QemuMonitorOpened event) {
+        Optional.ofNullable(config.vm.currentRam)
+            .map(Configuration::parseMemory)
+            .ifPresent(qemuMonitor::setCurrentRam);
         state.set(State.RUNNING);
     }
 

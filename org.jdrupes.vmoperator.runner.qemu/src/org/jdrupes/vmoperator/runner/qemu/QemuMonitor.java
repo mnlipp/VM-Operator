@@ -68,7 +68,9 @@ public class QemuMonitor extends Component {
     @SuppressWarnings("PMD.UseConcurrentHashMap")
     private final Map<String, String> monitorMessages = new HashMap<>(Map.of(
         "connect", "{ \"execute\": \"qmp_capabilities\" }",
-        "powerdown", "{ \"execute\": \"system_powerdown\" }"));
+        "powerdown", "{ \"execute\": \"system_powerdown\" }",
+        "setBalloon", "{ \"execute\": \"balloon\", \"arguments\": "
+            + "{ \"value\": %d } }"));
 
     private Path socketPath;
     private int powerdownTimeout;
@@ -183,6 +185,16 @@ public class QemuMonitor extends Component {
                 logger.log(Level.WARNING, e, () -> e.getMessage());
             }
         });
+    }
+
+    /**
+     * Sets the current ram.
+     *
+     * @param amount the new current ram
+     */
+    public void setCurrentRam(Number amount) {
+        writeToMonitor(
+            String.format(monitorMessages.get("setBalloon"), amount));
     }
 
     /**
