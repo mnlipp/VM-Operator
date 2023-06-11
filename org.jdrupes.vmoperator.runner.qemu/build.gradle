@@ -58,7 +58,7 @@ task pushArchContainer(type: Exec) {
     commandLine 'podman', 'push', '--tls-verify=false', \
         "localhost/${project.name}:${project.version}", \
         "${project.rootProject.properties['docker.registry']}" \
-            + "/${project.name}-arch:${project.version}"
+            + "/VM-operator/${project.name}-arch:${project.version}"
 }
 
 task pushArchContainerAsLatest(type: Exec) {
@@ -67,7 +67,7 @@ task pushArchContainerAsLatest(type: Exec) {
     commandLine 'podman', 'push', '--tls-verify=false', \
         "localhost/${project.name}:${project.version}", \
         "${project.rootProject.properties['docker.registry']}" \
-            + "/${project.name}-arch:latest"
+            + "/VM-Operator/${project.name}-arch:latest"
 }
 
 task pushContainer {
