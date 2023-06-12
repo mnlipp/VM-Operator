@@ -81,3 +81,9 @@ bridge that the VM can attach to. The only currently supported
 alternative is the less performant
 "[user networking](https://wiki.qemu.org/Documentation/Networking#User_Networking_(SLIRP))",
 which may be used in a stand-alone development configuration.
+
+## Testing with Helm
+
+There is a 
+[Helm Chart](https://github.com/mnlipp/VM-Operator/tree/main/org.jdrupes.vmoperator.runner.qemu/helm-test)
+for testing the runner.
