@@ -83,11 +83,14 @@
     # There are no default drives. The supported types are "ide-cd"
     # and "raw". All types support a "bootindex" property.
     # Type "raw" can have a property "file" (if backed by a file on
-    # the host) or a property "device" (if backed by a device).    
+    # the host) or a property "device" (if backed by a device).
+    # Alternatively you can use "resource", which automatically be
+    # interpreted as file or device as appropriate
+    # (see https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/file/Files.html#isRegularFile(java.nio.file.Path,java.nio.file.LinkOption...)).    
     # "drives":
     # - "type": "ide-cd"
     #   "bootindex": (undefined)
-    #   "file": (undefined)
+    #   "resource": (undefined)
       
     # "spice":
     #   "port": 5900

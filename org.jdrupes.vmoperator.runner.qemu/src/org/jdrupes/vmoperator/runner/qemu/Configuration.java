@@ -132,7 +132,7 @@ class Configuration implements Dto {
         public String rtcClock = "rt";
         public int powerdownTimeout = 900;
         public Network[] network = { new Network() };
-        public Drive[] drives;
+        public Drive[] drives = new Drive[0];
         public Spice spice;
 
         /**
@@ -173,6 +173,7 @@ class Configuration implements Dto {
         public Integer bootindex;
         public String device;
         public String file;
+        public String resource;
     }
 
     /**
@@ -202,7 +203,27 @@ class Configuration implements Dto {
             vm.maximumCpus = vm.currentCpus;
         }
 
+        checkDrives();
+
         return true;
+    }
+
+    private void checkDrives() {
+        for (Drive drive : vm.drives) {
+            if (drive.file != null || drive.device != null) {
+                continue;
+            }
+            if (drive.resource == null) {
+                logger.severe(
+                    () -> "Drive configuration is missing its resource.");
+
+            }
+            if (Files.isRegularFile(Path.of(drive.resource))) {
+                drive.file = drive.resource;
+            } else {
+                drive.device = drive.resource;
+            }
+        }
     }
 
     @SuppressWarnings("PMD.AvoidDeeplyNestedIfStmts")
