@@ -19,6 +19,10 @@
 package org.jdrupes.vmoperator.manager;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.util.logging.LogManager;
+import org.jdrupes.vmoperator.util.FsdUtils;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.Components;
@@ -29,6 +33,7 @@ import org.jgrapes.io.NioDispatcher;
 
 public class Manager extends Component {
 
+    public static final String APP_NAME = "vmoperator";
     private static Manager app;
 
     public Manager() throws IOException {
@@ -49,6 +54,22 @@ public class Manager extends Component {
     @Handler
     public void onStop(Stop event) {
         System.out.println("(Done.)");
+    }
+
+    static {
+        try {
+            InputStream props;
+            var path = FsdUtils.findConfigFile(Manager.APP_NAME,
+                "logging.properties");
+            if (path.isPresent()) {
+                props = Files.newInputStream(path.get());
+            } else {
+                props = Manager.class.getResourceAsStream("logging.properties");
+            }
+            LogManager.getLogManager().readConfiguration(props);
+        } catch (IOException e) {
+            e.printStackTrace(); // NOPMD
+        }
     }
 
     /**
