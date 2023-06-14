@@ -12,10 +12,11 @@ based VMs in Kubernetes pods.
 
 The project was triggered by a remark in the discussion about RedHat
 [dropping SPICE support](https://bugzilla.redhat.com/show_bug.cgi?id=2030592) 
-from the RHEL packages. 
-[One comment](https://bugzilla.redhat.com/show_bug.cgi?id=2030592#c4) 
+from the RHEL packages. Which means that you have to run Qemu in a
+container on RHEL and derivatives. So KubeVirt comes to mind. But
+[one comment](https://bugzilla.redhat.com/show_bug.cgi?id=2030592#c4) 
 mentioned that the [KubeVirt](https://kubevirt.io/) project isn't
-interested in supporting SPICE.
+interested in supporting SPICE either.
 
 Time to have a look at alternatives. Libvirt has become a common
 tool to configure and run Qemu. But some of its functionality, notably
