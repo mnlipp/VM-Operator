@@ -15,7 +15,7 @@ a [crash consistent state](https://gitlab.com/qemu-project/qemu/-/issues/148).
 For a graceful shutdown, a parent process must handle the TERM signal, send
 the `system_powerdown` command to the qemu process and wait for its completion.
 
-Another reason is for having a manager process is that you need a second
+Another reason for having a manager process is that you need a second
 process besides qemu if you want to provide a TPM (software TPM) to the
 VM.
 
