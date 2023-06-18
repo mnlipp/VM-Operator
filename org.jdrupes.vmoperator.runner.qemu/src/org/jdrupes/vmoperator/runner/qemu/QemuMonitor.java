@@ -238,7 +238,9 @@ public class QemuMonitor extends Component {
             monitorChannel = null;
             synchronized (this) {
                 if (suspendedStop != null) {
-                    powerdownTimer.cancel();
+                    if (powerdownTimer != null) {
+                        powerdownTimer.cancel();
+                    }
                     suspendedStop.resumeHandling();
                     suspendedStop = null;
                 }
