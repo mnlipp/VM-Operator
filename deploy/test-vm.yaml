@@ -1,0 +1,19 @@
+image:
+  repository: docker-registry.lan.mnl.de
+  path: vmoperator/org.jdrupes.vmoperator.runner.qemu-arch
+  pullPolicy: Always
+
+vm:
+  maximumCpus: 4
+  currentCpus: 4
+  maximumMemory: "8 GiB"
+  currentMemory: "4 GiB"
+  spicePort: 5910
+  
+  # Currently only block devices are supported as VM disks
+  disks:
+  - device: /dev/vgmain/test-vm
+    size: 40Gi
+  networks:
+  - bridge:
+      mac: "00:16:3e:33:59:10"

@@ -1,0 +1,94 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: vms.vmoperator.jdrupes.org
+spec:
+  group: vmoperator.jdrupes.org
+  # list of versions supported by this CustomResourceDefinition
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                image:
+                  type: object
+                  properties:
+                    repository: 
+                      type: string
+                      default: "ghcr.io"
+                    path:
+                      type: string
+                      default: "mnlipp/org.jdrupes.vmoperator.runner.qemu-arch"
+                    version:
+                      type: string
+                      default: "latest"
+                    pullPolicy:
+                      type: string
+                      enum: [ "IfNotPresent", "Always" ]
+                      default: "IfNotPresent"
+                vm:
+                  type: object
+                  properties:
+                    name: 
+                      type: string
+                    machineUuid:
+                      type: string
+                    host:
+                      type: string
+                    useTpm:
+                      type: boolean
+                      default: false
+                    firmware:
+                      type: string
+                      default: "uefi"
+                    cpuModel:
+                      type: string
+                      default: "host"
+                    maximumCpus:
+                      type: integer
+                      default: 4
+                    currentCpus:
+                      type: integer
+                      default: 2
+                    maximumRam:
+                      type: string
+                      default: "1G"
+                    currentRam:
+                      type: string
+                    rtcBase:
+                      type: string
+                      default: "utc"
+                    spicePort:
+                      type: integer
+                    networks:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          bridge:
+                            type: object
+                            properties:
+                              name: 
+                                type: string
+                                default: "br0"
+                              mac: 
+                                type: string
+                  required: 
+                  - name
+              required:
+              - vm              
+  # either Namespaced or Cluster
+  scope: Namespaced
+  names:
+    # plural name to be used in the URL: /apis/<group>/<version>/<plural>
+    plural: vms
+    # singular name to be used as an alias on the CLI and for display
+    singular: vm
+    # kind is normally the CamelCased singular type. Your resource manifests use this.
+    kind: Vm

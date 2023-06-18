@@ -18,6 +18,17 @@
 
 package org.jdrupes.vmoperator.manager;
 
+import io.kubernetes.client.openapi.ApiClient;
+import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.Configuration;
+import io.kubernetes.client.openapi.apis.CoreV1Api;
+import io.kubernetes.client.openapi.apis.CustomObjectsApi;
+import io.kubernetes.client.openapi.models.V1Pod;
+import io.kubernetes.client.openapi.models.V1PodList;
+import io.kubernetes.client.util.Config;
+import io.kubernetes.client.util.Yaml;
+
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -45,10 +56,25 @@ public class Manager extends Component {
      * Handle the start event.
      *
      * @param event the event
+     * @throws IOException 
+     * @throws ApiException 
      */
     @Handler
-    public void onStart(Start event) {
-        System.out.println("Hello World!");
+    public void onStart(Start event) throws IOException, ApiException {
+        ApiClient client = Config.defaultClient();
+        Configuration.setDefaultApiClient(client);
+
+        CoreV1Api api = new CoreV1Api();
+        V1PodList list = api.listPodForAllNamespaces(null, null, null, null,
+            null, null, null, null, null, null);
+        for (V1Pod item : list.getItems()) {
+            System.out.println(item.getMetadata().getName());
+        }
+
+//        CustomObjectsApi cApi = new CustomObjectsApi();
+//        var obj = cApi.getNamespacedCustomObject("vmoperator.jdrupes.org", "v1",
+//            "default", "vms", "test");
+//        obj = null;
     }
 
     @Handler
