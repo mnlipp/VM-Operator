@@ -251,39 +251,41 @@
 <span class="source-line-no">238</span><span id="line-238">            monitorChannel = null;</span>
 <span class="source-line-no">239</span><span id="line-239">            synchronized (this) {</span>
 <span class="source-line-no">240</span><span id="line-240">                if (suspendedStop != null) {</span>
-<span class="source-line-no">241</span><span id="line-241">                    powerdownTimer.cancel();</span>
-<span class="source-line-no">242</span><span id="line-242">                    suspendedStop.resumeHandling();</span>
-<span class="source-line-no">243</span><span id="line-243">                    suspendedStop = null;</span>
-<span class="source-line-no">244</span><span id="line-244">                }</span>
-<span class="source-line-no">245</span><span id="line-245">            }</span>
-<span class="source-line-no">246</span><span id="line-246">        });</span>
-<span class="source-line-no">247</span><span id="line-247">    }</span>
-<span class="source-line-no">248</span><span id="line-248"></span>
-<span class="source-line-no">249</span><span id="line-249">    /**</span>
-<span class="source-line-no">250</span><span id="line-250">     * Shutdown the VM.</span>
-<span class="source-line-no">251</span><span id="line-251">     *</span>
-<span class="source-line-no">252</span><span id="line-252">     * @param event the event</span>
-<span class="source-line-no">253</span><span id="line-253">     */</span>
-<span class="source-line-no">254</span><span id="line-254">    @Handler(priority = 100)</span>
-<span class="source-line-no">255</span><span id="line-255">    public void onStop(Stop event) {</span>
-<span class="source-line-no">256</span><span id="line-256">        if (monitorChannel != null) {</span>
-<span class="source-line-no">257</span><span id="line-257">            // We have a connection to Qemu, attempt ACPI shutdown.</span>
-<span class="source-line-no">258</span><span id="line-258">            event.suspendHandling();</span>
-<span class="source-line-no">259</span><span id="line-259">            suspendedStop = event;</span>
-<span class="source-line-no">260</span><span id="line-260">            writeToMonitor(monitorMessages.get("powerdown"));</span>
-<span class="source-line-no">261</span><span id="line-261"></span>
-<span class="source-line-no">262</span><span id="line-262">            // Schedule timer as fallback</span>
-<span class="source-line-no">263</span><span id="line-263">            powerdownTimer = Components.schedule(t -&gt; {</span>
-<span class="source-line-no">264</span><span id="line-264">                synchronized (this) {</span>
-<span class="source-line-no">265</span><span id="line-265">                    if (suspendedStop != null) {</span>
-<span class="source-line-no">266</span><span id="line-266">                        suspendedStop.resumeHandling();</span>
-<span class="source-line-no">267</span><span id="line-267">                        suspendedStop = null;</span>
-<span class="source-line-no">268</span><span id="line-268">                    }</span>
-<span class="source-line-no">269</span><span id="line-269">                }</span>
-<span class="source-line-no">270</span><span id="line-270">            }, Duration.ofSeconds(powerdownTimeout));</span>
-<span class="source-line-no">271</span><span id="line-271">        }</span>
-<span class="source-line-no">272</span><span id="line-272">    }</span>
-<span class="source-line-no">273</span><span id="line-273">}</span>
+<span class="source-line-no">241</span><span id="line-241">                    if (powerdownTimer != null) {</span>
+<span class="source-line-no">242</span><span id="line-242">                        powerdownTimer.cancel();</span>
+<span class="source-line-no">243</span><span id="line-243">                    }</span>
+<span class="source-line-no">244</span><span id="line-244">                    suspendedStop.resumeHandling();</span>
+<span class="source-line-no">245</span><span id="line-245">                    suspendedStop = null;</span>
+<span class="source-line-no">246</span><span id="line-246">                }</span>
+<span class="source-line-no">247</span><span id="line-247">            }</span>
+<span class="source-line-no">248</span><span id="line-248">        });</span>
+<span class="source-line-no">249</span><span id="line-249">    }</span>
+<span class="source-line-no">250</span><span id="line-250"></span>
+<span class="source-line-no">251</span><span id="line-251">    /**</span>
+<span class="source-line-no">252</span><span id="line-252">     * Shutdown the VM.</span>
+<span class="source-line-no">253</span><span id="line-253">     *</span>
+<span class="source-line-no">254</span><span id="line-254">     * @param event the event</span>
+<span class="source-line-no">255</span><span id="line-255">     */</span>
+<span class="source-line-no">256</span><span id="line-256">    @Handler(priority = 100)</span>
+<span class="source-line-no">257</span><span id="line-257">    public void onStop(Stop event) {</span>
+<span class="source-line-no">258</span><span id="line-258">        if (monitorChannel != null) {</span>
+<span class="source-line-no">259</span><span id="line-259">            // We have a connection to Qemu, attempt ACPI shutdown.</span>
+<span class="source-line-no">260</span><span id="line-260">            event.suspendHandling();</span>
+<span class="source-line-no">261</span><span id="line-261">            suspendedStop = event;</span>
+<span class="source-line-no">262</span><span id="line-262">            writeToMonitor(monitorMessages.get("powerdown"));</span>
+<span class="source-line-no">263</span><span id="line-263"></span>
+<span class="source-line-no">264</span><span id="line-264">            // Schedule timer as fallback</span>
+<span class="source-line-no">265</span><span id="line-265">            powerdownTimer = Components.schedule(t -&gt; {</span>
+<span class="source-line-no">266</span><span id="line-266">                synchronized (this) {</span>
+<span class="source-line-no">267</span><span id="line-267">                    if (suspendedStop != null) {</span>
+<span class="source-line-no">268</span><span id="line-268">                        suspendedStop.resumeHandling();</span>
+<span class="source-line-no">269</span><span id="line-269">                        suspendedStop = null;</span>
+<span class="source-line-no">270</span><span id="line-270">                    }</span>
+<span class="source-line-no">271</span><span id="line-271">                }</span>
+<span class="source-line-no">272</span><span id="line-272">            }, Duration.ofSeconds(powerdownTimeout));</span>
+<span class="source-line-no">273</span><span id="line-273">        }</span>
+<span class="source-line-no">274</span><span id="line-274">    }</span>
+<span class="source-line-no">275</span><span id="line-275">}</span>
 
 
 
