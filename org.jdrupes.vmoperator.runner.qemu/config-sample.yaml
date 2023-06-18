@@ -92,7 +92,7 @@
     #   "bootindex": (undefined)
     #   "resource": (undefined)
       
-    # "spice":
-    #   "port": 5900
-    #   "usbRedirects": 2
-      
+    # "display":
+    #   "spice":
+    #     "port": 5900
+    #     "usbRedirects": 2

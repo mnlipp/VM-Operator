@@ -33,6 +33,7 @@ import java.util.regex.Pattern;
 import org.jdrupes.vmoperator.util.Dto;
 import org.jdrupes.vmoperator.util.FsdUtils;
 
+// TODO: Auto-generated Javadoc
 /**
  * The configuration information from the configuration file.
  */
@@ -68,14 +69,31 @@ class Configuration implements Dto {
         }
     }
 
+    /** The data dir. */
     public Path dataDir;
+
+    /** The runtime dir. */
     public Path runtimeDir;
+
+    /** The template. */
     public String template;
+
+    /** The update template. */
     public boolean updateTemplate;
+
+    /** The swtpm socket. */
     public Path swtpmSocket;
+
+    /** The monitor socket. */
     public Path monitorSocket;
+
+    /** The firmware rom. */
     public Path firmwareRom;
+
+    /** The firmware vars. */
     public Path firmwareVars;
+
+    /** The vm. */
     @SuppressWarnings("PMD.ShortVariable")
     public Vm vm;
 
@@ -113,27 +131,69 @@ class Configuration implements Dto {
     @SuppressWarnings({ "PMD.ShortClassName", "PMD.TooManyFields",
         "PMD.DataClass" })
     public static class Vm implements Dto {
+
+        /** The name. */
         public String name;
+
+        /** The uuid. */
         public String uuid;
+
+        /** The use tpm. */
         public boolean useTpm;
+
+        /** The boot menu. */
         public boolean bootMenu;
+
+        /** The firmware. */
         public String firmware = "uefi";
+
+        /** The maximum ram. */
         public BigInteger maximumRam;
+
+        /** The current ram. */
         public BigInteger currentRam;
+
+        /** The cpu model. */
         public String cpuModel = "host";
+
+        /** The maximum cpus. */
         public int maximumCpus = 1;
+
+        /** The current cpus. */
         public int currentCpus = 1;
+
+        /** The cpu sockets. */
         public int cpuSockets;
+
+        /** The dies per socket. */
         public int diesPerSocket;
+
+        /** The cores per die. */
         public int coresPerDie;
+
+        /** The threads per core. */
         public int threadsPerCore;
+
+        /** The accelerator. */
         public String accelerator = "kvm";
+
+        /** The rtc base. */
         public String rtcBase = "utc";
+
+        /** The rtc clock. */
         public String rtcClock = "rt";
+
+        /** The powerdown timeout. */
         public int powerdownTimeout = 900;
+
+        /** The network. */
         public Network[] network = { new Network() };
+
+        /** The drives. */
         public Drive[] drives = new Drive[0];
-        public Spice spice;
+
+        /** The display. */
+        public Display display;
 
         /**
          * Convert value from JSON parser.
@@ -158,10 +218,20 @@ class Configuration implements Dto {
      * Subsection "network".
      */
     public static class Network implements Dto {
+
+        /** The type. */
         public String type = "tap";
+
+        /** The bridge. */
         public String bridge;
+
+        /** The device. */
         public String device = "virtio-net";
+
+        /** The mac. */
         public String mac;
+
+        /** The net. */
         public String net;
     }
 
@@ -169,18 +239,42 @@ class Configuration implements Dto {
      * Subsection "drive".
      */
     public static class Drive implements Dto {
+
+        /** The type. */
         public String type;
+
+        /** The bootindex. */
         public Integer bootindex;
+
+        /** The device. */
         public String device;
+
+        /** The file. */
         public String file;
+
+        /** The resource. */
         public String resource;
+    }
+
+    /**
+     * The Class Display.
+     */
+    public static class Display implements Dto {
+        public Spice spice;
     }
 
     /**
      * Subsection "spice".
      */
     public static class Spice implements Dto {
+
+        /** The port. */
         public int port = 5900;
+
+        /** The streaming video. */
+        public String streamingVideo;
+
+        /** The usb redirects. */
         public int usbRedirects = 2;
     }
 

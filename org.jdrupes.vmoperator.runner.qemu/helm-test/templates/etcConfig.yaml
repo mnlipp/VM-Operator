@@ -113,10 +113,14 @@ data:
         - "type": "raw"
           "device": "/dev/disk-{{ $index }}"
         {{- end }}
-          
-        "spice":
-          "port": {{ .Values.vm.spicePort }}
-        #   "usbRedirects": 2
+
+        "display":
+          "spice":
+            "port": {{ .Values.vm.spicePort }}
+            {{- if hasKey .Values.vm "streamingVideo" }}
+            "streamingVideo": "{{ .Values.vm.streamingVideo }}"
+            {{- end }}
+            # "usbRedirects": 2
 
   logging.properties: |
     handlers=java.util.logging.ConsoleHandler
