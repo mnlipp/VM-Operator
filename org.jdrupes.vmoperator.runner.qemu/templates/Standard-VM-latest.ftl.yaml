@@ -123,7 +123,8 @@
     <#list vm.network![] as itf>
     <#switch itf.type!"tap">
     <#case "tap">
-    - [ "-netdev", "bridge,id=hostnet${ nwCounter }" ]
+    - [ "-netdev", "bridge,id=hostnet${ nwCounter }\
+        <#if itf.bridge??>,br=${ itf.bridge }</#if>" ]
     - [ "-device", "${ itf.device },netdev=hostnet${ nwCounter }\
         <#if itf.mac??>,mac=${ itf.mac }</#if>" ]
     <#break>

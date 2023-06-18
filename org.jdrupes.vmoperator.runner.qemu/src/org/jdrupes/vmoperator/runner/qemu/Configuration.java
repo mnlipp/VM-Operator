@@ -159,7 +159,7 @@ class Configuration implements Dto {
      */
     public static class Network implements Dto {
         public String type = "tap";
-        public String bridge = "br0";
+        public String bridge;
         public String device = "virtio-net";
         public String mac;
         public String net;
