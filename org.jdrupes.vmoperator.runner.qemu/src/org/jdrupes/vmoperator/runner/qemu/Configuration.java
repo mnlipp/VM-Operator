@@ -23,9 +23,11 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -322,14 +324,28 @@ class Configuration implements Dto {
 
     @SuppressWarnings("PMD.AvoidDeeplyNestedIfStmts")
     private boolean checkRuntimeDir() {
-        // Runtime directory (sockets)
+        // Runtime directory (sockets etc.)
         if (runtimeDir == null) {
+            var appDir = FsdUtils.runtimeDir(Runner.APP_NAME);
+            if (!Files.exists(appDir) && appDir.toFile().mkdirs()) {
+                try {
+                    // When appDir is derived from XDG_RUNTIME_DIR
+                    // the latter should already have these permissions,
+                    // but let's be on the safe side.
+                    Files.setPosixFilePermissions(appDir,
+                        Set.of(PosixFilePermission.OWNER_READ,
+                            PosixFilePermission.OWNER_WRITE,
+                            PosixFilePermission.OWNER_EXECUTE));
+                } catch (IOException e) {
+                    logger.warning(() -> String.format(
+                        "Cannot set permissions rwx------ on \"%s\".",
+                        runtimeDir));
+                }
+            }
             runtimeDir = FsdUtils.runtimeDir(Runner.APP_NAME).resolve(vm.name);
+            runtimeDir.toFile().mkdir();
             swtpmSocket = runtimeDir.resolve("swtpm-sock");
             monitorSocket = runtimeDir.resolve("monitor.sock");
-        }
-        if (!Files.exists(runtimeDir)) {
-            runtimeDir.toFile().mkdirs();
         }
         if (!Files.isDirectory(runtimeDir) || !Files.isWritable(runtimeDir)) {
             logger.severe(() -> String.format(
