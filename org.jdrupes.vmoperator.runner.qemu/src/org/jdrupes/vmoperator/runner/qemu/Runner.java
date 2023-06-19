@@ -38,6 +38,7 @@ import java.lang.reflect.UndeclaredThrowableException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -52,7 +53,6 @@ import org.apache.commons.cli.Options;
 import org.jdrupes.vmoperator.runner.qemu.StateController.State;
 import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
 import org.jdrupes.vmoperator.util.FsdUtils;
-import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.Components;
 import org.jgrapes.core.TypedIdKey;
@@ -486,6 +486,29 @@ public class Runner extends Component {
         state.set(State.TERMINATING);
     }
 
+    private void shutdown() {
+        if (state.get() != State.TERMINATING) {
+            fire(new Stop());
+        }
+        try {
+            Components.awaitExhaustion();
+        } catch (InterruptedException e) {
+            logger.log(Level.WARNING, e, () -> "Proper shutdown failed.");
+        }
+
+        Optional.ofNullable(config).map(c -> c.runtimeDir)
+            .ifPresent(runtimeDir -> {
+                try {
+                    Files.walk(runtimeDir).sorted(Comparator.reverseOrder())
+                        .map(Path::toFile).forEach(File::delete);
+                } catch (IOException e) {
+                    logger.warning(() -> String.format(
+                        "Cannot delete runtime directory \"%s\".",
+                        runtimeDir));
+                }
+            });
+    }
+
     static {
         try {
             InputStream props;
@@ -520,12 +543,7 @@ public class Runner extends Component {
 
             // Prepare Stop
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                try {
-                    app.fire(new Stop(), Channel.BROADCAST);
-                    Components.awaitExhaustion();
-                } catch (InterruptedException e) {
-                    // Cannot do anything about this.
-                }
+                app.shutdown();
             }));
 
             // Start the application
