@@ -51,21 +51,21 @@
 <span class="source-line-no">038</span><span id="line-38">import java.nio.file.Files;</span>
 <span class="source-line-no">039</span><span id="line-39">import java.nio.file.Path;</span>
 <span class="source-line-no">040</span><span id="line-40">import java.nio.file.Paths;</span>
-<span class="source-line-no">041</span><span id="line-41">import java.util.HashMap;</span>
-<span class="source-line-no">042</span><span id="line-42">import java.util.Map;</span>
-<span class="source-line-no">043</span><span id="line-43">import java.util.Optional;</span>
-<span class="source-line-no">044</span><span id="line-44">import java.util.logging.Level;</span>
-<span class="source-line-no">045</span><span id="line-45">import java.util.logging.LogManager;</span>
-<span class="source-line-no">046</span><span id="line-46">import java.util.logging.Logger;</span>
-<span class="source-line-no">047</span><span id="line-47">import org.apache.commons.cli.CommandLine;</span>
-<span class="source-line-no">048</span><span id="line-48">import org.apache.commons.cli.CommandLineParser;</span>
-<span class="source-line-no">049</span><span id="line-49">import org.apache.commons.cli.DefaultParser;</span>
-<span class="source-line-no">050</span><span id="line-50">import org.apache.commons.cli.Option;</span>
-<span class="source-line-no">051</span><span id="line-51">import org.apache.commons.cli.Options;</span>
-<span class="source-line-no">052</span><span id="line-52">import org.jdrupes.vmoperator.runner.qemu.StateController.State;</span>
-<span class="source-line-no">053</span><span id="line-53">import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;</span>
-<span class="source-line-no">054</span><span id="line-54">import org.jdrupes.vmoperator.util.FsdUtils;</span>
-<span class="source-line-no">055</span><span id="line-55">import org.jgrapes.core.Channel;</span>
+<span class="source-line-no">041</span><span id="line-41">import java.util.Comparator;</span>
+<span class="source-line-no">042</span><span id="line-42">import java.util.HashMap;</span>
+<span class="source-line-no">043</span><span id="line-43">import java.util.Map;</span>
+<span class="source-line-no">044</span><span id="line-44">import java.util.Optional;</span>
+<span class="source-line-no">045</span><span id="line-45">import java.util.logging.Level;</span>
+<span class="source-line-no">046</span><span id="line-46">import java.util.logging.LogManager;</span>
+<span class="source-line-no">047</span><span id="line-47">import java.util.logging.Logger;</span>
+<span class="source-line-no">048</span><span id="line-48">import org.apache.commons.cli.CommandLine;</span>
+<span class="source-line-no">049</span><span id="line-49">import org.apache.commons.cli.CommandLineParser;</span>
+<span class="source-line-no">050</span><span id="line-50">import org.apache.commons.cli.DefaultParser;</span>
+<span class="source-line-no">051</span><span id="line-51">import org.apache.commons.cli.Option;</span>
+<span class="source-line-no">052</span><span id="line-52">import org.apache.commons.cli.Options;</span>
+<span class="source-line-no">053</span><span id="line-53">import org.jdrupes.vmoperator.runner.qemu.StateController.State;</span>
+<span class="source-line-no">054</span><span id="line-54">import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;</span>
+<span class="source-line-no">055</span><span id="line-55">import org.jdrupes.vmoperator.util.FsdUtils;</span>
 <span class="source-line-no">056</span><span id="line-56">import org.jgrapes.core.Component;</span>
 <span class="source-line-no">057</span><span id="line-57">import org.jgrapes.core.Components;</span>
 <span class="source-line-no">058</span><span id="line-58">import org.jgrapes.core.TypedIdKey;</span>
@@ -499,57 +499,75 @@
 <span class="source-line-no">486</span><span id="line-486">        state.set(State.TERMINATING);</span>
 <span class="source-line-no">487</span><span id="line-487">    }</span>
 <span class="source-line-no">488</span><span id="line-488"></span>
-<span class="source-line-no">489</span><span id="line-489">    static {</span>
-<span class="source-line-no">490</span><span id="line-490">        try {</span>
-<span class="source-line-no">491</span><span id="line-491">            InputStream props;</span>
-<span class="source-line-no">492</span><span id="line-492">            var path = FsdUtils.findConfigFile(Runner.APP_NAME,</span>
-<span class="source-line-no">493</span><span id="line-493">                "logging.properties");</span>
-<span class="source-line-no">494</span><span id="line-494">            if (path.isPresent()) {</span>
-<span class="source-line-no">495</span><span id="line-495">                props = Files.newInputStream(path.get());</span>
-<span class="source-line-no">496</span><span id="line-496">            } else {</span>
-<span class="source-line-no">497</span><span id="line-497">                props = Runner.class.getResourceAsStream("logging.properties");</span>
-<span class="source-line-no">498</span><span id="line-498">            }</span>
-<span class="source-line-no">499</span><span id="line-499">            LogManager.getLogManager().readConfiguration(props);</span>
-<span class="source-line-no">500</span><span id="line-500">        } catch (IOException e) {</span>
-<span class="source-line-no">501</span><span id="line-501">            e.printStackTrace();</span>
-<span class="source-line-no">502</span><span id="line-502">        }</span>
-<span class="source-line-no">503</span><span id="line-503">    }</span>
-<span class="source-line-no">504</span><span id="line-504"></span>
-<span class="source-line-no">505</span><span id="line-505">    /**</span>
-<span class="source-line-no">506</span><span id="line-506">     * The main method.</span>
-<span class="source-line-no">507</span><span id="line-507">     *</span>
-<span class="source-line-no">508</span><span id="line-508">     * @param args the command</span>
-<span class="source-line-no">509</span><span id="line-509">     */</span>
-<span class="source-line-no">510</span><span id="line-510">    public static void main(String[] args) {</span>
-<span class="source-line-no">511</span><span id="line-511">        // The Runner is the root component</span>
-<span class="source-line-no">512</span><span id="line-512">        try {</span>
-<span class="source-line-no">513</span><span id="line-513">            CommandLineParser parser = new DefaultParser();</span>
-<span class="source-line-no">514</span><span id="line-514">            // parse the command line arguments</span>
-<span class="source-line-no">515</span><span id="line-515">            final Options options = new Options();</span>
-<span class="source-line-no">516</span><span id="line-516">            options.addOption(new Option("c", "config", true, "The configu"</span>
-<span class="source-line-no">517</span><span id="line-517">                + "ration file (defaults to /etc/opt/vmrunner/config.yaml)."));</span>
-<span class="source-line-no">518</span><span id="line-518">            CommandLine cmd = parser.parse(options, args);</span>
-<span class="source-line-no">519</span><span id="line-519">            var app = new Runner(cmd);</span>
-<span class="source-line-no">520</span><span id="line-520"></span>
-<span class="source-line-no">521</span><span id="line-521">            // Prepare Stop</span>
-<span class="source-line-no">522</span><span id="line-522">            Runtime.getRuntime().addShutdownHook(new Thread(() -&gt; {</span>
-<span class="source-line-no">523</span><span id="line-523">                try {</span>
-<span class="source-line-no">524</span><span id="line-524">                    app.fire(new Stop(), Channel.BROADCAST);</span>
-<span class="source-line-no">525</span><span id="line-525">                    Components.awaitExhaustion();</span>
-<span class="source-line-no">526</span><span id="line-526">                } catch (InterruptedException e) {</span>
-<span class="source-line-no">527</span><span id="line-527">                    // Cannot do anything about this.</span>
-<span class="source-line-no">528</span><span id="line-528">                }</span>
-<span class="source-line-no">529</span><span id="line-529">            }));</span>
-<span class="source-line-no">530</span><span id="line-530"></span>
-<span class="source-line-no">531</span><span id="line-531">            // Start the application</span>
-<span class="source-line-no">532</span><span id="line-532">            Components.start(app);</span>
-<span class="source-line-no">533</span><span id="line-533">        } catch (IOException | InterruptedException</span>
-<span class="source-line-no">534</span><span id="line-534">                | org.apache.commons.cli.ParseException e) {</span>
-<span class="source-line-no">535</span><span id="line-535">            Logger.getLogger(Runner.class.getName()).log(Level.SEVERE, e,</span>
-<span class="source-line-no">536</span><span id="line-536">                () -&gt; "Failed to start runner: " + e.getMessage());</span>
-<span class="source-line-no">537</span><span id="line-537">        }</span>
-<span class="source-line-no">538</span><span id="line-538">    }</span>
-<span class="source-line-no">539</span><span id="line-539">}</span>
+<span class="source-line-no">489</span><span id="line-489">    private void shutdown() {</span>
+<span class="source-line-no">490</span><span id="line-490">        if (state.get() != State.TERMINATING) {</span>
+<span class="source-line-no">491</span><span id="line-491">            fire(new Stop());</span>
+<span class="source-line-no">492</span><span id="line-492">        }</span>
+<span class="source-line-no">493</span><span id="line-493">        try {</span>
+<span class="source-line-no">494</span><span id="line-494">            Components.awaitExhaustion();</span>
+<span class="source-line-no">495</span><span id="line-495">        } catch (InterruptedException e) {</span>
+<span class="source-line-no">496</span><span id="line-496">            logger.log(Level.WARNING, e, () -&gt; "Proper shutdown failed.");</span>
+<span class="source-line-no">497</span><span id="line-497">        }</span>
+<span class="source-line-no">498</span><span id="line-498"></span>
+<span class="source-line-no">499</span><span id="line-499">        Optional.ofNullable(config).map(c -&gt; c.runtimeDir)</span>
+<span class="source-line-no">500</span><span id="line-500">            .ifPresent(runtimeDir -&gt; {</span>
+<span class="source-line-no">501</span><span id="line-501">                try {</span>
+<span class="source-line-no">502</span><span id="line-502">                    Files.walk(runtimeDir).sorted(Comparator.reverseOrder())</span>
+<span class="source-line-no">503</span><span id="line-503">                        .map(Path::toFile).forEach(File::delete);</span>
+<span class="source-line-no">504</span><span id="line-504">                } catch (IOException e) {</span>
+<span class="source-line-no">505</span><span id="line-505">                    logger.warning(() -&gt; String.format(</span>
+<span class="source-line-no">506</span><span id="line-506">                        "Cannot delete runtime directory \"%s\".",</span>
+<span class="source-line-no">507</span><span id="line-507">                        runtimeDir));</span>
+<span class="source-line-no">508</span><span id="line-508">                }</span>
+<span class="source-line-no">509</span><span id="line-509">            });</span>
+<span class="source-line-no">510</span><span id="line-510">    }</span>
+<span class="source-line-no">511</span><span id="line-511"></span>
+<span class="source-line-no">512</span><span id="line-512">    static {</span>
+<span class="source-line-no">513</span><span id="line-513">        try {</span>
+<span class="source-line-no">514</span><span id="line-514">            InputStream props;</span>
+<span class="source-line-no">515</span><span id="line-515">            var path = FsdUtils.findConfigFile(Runner.APP_NAME,</span>
+<span class="source-line-no">516</span><span id="line-516">                "logging.properties");</span>
+<span class="source-line-no">517</span><span id="line-517">            if (path.isPresent()) {</span>
+<span class="source-line-no">518</span><span id="line-518">                props = Files.newInputStream(path.get());</span>
+<span class="source-line-no">519</span><span id="line-519">            } else {</span>
+<span class="source-line-no">520</span><span id="line-520">                props = Runner.class.getResourceAsStream("logging.properties");</span>
+<span class="source-line-no">521</span><span id="line-521">            }</span>
+<span class="source-line-no">522</span><span id="line-522">            LogManager.getLogManager().readConfiguration(props);</span>
+<span class="source-line-no">523</span><span id="line-523">        } catch (IOException e) {</span>
+<span class="source-line-no">524</span><span id="line-524">            e.printStackTrace();</span>
+<span class="source-line-no">525</span><span id="line-525">        }</span>
+<span class="source-line-no">526</span><span id="line-526">    }</span>
+<span class="source-line-no">527</span><span id="line-527"></span>
+<span class="source-line-no">528</span><span id="line-528">    /**</span>
+<span class="source-line-no">529</span><span id="line-529">     * The main method.</span>
+<span class="source-line-no">530</span><span id="line-530">     *</span>
+<span class="source-line-no">531</span><span id="line-531">     * @param args the command</span>
+<span class="source-line-no">532</span><span id="line-532">     */</span>
+<span class="source-line-no">533</span><span id="line-533">    public static void main(String[] args) {</span>
+<span class="source-line-no">534</span><span id="line-534">        // The Runner is the root component</span>
+<span class="source-line-no">535</span><span id="line-535">        try {</span>
+<span class="source-line-no">536</span><span id="line-536">            CommandLineParser parser = new DefaultParser();</span>
+<span class="source-line-no">537</span><span id="line-537">            // parse the command line arguments</span>
+<span class="source-line-no">538</span><span id="line-538">            final Options options = new Options();</span>
+<span class="source-line-no">539</span><span id="line-539">            options.addOption(new Option("c", "config", true, "The configu"</span>
+<span class="source-line-no">540</span><span id="line-540">                + "ration file (defaults to /etc/opt/vmrunner/config.yaml)."));</span>
+<span class="source-line-no">541</span><span id="line-541">            CommandLine cmd = parser.parse(options, args);</span>
+<span class="source-line-no">542</span><span id="line-542">            var app = new Runner(cmd);</span>
+<span class="source-line-no">543</span><span id="line-543"></span>
+<span class="source-line-no">544</span><span id="line-544">            // Prepare Stop</span>
+<span class="source-line-no">545</span><span id="line-545">            Runtime.getRuntime().addShutdownHook(new Thread(() -&gt; {</span>
+<span class="source-line-no">546</span><span id="line-546">                app.shutdown();</span>
+<span class="source-line-no">547</span><span id="line-547">            }));</span>
+<span class="source-line-no">548</span><span id="line-548"></span>
+<span class="source-line-no">549</span><span id="line-549">            // Start the application</span>
+<span class="source-line-no">550</span><span id="line-550">            Components.start(app);</span>
+<span class="source-line-no">551</span><span id="line-551">        } catch (IOException | InterruptedException</span>
+<span class="source-line-no">552</span><span id="line-552">                | org.apache.commons.cli.ParseException e) {</span>
+<span class="source-line-no">553</span><span id="line-553">            Logger.getLogger(Runner.class.getName()).log(Level.SEVERE, e,</span>
+<span class="source-line-no">554</span><span id="line-554">                () -&gt; "Failed to start runner: " + e.getMessage());</span>
+<span class="source-line-no">555</span><span id="line-555">        }</span>
+<span class="source-line-no">556</span><span id="line-556">    }</span>
+<span class="source-line-no">557</span><span id="line-557">}</span>
 
 
 
