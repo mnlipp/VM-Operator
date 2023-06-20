@@ -117,6 +117,9 @@ data:
         "display":
           "spice":
             "port": {{ .Values.vm.spicePort }}
+            {{- if hasKey .Values.vm "spiceTicket" }}
+            "ticket": "{{ .Values.vm.spiceTicket }}"
+            {{- end }}
             {{- if hasKey .Values.vm "streamingVideo" }}
             "streamingVideo": "{{ .Values.vm.streamingVideo }}"
             {{- end }}
