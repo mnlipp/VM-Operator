@@ -184,7 +184,12 @@
     <#assign spice = vm.display.spice/>
     # SPICE (display, channels ...)
     # https://www.linux-kvm.org/page/SPICE
-    - [ "-spice", "port=${ spice.port?c },disable-ticketing=on\
+    <#if ticketPath??>
+    - [ "-object", "secret,id=spiceTicket,file=${ ticketPath }" ]
+    </#if>
+    - [ "-spice", "port=${ spice.port?c }\
+        <#if spice.ticket??>,password-secret=spiceTicket\
+        <#else>,disable-ticketing=on</#if>\
         <#if spice.streamingVideo??>,streaming-video=${ spice.streamingVideo }</#if>\
         ,seamless-migration=on" ]
     - [ "-chardev", "spicevmc,id=vdagentdev,name=vdagent" ]

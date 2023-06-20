@@ -95,4 +95,6 @@
     # "display":
     #   "spice":
     #     "port": 5900
+    #     "ticket": (default is to disable ticketing)
+    #     "streamingVideo": (default)
     #     "usbRedirects": 2

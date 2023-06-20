@@ -273,6 +273,9 @@ class Configuration implements Dto {
         /** The port. */
         public int port = 5900;
 
+        /** The ticket. */
+        public String ticket;
+
         /** The streaming video. */
         public String streamingVideo;
 

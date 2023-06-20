@@ -310,6 +310,10 @@ public class Runner extends Component {
         model.put("firmwareVars", Optional.ofNullable(config.firmwareVars)
             .map(Object::toString).orElse(null));
         model.put("vm", config.vm);
+        if (Optional.ofNullable(config.vm.display)
+            .map(d -> d.spice).map(s -> s.ticket).isPresent()) {
+            model.put("ticketPath", config.runtimeDir.resolve("ticket.txt"));
+        }
 
         // Combine template and data and parse result
         // (tempting, but no need to use a pipe here)
@@ -342,6 +346,14 @@ public class Runner extends Component {
             // Files to watch for
             Files.deleteIfExists(config.swtpmSocket);
             fire(new WatchFile(config.swtpmSocket));
+
+            // Helper files
+            var ticket = Optional.ofNullable(config.vm.display)
+                .map(d -> d.spice).map(s -> s.ticket);
+            if (ticket.isPresent()) {
+                Files.write(config.runtimeDir.resolve("ticket.txt"),
+                    ticket.get().getBytes());
+            }
         } catch (IOException e) {
             logger.log(Level.SEVERE, e,
                 () -> "Cannot start runner: " + e.getMessage());
