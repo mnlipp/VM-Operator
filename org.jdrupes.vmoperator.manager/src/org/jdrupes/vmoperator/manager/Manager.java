@@ -48,7 +48,7 @@ public class Manager extends Component {
         // Prepare component tree
         attach(new NioDispatcher());
         attach(new VmDefinitionWatcher(channel()));
-        attach(new Reconciliator(channel()));
+        attach(new Reconciler(channel()));
     }
 
     /**

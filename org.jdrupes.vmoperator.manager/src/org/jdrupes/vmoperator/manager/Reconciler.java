@@ -4,9 +4,9 @@ import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.annotation.Handler;
 
-public class Reconciliator extends Component {
+public class Reconciler extends Component {
 
-    public Reconciliator(Channel componentChannel) {
+    public Reconciler(Channel componentChannel) {
         super(componentChannel);
     }
 
