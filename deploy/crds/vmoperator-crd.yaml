@@ -17,6 +17,8 @@ spec:
               type: object
               properties:
                 image:
+                  description: >-
+                    The image to use for the pod. Must run a runner.
                   type: object
                   properties:
                     repository: 
@@ -34,25 +36,71 @@ spec:
                       default: "IfNotPresent"
                 vm:
                   type: object
+                  description: Defines the VM.
                   properties:
-                    name: 
-                      type: string
                     machineUuid:
+                      description: >-
+                        The machine's uuid. If none is specified, a uuid 
+                        is generated and stored in the data directory. 
+                        If the uuid is important (e.g. because licenses 
+                        depend on it) it is recommaned to specify it 
+                        explicitly or to carefully backup the data 
+                        directory.
                       type: string
                     host:
+                      description: The host to run this vm on.
                       type: string
                     useTpm:
+                      description: Whether to provide a software TPM.
                       type: boolean
                       default: false
                     firmware:
+                      description: >-
+                        How to boot.
                       type: string
+                      enum: ["bios", "uefi", "uefi-4m", "secure", "secure-4m"]
                       default: "uefi"
+                    bootMenu:
+                      description: Whether to show a boot menu.
+                      type: boolean
+                      default: false
+                    powerdownTimeout:
+                      description: >-
+                        When terminating, a graceful powerdown is attempted. 
+                        If it doesn't succeed within the given timeout 
+                        (seconds) SIGTERM is sent to Qemu.
+                      type: integer
+                      default: 900
                     cpuModel:
+                      description: Any model supported by Qemu.
                       type: string
                       default: "host"
                     maximumCpus:
+                      description: >-
+                        Either maximumCpus or cpuTopology may be specified.
+                        If currentCpus is greater than maximumCpus, the 
+                        latter is adjusted. Setting maximumCpus to 1 omits
+                        the "-smp" options.
                       type: integer
                       default: 4
+                    cpuTopology:
+                      description: >-
+                        The defaults (0) cause the corresponding property 
+                        to be omitted from the "-smp" option.
+                      type: object
+                      properties:
+                        sockets:
+                          type: integer
+                          default: 0
+                        diesPerSocket:
+                          type: integer
+                          default: 0
+                        coresPerSocket:
+                          type: integer
+                          default: 0
+                        threadsPerSocket:
+                          type: integer
+                          default: 0
                     currentCpus:
                       type: integer
                       default: 2
@@ -62,25 +110,73 @@ spec:
                     currentRam:
                       type: string
                     rtcBase:
+                      description: Passed to Qemu unmodified.
                       type: string
                       default: "utc"
-                    spicePort:
-                      type: integer
                     networks:
                       type: array
                       items:
+                        description: >-
+                          Supported types are "tap" and "user" (for debugging).
                         type: object
                         properties:
-                          bridge:
+                          tap:
                             type: object
                             properties:
-                              name: 
+                              device:
+                                description: The device to use.
+                                type: string
+                                default: "virtio-net"
+                              bridge:
+                                description: The bridge to attach to.
                                 type: string
                                 default: "br0"
                               mac: 
                                 type: string
-                  required: 
-                  - name
+                          user:
+                            type: object
+                            properties:
+                              net:
+                                type: string
+                        oneOf:
+                        - properties:
+                            tap:
+                            user:
+                    disks:
+                      description: >-
+                        Disks make persistent storage available. The
+                        storage may be provided by a device on the
+                        host (preallocated, e.g. a LV).
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          hostDevice:
+                            type: string
+                          bootindex:
+                            type: integer
+                    displays:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          spice:
+                            type: object
+                            properties:
+                              port:
+                                type: integer
+                                default: 5900
+                              ticket:
+                                type: string
+                              streamingVideo:
+                                type: string
+                              usbRedirects:
+                                type: integer
+                                default: 2
+                  oneOf:
+                  - properties:
+                      maximumCpus:
+                      cpuTopology:
               required:
               - vm              
   # either Namespaced or Cluster
@@ -91,4 +187,5 @@ spec:
     # singular name to be used as an alias on the CLI and for display
     singular: vm
     # kind is normally the CamelCased singular type. Your resource manifests use this.
-    kind: Vm
+    kind: VirtualMachine
+    listKind: VirtualMachineList

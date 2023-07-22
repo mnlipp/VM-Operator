@@ -24,7 +24,7 @@
             "mainClass": "org.jdrupes.vmoperator.runner.qemu.Runner",
             "projectName": "org.jdrupes.vmoperator.runner.qemu",
             "cwd": "${workspaceFolder}/org.jdrupes.vmoperator.runner.qemu",
-            "vmArgs": "-ea -Djava.util.logging.config.file=jul-debug.properties -Dorg.jdrupes.vmoperator.runner.qemu.config=./config.yaml"
+            "vmArgs": "-ea -Djava.util.logging.manager=org.jdrupes.vmoperator.util.LongLoggingManager"
         }
     ]
 }
