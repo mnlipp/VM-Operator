@@ -60,7 +60,7 @@
 <span class="source-line-no">047</span><span id="line-47">    public Manager() throws IOException {</span>
 <span class="source-line-no">048</span><span id="line-48">        // Prepare component tree</span>
 <span class="source-line-no">049</span><span id="line-49">        attach(new NioDispatcher());</span>
-<span class="source-line-no">050</span><span id="line-50">        attach(new VmDefinitionWatcher(channel()));</span>
+<span class="source-line-no">050</span><span id="line-50">        attach(new VmWatcher(channel()));</span>
 <span class="source-line-no">051</span><span id="line-51">        attach(new Reconciler(channel()));</span>
 <span class="source-line-no">052</span><span id="line-52">    }</span>
 <span class="source-line-no">053</span><span id="line-53"></span>
