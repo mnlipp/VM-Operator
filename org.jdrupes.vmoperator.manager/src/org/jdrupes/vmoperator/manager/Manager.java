@@ -47,7 +47,7 @@ public class Manager extends Component {
     public Manager() throws IOException {
         // Prepare component tree
         attach(new NioDispatcher());
-        attach(new VmDefinitionWatcher(channel()));
+        attach(new VmWatcher(channel()));
         attach(new Reconciler(channel()));
     }
 

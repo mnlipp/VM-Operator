@@ -18,8 +18,8 @@
 
 package org.jdrupes.vmoperator.manager;
 
-import io.kubernetes.client.openapi.apis.CoreV1Api;
-import io.kubernetes.client.openapi.apis.CustomObjectsApi;
+import io.kubernetes.client.openapi.ApiClient;
+
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.EventPipeline;
 import org.jgrapes.core.Subchannel.DefaultSubchannel;
@@ -31,21 +31,20 @@ import org.jgrapes.core.Subchannel.DefaultSubchannel;
 public class WatchChannel extends DefaultSubchannel {
 
     private final EventPipeline pipeline;
-    private final CoreV1Api api;
-    private final CustomObjectsApi coa;
+    private final ApiClient client;
 
     /**
      * Instantiates a new watch channel.
      *
      * @param mainChannel the main channel
      * @param pipeline the pipeline
+     * @param client 
      */
     public WatchChannel(Channel mainChannel, EventPipeline pipeline,
-            CoreV1Api api, CustomObjectsApi coa) {
+            ApiClient client) {
         super(mainChannel);
         this.pipeline = pipeline;
-        this.api = api;
-        this.coa = coa;
+        this.client = client;
     }
 
     /**
@@ -58,21 +57,11 @@ public class WatchChannel extends DefaultSubchannel {
     }
 
     /**
-     * Returns the API object for invoking kubernetes functions.
+     * Returns the API client.
      *
-     * @return the API object
+     * @return the API client
      */
-    public CoreV1Api api() {
-        return api;
-    }
-
-    /**
-     * Returns the API object for invoking kubernetes custom object
-     * functions.
-     *
-     * @return the API object
-     */
-    public CustomObjectsApi coa() {
-        return coa;
+    public ApiClient client() {
+        return client;
     }
 }

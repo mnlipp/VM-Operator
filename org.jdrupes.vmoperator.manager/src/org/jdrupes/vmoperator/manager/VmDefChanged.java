@@ -18,8 +18,8 @@
 
 package org.jdrupes.vmoperator.manager;
 
+import io.kubernetes.client.openapi.models.V1APIResource;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
-
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Components;
 import org.jgrapes.core.Event;
@@ -27,7 +27,7 @@ import org.jgrapes.core.Event;
 /**
  * Indicates a change in a VM definition.
  */
-public class VmChangedEvent extends Event<Void> {
+public class VmDefChanged extends Event<Void> {
 
     /**
      * The type of change.
@@ -37,6 +37,7 @@ public class VmChangedEvent extends Event<Void> {
     }
 
     private final Type type;
+    private final V1APIResource crd;
     private final V1ObjectMeta metadata;
 
     /**
@@ -45,8 +46,9 @@ public class VmChangedEvent extends Event<Void> {
      * @param type the type
      * @param metadata the metadata
      */
-    public VmChangedEvent(Type type, V1ObjectMeta metadata) {
+    public VmDefChanged(Type type, V1APIResource crd, V1ObjectMeta metadata) {
         this.type = type;
+        this.crd = crd;
         this.metadata = metadata;
     }
 
@@ -57,6 +59,15 @@ public class VmChangedEvent extends Event<Void> {
      */
     public Type type() {
         return type;
+    }
+
+    /**
+     * Returns the Crd.
+     *
+     * @return the v 1 API resource
+     */
+    public V1APIResource crd() {
+        return crd;
     }
 
     /**
