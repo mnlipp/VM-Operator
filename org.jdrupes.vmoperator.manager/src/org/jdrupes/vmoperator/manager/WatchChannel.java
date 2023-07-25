@@ -19,7 +19,6 @@
 package org.jdrupes.vmoperator.manager;
 
 import io.kubernetes.client.openapi.ApiClient;
-
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.EventPipeline;
 import org.jgrapes.core.Subchannel.DefaultSubchannel;
