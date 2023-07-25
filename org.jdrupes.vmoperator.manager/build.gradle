@@ -18,7 +18,6 @@ dependencies {
     
     implementation 'commons-cli:commons-cli:1.5.0'
     implementation 'io.kubernetes:client-java:[18.0.0,19)'
-    implementation 'io.kubernetes:client-java-extended:[18.0.0,19)'
     
     runtimeOnly 'org.slf4j:slf4j-jdk14:[2.0.7,3)'
 }
