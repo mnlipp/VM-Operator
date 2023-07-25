@@ -33,22 +33,19 @@ import org.jgrapes.io.NioDispatcher;
 /**
  * The application class.
  */
-public class Manager extends Component {
+public class Operator extends Component {
 
-    /** The Constant APP_NAME. */
-    public static final String APP_NAME = "vmoperator";
-    private static Manager app;
+    private static Operator app;
 
     /**
      * Instantiates a new manager.
      *
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    public Manager() throws IOException {
+    public Operator() throws IOException {
         // Prepare component tree
         attach(new NioDispatcher());
-        attach(new VmWatcher(channel()));
-        attach(new Reconciler(channel()));
+        attach(new Controller(channel()));
     }
 
     /**
@@ -64,12 +61,12 @@ public class Manager extends Component {
     static {
         try {
             InputStream props;
-            var path = FsdUtils.findConfigFile(Manager.APP_NAME,
+            var path = FsdUtils.findConfigFile(Constants.APP_NAME,
                 "logging.properties");
             if (path.isPresent()) {
                 props = Files.newInputStream(path.get());
             } else {
-                props = Manager.class.getResourceAsStream("logging.properties");
+                props = Operator.class.getResourceAsStream("logging.properties");
             }
             LogManager.getLogManager().readConfiguration(props);
         } catch (IOException e) {
@@ -85,8 +82,8 @@ public class Manager extends Component {
      */
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     public static void main(String[] args) throws Exception {
-        // The Manager is the root component
-        app = new Manager();
+        // The Operator is the root component
+        app = new Operator();
 
         // Prepare Stop
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
