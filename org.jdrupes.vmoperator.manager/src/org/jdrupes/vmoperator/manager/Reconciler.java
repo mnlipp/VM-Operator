@@ -118,7 +118,7 @@ public class Reconciler extends Component {
             pvcDef.to("spec").computeIfAbsent("accessModes",
                 () -> GsonPtr.to(new JsonArray()).set(0, "ReadWriteOnce")
                     .get());
-            pvcDef.to("spec").computeIfAbsent("volumeMode", "Block");
+            pvcDef.to("spec").getOrSet("volumeMode", "Block");
             pvcApi.create(pvcObject);
         } else {
             // spec is immutable, so mix in existing spec

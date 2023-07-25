@@ -245,7 +245,7 @@ public class GsonPtr {
      * @param value the value
      * @return the Gson pointer
      */
-    public GsonPtr computeIfAbsent(Object selector, String value) {
+    public GsonPtr getOrSet(Object selector, String value) {
         computeIfAbsent(selector, () -> new JsonPrimitive(value));
         return this;
     }
