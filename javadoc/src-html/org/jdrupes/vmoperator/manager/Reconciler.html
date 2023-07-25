@@ -131,7 +131,7 @@
 <span class="source-line-no">118</span><span id="line-118">            pvcDef.to("spec").computeIfAbsent("accessModes",</span>
 <span class="source-line-no">119</span><span id="line-119">                () -&gt; GsonPtr.to(new JsonArray()).set(0, "ReadWriteOnce")</span>
 <span class="source-line-no">120</span><span id="line-120">                    .get());</span>
-<span class="source-line-no">121</span><span id="line-121">            pvcDef.to("spec").computeIfAbsent("volumeMode", "Block");</span>
+<span class="source-line-no">121</span><span id="line-121">            pvcDef.to("spec").getOrSet("volumeMode", "Block");</span>
 <span class="source-line-no">122</span><span id="line-122">            pvcApi.create(pvcObject);</span>
 <span class="source-line-no">123</span><span id="line-123">        } else {</span>
 <span class="source-line-no">124</span><span id="line-124">            // spec is immutable, so mix in existing spec</span>
