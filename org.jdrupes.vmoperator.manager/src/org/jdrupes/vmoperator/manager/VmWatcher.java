@@ -50,7 +50,7 @@ public class VmWatcher extends Component {
 
     private ApiClient client;
     private V1APIResource vmsCrd;
-    private String managedNamespace = "default";
+    private String managedNamespace = "qemu-vms";
     private final Map<String, WatchChannel> channels
         = new ConcurrentHashMap<>();
 

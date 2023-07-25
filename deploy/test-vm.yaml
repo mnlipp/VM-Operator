@@ -1,6 +1,7 @@
 apiVersion: "vmoperator.jdrupes.org/v1"
 kind: VirtualMachine
 metadata:
+  namespace: qemu-vms
   name: test-vm
 spec:
   image:
@@ -18,7 +19,13 @@ spec:
     - tap:
         mac: "00:16:3e:33:59:10"
     disks:
-    - hostDevice: /dev/vgmain/test-vm
+    - volumeClaimTemplate:
+        spec:
+          resources:
+            requests:
+              storage: 40Gi
+
+#    - hostDevice: /dev/vgmain/test-vm
     displays:
     - spice:
         port: 5910
