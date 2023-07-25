@@ -31,66 +31,125 @@
 <span class="source-line-no">018</span><span id="line-18"></span>
 <span class="source-line-no">019</span><span id="line-19">package org.jdrupes.vmoperator.manager;</span>
 <span class="source-line-no">020</span><span id="line-20"></span>
-<span class="source-line-no">021</span><span id="line-21">import io.kubernetes.client.openapi.ApiException;</span>
-<span class="source-line-no">022</span><span id="line-22">import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;</span>
-<span class="source-line-no">023</span><span id="line-23">import static org.jdrupes.vmoperator.manager.Constants.VM_OP_GROUP;</span>
-<span class="source-line-no">024</span><span id="line-24">import static org.jdrupes.vmoperator.manager.Constants.VM_OP_VERSION;</span>
-<span class="source-line-no">025</span><span id="line-25">import org.jgrapes.core.Channel;</span>
-<span class="source-line-no">026</span><span id="line-26">import org.jgrapes.core.Component;</span>
-<span class="source-line-no">027</span><span id="line-27">import org.jgrapes.core.annotation.Handler;</span>
-<span class="source-line-no">028</span><span id="line-28"></span>
-<span class="source-line-no">029</span><span id="line-29">/**</span>
-<span class="source-line-no">030</span><span id="line-30"> * Adapts Kubenetes resources to changes in VM definitions (CRs). </span>
-<span class="source-line-no">031</span><span id="line-31"> */</span>
-<span class="source-line-no">032</span><span id="line-32">public class Reconciler extends Component {</span>
-<span class="source-line-no">033</span><span id="line-33"></span>
-<span class="source-line-no">034</span><span id="line-34">    /**</span>
-<span class="source-line-no">035</span><span id="line-35">     * Instantiates a new reconciler.</span>
-<span class="source-line-no">036</span><span id="line-36">     *</span>
-<span class="source-line-no">037</span><span id="line-37">     * @param componentChannel the component channel</span>
-<span class="source-line-no">038</span><span id="line-38">     */</span>
-<span class="source-line-no">039</span><span id="line-39">    public Reconciler(Channel componentChannel) {</span>
-<span class="source-line-no">040</span><span id="line-40">        super(componentChannel);</span>
-<span class="source-line-no">041</span><span id="line-41">    }</span>
-<span class="source-line-no">042</span><span id="line-42"></span>
-<span class="source-line-no">043</span><span id="line-43">    /**</span>
-<span class="source-line-no">044</span><span id="line-44">     * Handles the change event.</span>
-<span class="source-line-no">045</span><span id="line-45">     *</span>
-<span class="source-line-no">046</span><span id="line-46">     * @param event the event</span>
-<span class="source-line-no">047</span><span id="line-47">     * @param channel the channel</span>
-<span class="source-line-no">048</span><span id="line-48">     * @throws ApiException the api exception</span>
+<span class="source-line-no">021</span><span id="line-21">import com.google.gson.JsonArray;</span>
+<span class="source-line-no">022</span><span id="line-22">import com.google.gson.JsonObject;</span>
+<span class="source-line-no">023</span><span id="line-23">import com.google.gson.JsonPrimitive;</span>
+<span class="source-line-no">024</span><span id="line-24">import io.kubernetes.client.custom.V1Patch;</span>
+<span class="source-line-no">025</span><span id="line-25">import io.kubernetes.client.extended.kubectl.exception.KubectlException;</span>
+<span class="source-line-no">026</span><span id="line-26">import io.kubernetes.client.openapi.ApiException;</span>
+<span class="source-line-no">027</span><span id="line-27">import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;</span>
+<span class="source-line-no">028</span><span id="line-28">import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;</span>
+<span class="source-line-no">029</span><span id="line-29">import io.kubernetes.client.util.generic.options.PatchOptions;</span>
+<span class="source-line-no">030</span><span id="line-30">import java.util.Collections;</span>
+<span class="source-line-no">031</span><span id="line-31">import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;</span>
+<span class="source-line-no">032</span><span id="line-32">import static org.jdrupes.vmoperator.manager.Constants.VM_OP_GROUP;</span>
+<span class="source-line-no">033</span><span id="line-33">import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;</span>
+<span class="source-line-no">034</span><span id="line-34">import static org.jdrupes.vmoperator.manager.Constants.VM_OP_VERSION;</span>
+<span class="source-line-no">035</span><span id="line-35">import org.jgrapes.core.Channel;</span>
+<span class="source-line-no">036</span><span id="line-36">import org.jgrapes.core.Component;</span>
+<span class="source-line-no">037</span><span id="line-37">import org.jgrapes.core.annotation.Handler;</span>
+<span class="source-line-no">038</span><span id="line-38"></span>
+<span class="source-line-no">039</span><span id="line-39">/**</span>
+<span class="source-line-no">040</span><span id="line-40"> * Adapts Kubenetes resources to changes in VM definitions (CRs). </span>
+<span class="source-line-no">041</span><span id="line-41"> */</span>
+<span class="source-line-no">042</span><span id="line-42">@SuppressWarnings("PMD.DataflowAnomalyAnalysis")</span>
+<span class="source-line-no">043</span><span id="line-43">public class Reconciler extends Component {</span>
+<span class="source-line-no">044</span><span id="line-44"></span>
+<span class="source-line-no">045</span><span id="line-45">    /**</span>
+<span class="source-line-no">046</span><span id="line-46">     * Instantiates a new reconciler.</span>
+<span class="source-line-no">047</span><span id="line-47">     *</span>
+<span class="source-line-no">048</span><span id="line-48">     * @param componentChannel the component channel</span>
 <span class="source-line-no">049</span><span id="line-49">     */</span>
-<span class="source-line-no">050</span><span id="line-50">    @Handler</span>
-<span class="source-line-no">051</span><span id="line-51">    public void onVmDefChanged(VmDefChanged event, WatchChannel channel)</span>
-<span class="source-line-no">052</span><span id="line-52">            throws ApiException {</span>
-<span class="source-line-no">053</span><span id="line-53">        DynamicKubernetesApi vmDefApi = new DynamicKubernetesApi(VM_OP_GROUP,</span>
-<span class="source-line-no">054</span><span id="line-54">            VM_OP_VERSION, event.crd().getName(), channel.client());</span>
-<span class="source-line-no">055</span><span id="line-55">        var defMeta = event.metadata();</span>
-<span class="source-line-no">056</span><span id="line-56">        var vmDef = vmDefApi.get(defMeta.getNamespace(), defMeta.getName());</span>
-<span class="source-line-no">057</span><span id="line-57"></span>
-<span class="source-line-no">058</span><span id="line-58">//        DynamicKubernetesApi cmApi = new DynamicKubernetesApi("", "v1",</span>
-<span class="source-line-no">059</span><span id="line-59">//            "configmaps", channel.client());</span>
-<span class="source-line-no">060</span><span id="line-60">//        var cm = new DynamicKubernetesObject();</span>
-<span class="source-line-no">061</span><span id="line-61">//        cm.setApiVersion("v1");</span>
-<span class="source-line-no">062</span><span id="line-62">//        cm.setKind("ConfigMap");</span>
-<span class="source-line-no">063</span><span id="line-63">//        V1ObjectMeta metadata = new V1ObjectMeta();</span>
-<span class="source-line-no">064</span><span id="line-64">//        metadata.setNamespace("default");</span>
-<span class="source-line-no">065</span><span id="line-65">//        metadata.setName("test");</span>
-<span class="source-line-no">066</span><span id="line-66">//        cm.setMetadata(metadata);</span>
-<span class="source-line-no">067</span><span id="line-67">//        JsonObject data = new JsonObject();</span>
-<span class="source-line-no">068</span><span id="line-68">//        data.addProperty("test", "value");</span>
-<span class="source-line-no">069</span><span id="line-69">//        cm.getRaw().add("data", data);</span>
-<span class="source-line-no">070</span><span id="line-70">//</span>
-<span class="source-line-no">071</span><span id="line-71">//        var response = cmApi.create("default", cm, new CreateOptions())</span>
-<span class="source-line-no">072</span><span id="line-72">//            .throwsApiException();</span>
-<span class="source-line-no">073</span><span id="line-73"></span>
-<span class="source-line-no">074</span><span id="line-74">//        var obj = channel.coa().getNamespacedCustomObject(VM_OP_GROUP, VM_OP_VERSION,</span>
-<span class="source-line-no">075</span><span id="line-75">//            md.getNamespace(), event.crd().getName(), md.getName());</span>
-<span class="source-line-no">076</span><span id="line-76">        event = null;</span>
-<span class="source-line-no">077</span><span id="line-77"></span>
-<span class="source-line-no">078</span><span id="line-78">    }</span>
-<span class="source-line-no">079</span><span id="line-79"></span>
-<span class="source-line-no">080</span><span id="line-80">}</span>
+<span class="source-line-no">050</span><span id="line-50">    public Reconciler(Channel componentChannel) {</span>
+<span class="source-line-no">051</span><span id="line-51">        super(componentChannel);</span>
+<span class="source-line-no">052</span><span id="line-52">    }</span>
+<span class="source-line-no">053</span><span id="line-53"></span>
+<span class="source-line-no">054</span><span id="line-54">    /**</span>
+<span class="source-line-no">055</span><span id="line-55">     * Handles the change event.</span>
+<span class="source-line-no">056</span><span id="line-56">     *</span>
+<span class="source-line-no">057</span><span id="line-57">     * @param event the event</span>
+<span class="source-line-no">058</span><span id="line-58">     * @param channel the channel</span>
+<span class="source-line-no">059</span><span id="line-59">     * @throws ApiException the api exception</span>
+<span class="source-line-no">060</span><span id="line-60">     * @throws KubectlException </span>
+<span class="source-line-no">061</span><span id="line-61">     */</span>
+<span class="source-line-no">062</span><span id="line-62">    @Handler</span>
+<span class="source-line-no">063</span><span id="line-63">    public void onVmDefChanged(VmDefChanged event, WatchChannel channel)</span>
+<span class="source-line-no">064</span><span id="line-64">            throws ApiException {</span>
+<span class="source-line-no">065</span><span id="line-65">        DynamicKubernetesApi vmDefApi = new DynamicKubernetesApi(VM_OP_GROUP,</span>
+<span class="source-line-no">066</span><span id="line-66">            VM_OP_VERSION, event.crd().getName(), channel.client());</span>
+<span class="source-line-no">067</span><span id="line-67">        var defMeta = event.metadata();</span>
+<span class="source-line-no">068</span><span id="line-68">        var vmDef = vmDefApi.get(defMeta.getNamespace(), defMeta.getName())</span>
+<span class="source-line-no">069</span><span id="line-69">            .getObject();</span>
+<span class="source-line-no">070</span><span id="line-70"></span>
+<span class="source-line-no">071</span><span id="line-71">        @SuppressWarnings("PMD.AvoidDuplicateLiterals")</span>
+<span class="source-line-no">072</span><span id="line-72">        var disks = GsonPtr.to(vmDef.getRaw())</span>
+<span class="source-line-no">073</span><span id="line-73">            .get(JsonArray.class, "spec", "vm", "disks")</span>
+<span class="source-line-no">074</span><span id="line-74">            .map(JsonArray::asList).orElse(Collections.emptyList());</span>
+<span class="source-line-no">075</span><span id="line-75">        int index = 0;</span>
+<span class="source-line-no">076</span><span id="line-76">        for (var disk : disks) {</span>
+<span class="source-line-no">077</span><span id="line-77">            reconcileDisk(vmDef, index++, (JsonObject) disk, channel);</span>
+<span class="source-line-no">078</span><span id="line-78">        }</span>
+<span class="source-line-no">079</span><span id="line-79">    }</span>
+<span class="source-line-no">080</span><span id="line-80"></span>
+<span class="source-line-no">081</span><span id="line-81">    @SuppressWarnings({ "PMD.AvoidDuplicateLiterals", "PMD.ConfusingTernary" })</span>
+<span class="source-line-no">082</span><span id="line-82">    private void reconcileDisk(DynamicKubernetesObject vmDefinition,</span>
+<span class="source-line-no">083</span><span id="line-83">            int index, JsonObject diskDef, WatchChannel channel)</span>
+<span class="source-line-no">084</span><span id="line-84">            throws ApiException {</span>
+<span class="source-line-no">085</span><span id="line-85">        var pvcObject = new DynamicKubernetesObject();</span>
+<span class="source-line-no">086</span><span id="line-86">        pvcObject.setApiVersion("v1");</span>
+<span class="source-line-no">087</span><span id="line-87">        pvcObject.setKind("PersistentVolumeClaim");</span>
+<span class="source-line-no">088</span><span id="line-88">        var pvcDef = GsonPtr.to(pvcObject.getRaw());</span>
+<span class="source-line-no">089</span><span id="line-89">        var vmDef = GsonPtr.to(vmDefinition.getRaw());</span>
+<span class="source-line-no">090</span><span id="line-90">        var pvcTpl = GsonPtr.to(diskDef).to("volumeClaimTemplate");</span>
+<span class="source-line-no">091</span><span id="line-91"></span>
+<span class="source-line-no">092</span><span id="line-92">        // Copy metadata from template and add missing/additional data.</span>
+<span class="source-line-no">093</span><span id="line-93">        var vmName = vmDef.getAsString("metadata", "name").orElse("default");</span>
+<span class="source-line-no">094</span><span id="line-94">        pvcDef.get(JsonObject.class).add("metadata",</span>
+<span class="source-line-no">095</span><span id="line-95">            pvcTpl.to("metadata").get(JsonObject.class).deepCopy());</span>
+<span class="source-line-no">096</span><span id="line-96">        var defMeta = pvcDef.to("metadata");</span>
+<span class="source-line-no">097</span><span id="line-97">        defMeta.computeIfAbsent("namespace", () -&gt; new JsonPrimitive(</span>
+<span class="source-line-no">098</span><span id="line-98">            vmDef.getAsString("metadata", "namespace").orElse("default")));</span>
+<span class="source-line-no">099</span><span id="line-99">        defMeta.computeIfAbsent("name", () -&gt; new JsonPrimitive(</span>
+<span class="source-line-no">100</span><span id="line-100">            vmName + "-disk-" + index));</span>
+<span class="source-line-no">101</span><span id="line-101">        var pvcLbls = pvcDef.to("metadata", "labels");</span>
+<span class="source-line-no">102</span><span id="line-102">        pvcLbls.set("app.kubernetes.io/name", APP_NAME);</span>
+<span class="source-line-no">103</span><span id="line-103">        pvcLbls.set("app.kubernetes.io/instance", vmName);</span>
+<span class="source-line-no">104</span><span id="line-104">        pvcLbls.set("app.kubernetes.io/component", "disk");</span>
+<span class="source-line-no">105</span><span id="line-105">        pvcLbls.set("app.kubernetes.io/managed-by", VM_OP_NAME);</span>
+<span class="source-line-no">106</span><span id="line-106"></span>
+<span class="source-line-no">107</span><span id="line-107">        // Get API and check if PVC exists</span>
+<span class="source-line-no">108</span><span id="line-108">        DynamicKubernetesApi pvcApi = new DynamicKubernetesApi("", "v1",</span>
+<span class="source-line-no">109</span><span id="line-109">            "persistentvolumeclaims", channel.client());</span>
+<span class="source-line-no">110</span><span id="line-110">        var existing = pvcApi.get(defMeta.getAsString("namespace").get(),</span>
+<span class="source-line-no">111</span><span id="line-111">            defMeta.getAsString("name").get());</span>
+<span class="source-line-no">112</span><span id="line-112"></span>
+<span class="source-line-no">113</span><span id="line-113">        // If PVC does not exist, create. Else patch (apply)</span>
+<span class="source-line-no">114</span><span id="line-114">        if (!existing.isSuccess()) {</span>
+<span class="source-line-no">115</span><span id="line-115">            // PVC does not exist yet, copy spec from template</span>
+<span class="source-line-no">116</span><span id="line-116">            pvcDef.get(JsonObject.class).add("spec",</span>
+<span class="source-line-no">117</span><span id="line-117">                pvcTpl.to("spec").get(JsonObject.class).deepCopy());</span>
+<span class="source-line-no">118</span><span id="line-118">            // Add missing</span>
+<span class="source-line-no">119</span><span id="line-119">            pvcDef.to("spec").computeIfAbsent("accessModes",</span>
+<span class="source-line-no">120</span><span id="line-120">                () -&gt; GsonPtr.to(new JsonArray()).set(0, "ReadWriteOnce")</span>
+<span class="source-line-no">121</span><span id="line-121">                    .get());</span>
+<span class="source-line-no">122</span><span id="line-122">            pvcDef.to("spec").computeIfAbsent("volumeMode", "Block");</span>
+<span class="source-line-no">123</span><span id="line-123">            pvcApi.create(pvcObject);</span>
+<span class="source-line-no">124</span><span id="line-124">        } else {</span>
+<span class="source-line-no">125</span><span id="line-125">            // spec is immutable, so mix in existing spec</span>
+<span class="source-line-no">126</span><span id="line-126">            pvcDef.set("spec", GsonPtr.to(existing.getObject().getRaw())</span>
+<span class="source-line-no">127</span><span id="line-127">                .to("spec").get().deepCopy());</span>
+<span class="source-line-no">128</span><span id="line-128">            PatchOptions opts = new PatchOptions();</span>
+<span class="source-line-no">129</span><span id="line-129">            opts.setForce(false);</span>
+<span class="source-line-no">130</span><span id="line-130">            opts.setFieldManager("kubernetes-java-kubectl-apply");</span>
+<span class="source-line-no">131</span><span id="line-131">            pvcApi.patch(pvcObject.getMetadata().getNamespace(),</span>
+<span class="source-line-no">132</span><span id="line-132">                pvcObject.getMetadata().getName(),</span>
+<span class="source-line-no">133</span><span id="line-133">                V1Patch.PATCH_FORMAT_APPLY_YAML,</span>
+<span class="source-line-no">134</span><span id="line-134">                new V1Patch(channel.client().getJSON().serialize(pvcObject)),</span>
+<span class="source-line-no">135</span><span id="line-135">                opts).throwsApiException();</span>
+<span class="source-line-no">136</span><span id="line-136">        }</span>
+<span class="source-line-no">137</span><span id="line-137">    }</span>
+<span class="source-line-no">138</span><span id="line-138"></span>
+<span class="source-line-no">139</span><span id="line-139">}</span>
 
 
 
