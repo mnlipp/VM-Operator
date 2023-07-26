@@ -444,6 +444,70 @@ spec:
                       cpuTopology:
               required:
               - vm              
+            status:
+              type: object
+              properties:            
+                conditions:
+                  description: >-
+                    List of component conditions observed
+                  type: array
+                  items:
+                    type: object
+                    description: >-
+                      Information about the condition of a component. See
+                      https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+                      and https://github.com/kubernetes/apimachinery/blob/release-1.23/pkg/apis/meta/v1/types.go#L1432-L1492
+                    properties: 
+                      type:
+                        type: string
+                        description: >-
+                          Type of condition in CamelCase or in 
+                          foo.example.com/CamelCase. The type should make sense 
+                          for humans.
+                      status:
+                        type: string
+                        description: >-
+                          Status of the condition, one of True, False, Unknown.
+                        default: Unknown
+                      observedGeneration:
+                       type: integer
+                       description: >-
+                         OobservedGeneration represents the .metadata.generation
+                         that the condition was set based upon. For instance, 
+                         if .metadata.generation is currently 12, but the 
+                         .status.conditions[x].observedGeneration is 9, 
+                         the condition is out of date with respect to the 
+                         current state of the instance.
+                      lastTransitionTime:
+                        type: string
+                        description: >-
+                          lastTransitionTime is the last time the condition 
+                          transitioned from one status to another.
+                          This should be when the underlying condition changed.
+                          If that is not known, then using the time when the 
+                          API field changed is acceptable.
+                      reason:
+                        type: string
+                        description: >-
+                          Reason contains a programmatic identifier indicating 
+                          the reason for the condition's last transition.
+                          Producers of specific condition types may define 
+                          expected values and meanings for this field, and 
+                          whether the values are considered a guaranteed API.
+                          The value should be a CamelCase string.
+                          This field may not be empty.
+                      message:
+                        type: string
+                        description: >-
+                          Message is a human readable message indicating 
+                          details about the transition. This may be an empty string.
+                        default: ""
+              required:
+              - type
+              - status
+              - lastTransitionTime
+              - reason
+              - message
   # either Namespaced or Cluster
   scope: Namespaced
   names:
