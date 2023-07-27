@@ -18,10 +18,17 @@
 
 package org.jdrupes.vmoperator.manager;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.logging.LogManager;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
 import org.jdrupes.vmoperator.util.FsdUtils;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
@@ -29,6 +36,9 @@ import org.jgrapes.core.Components;
 import org.jgrapes.core.annotation.Handler;
 import org.jgrapes.core.events.Stop;
 import org.jgrapes.io.NioDispatcher;
+import org.jgrapes.util.FileSystemWatcher;
+import org.jgrapes.util.YamlConfigurationStore;
+import org.jgrapes.util.events.WatchFile;
 
 /**
  * The application class.
@@ -39,13 +49,26 @@ public class Operator extends Component {
 
     /**
      * Instantiates a new manager.
+     * @param cmdLine 
      *
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    public Operator() throws IOException {
+    public Operator(CommandLine cmdLine) throws IOException {
         // Prepare component tree
         attach(new NioDispatcher());
+        attach(new FileSystemWatcher(channel()));
         attach(new Controller(channel()));
+
+        // Configuration store with file in /etc/opt (default)
+        File config = new File(cmdLine.getOptionValue('c',
+            "/etc/opt/" + VM_OP_NAME + "/config.yaml"));
+        // Don't rely on night config to produce a good exception
+        // for this simple case
+        if (!Files.isReadable(config.toPath())) {
+            throw new IOException("Cannot read configuration file " + config);
+        }
+        attach(new YamlConfigurationStore(channel(), config, false));
+        fire(new WatchFile(config.toPath()));
     }
 
     /**
@@ -66,7 +89,8 @@ public class Operator extends Component {
             if (path.isPresent()) {
                 props = Files.newInputStream(path.get());
             } else {
-                props = Operator.class.getResourceAsStream("logging.properties");
+                props
+                    = Operator.class.getResourceAsStream("logging.properties");
             }
             LogManager.getLogManager().readConfiguration(props);
         } catch (IOException e) {
@@ -82,8 +106,14 @@ public class Operator extends Component {
      */
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     public static void main(String[] args) throws Exception {
+        CommandLineParser parser = new DefaultParser();
+        // parse the command line arguments
+        final Options options = new Options();
+        options.addOption(new Option("c", "config", true, "The configu"
+            + "ration file (defaults to /etc/opt/vmoperator/config.yaml)."));
+        CommandLine cmd = parser.parse(options, args);
         // The Operator is the root component
-        app = new Operator();
+        app = new Operator(cmd);
 
         // Prepare Stop
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {

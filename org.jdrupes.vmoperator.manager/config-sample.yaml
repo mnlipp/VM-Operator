@@ -1,0 +1,5 @@
+# The values in comments are the defaults.
+
+"/Operator":
+  "/Controller":
+    test: yes
