@@ -1,0 +1,65 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  namespace: ${ cr.metadata.namespace.asString }
+  name: ${ cr.metadata.name.asString }
+  labels:
+    app.kubernetes.io/name: ${ constants.APP_NAME }
+    app.kubernetes.io/instance: ${ cr.metadata.name.asString }
+    app.kubernetes.io/managed-by: ${ constants.VM_OP_NAME }
+    
+spec:
+  containers:
+  - name: ${ cr.metadata.name.asString }
+    <#assign image = cr.spec.image>
+    image: ${ image.repository.asString }/${ image.path.asString }:${ image.version.asString }
+    resources: {}
+    imagePullPolicy: ${ image.pullPolicy.asString }
+    volumeMounts:
+    # Not needed because pod is priviledged:
+    # - mountPath: /dev/kvm
+    #   name: dev-kvm
+    # - mountPath: /dev/net/tun
+    #   name: dev-tun
+    # - mountPath: /sys/fs/cgroup
+    #   name: cgroup
+    - mountPath: /etc/opt/vmrunner
+      name: config
+    - mountPath: /var/local/vm-data
+      name: vm-data
+<#--
+    volumeDevices:
+    {{- range $index, $disk := .Values.vm.disks }}
+    - devicePath: /dev/disk-{{ $index }}
+      name: disk-{{ $index }}
+    {{- end }}
+    securityContext:
+      privileged: true
+  volumes:
+  # Not needed because pod is priviledged:
+  # - name: dev-kvm
+  #   hostPath:
+  #     path: /dev/kvm
+  #     type: CharDevice
+  # - hostPath:
+  #     path: /dev/net/tun
+  #     type: CharDevice
+  #   name: dev-tun
+  # - name: cgroup
+  #   hostPath:
+  #     path: /sys/fs/cgroup
+  - name: config
+    configMap:
+      name: {{ $.Release.Name }}
+  - name: vm-data
+    hostPath:
+      path: /var/local/vmrunner/{{ .Release.Name }}
+  {{- range $index, $disk := .Values.vm.disks }}
+  - name: disk-{{ $index }}
+    persistentVolumeClaim:
+      claimName: {{ $.Release.Name }}-pvc-{{ $index }}
+  {{- end }}
+  hostNetwork: true
+  terminationGracePeriodSeconds: 60
+  restartPolicy: Never
+-->
