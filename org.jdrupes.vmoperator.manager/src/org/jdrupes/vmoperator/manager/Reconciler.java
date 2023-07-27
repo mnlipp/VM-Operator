@@ -21,16 +21,29 @@ package org.jdrupes.vmoperator.manager;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import freemarker.core.ParseException;
+import freemarker.template.Configuration;
+import freemarker.template.DefaultObjectWrapperBuilder;
+import freemarker.template.MalformedTemplateNameException;
+import freemarker.template.TemplateException;
+import freemarker.template.TemplateExceptionHandler;
+import freemarker.template.TemplateHashModel;
+import freemarker.template.TemplateNotFoundException;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import io.kubernetes.client.util.generic.options.PatchOptions;
+import java.io.IOException;
+import java.io.StringWriter;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_VERSION;
+import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.annotation.Handler;
@@ -38,8 +51,11 @@ import org.jgrapes.core.annotation.Handler;
 /**
  * Adapts Kubenetes resources to changes in VM definitions (CRs). 
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
+@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",
+    "PMD.AvoidDuplicateLiterals" })
 public class Reconciler extends Component {
+
+    private final Configuration fmConfig;
 
     /**
      * Instantiates a new reconciler.
@@ -48,6 +64,16 @@ public class Reconciler extends Component {
      */
     public Reconciler(Channel componentChannel) {
         super(componentChannel);
+
+        // Configure freemarker library
+        fmConfig = new Configuration(Configuration.VERSION_2_3_32);
+        fmConfig.setDefaultEncoding("utf-8");
+        fmConfig.setObjectWrapper(new ExtendedObjectWrapper(
+            fmConfig.getIncompatibleImprovements()));
+        fmConfig.setTemplateExceptionHandler(
+            TemplateExceptionHandler.RETHROW_HANDLER);
+        fmConfig.setLogTemplateExceptions(false);
+        fmConfig.setClassForTemplateLoading(Reconciler.class, "");
     }
 
     /**
@@ -56,18 +82,30 @@ public class Reconciler extends Component {
      * @param event the event
      * @param channel the channel
      * @throws ApiException the api exception
+     * @throws IOException 
+     * @throws ParseException 
+     * @throws MalformedTemplateNameException 
+     * @throws TemplateNotFoundException 
+     * @throws TemplateException 
      * @throws KubectlException 
      */
     @Handler
     public void onVmDefChanged(VmDefChanged event, WatchChannel channel)
-            throws ApiException {
+            throws ApiException, TemplateNotFoundException,
+            MalformedTemplateNameException, ParseException, IOException,
+            TemplateException {
         DynamicKubernetesApi vmDefApi = new DynamicKubernetesApi(VM_OP_GROUP,
             VM_OP_VERSION, event.crd().getName(), channel.client());
         var defMeta = event.metadata();
         var vmDef = vmDefApi.get(defMeta.getNamespace(), defMeta.getName())
             .getObject();
 
-        @SuppressWarnings("PMD.AvoidDuplicateLiterals")
+        reconcileDisks(vmDef, channel);
+        reconcileConfigMap(vmDef, channel);
+    }
+
+    private void reconcileDisks(DynamicKubernetesObject vmDef,
+            WatchChannel channel) throws ApiException {
         var disks = GsonPtr.to(vmDef.getRaw())
             .get(JsonArray.class, "spec", "vm", "disks")
             .map(JsonArray::asList).orElse(Collections.emptyList());
@@ -82,13 +120,13 @@ public class Reconciler extends Component {
             int index, JsonObject diskDef, WatchChannel channel)
             throws ApiException {
         var pvcObject = new DynamicKubernetesObject();
-        pvcObject.setApiVersion("v1");
-        pvcObject.setKind("PersistentVolumeClaim");
         var pvcDef = GsonPtr.to(pvcObject.getRaw());
         var vmDef = GsonPtr.to(vmDefinition.getRaw());
         var pvcTpl = GsonPtr.to(diskDef).to("volumeClaimTemplate");
 
-        // Copy metadata from template and add missing/additional data.
+        // Copy base and metadata from template and add missing/additional data.
+        pvcObject.setApiVersion(pvcTpl.getAsString("apiVersion").get());
+        pvcObject.setKind(pvcTpl.getAsString("kind").get());
         var vmName = vmDef.getAsString("metadata", "name").orElse("default");
         pvcDef.get(JsonObject.class).add("metadata",
             pvcTpl.to("metadata").get(JsonObject.class).deepCopy());
@@ -114,11 +152,6 @@ public class Reconciler extends Component {
             // PVC does not exist yet, copy spec from template
             pvcDef.get(JsonObject.class).add("spec",
                 pvcTpl.to("spec").get(JsonObject.class).deepCopy());
-            // Add missing
-            pvcDef.to("spec").computeIfAbsent("accessModes",
-                () -> GsonPtr.to(new JsonArray()).set(0, "ReadWriteOnce")
-                    .get());
-            pvcDef.to("spec").getOrSet("volumeMode", "Block");
             pvcApi.create(pvcObject);
         } else {
             // spec is immutable, so mix in existing spec
@@ -133,6 +166,36 @@ public class Reconciler extends Component {
                 new V1Patch(channel.client().getJSON().serialize(pvcObject)),
                 opts).throwsApiException();
         }
+    }
+
+    private void reconcileConfigMap(DynamicKubernetesObject vmDefinition,
+            WatchChannel channel) throws TemplateNotFoundException,
+            MalformedTemplateNameException, ParseException, IOException,
+            TemplateException, ApiException {
+        // Combine template and data and parse result
+        // (tempting, but no need to use a pipe here)
+        var fmTemplate = fmConfig.getTemplate("etcConfig.ftl.yaml");
+        StringWriter out = new StringWriter();
+        @SuppressWarnings("PMD.UseConcurrentHashMap")
+        Map<String, Object> model = new HashMap<>();
+        model.putAll(vmDefinition.getRaw().asMap());
+        model.put("constants",
+            (TemplateHashModel) new DefaultObjectWrapperBuilder(
+                Configuration.VERSION_2_3_32)
+                    .build().getStaticModels().get(Constants.class.getName()));
+        fmTemplate.process(model, out);
+
+        // Apply
+        PatchOptions opts = new PatchOptions();
+        opts.setForce(false);
+        opts.setFieldManager("kubernetes-java-kubectl-apply");
+        DynamicKubernetesApi pvcApi = new DynamicKubernetesApi("", "v1",
+            "configmaps", channel.client());
+        var vmDef = GsonPtr.to(vmDefinition.getRaw());
+        pvcApi.patch(vmDef.getAsString("metadata", "namespace").get(),
+            vmDef.getAsString("metadata", "name").get(),
+            V1Patch.PATCH_FORMAT_APPLY_YAML, new V1Patch(out.toString()),
+            opts).throwsApiException();
     }
 
 }

@@ -26,6 +26,6 @@ spec:
               storage: 40Gi
 
 #    - hostDevice: /dev/vgmain/test-vm
-    displays:
-    - spice:
+    display:
+      spice:
         port: 5910

@@ -78,20 +78,18 @@ spec:
                     maximumCpus:
                       description: >-
                         Either maximumCpus or cpuTopology may be specified.
-                        If currentCpus is greater than maximumCpus, the 
-                        latter is adjusted. Setting maximumCpus to 1 omits
-                        the "-smp" options.
+                        If neither is specified, maximum cpus is set to 4.
+                        Setting maximumCpus to 1 omits the "-smp" options.
                       type: integer
-                      default: 4
                     cpuTopology:
                       description: >-
-                        The defaults (0) cause the corresponding property 
+                        Values of 0 cause the corresponding property 
                         to be omitted from the "-smp" option.
                       type: object
                       properties:
                         sockets:
                           type: integer
-                          default: 0
+                          default: 1
                         diesPerSocket:
                           type: integer
                           default: 0
@@ -102,8 +100,9 @@ spec:
                           type: integer
                           default: 0
                     currentCpus:
+                      description: >-
+                        Defaults to maximumCpus. 
                       type: integer
-                      default: 2
                     maximumRam:
                       type: string
                       default: "1G"
@@ -113,6 +112,10 @@ spec:
                       description: Passed to Qemu unmodified.
                       type: string
                       default: "utc"
+                    rtcClock:
+                      description: Passed to Qemu unmodified.
+                      type: string
+                      default: "rt"
                     networks:
                       type: array
                       items:
@@ -136,12 +139,17 @@ spec:
                           user:
                             type: object
                             properties:
+                              device:
+                                description: The device to use.
+                                type: string
+                                default: "virtio-net"
                               net:
                                 type: string
                         oneOf:
                         - properties:
                             tap:
                             user:
+                      default: []
                     disks:
                       description: >-
                         Disks make persistent storage available. The
@@ -151,8 +159,6 @@ spec:
                       items:
                         type: object
                         properties:
-                          hostDevice:
-                            type: string
                           volumeClaimTemplate:
                             description: >-
                               A PVC spec to be used to provide the disk. The easiest
@@ -180,36 +186,8 @@ spec:
                                 description: >-
                                   EmbeddedMetadata contains metadata relevant to
                                   an EmbeddedResource.
+                                type: object
                                 properties:
-                                  annotations:
-                                    additionalProperties:
-                                      type: string
-                                    description: >-
-                                      Annotations is an unstructured key value
-                                      map stored with a resource that may be set by external
-                                      tools to store and retrieve arbitrary metadata. They
-                                      are not queryable and should be preserved when modifying
-                                      objects. More info: http://kubernetes.io/docs/user-guide/annotations
-                                    type: object
-                                  labels:
-                                    additionalProperties:
-                                      type: string
-                                    description: >-
-                                      Map of string keys and values that can be
-                                      used to organize and categorize (scope and select) objects.
-                                      May match selectors of replication controllers and services.
-                                      More info: http://kubernetes.io/docs/user-guide/labels
-                                    type: object
-                                  name:
-                                    description: >-
-                                      Name must be unique within a namespace.
-                                      Is required when creating resources, although some resources
-                                      may allow a client to request the generation of an appropriate
-                                      name automatically. Name is primarily intended for creation
-                                      idempotence and configuration definition. Cannot be
-                                      updated. More info: http://kubernetes.io/docs/user-guide/identifiers#names.
-                                      The name is generated automatically but can be overriden.
-                                    type: string
                                   namespace:
                                     description: >-
                                       Namespace defines the space within which each 
@@ -221,7 +199,35 @@ spec:
                                       More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces.
                                       The default value is the VM's namespace.
                                     type: string
-                                type: object
+                                  name:
+                                    description: >-
+                                      Name must be unique within a namespace.
+                                      Is required when creating resources, although some resources
+                                      may allow a client to request the generation of an appropriate
+                                      name automatically. Name is primarily intended for creation
+                                      idempotence and configuration definition. Cannot be
+                                      updated. More info: http://kubernetes.io/docs/user-guide/identifiers#names.
+                                      The name is generated automatically but can be overriden.
+                                    type: string
+                                  labels:
+                                    description: >-
+                                      Map of string keys and values that can be
+                                      used to organize and categorize (scope and select) objects.
+                                      May match selectors of replication controllers and services.
+                                      More info: http://kubernetes.io/docs/user-guide/labels
+                                    type: object
+                                    additionalProperties:
+                                      type: string
+                                  annotations:
+                                    description: >-
+                                      Annotations is an unstructured key value
+                                      map stored with a resource that may be set by external
+                                      tools to store and retrieve arbitrary metadata. They
+                                      are not queryable and should be preserved when modifying
+                                      objects. More info: http://kubernetes.io/docs/user-guide/annotations
+                                    type: object
+                                    additionalProperties:
+                                      type: string
                               spec:
                                 description: >-
                                   Spec defines the desired characteristics of
@@ -420,24 +426,26 @@ spec:
                             type: object
                           bootindex:
                             type: integer
-                    displays:
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          spice:
-                            type: object
-                            properties:
-                              port:
-                                type: integer
-                                default: 5900
-                              ticket:
-                                type: string
-                              streamingVideo:
-                                type: string
-                              usbRedirects:
-                                type: integer
-                                default: 2
+                        required:
+                        - volumeClaimTemplate
+                      default: []
+                    display:
+                      type: object
+                      properties:
+                        spice:
+                          type: object
+                          properties:
+                            port:
+                              type: integer
+                              default: 5900
+                            ticket:
+                              type: string
+                            streamingVideo:
+                              type: string
+                            usbRedirects:
+                              type: integer
+                              default: 2
+                      default: { spice: { port: 5900, usbRedirects: 2 } }
                   oneOf:
                   - properties:
                       maximumCpus:
