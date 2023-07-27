@@ -100,8 +100,19 @@ public class Reconciler extends Component {
         var vmDef = vmDefApi.get(defMeta.getNamespace(), defMeta.getName())
             .getObject();
 
+        // Prepare Freemarker model
+        @SuppressWarnings("PMD.UseConcurrentHashMap")
+        Map<String, Object> model = new HashMap<>();
+        model.put("cr", vmDef.getRaw());
+        model.put("constants",
+            (TemplateHashModel) new DefaultObjectWrapperBuilder(
+                Configuration.VERSION_2_3_32)
+                    .build().getStaticModels().get(Constants.class.getName()));
+
+        // Reconcile
         reconcileDisks(vmDef, channel);
-        reconcileConfigMap(vmDef, channel);
+        reconcileConfigMap(model, channel);
+        reconcilePod(model, channel);
     }
 
     private void reconcileDisks(DynamicKubernetesObject vmDef,
@@ -168,21 +179,13 @@ public class Reconciler extends Component {
         }
     }
 
-    private void reconcileConfigMap(DynamicKubernetesObject vmDefinition,
-            WatchChannel channel) throws TemplateNotFoundException,
-            MalformedTemplateNameException, ParseException, IOException,
-            TemplateException, ApiException {
+    private void reconcileConfigMap(Map<String, Object> model,
+            WatchChannel channel)
+            throws TemplateNotFoundException, MalformedTemplateNameException,
+            ParseException, IOException, TemplateException, ApiException {
         // Combine template and data and parse result
-        // (tempting, but no need to use a pipe here)
-        var fmTemplate = fmConfig.getTemplate("etcConfig.ftl.yaml");
+        var fmTemplate = fmConfig.getTemplate("runnerConfig.ftl.yaml");
         StringWriter out = new StringWriter();
-        @SuppressWarnings("PMD.UseConcurrentHashMap")
-        Map<String, Object> model = new HashMap<>();
-        model.putAll(vmDefinition.getRaw().asMap());
-        model.put("constants",
-            (TemplateHashModel) new DefaultObjectWrapperBuilder(
-                Configuration.VERSION_2_3_32)
-                    .build().getStaticModels().get(Constants.class.getName()));
         fmTemplate.process(model, out);
 
         // Apply
@@ -191,11 +194,33 @@ public class Reconciler extends Component {
         opts.setFieldManager("kubernetes-java-kubectl-apply");
         DynamicKubernetesApi pvcApi = new DynamicKubernetesApi("", "v1",
             "configmaps", channel.client());
-        var vmDef = GsonPtr.to(vmDefinition.getRaw());
+        var vmDef = GsonPtr.to((JsonObject) model.get("cr"));
         pvcApi.patch(vmDef.getAsString("metadata", "namespace").get(),
             vmDef.getAsString("metadata", "name").get(),
             V1Patch.PATCH_FORMAT_APPLY_YAML, new V1Patch(out.toString()),
             opts).throwsApiException();
+    }
+
+    private void reconcilePod(Map<String, Object> model, WatchChannel channel)
+            throws TemplateNotFoundException, MalformedTemplateNameException,
+            ParseException, IOException, TemplateException, ApiException {
+        // Combine template and data and parse result
+        var fmTemplate = fmConfig.getTemplate("runnerPod.ftl.yaml");
+        StringWriter out = new StringWriter();
+        fmTemplate.process(model, out);
+        out = null;
+
+//        // Apply
+//        PatchOptions opts = new PatchOptions();
+//        opts.setForce(false);
+//        opts.setFieldManager("kubernetes-java-kubectl-apply");
+//        DynamicKubernetesApi pvcApi = new DynamicKubernetesApi("", "v1",
+//            "pod", channel.client());
+//        var vmDef = GsonPtr.to((JsonObject) model.get("cr"));
+//        pvcApi.patch(vmDef.getAsString("metadata", "namespace").get(),
+//            vmDef.getAsString("metadata", "name").get(),
+//            V1Patch.PATCH_FORMAT_APPLY_YAML, new V1Patch(out.toString()),
+//            opts).throwsApiException();
     }
 
 }

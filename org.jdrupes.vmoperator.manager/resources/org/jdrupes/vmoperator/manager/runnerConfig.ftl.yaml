@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  namespace: ${ metadata.namespace.asString }
-  name: ${ metadata.name.asString }
+  namespace: ${ cr.metadata.namespace.asString }
+  name: ${ cr.metadata.name.asString }
   labels:
     app.kubernetes.io/name: ${ constants.APP_NAME }
-    app.kubernetes.io/instance: ${ metadata.name.asString }
+    app.kubernetes.io/instance: ${ cr.metadata.name.asString }
     app.kubernetes.io/managed-by: ${ constants.VM_OP_NAME }
   
 data:
@@ -13,17 +13,17 @@ data:
     "/Runner":
       # The directory used to store data files. Defaults to (depending on 
       # values available):
-      #  * $XDG_DATA_HOME/vmrunner/${ metadata.name.asString }
-      #  * $HOME/.local/share/vmrunner/${ metadata.name.asString }
-      #  * ./${ metadata.name.asString }
+      #  * $XDG_DATA_HOME/vmrunner/${ cr.metadata.name.asString }
+      #  * $HOME/.local/share/vmrunner/${ cr.metadata.name.asString }
+      #  * ./${ cr.metadata.name.asString }
       dataDir: /var/local/vm-data
       
       # The directory used to store runtime files. Defaults to (depending on 
       # values available):
-      #  * $XDG_RUNTIME_DIR/vmrunner/${ metadata.name.asString }
-      #  * /tmp/$USER/vmrunner/${ metadata.name.asString }
-      #  * /tmp/vmrunner/${ metadata.name.asString }
-      # runtimeDir: "$XDG_RUNTIME_DIR/vmrunner/${ metadata.name.asString }"
+      #  * $XDG_RUNTIME_DIR/vmrunner/${ cr.metadata.name.asString }
+      #  * /tmp/$USER/vmrunner/${ cr.metadata.name.asString }
+      #  * /tmp/vmrunner/${ cr.metadata.name.asString }
+      # runtimeDir: "$XDG_RUNTIME_DIR/vmrunner/${ cr.metadata.name.asString }"
       
       # The template to use. Resolved relative to /usr/share/vmrunner/templates.
       # template: "Standard-VM-latest.ftl.yaml"
@@ -35,67 +35,67 @@ data:
       # Define the VM (required)
       vm:
         # The VM's name (required)
-        name: ${ metadata.name.asString }
+        name: ${ cr.metadata.name.asString }
         
         # The machine's uuid. If none is specified, a uuid is generated
         # and stored in the data directory. If the uuid is important
         # (e.g. because licenses depend on it) it is recommaned to specify
         # it here explicitly or to carefully backup the data directory.
         # uuid: "generated uuid"
-        <#if spec.vm.machineUuid??>
-        uuid: "${ spec.vm.machineUuid.asString }"
+        <#if cr.spec.vm.machineUuid??>
+        uuid: "${ cr.spec.vm.machineUuid.asString }"
         </#if>
 
         # Whether to provide a software TPM (defaults to false)
         # useTpm: false
-        useTpm: ${ spec.vm.useTpm.asBoolean?c }
+        useTpm: ${ cr.spec.vm.useTpm.asBoolean?c }
         
         # How to boot (see https://github.com/mnlipp/VM-Operator/blob/main/org.jdrupes.vmoperator.runner.qemu/resources/org/jdrupes/vmoperator/runner/qemu/defaults.yaml):
         #  * bios
         #  * uefi[-4m]
         #  * secure[-4m]
-        firmware: ${ spec.vm.firmware.asString }
+        firmware: ${ cr.spec.vm.firmware.asString }
         
         # Whether to show a boot menu.
         # bootMenu: false
-        bootMenu: ${ spec.vm.bootMenu.asBoolean?c }
+        bootMenu: ${ cr.spec.vm.bootMenu.asBoolean?c }
     
         # When terminating, a graceful powerdown is attempted. If it
         # doesn't succeed within the given timeout (seconds) SIGTERM
         # is sent to Qemu.
         # powerdownTimeout: 900
-        powerdownTimeout: ${ spec.vm.powerdownTimeout.asLong?c }
+        powerdownTimeout: ${ cr.spec.vm.powerdownTimeout.asLong?c }
         
         # CPU settings
-        cpuModel: ${ spec.vm.cpuModel.asString }
+        cpuModel: ${ cr.spec.vm.cpuModel.asString }
         # Setting maximumCpus to 1 omits the "-smp" options. The defaults (0)
         # cause the corresponding property to be omitted from the "-smp" option.
         # If currentCpus is greater than maximumCpus, the latter is adjusted.
-        <#if spec.vm.maximumCpus?? >
-        maximumCpus: ${ spec.vm.maximumCpus.asInt?c }
+        <#if cr.spec.vm.maximumCpus?? >
+        maximumCpus: ${ cr.spec.vm.maximumCpus.asInt?c }
         </#if>
-        <#if spec.vm.cpuTopology?? >
-        cpuSockets: ${ spec.vm.cpuTopology.cpuSockets.asInt?c }
-        diesPerSocket: ${ spec.vm.cpuTopology.diesPerSocket.asInt?c }
-        coresPerSocket: ${ spec.vm.cpuTopology.coresPerSocket.asInt?c }
-        threadsPerCore: ${ spec.vm.cpuTopology.threadsPerCore.asInt?c }
+        <#if cr.spec.vm.cpuTopology?? >
+        cpuSockets: ${ cr.spec.vm.cpuTopology.cpuSockets.asInt?c }
+        diesPerSocket: ${ cr.spec.vm.cpuTopology.diesPerSocket.asInt?c }
+        coresPerSocket: ${ cr.spec.vm.cpuTopology.coresPerSocket.asInt?c }
+        threadsPerCore: ${ cr.spec.vm.cpuTopology.threadsPerCore.asInt?c }
         </#if>
-        <#if spec.vm.currentCpus?? >
-        currentCpus: ${ spec.vm.currentCpus.asInt?c }
+        <#if cr.spec.vm.currentCpus?? >
+        currentCpus: ${ cr.spec.vm.currentCpus.asInt?c }
         </#if>
         
         # RAM settings
         # Maximum defaults to 1G
-        maximumRam: "${ spec.vm.maximumRam.asString }"
-        <#if spec.vm.currentRam?? >
-        currentRam: "${ spec.vm.currentRam.asString }"
+        maximumRam: "${ cr.spec.vm.maximumRam.asString }"
+        <#if cr.spec.vm.currentRam?? >
+        currentRam: "${ cr.spec.vm.currentRam.asString }"
         </#if>
         
         # RTC settings.
         # rtcBase: utc
         # rtcClock: rt
-        rtcBase: ${ spec.vm.rtcBase.asString }
-        rtcClock: ${ spec.vm.rtcClock.asString }
+        rtcBase: ${ cr.spec.vm.rtcBase.asString }
+        rtcClock: ${ cr.spec.vm.rtcClock.asString }
         
         # Network settings
         # Supported types are "tap" and "user" (for debugging). Type "user"
@@ -107,7 +107,7 @@ data:
         #   mac: (undefined)
         network:
         <#assign nwCounter = 0/>
-        <#list spec.vm.networks.asList() as itf>
+        <#list cr.spec.vm.networks.asList() as itf>
         <#if itf.tap??>
         - type: tap
           device: ${ itf.tap.device.asString }
@@ -135,7 +135,7 @@ data:
         #   file: (undefined)
         drives:
         <#assign drvCounter = 0/>
-        <#list spec.vm.disks.asList() as disk>
+        <#list cr.spec.vm.disks.asList() as disk>
         <#if disk.volumeClaimTemplate.metadata??
           && disk.volumeClaimTemplate.metadata.name??>
           <#assign name = disk.volumeClaimTemplate.metadata.name.asString>
@@ -147,16 +147,16 @@ data:
         </#list>
         
         display:
-          <#if spec.vm.display.spice??>
+          <#if cr.spec.vm.display.spice??>
           spice:
-            port: ${ spec.vm.display.spice.port.asInt?c }
-            <#if spec.vm.display.spice.ticket??>
-            ticket: "${ spec.vm.display.spice.ticket.asString }"
+            port: ${ cr.spec.vm.display.spice.port.asInt?c }
+            <#if cr.spec.vm.display.spice.ticket??>
+            ticket: "${ cr.spec.vm.display.spice.ticket.asString }"
             </#if>
-            <#if spec.vm.display.spice.streamingVideo??>
-            ticket: "${ spec.vm.display.spice.streamingVideo.asString }"
+            <#if cr.spec.vm.display.spice.streamingVideo??>
+            ticket: "${ cr.spec.vm.display.spice.streamingVideo.asString }"
             </#if>
-            usbRedirects: ${ spec.vm.display.spice.usbRedirects.asInt?c }
+            usbRedirects: ${ cr.spec.vm.display.spice.usbRedirects.asInt?c }
           </#if>
 
   logging.properties: |
