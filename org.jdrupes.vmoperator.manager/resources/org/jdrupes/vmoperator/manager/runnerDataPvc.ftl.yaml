@@ -2,7 +2,7 @@ kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   namespace: ${ cr.metadata.namespace.asString }
-  name: ${ cr.metadata.name.asString + "-data" }
+  name: ${ cr.metadata.name.asString + "-runner-data" }
   labels:
     app.kubernetes.io/name: ${ constants.APP_NAME }
     app.kubernetes.io/instance: ${ cr.metadata.name.asString }

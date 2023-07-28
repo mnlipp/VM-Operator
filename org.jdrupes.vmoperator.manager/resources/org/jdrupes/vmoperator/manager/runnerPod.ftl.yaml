@@ -60,7 +60,7 @@ spec:
       name: ${ cr.metadata.name.asString }
   - name: vm-data
     persistentVolumeClaim:
-      claimName: ${ cr.metadata.name.asString }-data
+      claimName: ${ cr.metadata.name.asString }-runner-data
   <#assign diskCounter = 0/>
   <#list cr.spec.vm.disks.asList() as disk>
   <#if disk.volumeClaimTemplate.metadata??

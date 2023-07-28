@@ -132,7 +132,7 @@ public class Reconciler extends Component {
             WatchChannel channel)
             throws TemplateException, ApiException, IOException {
         // Combine template and data and parse result
-        var fmTemplate = fmConfig.getTemplate("vmDataPvc.ftl.yaml");
+        var fmTemplate = fmConfig.getTemplate("runnerDataPvc.ftl.yaml");
         StringWriter out = new StringWriter();
         fmTemplate.process(model, out);
         // Avoid Yaml.load due to

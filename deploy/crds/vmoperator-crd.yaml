@@ -208,6 +208,7 @@ spec:
                                       idempotence and configuration definition. Cannot be
                                       updated. More info: http://kubernetes.io/docs/user-guide/identifiers#names.
                                       The name is generated automatically but can be overriden.
+                                      Note that the name "<vm-name>-runner-data" is reserved.
                                     type: string
                                   labels:
                                     description: >-

@@ -20,8 +20,8 @@ spec:
         mac: "00:16:3e:33:59:10"
     disks:
     - volumeClaimTemplate:
-#        metadata:
-#          name: test-vm-system
+        metadata:
+          name: test-vm-system
         spec:
           storageClassName: ""
           selector:
