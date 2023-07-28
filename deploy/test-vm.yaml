@@ -20,7 +20,15 @@ spec:
         mac: "00:16:3e:33:59:10"
     disks:
     - volumeClaimTemplate:
+#        metadata:
+#          name: test-vm-system
         spec:
+          storageClassName: ""
+          selector:
+            matchLabels:
+              app.kubernetes.io/name: vmrunner
+              app.kubernetes.io/instance: test-vm
+              vmrunner.jdrupes.org/disk: system
           resources:
             requests:
               storage: 40Gi

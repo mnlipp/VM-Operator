@@ -32,12 +32,12 @@ spec:
     <#list cr.spec.vm.disks.asList() as disk>
     <#if disk.volumeClaimTemplate.metadata??
       && disk.volumeClaimTemplate.metadata.name??>
-      <#assign name = disk.volumeClaimTemplate.metadata.name.asString>
+      <#assign diskName = "disk-" + disk.volumeClaimTemplate.metadata.name.asString>
     <#else>
-      <#assign name = "" + diskCounter>
+      <#assign diskName = "disk-" + diskCounter>
     </#if>
-    - name: disk-${ name }
-      devicePath: /dev/disk-${ name }
+    - name: ${ diskName }
+      devicePath: /dev/${ diskName }
     <#assign diskCounter = diskCounter + 1/>
     </#list>
     securityContext:
@@ -65,13 +65,15 @@ spec:
   <#list cr.spec.vm.disks.asList() as disk>
   <#if disk.volumeClaimTemplate.metadata??
     && disk.volumeClaimTemplate.metadata.name??>
-    <#assign name = disk.volumeClaimTemplate.metadata.name.asString>
+    <#assign claimName = disk.volumeClaimTemplate.metadata.name.asString>
+    <#assign diskName = "disk-" + claimName>
   <#else>
-    <#assign name = "" + diskCounter>
+    <#assign claimName = cr.metadata.name.asString + "-disk-" + diskCounter>
+    <#assign diskName = "disk-" + diskCounter>
   </#if>
-  - name: disk-${ name }
+  - name: ${ diskName }
     persistentVolumeClaim:
-      claimName: ${ cr.metadata.name.asString }-disk-${ name }
+      claimName: ${ claimName }
   <#assign diskCounter = diskCounter + 1/>
   </#list>
   hostNetwork: true
