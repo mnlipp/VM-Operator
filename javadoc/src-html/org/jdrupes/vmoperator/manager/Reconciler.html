@@ -145,7 +145,7 @@
 <span class="source-line-no">132</span><span id="line-132">            WatchChannel channel)</span>
 <span class="source-line-no">133</span><span id="line-133">            throws TemplateException, ApiException, IOException {</span>
 <span class="source-line-no">134</span><span id="line-134">        // Combine template and data and parse result</span>
-<span class="source-line-no">135</span><span id="line-135">        var fmTemplate = fmConfig.getTemplate("vmDataPvc.ftl.yaml");</span>
+<span class="source-line-no">135</span><span id="line-135">        var fmTemplate = fmConfig.getTemplate("runnerDataPvc.ftl.yaml");</span>
 <span class="source-line-no">136</span><span id="line-136">        StringWriter out = new StringWriter();</span>
 <span class="source-line-no">137</span><span id="line-137">        fmTemplate.process(model, out);</span>
 <span class="source-line-no">138</span><span id="line-138">        // Avoid Yaml.load due to</span>
