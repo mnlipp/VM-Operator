@@ -29,6 +29,7 @@ import freemarker.template.TemplateException;
 import freemarker.template.TemplateExceptionHandler;
 import freemarker.template.TemplateHashModel;
 import freemarker.template.TemplateNotFoundException;
+import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
@@ -118,7 +119,8 @@ public class Reconciler extends Component {
         if (event.type() != Type.DELETED) {
             reconcileDataPvc(model, channel);
             reconcileDisks(vmDef, channel);
-            reconcileConfigMap(event, model, channel);
+            var configMap = reconcileConfigMap(event, model, channel);
+            model.put("cm", configMap.getRaw());
             reconcilePod(event, model, channel);
         } else {
             reconcilePod(event, model, channel);
@@ -229,7 +231,7 @@ public class Reconciler extends Component {
         }
     }
 
-    private void reconcileConfigMap(VmDefChanged event,
+    private DynamicKubernetesObject reconcileConfigMap(VmDefChanged event,
             Map<String, Object> model, WatchChannel channel)
             throws IOException, TemplateException, ApiException {
         // Get API and check if exists
@@ -242,7 +244,7 @@ public class Reconciler extends Component {
             if (existing.isPresent()) {
                 K8s.delete(cmApi, existing.get());
             }
-            return;
+            return null;
         }
 
         // Combine template and data and parse result
@@ -254,7 +256,7 @@ public class Reconciler extends Component {
         var mapDef = Dynamics.newFromYaml(out.toString());
 
         // Apply
-        K8s.apply(cmApi, mapDef, out.toString());
+        return K8s.apply(cmApi, mapDef, out.toString());
     }
 
     private void reconcilePod(VmDefChanged event, Map<String, Object> model,
@@ -281,9 +283,21 @@ public class Reconciler extends Component {
         // https://github.com/kubernetes-client/java/issues/2741
         var podDef = Dynamics.newFromYaml(out.toString());
 
-        // Nothing can be updated here
+        // Check if update
         if (existing.isEmpty()) {
             podApi.create(podDef);
+        } else {
+            // only annotations are updated
+            var metadata = new JsonObject();
+            metadata.add("annotations", GsonPtr.to(podDef.getRaw())
+                .to("metadata").get(JsonObject.class, "annotations").get());
+            var patch = new JsonObject();
+            patch.add("metadata", metadata);
+            podApi.patch(existing.get().getMetadata().getNamespace(),
+                existing.get().getMetadata().getName(),
+                V1Patch.PATCH_FORMAT_JSON_MERGE_PATCH,
+                new V1Patch(channel.client().getJSON().serialize(patch)))
+                .throwsApiException();
         }
     }
 

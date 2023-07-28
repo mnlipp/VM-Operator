@@ -7,7 +7,11 @@ metadata:
     app.kubernetes.io/name: ${ constants.APP_NAME }
     app.kubernetes.io/instance: ${ cr.metadata.name.asString }
     app.kubernetes.io/managed-by: ${ constants.VM_OP_NAME }
-    
+  annotations:
+    # Triggers update of config map mounted in pod
+    # See https://ahmet.im/blog/kubernetes-secret-volumes-delay/
+    vmrunner.jdrupes.org/cmVersion: "${ cm.metadata.resourceVersion.asString }"
+
 spec:
   containers:
   - name: ${ cr.metadata.name.asString }

@@ -122,15 +122,15 @@ public class K8s {
      * @throws ApiException the api exception
      */
     public static <T extends KubernetesObject, LT extends KubernetesListObject>
-            void
-            apply(GenericKubernetesApi<T, LT> api, T existing, String update)
+            T apply(GenericKubernetesApi<T, LT> api, T existing, String update)
                     throws ApiException {
         PatchOptions opts = new PatchOptions();
         opts.setForce(false);
         opts.setFieldManager("kubernetes-java-kubectl-apply");
-        api.patch(existing.getMetadata().getNamespace(),
+        var response = api.patch(existing.getMetadata().getNamespace(),
             existing.getMetadata().getName(), V1Patch.PATCH_FORMAT_APPLY_YAML,
             new V1Patch(update), opts).throwsApiException();
+        return response.getObject();
     }
 
 }
