@@ -144,6 +144,7 @@ data:
         </#if>
         - type: raw
           resource: /dev/disk-${ name }
+        <#assign drvCounter = drvCounter + 1/>
         </#list>
         
         display:

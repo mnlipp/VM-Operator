@@ -23,16 +23,23 @@ spec:
     #   name: dev-tun
     # - mountPath: /sys/fs/cgroup
     #   name: cgroup
-    - mountPath: /etc/opt/vmrunner
-      name: config
-    - mountPath: /var/local/vm-data
-      name: vm-data
-<#--
+    - name: config
+      mountPath: /etc/opt/vmrunner
+    - name: vm-data
+      mountPath: /var/local/vm-data
     volumeDevices:
-    {{- range $index, $disk := .Values.vm.disks }}
-    - devicePath: /dev/disk-{{ $index }}
-      name: disk-{{ $index }}
-    {{- end }}
+    <#assign diskCounter = 0/>
+    <#list cr.spec.vm.disks.asList() as disk>
+    <#if disk.volumeClaimTemplate.metadata??
+      && disk.volumeClaimTemplate.metadata.name??>
+      <#assign name = disk.volumeClaimTemplate.metadata.name.asString>
+    <#else>
+      <#assign name = "" + diskCounter>
+    </#if>
+    - name: disk-${ name }
+      devicePath: /dev/disk-${ name }
+    <#assign diskCounter = diskCounter + 1/>
+    </#list>
     securityContext:
       privileged: true
   volumes:
@@ -50,16 +57,23 @@ spec:
   #     path: /sys/fs/cgroup
   - name: config
     configMap:
-      name: {{ $.Release.Name }}
+      name: ${ cr.metadata.name.asString }
   - name: vm-data
-    hostPath:
-      path: /var/local/vmrunner/{{ .Release.Name }}
-  {{- range $index, $disk := .Values.vm.disks }}
-  - name: disk-{{ $index }}
     persistentVolumeClaim:
-      claimName: {{ $.Release.Name }}-pvc-{{ $index }}
-  {{- end }}
+      claimName: ${ cr.metadata.name.asString }-data
+  <#assign diskCounter = 0/>
+  <#list cr.spec.vm.disks.asList() as disk>
+  <#if disk.volumeClaimTemplate.metadata??
+    && disk.volumeClaimTemplate.metadata.name??>
+    <#assign name = disk.volumeClaimTemplate.metadata.name.asString>
+  <#else>
+    <#assign name = "" + diskCounter>
+  </#if>
+  - name: disk-${ name }
+    persistentVolumeClaim:
+      claimName: ${ cr.metadata.name.asString }-disk-${ name }
+  <#assign diskCounter = diskCounter + 1/>
+  </#list>
   hostNetwork: true
-  terminationGracePeriodSeconds: 60
+  terminationGracePeriodSeconds: ${ (cr.spec.vm.powerdownTimeout.asInt + 5)?c }
   restartPolicy: Never
--->
