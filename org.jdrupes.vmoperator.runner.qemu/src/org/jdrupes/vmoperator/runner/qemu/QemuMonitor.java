@@ -220,7 +220,7 @@ public class QemuMonitor extends Component {
             var response
                 = ((Runner) channel()).mapper().readValue(line, JsonNode.class);
             if (response.has("QMP")) {
-                fire(new QemuMonitorOpened());
+                fire(new QemuMonitorAvailable());
             }
         } catch (JsonProcessingException e) {
             throw new IOException(e);

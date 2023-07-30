@@ -19,6 +19,7 @@
 package org.jdrupes.vmoperator.runner.qemu;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -35,7 +36,6 @@ import java.util.regex.Pattern;
 import org.jdrupes.vmoperator.util.Dto;
 import org.jdrupes.vmoperator.util.FsdUtils;
 
-// TODO: Auto-generated Javadoc
 /**
  * The configuration information from the configuration file.
  */
@@ -50,7 +50,7 @@ class Configuration implements Dto {
     @SuppressWarnings({ "PMD.FieldNamingConventions",
         "PMD.VariableNamingConventions" })
     private static final Pattern memorySize
-        = Pattern.compile("\\s*(\\d+)\\s*([^\\s]*)");
+        = Pattern.compile("^\\s*(\\d+(\\.\\d+)?)\\s*([A-Za-z]*)\\s*");
 
     static {
         // SI units and common abbreviations
@@ -105,6 +105,7 @@ class Configuration implements Dto {
      * @param amount the amount
      * @return the big integer
      */
+    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
     public static BigInteger parseMemory(Object amount) {
         if (amount == null) {
             return (BigInteger) amount;
@@ -119,12 +120,16 @@ class Configuration implements Dto {
         if (!matcher.matches()) {
             throw new NumberFormatException(amount.toString());
         }
-        var unit = unitMap.get(matcher.group(2));
-        if (unit == null) {
-            throw new NumberFormatException(amount.toString());
+        var unit = BigInteger.ONE;
+        if (matcher.group(3) != null) {
+            unit = unitMap.get(matcher.group(3));
+            if (unit == null) {
+                throw new NumberFormatException(amount.toString());
+            }
         }
         var number = matcher.group(1);
-        return new BigInteger(number).multiply(unit);
+        return new BigDecimal(number).multiply(new BigDecimal(unit))
+            .toBigInteger();
     }
 
     /**

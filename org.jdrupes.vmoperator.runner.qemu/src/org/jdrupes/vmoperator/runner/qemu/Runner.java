@@ -226,7 +226,9 @@ public class Runner extends Component {
         event.structured(componentPath()).ifPresent(c -> {
             if (event instanceof InitialConfiguration) {
                 processInitialConfiguration(c);
+                return;
             }
+            updateConfiguration(c);
         });
     }
 
@@ -321,6 +323,24 @@ public class Runner extends Component {
         StringWriter out = new StringWriter();
         fmTemplate.process(model, out);
         return mapper.readValue(out.toString(), JsonNode.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void updateConfiguration(Map<String, Object> conf) {
+        Optional.ofNullable((Map<String, Object>) conf.get("vm"))
+            .map(vm -> vm.get("currentRam")).map(Configuration::parseMemory)
+            .ifPresent(cr -> {
+                if (config.vm.currentRam != null
+                    && config.vm.currentRam.equals(cr)) {
+                    return;
+                }
+                synchronized (state) {
+                    config.vm.currentRam = cr;
+                    if (state.get() == State.RUNNING) {
+                        qemuMonitor.setCurrentRam(cr);
+                    }
+                }
+            });
     }
 
     /**
@@ -456,10 +476,12 @@ public class Runner extends Component {
      * @param event the event
      */
     @Handler
-    public void onQemuMonitorOpened(QemuMonitorOpened event) {
-        Optional.ofNullable(config.vm.currentRam)
-            .ifPresent(qemuMonitor::setCurrentRam);
-        state.set(State.RUNNING);
+    public void onQemuMonitorAvailable(QemuMonitorAvailable event) {
+        synchronized (state) {
+            Optional.ofNullable(config.vm.currentRam)
+                .ifPresent(qemuMonitor::setCurrentRam);
+            state.set(State.RUNNING);
+        }
     }
 
     /**

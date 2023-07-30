@@ -18,12 +18,12 @@
 
 package org.jdrupes.vmoperator.runner.qemu;
 
-import org.jgrapes.io.events.Opened;
+import org.jgrapes.core.Event;
 
 /**
  * Signals that the connection to the Qemu monitor socket has been
  * established successfully.
  */
-public class QemuMonitorOpened extends Opened<Void> {
+public class QemuMonitorAvailable extends Event<Void> {
 
 }
