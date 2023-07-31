@@ -97,8 +97,8 @@ public class QemuMonitor extends Component {
                     + "\"qmp_capabilities\" }", JsonNode.class);
                 cont = mapper.readValue("{ \"execute\": "
                     + "\"cont\" }", JsonNode.class);
-                powerdown = mapper.readValue("{\"execute\": "
-                    + "\"query-cpus-fast\",\"arguments\":{}}", JsonNode.class);
+                powerdown = mapper.readValue("{ \"execute\": "
+                    + "\"system_powerdown\" }", JsonNode.class);
             } catch (IOException e) {
                 logger.log(Level.SEVERE, e,
                     () -> "Cannot initialize class: " + e.getMessage());
