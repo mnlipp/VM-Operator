@@ -23,6 +23,8 @@
   # Useful links:
   #   - https://joonas.fi/2021/02/uefi-pc-boot-process-and-uefi-with-qemu/
   "arguments":
+    # Mandatory
+    - "-S"
     # Qemu configuration
     - "-no-user-config"
     # * https://www.kernel.org/doc/Documentation/virtual/kvm/api.txt
@@ -82,7 +84,7 @@
     </#if>    
     - [ "-cpu", "${ vm.cpuModel }" ]
     <#if vm.maximumCpus gt 1>
-    - [ "-smp", "${ vm.currentCpus },maxcpus=${ vm.maximumCpus }\
+    - [ "-smp", "1,maxcpus=${ vm.maximumCpus }\
         <#if vm.cpuSockets gt 0>,sockets=${ vm.cpuSockets }</#if>\
         <#if vm.diesPerSocket gt 0>,cores=${ vm.diesPerSocket }</#if>\
         <#if vm.coresPerDie gt 0>,cores=${ vm.coresPerDie }</#if>\

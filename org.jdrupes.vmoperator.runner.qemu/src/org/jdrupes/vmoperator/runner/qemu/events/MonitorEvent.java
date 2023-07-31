@@ -16,14 +16,40 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.jdrupes.vmoperator.runner.qemu;
+package org.jdrupes.vmoperator.runner.qemu.events;
 
 import org.jgrapes.core.Event;
 
+// TODO: Auto-generated Javadoc
 /**
- * Signals that the connection to the Qemu monitor socket has been
- * established successfully.
+ * Signals the reception of an event from the monitor.
  */
-public class QemuMonitorAvailable extends Event<Void> {
+public class MonitorEvent extends Event<Void> {
 
+    /**
+     * The kind of monitor event.
+     */
+    public enum Kind {
+        READY
+    }
+
+    private final Kind kind;
+
+    /**
+     * Instantiates a new monitor event.
+     *
+     * @param kind the kind
+     */
+    public MonitorEvent(Kind kind) {
+        this.kind = kind;
+    }
+
+    /**
+     * Returns the kind of event.
+     *
+     * @return the kind
+     */
+    public Kind kind() {
+        return kind;
+    }
 }
