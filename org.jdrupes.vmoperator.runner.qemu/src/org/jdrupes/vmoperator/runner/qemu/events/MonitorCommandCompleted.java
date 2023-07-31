@@ -35,7 +35,7 @@ public class MonitorCommandCompleted extends Event<Void> {
      * Instantiates a new monitor command.
      *
      * @param command the command
-     * @param arguments the arguments
+     * @param result the result
      */
     public MonitorCommandCompleted(Command command, Object result) {
         super();

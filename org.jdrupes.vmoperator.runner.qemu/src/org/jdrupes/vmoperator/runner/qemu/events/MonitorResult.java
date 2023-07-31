@@ -33,7 +33,7 @@ public class MonitorResult extends Event<Void> {
      * Instantiates a new monitor result.
      *
      * @param executed the command executed
-     * @param returned the values returned
+     * @param response the response
      */
     public MonitorResult(String executed, JsonNode response) {
         this.executed = executed;

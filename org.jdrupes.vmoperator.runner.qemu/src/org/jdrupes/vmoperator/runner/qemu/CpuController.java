@@ -51,7 +51,7 @@ public class CpuController extends Component {
      * Instantiates a new CPU controller.
      *
      * @param componentChannel the component channel
-     * @param qemuMonitor 
+     * @param monitor the monitor
      */
     @SuppressWarnings("PMD.AssignmentToNonFinalStatic")
     public CpuController(Channel componentChannel, QemuMonitor monitor) {
@@ -88,7 +88,6 @@ public class CpuController extends Component {
      * On monitor result.
      *
      * @param result the result
-     * @param channel the channel
      */
     @Handler
     public void onMonitorResult(MonitorResult result) {

@@ -85,9 +85,7 @@ public class QemuMonitor extends Component {
      * Instantiates a new qemu monitor.
      *
      * @param componentChannel the component channel
-     * @param mapper 
-     * @throws JsonProcessingException 
-     * @throws JsonMappingException 
+     * @throws IOException Signals that an I/O exception has occurred.
      */
     @SuppressWarnings("PMD.AssignmentToNonFinalStatic")
     public QemuMonitor(Channel componentChannel) throws IOException {
