@@ -32,260 +32,308 @@
 <span class="source-line-no">019</span><span id="line-19">package org.jdrupes.vmoperator.runner.qemu;</span>
 <span class="source-line-no">020</span><span id="line-20"></span>
 <span class="source-line-no">021</span><span id="line-21">import com.fasterxml.jackson.core.JsonProcessingException;</span>
-<span class="source-line-no">022</span><span id="line-22">import com.fasterxml.jackson.databind.JsonNode;</span>
-<span class="source-line-no">023</span><span id="line-23">import java.io.IOException;</span>
-<span class="source-line-no">024</span><span id="line-24">import java.io.Writer;</span>
-<span class="source-line-no">025</span><span id="line-25">import java.lang.reflect.UndeclaredThrowableException;</span>
-<span class="source-line-no">026</span><span id="line-26">import java.net.UnixDomainSocketAddress;</span>
-<span class="source-line-no">027</span><span id="line-27">import java.nio.file.Files;</span>
-<span class="source-line-no">028</span><span id="line-28">import java.nio.file.Path;</span>
-<span class="source-line-no">029</span><span id="line-29">import java.time.Duration;</span>
-<span class="source-line-no">030</span><span id="line-30">import java.util.HashMap;</span>
-<span class="source-line-no">031</span><span id="line-31">import java.util.Map;</span>
-<span class="source-line-no">032</span><span id="line-32">import java.util.logging.Level;</span>
-<span class="source-line-no">033</span><span id="line-33">import java.util.logging.Logger;</span>
-<span class="source-line-no">034</span><span id="line-34">import org.jgrapes.core.Channel;</span>
-<span class="source-line-no">035</span><span id="line-35">import org.jgrapes.core.Component;</span>
-<span class="source-line-no">036</span><span id="line-36">import org.jgrapes.core.Components;</span>
-<span class="source-line-no">037</span><span id="line-37">import org.jgrapes.core.Components.Timer;</span>
-<span class="source-line-no">038</span><span id="line-38">import org.jgrapes.core.annotation.Handler;</span>
-<span class="source-line-no">039</span><span id="line-39">import org.jgrapes.core.events.Start;</span>
-<span class="source-line-no">040</span><span id="line-40">import org.jgrapes.core.events.Stop;</span>
-<span class="source-line-no">041</span><span id="line-41">import org.jgrapes.io.events.Closed;</span>
-<span class="source-line-no">042</span><span id="line-42">import org.jgrapes.io.events.ConnectError;</span>
-<span class="source-line-no">043</span><span id="line-43">import org.jgrapes.io.events.Input;</span>
-<span class="source-line-no">044</span><span id="line-44">import org.jgrapes.io.events.OpenSocketConnection;</span>
-<span class="source-line-no">045</span><span id="line-45">import org.jgrapes.io.util.ByteBufferWriter;</span>
-<span class="source-line-no">046</span><span id="line-46">import org.jgrapes.io.util.LineCollector;</span>
-<span class="source-line-no">047</span><span id="line-47">import org.jgrapes.net.SocketIOChannel;</span>
-<span class="source-line-no">048</span><span id="line-48">import org.jgrapes.net.events.ClientConnected;</span>
-<span class="source-line-no">049</span><span id="line-49">import org.jgrapes.util.events.ConfigurationUpdate;</span>
-<span class="source-line-no">050</span><span id="line-50">import org.jgrapes.util.events.FileChanged;</span>
-<span class="source-line-no">051</span><span id="line-51">import org.jgrapes.util.events.FileChanged.Kind;</span>
-<span class="source-line-no">052</span><span id="line-52">import org.jgrapes.util.events.WatchFile;</span>
-<span class="source-line-no">053</span><span id="line-53"></span>
-<span class="source-line-no">054</span><span id="line-54">/**</span>
-<span class="source-line-no">055</span><span id="line-55"> * A component that handles the communication over the Qemu monitor</span>
-<span class="source-line-no">056</span><span id="line-56"> * socket.</span>
-<span class="source-line-no">057</span><span id="line-57"> * </span>
-<span class="source-line-no">058</span><span id="line-58"> * If the log level for this class is set to fine, the messages </span>
-<span class="source-line-no">059</span><span id="line-59"> * exchanged on the monitor socket are logged.</span>
-<span class="source-line-no">060</span><span id="line-60"> */</span>
-<span class="source-line-no">061</span><span id="line-61">public class QemuMonitor extends Component {</span>
-<span class="source-line-no">062</span><span id="line-62"></span>
-<span class="source-line-no">063</span><span id="line-63">    @SuppressWarnings({ "PMD.FieldNamingConventions",</span>
-<span class="source-line-no">064</span><span id="line-64">        "PMD.VariableNamingConventions" })</span>
-<span class="source-line-no">065</span><span id="line-65">    private static final Logger logger</span>
-<span class="source-line-no">066</span><span id="line-66">        = Logger.getLogger(QemuMonitor.class.getName());</span>
-<span class="source-line-no">067</span><span id="line-67"></span>
-<span class="source-line-no">068</span><span id="line-68">    @SuppressWarnings("PMD.UseConcurrentHashMap")</span>
-<span class="source-line-no">069</span><span id="line-69">    private final Map&lt;String, String&gt; monitorMessages = new HashMap&lt;&gt;(Map.of(</span>
-<span class="source-line-no">070</span><span id="line-70">        "connect", "{ \"execute\": \"qmp_capabilities\" }",</span>
-<span class="source-line-no">071</span><span id="line-71">        "powerdown", "{ \"execute\": \"system_powerdown\" }",</span>
-<span class="source-line-no">072</span><span id="line-72">        "setBalloon", "{ \"execute\": \"balloon\", \"arguments\": "</span>
-<span class="source-line-no">073</span><span id="line-73">            + "{ \"value\": %d } }"));</span>
-<span class="source-line-no">074</span><span id="line-74"></span>
-<span class="source-line-no">075</span><span id="line-75">    private Path socketPath;</span>
-<span class="source-line-no">076</span><span id="line-76">    private int powerdownTimeout;</span>
-<span class="source-line-no">077</span><span id="line-77">    private SocketIOChannel monitorChannel;</span>
-<span class="source-line-no">078</span><span id="line-78">    private Stop suspendedStop;</span>
-<span class="source-line-no">079</span><span id="line-79"></span>
-<span class="source-line-no">080</span><span id="line-80">    private Timer powerdownTimer;</span>
-<span class="source-line-no">081</span><span id="line-81"></span>
-<span class="source-line-no">082</span><span id="line-82">    /**</span>
-<span class="source-line-no">083</span><span id="line-83">     * Instantiates a new qemu monitor.</span>
-<span class="source-line-no">084</span><span id="line-84">     *</span>
-<span class="source-line-no">085</span><span id="line-85">     * @param componentChannel the component channel</span>
-<span class="source-line-no">086</span><span id="line-86">     */</span>
-<span class="source-line-no">087</span><span id="line-87">    public QemuMonitor(Channel componentChannel) {</span>
-<span class="source-line-no">088</span><span id="line-88">        super(componentChannel);</span>
-<span class="source-line-no">089</span><span id="line-89">    }</span>
-<span class="source-line-no">090</span><span id="line-90"></span>
-<span class="source-line-no">091</span><span id="line-91">    /**</span>
-<span class="source-line-no">092</span><span id="line-92">     * As the configuration of this component depends on the configuration</span>
-<span class="source-line-no">093</span><span id="line-93">     * of the {@link Runner}, it doesn't have a handler for the </span>
-<span class="source-line-no">094</span><span id="line-94">     * {@link ConfigurationUpdate} event. The values are forwarded from the</span>
-<span class="source-line-no">095</span><span id="line-95">     * {@link Runner} instead.</span>
-<span class="source-line-no">096</span><span id="line-96">     *</span>
-<span class="source-line-no">097</span><span id="line-97">     * @param socketPath the socket path</span>
-<span class="source-line-no">098</span><span id="line-98">     * @param powerdownTimeout </span>
-<span class="source-line-no">099</span><span id="line-99">     */</span>
-<span class="source-line-no">100</span><span id="line-100">    /* default */ void configure(Path socketPath, int powerdownTimeout) {</span>
-<span class="source-line-no">101</span><span id="line-101">        this.socketPath = socketPath;</span>
-<span class="source-line-no">102</span><span id="line-102">        this.powerdownTimeout = powerdownTimeout;</span>
-<span class="source-line-no">103</span><span id="line-103">    }</span>
-<span class="source-line-no">104</span><span id="line-104"></span>
-<span class="source-line-no">105</span><span id="line-105">    /**</span>
-<span class="source-line-no">106</span><span id="line-106">     * Handle the start event.</span>
-<span class="source-line-no">107</span><span id="line-107">     *</span>
-<span class="source-line-no">108</span><span id="line-108">     * @param event the event</span>
-<span class="source-line-no">109</span><span id="line-109">     * @throws IOException Signals that an I/O exception has occurred.</span>
-<span class="source-line-no">110</span><span id="line-110">     */</span>
-<span class="source-line-no">111</span><span id="line-111">    @Handler</span>
-<span class="source-line-no">112</span><span id="line-112">    public void onStart(Start event) throws IOException {</span>
-<span class="source-line-no">113</span><span id="line-113">        if (socketPath == null) {</span>
-<span class="source-line-no">114</span><span id="line-114">            return;</span>
-<span class="source-line-no">115</span><span id="line-115">        }</span>
-<span class="source-line-no">116</span><span id="line-116">        Files.deleteIfExists(socketPath);</span>
-<span class="source-line-no">117</span><span id="line-117">        fire(new WatchFile(socketPath));</span>
-<span class="source-line-no">118</span><span id="line-118">    }</span>
-<span class="source-line-no">119</span><span id="line-119"></span>
-<span class="source-line-no">120</span><span id="line-120">    /**</span>
-<span class="source-line-no">121</span><span id="line-121">     * Watch for the creation of the swtpm socket and start the</span>
-<span class="source-line-no">122</span><span id="line-122">     * qemu process if it has been created.</span>
-<span class="source-line-no">123</span><span id="line-123">     *</span>
-<span class="source-line-no">124</span><span id="line-124">     * @param event the event</span>
-<span class="source-line-no">125</span><span id="line-125">     */</span>
-<span class="source-line-no">126</span><span id="line-126">    @Handler</span>
-<span class="source-line-no">127</span><span id="line-127">    public void onFileChanged(FileChanged event) {</span>
-<span class="source-line-no">128</span><span id="line-128">        if (event.change() == Kind.CREATED &amp;&amp; event.path().equals(socketPath)) {</span>
-<span class="source-line-no">129</span><span id="line-129">            // qemu running, open socket</span>
-<span class="source-line-no">130</span><span id="line-130">            fire(new OpenSocketConnection(</span>
-<span class="source-line-no">131</span><span id="line-131">                UnixDomainSocketAddress.of(socketPath))</span>
-<span class="source-line-no">132</span><span id="line-132">                    .setAssociated(QemuMonitor.class, this));</span>
-<span class="source-line-no">133</span><span id="line-133">        }</span>
-<span class="source-line-no">134</span><span id="line-134">    }</span>
-<span class="source-line-no">135</span><span id="line-135"></span>
-<span class="source-line-no">136</span><span id="line-136">    /**</span>
-<span class="source-line-no">137</span><span id="line-137">     * Check if this is from opening the monitor socket and if true,</span>
-<span class="source-line-no">138</span><span id="line-138">     * save the socket in the context and associate the channel with</span>
-<span class="source-line-no">139</span><span id="line-139">     * the context. Then send the initial message to the socket.</span>
-<span class="source-line-no">140</span><span id="line-140">     *</span>
-<span class="source-line-no">141</span><span id="line-141">     * @param event the event</span>
-<span class="source-line-no">142</span><span id="line-142">     * @param channel the channel</span>
-<span class="source-line-no">143</span><span id="line-143">     */</span>
-<span class="source-line-no">144</span><span id="line-144">    @Handler</span>
-<span class="source-line-no">145</span><span id="line-145">    public void onClientConnected(ClientConnected event,</span>
-<span class="source-line-no">146</span><span id="line-146">            SocketIOChannel channel) {</span>
-<span class="source-line-no">147</span><span id="line-147">        event.openEvent().associated(QemuMonitor.class).ifPresent(qm -&gt; {</span>
-<span class="source-line-no">148</span><span id="line-148">            monitorChannel = channel;</span>
-<span class="source-line-no">149</span><span id="line-149">            channel.setAssociated(QemuMonitor.class, this);</span>
-<span class="source-line-no">150</span><span id="line-150">            channel.setAssociated(Writer.class, new ByteBufferWriter(</span>
-<span class="source-line-no">151</span><span id="line-151">                channel).nativeCharset());</span>
-<span class="source-line-no">152</span><span id="line-152">            channel.setAssociated(LineCollector.class,</span>
-<span class="source-line-no">153</span><span id="line-153">                new LineCollector()</span>
-<span class="source-line-no">154</span><span id="line-154">                    .consumer(line -&gt; {</span>
-<span class="source-line-no">155</span><span id="line-155">                        try {</span>
-<span class="source-line-no">156</span><span id="line-156">                            processMonitorInput(line);</span>
-<span class="source-line-no">157</span><span id="line-157">                        } catch (IOException e) {</span>
-<span class="source-line-no">158</span><span id="line-158">                            throw new UndeclaredThrowableException(e);</span>
-<span class="source-line-no">159</span><span id="line-159">                        }</span>
-<span class="source-line-no">160</span><span id="line-160">                    }));</span>
-<span class="source-line-no">161</span><span id="line-161">            writeToMonitor(monitorMessages.get("connect"));</span>
-<span class="source-line-no">162</span><span id="line-162">        });</span>
-<span class="source-line-no">163</span><span id="line-163">    }</span>
-<span class="source-line-no">164</span><span id="line-164"></span>
-<span class="source-line-no">165</span><span id="line-165">    /**</span>
-<span class="source-line-no">166</span><span id="line-166">     * Called when a connection attempt fails.</span>
-<span class="source-line-no">167</span><span id="line-167">     *</span>
-<span class="source-line-no">168</span><span id="line-168">     * @param event the event</span>
-<span class="source-line-no">169</span><span id="line-169">     * @param channel the channel</span>
-<span class="source-line-no">170</span><span id="line-170">     */</span>
-<span class="source-line-no">171</span><span id="line-171">    @Handler</span>
-<span class="source-line-no">172</span><span id="line-172">    public void onConnectError(ConnectError event, SocketIOChannel channel) {</span>
-<span class="source-line-no">173</span><span id="line-173">        event.event().associated(QemuMonitor.class).ifPresent(qm -&gt; {</span>
-<span class="source-line-no">174</span><span id="line-174">            fire(new Stop());</span>
-<span class="source-line-no">175</span><span id="line-175">        });</span>
-<span class="source-line-no">176</span><span id="line-176">    }</span>
-<span class="source-line-no">177</span><span id="line-177"></span>
-<span class="source-line-no">178</span><span id="line-178">    private void writeToMonitor(String message) {</span>
-<span class="source-line-no">179</span><span id="line-179">        logger.fine(() -&gt; "monitor(out): " + message);</span>
-<span class="source-line-no">180</span><span id="line-180">        monitorChannel.associated(Writer.class).ifPresent(writer -&gt; {</span>
-<span class="source-line-no">181</span><span id="line-181">            try {</span>
-<span class="source-line-no">182</span><span id="line-182">                writer.append(message).append('\n').flush();</span>
-<span class="source-line-no">183</span><span id="line-183">            } catch (IOException e) {</span>
-<span class="source-line-no">184</span><span id="line-184">                // Cannot happen, but...</span>
-<span class="source-line-no">185</span><span id="line-185">                logger.log(Level.WARNING, e, () -&gt; e.getMessage());</span>
-<span class="source-line-no">186</span><span id="line-186">            }</span>
-<span class="source-line-no">187</span><span id="line-187">        });</span>
-<span class="source-line-no">188</span><span id="line-188">    }</span>
-<span class="source-line-no">189</span><span id="line-189"></span>
-<span class="source-line-no">190</span><span id="line-190">    /**</span>
-<span class="source-line-no">191</span><span id="line-191">     * Sets the current ram.</span>
-<span class="source-line-no">192</span><span id="line-192">     *</span>
-<span class="source-line-no">193</span><span id="line-193">     * @param amount the new current ram</span>
-<span class="source-line-no">194</span><span id="line-194">     */</span>
-<span class="source-line-no">195</span><span id="line-195">    public void setCurrentRam(Number amount) {</span>
-<span class="source-line-no">196</span><span id="line-196">        writeToMonitor(</span>
-<span class="source-line-no">197</span><span id="line-197">            String.format(monitorMessages.get("setBalloon"), amount));</span>
+<span class="source-line-no">022</span><span id="line-22">import com.fasterxml.jackson.databind.JsonMappingException;</span>
+<span class="source-line-no">023</span><span id="line-23">import com.fasterxml.jackson.databind.JsonNode;</span>
+<span class="source-line-no">024</span><span id="line-24">import com.fasterxml.jackson.databind.ObjectMapper;</span>
+<span class="source-line-no">025</span><span id="line-25">import com.fasterxml.jackson.databind.node.ObjectNode;</span>
+<span class="source-line-no">026</span><span id="line-26">import java.io.IOException;</span>
+<span class="source-line-no">027</span><span id="line-27">import java.io.Writer;</span>
+<span class="source-line-no">028</span><span id="line-28">import java.lang.reflect.UndeclaredThrowableException;</span>
+<span class="source-line-no">029</span><span id="line-29">import java.net.UnixDomainSocketAddress;</span>
+<span class="source-line-no">030</span><span id="line-30">import java.nio.file.Files;</span>
+<span class="source-line-no">031</span><span id="line-31">import java.nio.file.Path;</span>
+<span class="source-line-no">032</span><span id="line-32">import java.time.Duration;</span>
+<span class="source-line-no">033</span><span id="line-33">import java.util.LinkedList;</span>
+<span class="source-line-no">034</span><span id="line-34">import java.util.Queue;</span>
+<span class="source-line-no">035</span><span id="line-35">import java.util.logging.Level;</span>
+<span class="source-line-no">036</span><span id="line-36">import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;</span>
+<span class="source-line-no">037</span><span id="line-37">import static org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand.Command.CONTINUE;</span>
+<span class="source-line-no">038</span><span id="line-38">import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommandCompleted;</span>
+<span class="source-line-no">039</span><span id="line-39">import org.jdrupes.vmoperator.runner.qemu.events.MonitorReady;</span>
+<span class="source-line-no">040</span><span id="line-40">import org.jdrupes.vmoperator.runner.qemu.events.MonitorResult;</span>
+<span class="source-line-no">041</span><span id="line-41">import org.jgrapes.core.Channel;</span>
+<span class="source-line-no">042</span><span id="line-42">import org.jgrapes.core.Component;</span>
+<span class="source-line-no">043</span><span id="line-43">import org.jgrapes.core.Components;</span>
+<span class="source-line-no">044</span><span id="line-44">import org.jgrapes.core.Components.Timer;</span>
+<span class="source-line-no">045</span><span id="line-45">import org.jgrapes.core.annotation.Handler;</span>
+<span class="source-line-no">046</span><span id="line-46">import org.jgrapes.core.events.Start;</span>
+<span class="source-line-no">047</span><span id="line-47">import org.jgrapes.core.events.Stop;</span>
+<span class="source-line-no">048</span><span id="line-48">import org.jgrapes.io.events.Closed;</span>
+<span class="source-line-no">049</span><span id="line-49">import org.jgrapes.io.events.ConnectError;</span>
+<span class="source-line-no">050</span><span id="line-50">import org.jgrapes.io.events.Input;</span>
+<span class="source-line-no">051</span><span id="line-51">import org.jgrapes.io.events.OpenSocketConnection;</span>
+<span class="source-line-no">052</span><span id="line-52">import org.jgrapes.io.util.ByteBufferWriter;</span>
+<span class="source-line-no">053</span><span id="line-53">import org.jgrapes.io.util.LineCollector;</span>
+<span class="source-line-no">054</span><span id="line-54">import org.jgrapes.net.SocketIOChannel;</span>
+<span class="source-line-no">055</span><span id="line-55">import org.jgrapes.net.events.ClientConnected;</span>
+<span class="source-line-no">056</span><span id="line-56">import org.jgrapes.util.events.ConfigurationUpdate;</span>
+<span class="source-line-no">057</span><span id="line-57">import org.jgrapes.util.events.FileChanged;</span>
+<span class="source-line-no">058</span><span id="line-58">import org.jgrapes.util.events.FileChanged.Kind;</span>
+<span class="source-line-no">059</span><span id="line-59">import org.jgrapes.util.events.WatchFile;</span>
+<span class="source-line-no">060</span><span id="line-60"></span>
+<span class="source-line-no">061</span><span id="line-61">/**</span>
+<span class="source-line-no">062</span><span id="line-62"> * A component that handles the communication over the Qemu monitor</span>
+<span class="source-line-no">063</span><span id="line-63"> * socket.</span>
+<span class="source-line-no">064</span><span id="line-64"> * </span>
+<span class="source-line-no">065</span><span id="line-65"> * If the log level for this class is set to fine, the messages </span>
+<span class="source-line-no">066</span><span id="line-66"> * exchanged on the monitor socket are logged.</span>
+<span class="source-line-no">067</span><span id="line-67"> */</span>
+<span class="source-line-no">068</span><span id="line-68">@SuppressWarnings("PMD.DataflowAnomalyAnalysis")</span>
+<span class="source-line-no">069</span><span id="line-69">public class QemuMonitor extends Component {</span>
+<span class="source-line-no">070</span><span id="line-70"></span>
+<span class="source-line-no">071</span><span id="line-71">    private static ObjectMapper mapper;</span>
+<span class="source-line-no">072</span><span id="line-72">    private static JsonNode connect;</span>
+<span class="source-line-no">073</span><span id="line-73">    private static JsonNode cont;</span>
+<span class="source-line-no">074</span><span id="line-74">    private static JsonNode powerdown;</span>
+<span class="source-line-no">075</span><span id="line-75"></span>
+<span class="source-line-no">076</span><span id="line-76">    @SuppressWarnings("PMD.UseConcurrentHashMap")</span>
+<span class="source-line-no">077</span><span id="line-77">    private Path socketPath;</span>
+<span class="source-line-no">078</span><span id="line-78">    private int powerdownTimeout;</span>
+<span class="source-line-no">079</span><span id="line-79">    private SocketIOChannel monitorChannel;</span>
+<span class="source-line-no">080</span><span id="line-80">    private final Queue&lt;String&gt; executing = new LinkedList&lt;&gt;();</span>
+<span class="source-line-no">081</span><span id="line-81">    private Stop suspendedStop;</span>
+<span class="source-line-no">082</span><span id="line-82">    private Timer powerdownTimer;</span>
+<span class="source-line-no">083</span><span id="line-83"></span>
+<span class="source-line-no">084</span><span id="line-84">    /**</span>
+<span class="source-line-no">085</span><span id="line-85">     * Instantiates a new qemu monitor.</span>
+<span class="source-line-no">086</span><span id="line-86">     *</span>
+<span class="source-line-no">087</span><span id="line-87">     * @param componentChannel the component channel</span>
+<span class="source-line-no">088</span><span id="line-88">     * @param mapper </span>
+<span class="source-line-no">089</span><span id="line-89">     * @throws JsonProcessingException </span>
+<span class="source-line-no">090</span><span id="line-90">     * @throws JsonMappingException </span>
+<span class="source-line-no">091</span><span id="line-91">     */</span>
+<span class="source-line-no">092</span><span id="line-92">    @SuppressWarnings("PMD.AssignmentToNonFinalStatic")</span>
+<span class="source-line-no">093</span><span id="line-93">    public QemuMonitor(Channel componentChannel) throws IOException {</span>
+<span class="source-line-no">094</span><span id="line-94">        super(componentChannel);</span>
+<span class="source-line-no">095</span><span id="line-95">        if (mapper == null) {</span>
+<span class="source-line-no">096</span><span id="line-96">            mapper = new ObjectMapper();</span>
+<span class="source-line-no">097</span><span id="line-97">            try {</span>
+<span class="source-line-no">098</span><span id="line-98">                connect = mapper.readValue("{ \"execute\": "</span>
+<span class="source-line-no">099</span><span id="line-99">                    + "\"qmp_capabilities\" }", JsonNode.class);</span>
+<span class="source-line-no">100</span><span id="line-100">                cont = mapper.readValue("{ \"execute\": "</span>
+<span class="source-line-no">101</span><span id="line-101">                    + "\"cont\" }", JsonNode.class);</span>
+<span class="source-line-no">102</span><span id="line-102">                powerdown = mapper.readValue("{\"execute\": "</span>
+<span class="source-line-no">103</span><span id="line-103">                    + "\"query-cpus-fast\",\"arguments\":{}}", JsonNode.class);</span>
+<span class="source-line-no">104</span><span id="line-104">            } catch (IOException e) {</span>
+<span class="source-line-no">105</span><span id="line-105">                logger.log(Level.SEVERE, e,</span>
+<span class="source-line-no">106</span><span id="line-106">                    () -&gt; "Cannot initialize class: " + e.getMessage());</span>
+<span class="source-line-no">107</span><span id="line-107">            }</span>
+<span class="source-line-no">108</span><span id="line-108">        }</span>
+<span class="source-line-no">109</span><span id="line-109">        attach(new RamController(channel(), this));</span>
+<span class="source-line-no">110</span><span id="line-110">        attach(new CpuController(channel(), this));</span>
+<span class="source-line-no">111</span><span id="line-111">    }</span>
+<span class="source-line-no">112</span><span id="line-112"></span>
+<span class="source-line-no">113</span><span id="line-113">    /**</span>
+<span class="source-line-no">114</span><span id="line-114">     * As the configuration of this component depends on the configuration</span>
+<span class="source-line-no">115</span><span id="line-115">     * of the {@link Runner}, it doesn't have a handler for the </span>
+<span class="source-line-no">116</span><span id="line-116">     * {@link ConfigurationUpdate} event. The values are forwarded from the</span>
+<span class="source-line-no">117</span><span id="line-117">     * {@link Runner} instead.</span>
+<span class="source-line-no">118</span><span id="line-118">     *</span>
+<span class="source-line-no">119</span><span id="line-119">     * @param socketPath the socket path</span>
+<span class="source-line-no">120</span><span id="line-120">     * @param powerdownTimeout </span>
+<span class="source-line-no">121</span><span id="line-121">     */</span>
+<span class="source-line-no">122</span><span id="line-122">    /* default */ void configure(Path socketPath, int powerdownTimeout) {</span>
+<span class="source-line-no">123</span><span id="line-123">        this.socketPath = socketPath;</span>
+<span class="source-line-no">124</span><span id="line-124">        this.powerdownTimeout = powerdownTimeout;</span>
+<span class="source-line-no">125</span><span id="line-125">    }</span>
+<span class="source-line-no">126</span><span id="line-126"></span>
+<span class="source-line-no">127</span><span id="line-127">    /**</span>
+<span class="source-line-no">128</span><span id="line-128">     * Handle the start event.</span>
+<span class="source-line-no">129</span><span id="line-129">     *</span>
+<span class="source-line-no">130</span><span id="line-130">     * @param event the event</span>
+<span class="source-line-no">131</span><span id="line-131">     * @throws IOException Signals that an I/O exception has occurred.</span>
+<span class="source-line-no">132</span><span id="line-132">     */</span>
+<span class="source-line-no">133</span><span id="line-133">    @Handler</span>
+<span class="source-line-no">134</span><span id="line-134">    public void onStart(Start event) throws IOException {</span>
+<span class="source-line-no">135</span><span id="line-135">        if (socketPath == null) {</span>
+<span class="source-line-no">136</span><span id="line-136">            return;</span>
+<span class="source-line-no">137</span><span id="line-137">        }</span>
+<span class="source-line-no">138</span><span id="line-138">        Files.deleteIfExists(socketPath);</span>
+<span class="source-line-no">139</span><span id="line-139">        fire(new WatchFile(socketPath));</span>
+<span class="source-line-no">140</span><span id="line-140">    }</span>
+<span class="source-line-no">141</span><span id="line-141"></span>
+<span class="source-line-no">142</span><span id="line-142">    /**</span>
+<span class="source-line-no">143</span><span id="line-143">     * Watch for the creation of the swtpm socket and start the</span>
+<span class="source-line-no">144</span><span id="line-144">     * qemu process if it has been created.</span>
+<span class="source-line-no">145</span><span id="line-145">     *</span>
+<span class="source-line-no">146</span><span id="line-146">     * @param event the event</span>
+<span class="source-line-no">147</span><span id="line-147">     */</span>
+<span class="source-line-no">148</span><span id="line-148">    @Handler</span>
+<span class="source-line-no">149</span><span id="line-149">    public void onFileChanged(FileChanged event) {</span>
+<span class="source-line-no">150</span><span id="line-150">        if (event.change() == Kind.CREATED &amp;&amp; event.path().equals(socketPath)) {</span>
+<span class="source-line-no">151</span><span id="line-151">            // qemu running, open socket</span>
+<span class="source-line-no">152</span><span id="line-152">            fire(new OpenSocketConnection(</span>
+<span class="source-line-no">153</span><span id="line-153">                UnixDomainSocketAddress.of(socketPath))</span>
+<span class="source-line-no">154</span><span id="line-154">                    .setAssociated(QemuMonitor.class, this));</span>
+<span class="source-line-no">155</span><span id="line-155">        }</span>
+<span class="source-line-no">156</span><span id="line-156">    }</span>
+<span class="source-line-no">157</span><span id="line-157"></span>
+<span class="source-line-no">158</span><span id="line-158">    /**</span>
+<span class="source-line-no">159</span><span id="line-159">     * Check if this is from opening the monitor socket and if true,</span>
+<span class="source-line-no">160</span><span id="line-160">     * save the socket in the context and associate the channel with</span>
+<span class="source-line-no">161</span><span id="line-161">     * the context. Then send the initial message to the socket.</span>
+<span class="source-line-no">162</span><span id="line-162">     *</span>
+<span class="source-line-no">163</span><span id="line-163">     * @param event the event</span>
+<span class="source-line-no">164</span><span id="line-164">     * @param channel the channel</span>
+<span class="source-line-no">165</span><span id="line-165">     */</span>
+<span class="source-line-no">166</span><span id="line-166">    @Handler</span>
+<span class="source-line-no">167</span><span id="line-167">    public void onClientConnected(ClientConnected event,</span>
+<span class="source-line-no">168</span><span id="line-168">            SocketIOChannel channel) {</span>
+<span class="source-line-no">169</span><span id="line-169">        event.openEvent().associated(QemuMonitor.class).ifPresent(qm -&gt; {</span>
+<span class="source-line-no">170</span><span id="line-170">            monitorChannel = channel;</span>
+<span class="source-line-no">171</span><span id="line-171">            channel.setAssociated(QemuMonitor.class, this);</span>
+<span class="source-line-no">172</span><span id="line-172">            channel.setAssociated(Writer.class, new ByteBufferWriter(</span>
+<span class="source-line-no">173</span><span id="line-173">                channel).nativeCharset());</span>
+<span class="source-line-no">174</span><span id="line-174">            channel.setAssociated(LineCollector.class,</span>
+<span class="source-line-no">175</span><span id="line-175">                new LineCollector()</span>
+<span class="source-line-no">176</span><span id="line-176">                    .consumer(line -&gt; {</span>
+<span class="source-line-no">177</span><span id="line-177">                        try {</span>
+<span class="source-line-no">178</span><span id="line-178">                            processMonitorInput(line);</span>
+<span class="source-line-no">179</span><span id="line-179">                        } catch (IOException e) {</span>
+<span class="source-line-no">180</span><span id="line-180">                            throw new UndeclaredThrowableException(e);</span>
+<span class="source-line-no">181</span><span id="line-181">                        }</span>
+<span class="source-line-no">182</span><span id="line-182">                    }));</span>
+<span class="source-line-no">183</span><span id="line-183">            sendToMonitor(connect);</span>
+<span class="source-line-no">184</span><span id="line-184">        });</span>
+<span class="source-line-no">185</span><span id="line-185">    }</span>
+<span class="source-line-no">186</span><span id="line-186"></span>
+<span class="source-line-no">187</span><span id="line-187">    /**</span>
+<span class="source-line-no">188</span><span id="line-188">     * Called when a connection attempt fails.</span>
+<span class="source-line-no">189</span><span id="line-189">     *</span>
+<span class="source-line-no">190</span><span id="line-190">     * @param event the event</span>
+<span class="source-line-no">191</span><span id="line-191">     * @param channel the channel</span>
+<span class="source-line-no">192</span><span id="line-192">     */</span>
+<span class="source-line-no">193</span><span id="line-193">    @Handler</span>
+<span class="source-line-no">194</span><span id="line-194">    public void onConnectError(ConnectError event, SocketIOChannel channel) {</span>
+<span class="source-line-no">195</span><span id="line-195">        event.event().associated(QemuMonitor.class).ifPresent(qm -&gt; {</span>
+<span class="source-line-no">196</span><span id="line-196">            fire(new Stop());</span>
+<span class="source-line-no">197</span><span id="line-197">        });</span>
 <span class="source-line-no">198</span><span id="line-198">    }</span>
 <span class="source-line-no">199</span><span id="line-199"></span>
-<span class="source-line-no">200</span><span id="line-200">    /**</span>
-<span class="source-line-no">201</span><span id="line-201">     * Handle data from qemu monitor connection.</span>
-<span class="source-line-no">202</span><span id="line-202">     *</span>
-<span class="source-line-no">203</span><span id="line-203">     * @param event the event</span>
-<span class="source-line-no">204</span><span id="line-204">     * @param channel the channel</span>
-<span class="source-line-no">205</span><span id="line-205">     */</span>
-<span class="source-line-no">206</span><span id="line-206">    @Handler</span>
-<span class="source-line-no">207</span><span id="line-207">    public void onInput(Input&lt;?&gt; event, SocketIOChannel channel) {</span>
-<span class="source-line-no">208</span><span id="line-208">        if (channel.associated(QemuMonitor.class).isEmpty()) {</span>
-<span class="source-line-no">209</span><span id="line-209">            return;</span>
-<span class="source-line-no">210</span><span id="line-210">        }</span>
-<span class="source-line-no">211</span><span id="line-211">        channel.associated(LineCollector.class).ifPresent(collector -&gt; {</span>
-<span class="source-line-no">212</span><span id="line-212">            collector.feed(event);</span>
-<span class="source-line-no">213</span><span id="line-213">        });</span>
-<span class="source-line-no">214</span><span id="line-214">    }</span>
-<span class="source-line-no">215</span><span id="line-215"></span>
-<span class="source-line-no">216</span><span id="line-216">    private void processMonitorInput(String line)</span>
-<span class="source-line-no">217</span><span id="line-217">            throws IOException {</span>
-<span class="source-line-no">218</span><span id="line-218">        logger.fine(() -&gt; "monitor(in): " + line);</span>
-<span class="source-line-no">219</span><span id="line-219">        try {</span>
-<span class="source-line-no">220</span><span id="line-220">            var response</span>
-<span class="source-line-no">221</span><span id="line-221">                = ((Runner) channel()).mapper().readValue(line, JsonNode.class);</span>
-<span class="source-line-no">222</span><span id="line-222">            if (response.has("QMP")) {</span>
-<span class="source-line-no">223</span><span id="line-223">                fire(new QemuMonitorAvailable());</span>
-<span class="source-line-no">224</span><span id="line-224">            }</span>
-<span class="source-line-no">225</span><span id="line-225">        } catch (JsonProcessingException e) {</span>
-<span class="source-line-no">226</span><span id="line-226">            throw new IOException(e);</span>
-<span class="source-line-no">227</span><span id="line-227">        }</span>
-<span class="source-line-no">228</span><span id="line-228">    }</span>
-<span class="source-line-no">229</span><span id="line-229"></span>
-<span class="source-line-no">230</span><span id="line-230">    /**</span>
-<span class="source-line-no">231</span><span id="line-231">     * On closed.</span>
-<span class="source-line-no">232</span><span id="line-232">     *</span>
-<span class="source-line-no">233</span><span id="line-233">     * @param event the event</span>
-<span class="source-line-no">234</span><span id="line-234">     */</span>
-<span class="source-line-no">235</span><span id="line-235">    @Handler</span>
-<span class="source-line-no">236</span><span id="line-236">    public void onClosed(Closed&lt;?&gt; event, SocketIOChannel channel) {</span>
-<span class="source-line-no">237</span><span id="line-237">        channel.associated(QemuMonitor.class).ifPresent(qm -&gt; {</span>
-<span class="source-line-no">238</span><span id="line-238">            monitorChannel = null;</span>
-<span class="source-line-no">239</span><span id="line-239">            synchronized (this) {</span>
-<span class="source-line-no">240</span><span id="line-240">                if (suspendedStop != null) {</span>
-<span class="source-line-no">241</span><span id="line-241">                    if (powerdownTimer != null) {</span>
-<span class="source-line-no">242</span><span id="line-242">                        powerdownTimer.cancel();</span>
-<span class="source-line-no">243</span><span id="line-243">                    }</span>
-<span class="source-line-no">244</span><span id="line-244">                    suspendedStop.resumeHandling();</span>
-<span class="source-line-no">245</span><span id="line-245">                    suspendedStop = null;</span>
-<span class="source-line-no">246</span><span id="line-246">                }</span>
-<span class="source-line-no">247</span><span id="line-247">            }</span>
-<span class="source-line-no">248</span><span id="line-248">        });</span>
-<span class="source-line-no">249</span><span id="line-249">    }</span>
-<span class="source-line-no">250</span><span id="line-250"></span>
-<span class="source-line-no">251</span><span id="line-251">    /**</span>
-<span class="source-line-no">252</span><span id="line-252">     * Shutdown the VM.</span>
-<span class="source-line-no">253</span><span id="line-253">     *</span>
-<span class="source-line-no">254</span><span id="line-254">     * @param event the event</span>
-<span class="source-line-no">255</span><span id="line-255">     */</span>
-<span class="source-line-no">256</span><span id="line-256">    @Handler(priority = 100)</span>
-<span class="source-line-no">257</span><span id="line-257">    public void onStop(Stop event) {</span>
-<span class="source-line-no">258</span><span id="line-258">        if (monitorChannel != null) {</span>
-<span class="source-line-no">259</span><span id="line-259">            // We have a connection to Qemu, attempt ACPI shutdown.</span>
-<span class="source-line-no">260</span><span id="line-260">            event.suspendHandling();</span>
-<span class="source-line-no">261</span><span id="line-261">            suspendedStop = event;</span>
-<span class="source-line-no">262</span><span id="line-262">            writeToMonitor(monitorMessages.get("powerdown"));</span>
+<span class="source-line-no">200</span><span id="line-200">    /* default */ void sendToMonitor(JsonNode message) {</span>
+<span class="source-line-no">201</span><span id="line-201">        String asText;</span>
+<span class="source-line-no">202</span><span id="line-202">        try {</span>
+<span class="source-line-no">203</span><span id="line-203">            asText = mapper.writeValueAsString(message);</span>
+<span class="source-line-no">204</span><span id="line-204">        } catch (JsonProcessingException e) {</span>
+<span class="source-line-no">205</span><span id="line-205">            logger.log(Level.SEVERE, e,</span>
+<span class="source-line-no">206</span><span id="line-206">                () -&gt; "Cannot serialize Json: " + e.getMessage());</span>
+<span class="source-line-no">207</span><span id="line-207">            return;</span>
+<span class="source-line-no">208</span><span id="line-208">        }</span>
+<span class="source-line-no">209</span><span id="line-209">        logger.fine(() -&gt; "monitor(out): " + asText);</span>
+<span class="source-line-no">210</span><span id="line-210">        synchronized (executing) {</span>
+<span class="source-line-no">211</span><span id="line-211">            if (message.has("execute")) {</span>
+<span class="source-line-no">212</span><span id="line-212">                executing.add(message.get("execute").asText());</span>
+<span class="source-line-no">213</span><span id="line-213">            }</span>
+<span class="source-line-no">214</span><span id="line-214">            monitorChannel.associated(Writer.class).ifPresent(writer -&gt; {</span>
+<span class="source-line-no">215</span><span id="line-215">                try {</span>
+<span class="source-line-no">216</span><span id="line-216">                    writer.append(asText).append('\n').flush();</span>
+<span class="source-line-no">217</span><span id="line-217">                } catch (IOException e) {</span>
+<span class="source-line-no">218</span><span id="line-218">                    // Cannot happen, but...</span>
+<span class="source-line-no">219</span><span id="line-219">                    logger.log(Level.WARNING, e, () -&gt; e.getMessage());</span>
+<span class="source-line-no">220</span><span id="line-220">                }</span>
+<span class="source-line-no">221</span><span id="line-221">            });</span>
+<span class="source-line-no">222</span><span id="line-222"></span>
+<span class="source-line-no">223</span><span id="line-223">        }</span>
+<span class="source-line-no">224</span><span id="line-224">    }</span>
+<span class="source-line-no">225</span><span id="line-225"></span>
+<span class="source-line-no">226</span><span id="line-226">    /**</span>
+<span class="source-line-no">227</span><span id="line-227">     * Handle data from qemu monitor connection.</span>
+<span class="source-line-no">228</span><span id="line-228">     *</span>
+<span class="source-line-no">229</span><span id="line-229">     * @param event the event</span>
+<span class="source-line-no">230</span><span id="line-230">     * @param channel the channel</span>
+<span class="source-line-no">231</span><span id="line-231">     */</span>
+<span class="source-line-no">232</span><span id="line-232">    @Handler</span>
+<span class="source-line-no">233</span><span id="line-233">    public void onInput(Input&lt;?&gt; event, SocketIOChannel channel) {</span>
+<span class="source-line-no">234</span><span id="line-234">        if (channel.associated(QemuMonitor.class).isEmpty()) {</span>
+<span class="source-line-no">235</span><span id="line-235">            return;</span>
+<span class="source-line-no">236</span><span id="line-236">        }</span>
+<span class="source-line-no">237</span><span id="line-237">        channel.associated(LineCollector.class).ifPresent(collector -&gt; {</span>
+<span class="source-line-no">238</span><span id="line-238">            collector.feed(event);</span>
+<span class="source-line-no">239</span><span id="line-239">        });</span>
+<span class="source-line-no">240</span><span id="line-240">    }</span>
+<span class="source-line-no">241</span><span id="line-241"></span>
+<span class="source-line-no">242</span><span id="line-242">    private void processMonitorInput(String line)</span>
+<span class="source-line-no">243</span><span id="line-243">            throws IOException {</span>
+<span class="source-line-no">244</span><span id="line-244">        logger.fine(() -&gt; "monitor(in): " + line);</span>
+<span class="source-line-no">245</span><span id="line-245">        try {</span>
+<span class="source-line-no">246</span><span id="line-246">            var response = mapper.readValue(line, ObjectNode.class);</span>
+<span class="source-line-no">247</span><span id="line-247">            if (response.has("QMP")) {</span>
+<span class="source-line-no">248</span><span id="line-248">                fire(new MonitorReady());</span>
+<span class="source-line-no">249</span><span id="line-249">                return;</span>
+<span class="source-line-no">250</span><span id="line-250">            }</span>
+<span class="source-line-no">251</span><span id="line-251">            if (response.has("return")) {</span>
+<span class="source-line-no">252</span><span id="line-252">                String executed = executing.poll();</span>
+<span class="source-line-no">253</span><span id="line-253">                logger.fine(</span>
+<span class="source-line-no">254</span><span id="line-254">                    () -&gt; String.format("(Previous \"monitor(in)\" is result "</span>
+<span class="source-line-no">255</span><span id="line-255">                        + "from executing %s)", executed));</span>
+<span class="source-line-no">256</span><span id="line-256">                fire(new MonitorResult(executed, response));</span>
+<span class="source-line-no">257</span><span id="line-257">                return;</span>
+<span class="source-line-no">258</span><span id="line-258">            }</span>
+<span class="source-line-no">259</span><span id="line-259">        } catch (JsonProcessingException e) {</span>
+<span class="source-line-no">260</span><span id="line-260">            throw new IOException(e);</span>
+<span class="source-line-no">261</span><span id="line-261">        }</span>
+<span class="source-line-no">262</span><span id="line-262">    }</span>
 <span class="source-line-no">263</span><span id="line-263"></span>
-<span class="source-line-no">264</span><span id="line-264">            // Schedule timer as fallback</span>
-<span class="source-line-no">265</span><span id="line-265">            powerdownTimer = Components.schedule(t -&gt; {</span>
-<span class="source-line-no">266</span><span id="line-266">                synchronized (this) {</span>
-<span class="source-line-no">267</span><span id="line-267">                    if (suspendedStop != null) {</span>
-<span class="source-line-no">268</span><span id="line-268">                        suspendedStop.resumeHandling();</span>
-<span class="source-line-no">269</span><span id="line-269">                        suspendedStop = null;</span>
-<span class="source-line-no">270</span><span id="line-270">                    }</span>
-<span class="source-line-no">271</span><span id="line-271">                }</span>
-<span class="source-line-no">272</span><span id="line-272">            }, Duration.ofSeconds(powerdownTimeout));</span>
-<span class="source-line-no">273</span><span id="line-273">        }</span>
-<span class="source-line-no">274</span><span id="line-274">    }</span>
-<span class="source-line-no">275</span><span id="line-275">}</span>
+<span class="source-line-no">264</span><span id="line-264">    /**</span>
+<span class="source-line-no">265</span><span id="line-265">     * On closed.</span>
+<span class="source-line-no">266</span><span id="line-266">     *</span>
+<span class="source-line-no">267</span><span id="line-267">     * @param event the event</span>
+<span class="source-line-no">268</span><span id="line-268">     */</span>
+<span class="source-line-no">269</span><span id="line-269">    @Handler</span>
+<span class="source-line-no">270</span><span id="line-270">    public void onClosed(Closed&lt;?&gt; event, SocketIOChannel channel) {</span>
+<span class="source-line-no">271</span><span id="line-271">        channel.associated(QemuMonitor.class).ifPresent(qm -&gt; {</span>
+<span class="source-line-no">272</span><span id="line-272">            monitorChannel = null;</span>
+<span class="source-line-no">273</span><span id="line-273">            synchronized (this) {</span>
+<span class="source-line-no">274</span><span id="line-274">                if (suspendedStop != null) {</span>
+<span class="source-line-no">275</span><span id="line-275">                    if (powerdownTimer != null) {</span>
+<span class="source-line-no">276</span><span id="line-276">                        powerdownTimer.cancel();</span>
+<span class="source-line-no">277</span><span id="line-277">                    }</span>
+<span class="source-line-no">278</span><span id="line-278">                    suspendedStop.resumeHandling();</span>
+<span class="source-line-no">279</span><span id="line-279">                    suspendedStop = null;</span>
+<span class="source-line-no">280</span><span id="line-280">                }</span>
+<span class="source-line-no">281</span><span id="line-281">            }</span>
+<span class="source-line-no">282</span><span id="line-282">        });</span>
+<span class="source-line-no">283</span><span id="line-283">    }</span>
+<span class="source-line-no">284</span><span id="line-284"></span>
+<span class="source-line-no">285</span><span id="line-285">    /**</span>
+<span class="source-line-no">286</span><span id="line-286">     * On monitor command.</span>
+<span class="source-line-no">287</span><span id="line-287">     *</span>
+<span class="source-line-no">288</span><span id="line-288">     * @param event the event</span>
+<span class="source-line-no">289</span><span id="line-289">     */</span>
+<span class="source-line-no">290</span><span id="line-290">    @Handler</span>
+<span class="source-line-no">291</span><span id="line-291">    public void onMonitorCommand(MonitorCommand event) {</span>
+<span class="source-line-no">292</span><span id="line-292">        if (event.command() != CONTINUE) {</span>
+<span class="source-line-no">293</span><span id="line-293">            return;</span>
+<span class="source-line-no">294</span><span id="line-294">        }</span>
+<span class="source-line-no">295</span><span id="line-295">        sendToMonitor(cont);</span>
+<span class="source-line-no">296</span><span id="line-296">        fire(new MonitorCommandCompleted(event.command(), null));</span>
+<span class="source-line-no">297</span><span id="line-297">    }</span>
+<span class="source-line-no">298</span><span id="line-298"></span>
+<span class="source-line-no">299</span><span id="line-299">    /**</span>
+<span class="source-line-no">300</span><span id="line-300">     * Shutdown the VM.</span>
+<span class="source-line-no">301</span><span id="line-301">     *</span>
+<span class="source-line-no">302</span><span id="line-302">     * @param event the event</span>
+<span class="source-line-no">303</span><span id="line-303">     */</span>
+<span class="source-line-no">304</span><span id="line-304">    @Handler(priority = 100)</span>
+<span class="source-line-no">305</span><span id="line-305">    public void onStop(Stop event) {</span>
+<span class="source-line-no">306</span><span id="line-306">        if (monitorChannel != null) {</span>
+<span class="source-line-no">307</span><span id="line-307">            // We have a connection to Qemu, attempt ACPI shutdown.</span>
+<span class="source-line-no">308</span><span id="line-308">            event.suspendHandling();</span>
+<span class="source-line-no">309</span><span id="line-309">            suspendedStop = event;</span>
+<span class="source-line-no">310</span><span id="line-310">            sendToMonitor(powerdown);</span>
+<span class="source-line-no">311</span><span id="line-311"></span>
+<span class="source-line-no">312</span><span id="line-312">            // Schedule timer as fallback</span>
+<span class="source-line-no">313</span><span id="line-313">            powerdownTimer = Components.schedule(t -&gt; {</span>
+<span class="source-line-no">314</span><span id="line-314">                synchronized (this) {</span>
+<span class="source-line-no">315</span><span id="line-315">                    if (suspendedStop != null) {</span>
+<span class="source-line-no">316</span><span id="line-316">                        suspendedStop.resumeHandling();</span>
+<span class="source-line-no">317</span><span id="line-317">                        suspendedStop = null;</span>
+<span class="source-line-no">318</span><span id="line-318">                    }</span>
+<span class="source-line-no">319</span><span id="line-319">                }</span>
+<span class="source-line-no">320</span><span id="line-320">            }, Duration.ofSeconds(powerdownTimeout));</span>
+<span class="source-line-no">321</span><span id="line-321">        }</span>
+<span class="source-line-no">322</span><span id="line-322">    }</span>
+<span class="source-line-no">323</span><span id="line-323">}</span>
 
 
 
