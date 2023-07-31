@@ -19,7 +19,10 @@
 package org.jdrupes.vmoperator.runner.qemu;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.io.Writer;
 import java.lang.reflect.UndeclaredThrowableException;
@@ -27,10 +30,14 @@ import java.net.UnixDomainSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
+import static org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand.Command.CONTINUE;
+import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommandCompleted;
+import org.jdrupes.vmoperator.runner.qemu.events.MonitorReady;
+import org.jdrupes.vmoperator.runner.qemu.events.MonitorResult;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.Components;
@@ -58,34 +65,49 @@ import org.jgrapes.util.events.WatchFile;
  * If the log level for this class is set to fine, the messages 
  * exchanged on the monitor socket are logged.
  */
+@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class QemuMonitor extends Component {
 
-    @SuppressWarnings({ "PMD.FieldNamingConventions",
-        "PMD.VariableNamingConventions" })
-    private static final Logger logger
-        = Logger.getLogger(QemuMonitor.class.getName());
+    private static ObjectMapper mapper;
+    private static JsonNode connect;
+    private static JsonNode cont;
+    private static JsonNode powerdown;
 
     @SuppressWarnings("PMD.UseConcurrentHashMap")
-    private final Map<String, String> monitorMessages = new HashMap<>(Map.of(
-        "connect", "{ \"execute\": \"qmp_capabilities\" }",
-        "powerdown", "{ \"execute\": \"system_powerdown\" }",
-        "setBalloon", "{ \"execute\": \"balloon\", \"arguments\": "
-            + "{ \"value\": %d } }"));
-
     private Path socketPath;
     private int powerdownTimeout;
     private SocketIOChannel monitorChannel;
+    private final Queue<String> executing = new LinkedList<>();
     private Stop suspendedStop;
-
     private Timer powerdownTimer;
 
     /**
      * Instantiates a new qemu monitor.
      *
      * @param componentChannel the component channel
+     * @param mapper 
+     * @throws JsonProcessingException 
+     * @throws JsonMappingException 
      */
-    public QemuMonitor(Channel componentChannel) {
+    @SuppressWarnings("PMD.AssignmentToNonFinalStatic")
+    public QemuMonitor(Channel componentChannel) throws IOException {
         super(componentChannel);
+        if (mapper == null) {
+            mapper = new ObjectMapper();
+            try {
+                connect = mapper.readValue("{ \"execute\": "
+                    + "\"qmp_capabilities\" }", JsonNode.class);
+                cont = mapper.readValue("{ \"execute\": "
+                    + "\"cont\" }", JsonNode.class);
+                powerdown = mapper.readValue("{\"execute\": "
+                    + "\"query-cpus-fast\",\"arguments\":{}}", JsonNode.class);
+            } catch (IOException e) {
+                logger.log(Level.SEVERE, e,
+                    () -> "Cannot initialize class: " + e.getMessage());
+            }
+        }
+        attach(new RamController(channel(), this));
+        attach(new CpuController(channel(), this));
     }
 
     /**
@@ -158,7 +180,7 @@ public class QemuMonitor extends Component {
                             throw new UndeclaredThrowableException(e);
                         }
                     }));
-            writeToMonitor(monitorMessages.get("connect"));
+            sendToMonitor(connect);
         });
     }
 
@@ -175,26 +197,30 @@ public class QemuMonitor extends Component {
         });
     }
 
-    private void writeToMonitor(String message) {
-        logger.fine(() -> "monitor(out): " + message);
-        monitorChannel.associated(Writer.class).ifPresent(writer -> {
-            try {
-                writer.append(message).append('\n').flush();
-            } catch (IOException e) {
-                // Cannot happen, but...
-                logger.log(Level.WARNING, e, () -> e.getMessage());
+    /* default */ void sendToMonitor(JsonNode message) {
+        String asText;
+        try {
+            asText = mapper.writeValueAsString(message);
+        } catch (JsonProcessingException e) {
+            logger.log(Level.SEVERE, e,
+                () -> "Cannot serialize Json: " + e.getMessage());
+            return;
+        }
+        logger.fine(() -> "monitor(out): " + asText);
+        synchronized (executing) {
+            if (message.has("execute")) {
+                executing.add(message.get("execute").asText());
             }
-        });
-    }
+            monitorChannel.associated(Writer.class).ifPresent(writer -> {
+                try {
+                    writer.append(asText).append('\n').flush();
+                } catch (IOException e) {
+                    // Cannot happen, but...
+                    logger.log(Level.WARNING, e, () -> e.getMessage());
+                }
+            });
 
-    /**
-     * Sets the current ram.
-     *
-     * @param amount the new current ram
-     */
-    public void setCurrentRam(Number amount) {
-        writeToMonitor(
-            String.format(monitorMessages.get("setBalloon"), amount));
+        }
     }
 
     /**
@@ -217,10 +243,18 @@ public class QemuMonitor extends Component {
             throws IOException {
         logger.fine(() -> "monitor(in): " + line);
         try {
-            var response
-                = ((Runner) channel()).mapper().readValue(line, JsonNode.class);
+            var response = mapper.readValue(line, ObjectNode.class);
             if (response.has("QMP")) {
-                fire(new QemuMonitorAvailable());
+                fire(new MonitorReady());
+                return;
+            }
+            if (response.has("return")) {
+                String executed = executing.poll();
+                logger.fine(
+                    () -> String.format("(Previous \"monitor(in)\" is result "
+                        + "from executing %s)", executed));
+                fire(new MonitorResult(executed, response));
+                return;
             }
         } catch (JsonProcessingException e) {
             throw new IOException(e);
@@ -249,6 +283,20 @@ public class QemuMonitor extends Component {
     }
 
     /**
+     * On monitor command.
+     *
+     * @param event the event
+     */
+    @Handler
+    public void onMonitorCommand(MonitorCommand event) {
+        if (event.command() != CONTINUE) {
+            return;
+        }
+        sendToMonitor(cont);
+        fire(new MonitorCommandCompleted(event.command(), null));
+    }
+
+    /**
      * Shutdown the VM.
      *
      * @param event the event
@@ -259,7 +307,7 @@ public class QemuMonitor extends Component {
             // We have a connection to Qemu, attempt ACPI shutdown.
             event.suspendHandling();
             suspendedStop = event;
-            writeToMonitor(monitorMessages.get("powerdown"));
+            sendToMonitor(powerdown);
 
             // Schedule timer as fallback
             powerdownTimer = Components.schedule(t -> {

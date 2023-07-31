@@ -51,6 +51,12 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.jdrupes.vmoperator.runner.qemu.StateController.State;
+import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
+import static org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand.Command.CONTINUE;
+import static org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand.Command.SET_CURRENT_CPUS;
+import static org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand.Command.SET_CURRENT_RAM;
+import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommandCompleted;
+import org.jdrupes.vmoperator.runner.qemu.events.MonitorReady;
 import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
 import org.jdrupes.vmoperator.util.FsdUtils;
 import org.jgrapes.core.Component;
@@ -95,6 +101,7 @@ import org.jgrapes.util.events.WatchFile;
  *     state "Start swtpm" as swtpm
  *     state "Start qemu" as qemu
  *     state "Open monitor" as monitor
+ *     state "Configure" as configure
  *     state success <<exitPoint>>
  *     state error <<exitPoint>>
  *      
@@ -108,8 +115,11 @@ import org.jgrapes.util.events.WatchFile;
  *     qemu --> monitor : FileChanged[monitor socket created] 
  * 
  *     monitor: entry/fire OpenSocketConnection
- *     monitor --> success: ClientConnected[for monitor]/set balloon value
+ *     monitor --> configure: ClientConnected[for monitor]
  *     monitor -> error: ConnectError[for monitor]
+ *     
+ *     configure: entry/fire configuration commands
+ *     configure --> success: last completed/fire cont command
  * }
  * 
  * Initializing --> which: Started
@@ -156,7 +166,7 @@ public class Runner extends Component {
     private static final String SAVED_TEMPLATE = "VM.ftl.yaml";
     private static final String FW_VARS = "fw-vars.fd";
 
-    private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+    private final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
     private final JsonNode defaults;
     @SuppressWarnings("PMD.UseConcurrentHashMap")
     private Configuration config = new Configuration();
@@ -175,11 +185,11 @@ public class Runner extends Component {
     @SuppressWarnings("PMD.SystemPrintln")
     public Runner(CommandLine cmdLine) throws IOException {
         state = new StateController(this);
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+        yamlMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
             false);
 
         // Get defaults
-        defaults = mapper.readValue(
+        defaults = yamlMapper.readValue(
             Runner.class.getResourceAsStream("defaults.yaml"), JsonNode.class);
 
         // Configure freemarker library
@@ -212,10 +222,6 @@ public class Runner extends Component {
         fire(new WatchFile(config.toPath()));
     }
 
-    /* default */ ObjectMapper mapper() {
-        return mapper;
-    }
-
     /**
      * On configuration update.
      *
@@ -235,7 +241,7 @@ public class Runner extends Component {
     private void processInitialConfiguration(
             Map<String, Object> runnerConfiguration) {
         try {
-            config = mapper.convertValue(runnerConfiguration,
+            config = yamlMapper.convertValue(runnerConfiguration,
                 Configuration.class);
             if (!config.check()) {
                 // Invalid configuration, not used, problems already logged.
@@ -322,7 +328,7 @@ public class Runner extends Component {
         var fmTemplate = fmConfig.getTemplate(templatePath.toString());
         StringWriter out = new StringWriter();
         fmTemplate.process(model, out);
-        return mapper.readValue(out.toString(), JsonNode.class);
+        return yamlMapper.readValue(out.toString(), JsonNode.class);
     }
 
     @SuppressWarnings("unchecked")
@@ -337,7 +343,21 @@ public class Runner extends Component {
                 synchronized (state) {
                     config.vm.currentRam = cr;
                     if (state.get() == State.RUNNING) {
-                        qemuMonitor.setCurrentRam(cr);
+                        fire(new MonitorCommand(SET_CURRENT_RAM, cr));
+                    }
+                }
+            });
+        Optional.ofNullable((Map<String, Object>) conf.get("vm"))
+            .map(vm -> vm.get("currentCpus"))
+            .map(v -> v instanceof Number number ? number.intValue() : null)
+            .ifPresent(cpus -> {
+                if (config.vm.currentCpus == cpus) {
+                    return;
+                }
+                synchronized (state) {
+                    config.vm.currentCpus = cpus;
+                    if (state.get() == State.RUNNING) {
+                        fire(new MonitorCommand(SET_CURRENT_CPUS, cpus));
                     }
                 }
             });
@@ -476,10 +496,27 @@ public class Runner extends Component {
      * @param event the event
      */
     @Handler
-    public void onQemuMonitorAvailable(QemuMonitorAvailable event) {
+    public void onMonitorReady(MonitorReady event) {
         synchronized (state) {
-            Optional.ofNullable(config.vm.currentRam)
-                .ifPresent(qemuMonitor::setCurrentRam);
+            Optional.ofNullable(config.vm.currentRam).ifPresent(ram -> {
+                fire(new MonitorCommand(SET_CURRENT_RAM, ram));
+            });
+            Optional.ofNullable(config.vm.currentCpus).ifPresent(cpus -> {
+                fire(new MonitorCommand(SET_CURRENT_CPUS, cpus));
+            });
+        }
+    }
+
+    /**
+     * On monitor command completed.
+     *
+     * @param event the event
+     */
+    @Handler
+    public void onMonitorCommandCompleted(MonitorCommandCompleted event) {
+        if (state.get() != State.RUNNING
+            && event.command() == SET_CURRENT_CPUS) {
+            fire(new MonitorCommand(CONTINUE));
             state.set(State.RUNNING);
         }
     }
