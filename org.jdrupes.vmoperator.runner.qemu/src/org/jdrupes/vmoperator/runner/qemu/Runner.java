@@ -333,6 +333,7 @@ public class Runner extends Component {
 
     @SuppressWarnings("unchecked")
     private void updateConfiguration(Map<String, Object> conf) {
+        logger.fine(() -> "Updating configuration");
         Optional.ofNullable((Map<String, Object>) conf.get("vm"))
             .map(vm -> vm.get("currentRam")).map(Configuration::parseMemory)
             .ifPresent(cr -> {
