@@ -13,6 +13,9 @@ plugins {
     
     // Apply eclipse plugin
     id 'eclipse'
+    
+    // Access to git information
+    id 'org.ajoberstar.grgit'
 }
 
 repositories {
@@ -65,6 +68,22 @@ scmVersion {
 }
 version = scmVersion.version
 ext.isSnapshot = version.endsWith('-SNAPSHOT')
+
+jar {
+    manifest {
+        inputs.property("gitDescriptor", { grgit.describe(always: true) })
+        
+        // Set Git revision information in the manifests of built bundles
+        attributes([
+            "Implementation-Title": project.name,
+            "Implementation-Version": "$project.version (${grgit.describe(always: true)})",
+            "Implementation-Vendor": grgit.repository.jgit.repository.config.getString("user", null, "name")
+                + " (" + grgit.repository.jgit.repository.config.getString("user", null, "email") + ")",
+            "Git-Descriptor": grgit.describe(always: true),
+            "Git-SHA": grgit.head().id,
+        ])
+    }
+}
 
 eclipse {
 

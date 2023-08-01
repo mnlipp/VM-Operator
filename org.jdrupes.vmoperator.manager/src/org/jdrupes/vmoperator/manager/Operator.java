@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.logging.LogManager;
+import java.util.logging.Logger;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -106,6 +108,9 @@ public class Operator extends Component {
      */
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     public static void main(String[] args) throws Exception {
+        Logger.getLogger(Operator.class.getName())
+            .fine(() -> "Version: "
+                + Operator.class.getPackage().getImplementationVersion());
         CommandLineParser parser = new DefaultParser();
         // parse the command line arguments
         final Options options = new Options();
