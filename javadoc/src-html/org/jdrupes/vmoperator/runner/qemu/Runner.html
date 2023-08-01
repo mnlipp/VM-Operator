@@ -618,28 +618,31 @@
 <span class="source-line-no">605</span><span id="line-605">    public static void main(String[] args) {</span>
 <span class="source-line-no">606</span><span id="line-606">        // The Runner is the root component</span>
 <span class="source-line-no">607</span><span id="line-607">        try {</span>
-<span class="source-line-no">608</span><span id="line-608">            CommandLineParser parser = new DefaultParser();</span>
-<span class="source-line-no">609</span><span id="line-609">            // parse the command line arguments</span>
-<span class="source-line-no">610</span><span id="line-610">            final Options options = new Options();</span>
-<span class="source-line-no">611</span><span id="line-611">            options.addOption(new Option("c", "config", true, "The configu"</span>
-<span class="source-line-no">612</span><span id="line-612">                + "ration file (defaults to /etc/opt/vmrunner/config.yaml)."));</span>
-<span class="source-line-no">613</span><span id="line-613">            CommandLine cmd = parser.parse(options, args);</span>
-<span class="source-line-no">614</span><span id="line-614">            var app = new Runner(cmd);</span>
-<span class="source-line-no">615</span><span id="line-615"></span>
-<span class="source-line-no">616</span><span id="line-616">            // Prepare Stop</span>
-<span class="source-line-no">617</span><span id="line-617">            Runtime.getRuntime().addShutdownHook(new Thread(() -&gt; {</span>
-<span class="source-line-no">618</span><span id="line-618">                app.shutdown();</span>
-<span class="source-line-no">619</span><span id="line-619">            }));</span>
-<span class="source-line-no">620</span><span id="line-620"></span>
-<span class="source-line-no">621</span><span id="line-621">            // Start the application</span>
-<span class="source-line-no">622</span><span id="line-622">            Components.start(app);</span>
-<span class="source-line-no">623</span><span id="line-623">        } catch (IOException | InterruptedException</span>
-<span class="source-line-no">624</span><span id="line-624">                | org.apache.commons.cli.ParseException e) {</span>
-<span class="source-line-no">625</span><span id="line-625">            Logger.getLogger(Runner.class.getName()).log(Level.SEVERE, e,</span>
-<span class="source-line-no">626</span><span id="line-626">                () -&gt; "Failed to start runner: " + e.getMessage());</span>
-<span class="source-line-no">627</span><span id="line-627">        }</span>
-<span class="source-line-no">628</span><span id="line-628">    }</span>
-<span class="source-line-no">629</span><span id="line-629">}</span>
+<span class="source-line-no">608</span><span id="line-608">            Logger.getLogger(Runner.class.getName())</span>
+<span class="source-line-no">609</span><span id="line-609">                .fine(() -&gt; "Version: "</span>
+<span class="source-line-no">610</span><span id="line-610">                    + Runner.class.getPackage().getImplementationVersion());</span>
+<span class="source-line-no">611</span><span id="line-611">            CommandLineParser parser = new DefaultParser();</span>
+<span class="source-line-no">612</span><span id="line-612">            // parse the command line arguments</span>
+<span class="source-line-no">613</span><span id="line-613">            final Options options = new Options();</span>
+<span class="source-line-no">614</span><span id="line-614">            options.addOption(new Option("c", "config", true, "The configu"</span>
+<span class="source-line-no">615</span><span id="line-615">                + "ration file (defaults to /etc/opt/vmrunner/config.yaml)."));</span>
+<span class="source-line-no">616</span><span id="line-616">            CommandLine cmd = parser.parse(options, args);</span>
+<span class="source-line-no">617</span><span id="line-617">            var app = new Runner(cmd);</span>
+<span class="source-line-no">618</span><span id="line-618"></span>
+<span class="source-line-no">619</span><span id="line-619">            // Prepare Stop</span>
+<span class="source-line-no">620</span><span id="line-620">            Runtime.getRuntime().addShutdownHook(new Thread(() -&gt; {</span>
+<span class="source-line-no">621</span><span id="line-621">                app.shutdown();</span>
+<span class="source-line-no">622</span><span id="line-622">            }));</span>
+<span class="source-line-no">623</span><span id="line-623"></span>
+<span class="source-line-no">624</span><span id="line-624">            // Start the application</span>
+<span class="source-line-no">625</span><span id="line-625">            Components.start(app);</span>
+<span class="source-line-no">626</span><span id="line-626">        } catch (IOException | InterruptedException</span>
+<span class="source-line-no">627</span><span id="line-627">                | org.apache.commons.cli.ParseException e) {</span>
+<span class="source-line-no">628</span><span id="line-628">            Logger.getLogger(Runner.class.getName()).log(Level.SEVERE, e,</span>
+<span class="source-line-no">629</span><span id="line-629">                () -&gt; "Failed to start runner: " + e.getMessage());</span>
+<span class="source-line-no">630</span><span id="line-630">        }</span>
+<span class="source-line-no">631</span><span id="line-631">    }</span>
+<span class="source-line-no">632</span><span id="line-632">}</span>
 
 
 

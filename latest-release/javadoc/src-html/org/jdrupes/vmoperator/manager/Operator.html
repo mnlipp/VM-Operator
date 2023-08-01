@@ -35,9 +35,9 @@
 <span class="source-line-no">022</span><span id="line-22">import java.io.IOException;</span>
 <span class="source-line-no">023</span><span id="line-23">import java.io.InputStream;</span>
 <span class="source-line-no">024</span><span id="line-24">import java.nio.file.Files;</span>
-<span class="source-line-no">025</span><span id="line-25">import java.util.logging.LogManager;</span>
-<span class="source-line-no">026</span><span id="line-26">import java.util.logging.Logger;</span>
-<span class="source-line-no">027</span><span id="line-27"></span>
+<span class="source-line-no">025</span><span id="line-25">import java.util.logging.Level;</span>
+<span class="source-line-no">026</span><span id="line-26">import java.util.logging.LogManager;</span>
+<span class="source-line-no">027</span><span id="line-27">import java.util.logging.Logger;</span>
 <span class="source-line-no">028</span><span id="line-28">import org.apache.commons.cli.CommandLine;</span>
 <span class="source-line-no">029</span><span id="line-29">import org.apache.commons.cli.CommandLineParser;</span>
 <span class="source-line-no">030</span><span id="line-30">import org.apache.commons.cli.DefaultParser;</span>
@@ -120,34 +120,40 @@
 <span class="source-line-no">107</span><span id="line-107">     * @throws Exception the exception</span>
 <span class="source-line-no">108</span><span id="line-108">     */</span>
 <span class="source-line-no">109</span><span id="line-109">    @SuppressWarnings("PMD.SignatureDeclareThrowsException")</span>
-<span class="source-line-no">110</span><span id="line-110">    public static void main(String[] args) throws Exception {</span>
-<span class="source-line-no">111</span><span id="line-111">        Logger.getLogger(Operator.class.getName())</span>
-<span class="source-line-no">112</span><span id="line-112">            .fine(() -&gt; "Version: "</span>
-<span class="source-line-no">113</span><span id="line-113">                + Operator.class.getPackage().getImplementationVersion());</span>
-<span class="source-line-no">114</span><span id="line-114">        CommandLineParser parser = new DefaultParser();</span>
-<span class="source-line-no">115</span><span id="line-115">        // parse the command line arguments</span>
-<span class="source-line-no">116</span><span id="line-116">        final Options options = new Options();</span>
-<span class="source-line-no">117</span><span id="line-117">        options.addOption(new Option("c", "config", true, "The configu"</span>
-<span class="source-line-no">118</span><span id="line-118">            + "ration file (defaults to /etc/opt/vmoperator/config.yaml)."));</span>
-<span class="source-line-no">119</span><span id="line-119">        CommandLine cmd = parser.parse(options, args);</span>
-<span class="source-line-no">120</span><span id="line-120">        // The Operator is the root component</span>
-<span class="source-line-no">121</span><span id="line-121">        app = new Operator(cmd);</span>
-<span class="source-line-no">122</span><span id="line-122"></span>
-<span class="source-line-no">123</span><span id="line-123">        // Prepare Stop</span>
-<span class="source-line-no">124</span><span id="line-124">        Runtime.getRuntime().addShutdownHook(new Thread(() -&gt; {</span>
-<span class="source-line-no">125</span><span id="line-125">            try {</span>
-<span class="source-line-no">126</span><span id="line-126">                app.fire(new Stop(), Channel.BROADCAST);</span>
-<span class="source-line-no">127</span><span id="line-127">                Components.awaitExhaustion();</span>
-<span class="source-line-no">128</span><span id="line-128">            } catch (InterruptedException e) {</span>
-<span class="source-line-no">129</span><span id="line-129">                // Cannot do anything about this.</span>
-<span class="source-line-no">130</span><span id="line-130">            }</span>
-<span class="source-line-no">131</span><span id="line-131">        }));</span>
-<span class="source-line-no">132</span><span id="line-132"></span>
-<span class="source-line-no">133</span><span id="line-133">        // Start application</span>
-<span class="source-line-no">134</span><span id="line-134">        Components.start(app);</span>
-<span class="source-line-no">135</span><span id="line-135">    }</span>
-<span class="source-line-no">136</span><span id="line-136"></span>
-<span class="source-line-no">137</span><span id="line-137">}</span>
+<span class="source-line-no">110</span><span id="line-110">    public static void main(String[] args) {</span>
+<span class="source-line-no">111</span><span id="line-111">        try {</span>
+<span class="source-line-no">112</span><span id="line-112">            Logger.getLogger(Operator.class.getName())</span>
+<span class="source-line-no">113</span><span id="line-113">                .fine(() -&gt; "Version: "</span>
+<span class="source-line-no">114</span><span id="line-114">                    + Operator.class.getPackage().getImplementationVersion());</span>
+<span class="source-line-no">115</span><span id="line-115">            CommandLineParser parser = new DefaultParser();</span>
+<span class="source-line-no">116</span><span id="line-116">            // parse the command line arguments</span>
+<span class="source-line-no">117</span><span id="line-117">            final Options options = new Options();</span>
+<span class="source-line-no">118</span><span id="line-118">            options.addOption(new Option("c", "config", true, "The configura"</span>
+<span class="source-line-no">119</span><span id="line-119">                + "tion file (defaults to /etc/opt/vmoperator/config.yaml)."));</span>
+<span class="source-line-no">120</span><span id="line-120">            CommandLine cmd = parser.parse(options, args);</span>
+<span class="source-line-no">121</span><span id="line-121">            // The Operator is the root component</span>
+<span class="source-line-no">122</span><span id="line-122">            app = new Operator(cmd);</span>
+<span class="source-line-no">123</span><span id="line-123"></span>
+<span class="source-line-no">124</span><span id="line-124">            // Prepare Stop</span>
+<span class="source-line-no">125</span><span id="line-125">            Runtime.getRuntime().addShutdownHook(new Thread(() -&gt; {</span>
+<span class="source-line-no">126</span><span id="line-126">                try {</span>
+<span class="source-line-no">127</span><span id="line-127">                    app.fire(new Stop(), Channel.BROADCAST);</span>
+<span class="source-line-no">128</span><span id="line-128">                    Components.awaitExhaustion();</span>
+<span class="source-line-no">129</span><span id="line-129">                } catch (InterruptedException e) {</span>
+<span class="source-line-no">130</span><span id="line-130">                    // Cannot do anything about this.</span>
+<span class="source-line-no">131</span><span id="line-131">                }</span>
+<span class="source-line-no">132</span><span id="line-132">            }));</span>
+<span class="source-line-no">133</span><span id="line-133"></span>
+<span class="source-line-no">134</span><span id="line-134">            // Start application</span>
+<span class="source-line-no">135</span><span id="line-135">            Components.start(app);</span>
+<span class="source-line-no">136</span><span id="line-136">        } catch (IOException | InterruptedException</span>
+<span class="source-line-no">137</span><span id="line-137">                | org.apache.commons.cli.ParseException e) {</span>
+<span class="source-line-no">138</span><span id="line-138">            Logger.getLogger(Operator.class.getName()).log(Level.SEVERE, e,</span>
+<span class="source-line-no">139</span><span id="line-139">                () -&gt; "Failed to start runner: " + e.getMessage());</span>
+<span class="source-line-no">140</span><span id="line-140">        }</span>
+<span class="source-line-no">141</span><span id="line-141">    }</span>
+<span class="source-line-no">142</span><span id="line-142"></span>
+<span class="source-line-no">143</span><span id="line-143">}</span>
 
 
 
