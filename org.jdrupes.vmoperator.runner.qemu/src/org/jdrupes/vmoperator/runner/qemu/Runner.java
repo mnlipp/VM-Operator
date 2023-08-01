@@ -605,6 +605,9 @@ public class Runner extends Component {
     public static void main(String[] args) {
         // The Runner is the root component
         try {
+            Logger.getLogger(Runner.class.getName())
+                .fine(() -> "Version: "
+                    + Runner.class.getPackage().getImplementationVersion());
             CommandLineParser parser = new DefaultParser();
             // parse the command line arguments
             final Options options = new Options();
