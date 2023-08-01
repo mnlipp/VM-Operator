@@ -22,9 +22,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -107,31 +107,37 @@ public class Operator extends Component {
      * @throws Exception the exception
      */
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    public static void main(String[] args) throws Exception {
-        Logger.getLogger(Operator.class.getName())
-            .fine(() -> "Version: "
-                + Operator.class.getPackage().getImplementationVersion());
-        CommandLineParser parser = new DefaultParser();
-        // parse the command line arguments
-        final Options options = new Options();
-        options.addOption(new Option("c", "config", true, "The configu"
-            + "ration file (defaults to /etc/opt/vmoperator/config.yaml)."));
-        CommandLine cmd = parser.parse(options, args);
-        // The Operator is the root component
-        app = new Operator(cmd);
+    public static void main(String[] args) {
+        try {
+            Logger.getLogger(Operator.class.getName())
+                .fine(() -> "Version: "
+                    + Operator.class.getPackage().getImplementationVersion());
+            CommandLineParser parser = new DefaultParser();
+            // parse the command line arguments
+            final Options options = new Options();
+            options.addOption(new Option("c", "config", true, "The configura"
+                + "tion file (defaults to /etc/opt/vmoperator/config.yaml)."));
+            CommandLine cmd = parser.parse(options, args);
+            // The Operator is the root component
+            app = new Operator(cmd);
 
-        // Prepare Stop
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                app.fire(new Stop(), Channel.BROADCAST);
-                Components.awaitExhaustion();
-            } catch (InterruptedException e) {
-                // Cannot do anything about this.
-            }
-        }));
+            // Prepare Stop
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try {
+                    app.fire(new Stop(), Channel.BROADCAST);
+                    Components.awaitExhaustion();
+                } catch (InterruptedException e) {
+                    // Cannot do anything about this.
+                }
+            }));
 
-        // Start application
-        Components.start(app);
+            // Start application
+            Components.start(app);
+        } catch (IOException | InterruptedException
+                | org.apache.commons.cli.ParseException e) {
+            Logger.getLogger(Operator.class.getName()).log(Level.SEVERE, e,
+                () -> "Failed to start runner: " + e.getMessage());
+        }
     }
 
 }
