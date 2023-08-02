@@ -4,9 +4,12 @@ metadata:
   namespace: qemu-vms
   name: test-vm
 spec:
+
   image:
-    repository: docker-registry.lan.mnl.de
-    path: vmoperator/org.jdrupes.vmoperator.runner.qemu-arch
+    # Defaults:
+    # repository: ghcr.io
+    # path: mnlipp/org.jdrupes.vmoperator.runner.qemu-arch
+    # version: latest
     pullPolicy: Always
 
   vm:
@@ -16,8 +19,8 @@ spec:
     currentRam: "4 GiB"
   
     networks:
-    - tap:
-        mac: "00:16:3e:33:59:10"
+    - tap: {}
+    
     disks:
     - volumeClaimTemplate:
         metadata:
