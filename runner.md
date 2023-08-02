@@ -25,7 +25,7 @@ CPUs and the memory.
 
 The runner takes care of all these issues. Although it is intended to
 run in a container (which runs in a Kubernetes pod) it does not require
-a container. You can start and use it as an ordinary process on any
+a container. You can start and use it as an ordinary program on any
 system, provided that you have the required commands (qemu, swtpm) 
 installed.
 
@@ -81,6 +81,18 @@ bridge that the VM can attach to. The only currently supported
 alternative is the less performant
 "[user networking](https://wiki.qemu.org/Documentation/Networking#User_Networking_(SLIRP))",
 which may be used in a stand-alone development configuration.
+
+## Runtime changes
+
+The runner supports adaption to changes of the RAM size (using the
+balloon device) and to changes of the number of CPUs. Note that
+in order to get new CPUs online on Linux guests, you need a 
+[udev rule](https://docs.kernel.org/core-api/cpu_hotplug.html#user-space-notification) which is not installed by default[^simplest].
+
+[^simplest]: The simplest form of the rule is probably:
+    ```
+    ACTION=="add", SUBSYSTEM=="cpu", ATTR{online}="1"
+    ```
 
 ## Testing with Helm
 
