@@ -30,12 +30,18 @@ import io.kubernetes.client.openapi.models.V1GroupVersionForDiscovery;
 import io.kubernetes.client.openapi.models.V1Namespace;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Watch;
+import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
+import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import okhttp3.Call;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_GROUP;
+import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
@@ -79,15 +85,69 @@ public class VmWatcher extends Component {
             .filter(g -> g.getName().equals(VM_OP_GROUP)).findFirst()
             .map(V1APIGroup::getVersions).stream().flatMap(l -> l.stream())
             .map(V1GroupVersionForDiscovery::getVersion).toList();
+
+        // Remove left overs
         var coa = new CustomObjectsApi(client);
+        purge(coa, vmOpApiVersions);
+
+        // Start a watcher for each existing CRD version.
         for (var version : vmOpApiVersions) {
-            // Start a watcher for each existing CRD version.
             coa.getAPIResources(VM_OP_GROUP, version)
                 .getResources().stream()
                 .filter(r -> Constants.VM_OP_KIND_VM.equals(r.getKind()))
                 .findFirst()
                 .ifPresent(crd -> serveCrVersion(coa, crd, version));
         }
+    }
+
+    private void purge(CustomObjectsApi coa, List<String> vmOpApiVersions)
+            throws ApiException {
+        // Get existing CRs (VMs)
+        Set<String> known = new HashSet<>();
+        for (var version : vmOpApiVersions) {
+            // Start a watcher for each existing CRD version.
+            coa.getAPIResources(VM_OP_GROUP, version)
+                .getResources().stream()
+                .filter(r -> Constants.VM_OP_KIND_VM.equals(r.getKind()))
+                .findFirst()
+                .ifPresent(crd -> known.addAll(getKnown(crd, version)));
+        }
+
+        ListOptions opts = new ListOptions();
+        opts.setLabelSelector(
+            "app.kubernetes.io/managed-by=vmoperator,"
+                + "app.kubernetes.io/name=vmrunner");
+        for (var version : vmOpApiVersions) {
+            for (String resource : List.of("pods", "configmaps",
+                "persistentvolumeclaims", "secrets")) {
+                // Get resources, selected by label
+                @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+                var api
+                    = new DynamicKubernetesApi("", version, resource, client);
+                for (var obj : api.list(managedNamespace, opts).getObject()
+                    .getItems()) {
+                    String instance = obj.getMetadata().getLabels()
+                        .get("app.kubernetes.io/instance");
+                    if (!known.contains(instance)) {
+                        api.delete(managedNamespace,
+                            obj.getMetadata().getName());
+                    }
+                }
+            }
+        }
+    }
+
+    private Set<String> getKnown(V1APIResource crd, String version) {
+        Set<String> result = new HashSet<>();
+        var api = new DynamicKubernetesApi(VM_OP_GROUP, version,
+            crd.getName(), client);
+        for (var item : api.list(managedNamespace).getObject().getItems()) {
+            if (!VM_OP_KIND_VM.equals(item.getKind())) {
+                continue;
+            }
+            result.add(item.getMetadata().getName());
+        }
+        return result;
     }
 
     private void serveCrVersion(CustomObjectsApi coa, V1APIResource crd,
@@ -114,6 +174,9 @@ public class VmWatcher extends Component {
                         for (Watch.Response<V1Namespace> item : watch) {
                             handleVmDefinitionEvent(crd, item);
                         }
+                    } catch (IllegalStateException e) {
+                        logger.log(Level.FINE, e, () -> "Probem watching: "
+                            + e.getMessage());
                     }
                 }
             } catch (IOException | ApiException e) {
