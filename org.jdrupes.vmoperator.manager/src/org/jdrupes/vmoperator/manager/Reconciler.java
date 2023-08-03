@@ -57,6 +57,8 @@ import org.jgrapes.core.annotation.Handler;
     "PMD.AvoidDuplicateLiterals" })
 public class Reconciler extends Component {
 
+    private static final String STATE_RUNNING = "Running";
+    private static final String STATE_STOPPED = "Stopped";
     private final Configuration fmConfig;
 
     /**
@@ -267,8 +269,12 @@ public class Reconciler extends Component {
             "pods", channel.client());
         var existing = K8s.get(podApi, event.metadata());
 
-        // If deleted, delete
-        if (event.type() == Type.DELETED) {
+        // Get state
+        var state = GsonPtr.to((JsonObject) model.get("cr")).to("spec", "vm")
+            .getAsString("state").get();
+
+        // If deleted or stopped, delete
+        if (event.type() == Type.DELETED || STATE_STOPPED.equals(state)) {
             if (existing.isPresent()) {
                 K8s.delete(podApi, existing.get());
             }
