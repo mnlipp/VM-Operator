@@ -37,4 +37,11 @@ public class Constants {
 
     /** The Constant APP_NAME. */
     public static final String APP_NAME = "vmrunner";
+
+    /** The Constant STATE_RUNNING. */
+    public static final String STATE_RUNNING = "Running";
+
+    /** The Constant STATE_STOPPED. */
+    public static final String STATE_STOPPED = "Stopped";
+
 }

@@ -18,9 +18,6 @@
 
 package org.jdrupes.vmoperator.manager;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import freemarker.core.ParseException;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapperBuilder;
@@ -29,20 +26,13 @@ import freemarker.template.TemplateException;
 import freemarker.template.TemplateExceptionHandler;
 import freemarker.template.TemplateHashModel;
 import freemarker.template.TemplateNotFoundException;
-import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
-import io.kubernetes.client.util.generic.dynamic.Dynamics;
-import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
-import java.io.StringWriter;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_GROUP;
-import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_VERSION;
 import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
 import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
@@ -57,9 +47,12 @@ import org.jgrapes.core.annotation.Handler;
     "PMD.AvoidDuplicateLiterals" })
 public class Reconciler extends Component {
 
-    private static final String STATE_RUNNING = "Running";
-    private static final String STATE_STOPPED = "Stopped";
+    @SuppressWarnings("PMD.SingularField")
     private final Configuration fmConfig;
+    private final CmReconciler cmReconciler;
+    private final DataReconciler dataReconciler;
+    private final DisksReconciler disksReconciler;
+    private final PodReconciler podReconciler;
 
     /**
      * Instantiates a new reconciler.
@@ -78,6 +71,11 @@ public class Reconciler extends Component {
             TemplateExceptionHandler.RETHROW_HANDLER);
         fmConfig.setLogTemplateExceptions(false);
         fmConfig.setClassForTemplateLoading(Reconciler.class, "");
+
+        cmReconciler = new CmReconciler(fmConfig);
+        disksReconciler = new DisksReconciler();
+        dataReconciler = new DataReconciler(fmConfig);
+        podReconciler = new PodReconciler(fmConfig);
     }
 
     /**
@@ -97,7 +95,8 @@ public class Reconciler extends Component {
     @SuppressWarnings("PMD.ConfusingTernary")
     public void onVmDefChanged(VmDefChanged event, WatchChannel channel)
             throws ApiException, TemplateException, IOException {
-        DynamicKubernetesApi vmDefApi = new DynamicKubernetesApi(VM_OP_GROUP,
+        // Get complete VM (CR) definition
+        DynamicKubernetesApi vmCrApi = new DynamicKubernetesApi(VM_OP_GROUP,
             VM_OP_VERSION, event.crd().getName(), channel.client());
         var defMeta = event.metadata();
 
@@ -105,7 +104,7 @@ public class Reconciler extends Component {
         DynamicKubernetesObject vmDef = null;
         Map<String, Object> model = null;
         if (event.type() != Type.DELETED) {
-            vmDef = K8s.get(vmDefApi, defMeta).get();
+            vmDef = K8s.get(vmCrApi, defMeta).get();
 
             // Prepare Freemarker model
             model = new HashMap<>();
@@ -119,191 +118,15 @@ public class Reconciler extends Component {
 
         // Reconcile
         if (event.type() != Type.DELETED) {
-            reconcileDataPvc(model, channel);
-            reconcileDisks(vmDef, channel);
-            var configMap = reconcileConfigMap(event, model, channel);
+            dataReconciler.reconcile(model, channel);
+            disksReconciler.reconcile(vmDef, channel);
+            var configMap = cmReconciler.reconcile(event, model, channel);
             model.put("cm", configMap.getRaw());
-            reconcilePod(event, model, channel);
+            podReconciler.reconcile(event, model, channel);
         } else {
-            reconcilePod(event, model, channel);
-            reconcileConfigMap(event, model, channel);
-            deletePvcs(event, channel);
-        }
-    }
-
-    @SuppressWarnings("PMD.ConfusingTernary")
-    private void reconcileDataPvc(Map<String, Object> model,
-            WatchChannel channel)
-            throws TemplateException, ApiException, IOException {
-        // Combine template and data and parse result
-        var fmTemplate = fmConfig.getTemplate("runnerDataPvc.ftl.yaml");
-        StringWriter out = new StringWriter();
-        fmTemplate.process(model, out);
-        // Avoid Yaml.load due to
-        // https://github.com/kubernetes-client/java/issues/2741
-        var pvcDef = Dynamics.newFromYaml(out.toString());
-
-        // Get API and check if PVC exists
-        DynamicKubernetesApi pvcApi = new DynamicKubernetesApi("", "v1",
-            "persistentvolumeclaims", channel.client());
-        var existing = K8s.get(pvcApi, pvcDef.getMetadata());
-
-        // If PVC does not exist, create. Else patch (apply)
-        if (existing.isEmpty()) {
-            pvcApi.create(pvcDef);
-        } else {
-            // spec is immutable, so mix in existing spec
-            GsonPtr.to(pvcDef.getRaw()).set("spec", GsonPtr
-                .to(existing.get().getRaw()).get(JsonObject.class, "spec")
-                .get().deepCopy());
-            K8s.apply(pvcApi, existing.get(),
-                channel.client().getJSON().serialize(pvcDef));
-        }
-    }
-
-    private void reconcileDisks(DynamicKubernetesObject vmDef,
-            WatchChannel channel) throws ApiException {
-        var disks = GsonPtr.to(vmDef.getRaw())
-            .get(JsonArray.class, "spec", "vm", "disks")
-            .map(JsonArray::asList).orElse(Collections.emptyList());
-        int index = 0;
-        for (var disk : disks) {
-            reconcileDisk(vmDef, index++, (JsonObject) disk, channel);
-        }
-    }
-
-    @SuppressWarnings({ "PMD.AvoidDuplicateLiterals", "PMD.ConfusingTernary" })
-    private void reconcileDisk(DynamicKubernetesObject vmDefinition,
-            int index, JsonObject diskDef, WatchChannel channel)
-            throws ApiException {
-        var pvcObject = new DynamicKubernetesObject();
-        var pvcRaw = GsonPtr.to(pvcObject.getRaw());
-        var vmRaw = GsonPtr.to(vmDefinition.getRaw());
-        var pvcTpl = GsonPtr.to(diskDef).to("volumeClaimTemplate");
-
-        // Copy base and metadata from template and add missing/additional data.
-        pvcObject.setApiVersion(pvcTpl.getAsString("apiVersion").get());
-        pvcObject.setKind(pvcTpl.getAsString("kind").get());
-        var vmName = vmRaw.getAsString("metadata", "name").orElse("default");
-        pvcRaw.get(JsonObject.class).add("metadata",
-            pvcTpl.to("metadata").get(JsonObject.class).deepCopy());
-        var defMeta = pvcRaw.to("metadata");
-        defMeta.computeIfAbsent("namespace", () -> new JsonPrimitive(
-            vmRaw.getAsString("metadata", "namespace").orElse("default")));
-        defMeta.computeIfAbsent("name", () -> new JsonPrimitive(
-            vmName + "-disk-" + index));
-        var pvcLbls = pvcRaw.to("metadata", "labels");
-        pvcLbls.set("app.kubernetes.io/name", APP_NAME);
-        pvcLbls.set("app.kubernetes.io/instance", vmName);
-        pvcLbls.set("app.kubernetes.io/component", "disk");
-        pvcLbls.set("app.kubernetes.io/managed-by", VM_OP_NAME);
-
-        // Get API and check if PVC exists
-        DynamicKubernetesApi pvcApi = new DynamicKubernetesApi("", "v1",
-            "persistentvolumeclaims", channel.client());
-        var existing = K8s.get(pvcApi, pvcObject.getMetadata());
-
-        // If PVC does not exist, create. Else patch (apply)
-        if (existing.isEmpty()) {
-            // PVC does not exist yet, copy spec from template
-            pvcRaw.get(JsonObject.class).add("spec",
-                pvcTpl.to("spec").get(JsonObject.class).deepCopy());
-            pvcApi.create(pvcObject);
-        } else {
-            // spec is immutable, so mix in existing spec
-            pvcRaw.set("spec", GsonPtr.to(existing.get().getRaw())
-                .to("spec").get().deepCopy());
-            K8s.apply(pvcApi, existing.get(),
-                channel.client().getJSON().serialize(pvcObject));
-        }
-    }
-
-    private void deletePvcs(VmDefChanged event, WatchChannel channel)
-            throws ApiException {
-        // Get API and check and list related
-        var pvcApi = K8s.pvcApi(channel.client());
-        var pvcs = pvcApi.list(event.metadata().getNamespace(),
-            new ListOptions().labelSelector(
-                "app.kubernetes.io/managed-by=" + VM_OP_NAME
-                    + ",app.kubernetes.io/name=" + APP_NAME
-                    + ",app.kubernetes.io/instance="
-                    + event.metadata().getName()));
-        for (var pvc : pvcs.getObject().getItems()) {
-            K8s.delete(pvcApi, pvc);
-        }
-    }
-
-    private DynamicKubernetesObject reconcileConfigMap(VmDefChanged event,
-            Map<String, Object> model, WatchChannel channel)
-            throws IOException, TemplateException, ApiException {
-        // Get API and check if exists
-        DynamicKubernetesApi cmApi = new DynamicKubernetesApi("", "v1",
-            "configmaps", channel.client());
-        var existing = K8s.get(cmApi, event.metadata());
-
-        // If deleted, delete
-        if (event.type() == Type.DELETED) {
-            if (existing.isPresent()) {
-                K8s.delete(cmApi, existing.get());
-            }
-            return null;
-        }
-
-        // Combine template and data and parse result
-        var fmTemplate = fmConfig.getTemplate("runnerConfig.ftl.yaml");
-        StringWriter out = new StringWriter();
-        fmTemplate.process(model, out);
-        // Avoid Yaml.load due to
-        // https://github.com/kubernetes-client/java/issues/2741
-        var mapDef = Dynamics.newFromYaml(out.toString());
-
-        // Apply
-        return K8s.apply(cmApi, mapDef, out.toString());
-    }
-
-    private void reconcilePod(VmDefChanged event, Map<String, Object> model,
-            WatchChannel channel)
-            throws IOException, TemplateException, ApiException {
-        // Check if exists
-        DynamicKubernetesApi podApi = new DynamicKubernetesApi("", "v1",
-            "pods", channel.client());
-        var existing = K8s.get(podApi, event.metadata());
-
-        // Get state
-        var state = GsonPtr.to((JsonObject) model.get("cr")).to("spec", "vm")
-            .getAsString("state").get();
-
-        // If deleted or stopped, delete
-        if (event.type() == Type.DELETED || STATE_STOPPED.equals(state)) {
-            if (existing.isPresent()) {
-                K8s.delete(podApi, existing.get());
-            }
-            return;
-        }
-
-        // Combine template and data and parse result
-        var fmTemplate = fmConfig.getTemplate("runnerPod.ftl.yaml");
-        StringWriter out = new StringWriter();
-        fmTemplate.process(model, out);
-        // Avoid Yaml.load due to
-        // https://github.com/kubernetes-client/java/issues/2741
-        var podDef = Dynamics.newFromYaml(out.toString());
-
-        // Check if update
-        if (existing.isEmpty()) {
-            podApi.create(podDef);
-        } else {
-            // only annotations are updated
-            var metadata = new JsonObject();
-            metadata.add("annotations", GsonPtr.to(podDef.getRaw())
-                .to("metadata").get(JsonObject.class, "annotations").get());
-            var patch = new JsonObject();
-            patch.add("metadata", metadata);
-            podApi.patch(existing.get().getMetadata().getNamespace(),
-                existing.get().getMetadata().getName(),
-                V1Patch.PATCH_FORMAT_JSON_MERGE_PATCH,
-                new V1Patch(channel.client().getJSON().serialize(patch)))
-                .throwsApiException();
+            podReconciler.reconcile(event, model, channel);
+            cmReconciler.reconcile(event, model, channel);
+            disksReconciler.deleteDisks(event, channel);
         }
     }
 
