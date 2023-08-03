@@ -38,6 +38,12 @@ spec:
                   type: object
                   description: Defines the VM.
                   properties:
+                    state:
+                      description: >-
+                        The (desired) state of the VM.
+                      type: string
+                      enum: [ "Stopped", "Running" ]
+                      default: "Stopped"
                     machineUuid:
                       description: >-
                         The machine's uuid. If none is specified, a uuid 
@@ -511,12 +517,12 @@ spec:
                           Message is a human readable message indicating 
                           details about the transition. This may be an empty string.
                         default: ""
-              required:
-              - type
-              - status
-              - lastTransitionTime
-              - reason
-              - message
+                    required:
+                    - type
+                    - status
+                    - lastTransitionTime
+                    - reason
+                    - message
   # either Namespaced or Cluster
   scope: Namespaced
   names:
