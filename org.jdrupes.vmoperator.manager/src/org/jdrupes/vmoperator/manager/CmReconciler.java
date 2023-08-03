@@ -63,7 +63,7 @@ import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
         // Get API and check if exists
         DynamicKubernetesApi cmApi = new DynamicKubernetesApi("", "v1",
             "configmaps", channel.client());
-        var existing = K8s.get(cmApi, event.metadata());
+        var existing = K8s.get(cmApi, event.object().getMetadata());
 
         // If deleted, delete
         if (event.type() == Type.DELETED) {

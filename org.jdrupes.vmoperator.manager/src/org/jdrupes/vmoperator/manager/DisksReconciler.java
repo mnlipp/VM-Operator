@@ -111,12 +111,12 @@ import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
             throws ApiException {
         // Get API and check and list related
         var pvcApi = K8s.pvcApi(channel.client());
-        var pvcs = pvcApi.list(event.metadata().getNamespace(),
+        var pvcs = pvcApi.list(event.object().getMetadata().getNamespace(),
             new ListOptions().labelSelector(
                 "app.kubernetes.io/managed-by=" + VM_OP_NAME
                     + ",app.kubernetes.io/name=" + APP_NAME
                     + ",app.kubernetes.io/instance="
-                    + event.metadata().getName()));
+                    + event.object().getMetadata().getName()));
         for (var pvc : pvcs.getObject().getItems()) {
             K8s.delete(pvcApi, pvc);
         }

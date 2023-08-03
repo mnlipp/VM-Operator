@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_GROUP;
-import static org.jdrupes.vmoperator.manager.Constants.VM_OP_VERSION;
 import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
 import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
 import org.jgrapes.core.Channel;
@@ -96,9 +95,10 @@ public class Reconciler extends Component {
     public void onVmDefChanged(VmDefChanged event, WatchChannel channel)
             throws ApiException, TemplateException, IOException {
         // Get complete VM (CR) definition
+        var apiVersion = K8s.version(event.object().getApiVersion());
         DynamicKubernetesApi vmCrApi = new DynamicKubernetesApi(VM_OP_GROUP,
-            VM_OP_VERSION, event.crd().getName(), channel.client());
-        var defMeta = event.metadata();
+            apiVersion, event.crd().getName(), channel.client());
+        var defMeta = event.object().getMetadata();
 
         // Get common data for all reconciles
         DynamicKubernetesObject vmDef = null;

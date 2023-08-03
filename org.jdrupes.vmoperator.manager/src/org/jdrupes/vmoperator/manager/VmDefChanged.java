@@ -19,7 +19,7 @@
 package org.jdrupes.vmoperator.manager;
 
 import io.kubernetes.client.openapi.models.V1APIResource;
-import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import io.kubernetes.client.openapi.models.V1Namespace;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Components;
 import org.jgrapes.core.Event;
@@ -38,7 +38,7 @@ public class VmDefChanged extends Event<Void> {
 
     private final Type type;
     private final V1APIResource crd;
-    private final V1ObjectMeta metadata;
+    private final V1Namespace object;
 
     /**
      * Instantiates a new VM changed event.
@@ -46,10 +46,10 @@ public class VmDefChanged extends Event<Void> {
      * @param type the type
      * @param metadata the metadata
      */
-    public VmDefChanged(Type type, V1APIResource crd, V1ObjectMeta metadata) {
+    public VmDefChanged(Type type, V1APIResource crd, V1Namespace object) {
         this.type = type;
         this.crd = crd;
-        this.metadata = metadata;
+        this.object = object;
     }
 
     /**
@@ -71,19 +71,19 @@ public class VmDefChanged extends Event<Void> {
     }
 
     /**
-     * Returns the metadata.
+     * Returns the object.
      *
-     * @return the metadata
+     * @return the object.
      */
-    public V1ObjectMeta metadata() {
-        return metadata;
+    public V1Namespace object() {
+        return object;
     }
 
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
         builder.append(Components.objectName(this)).append(" [").append(type)
-            .append(' ').append(metadata.getName());
+            .append(' ').append(object.getMetadata().getName());
         if (channels() != null) {
             builder.append(", channels=");
             builder.append(Channel.toString(channels()));

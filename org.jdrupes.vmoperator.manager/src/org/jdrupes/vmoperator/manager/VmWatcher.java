@@ -22,11 +22,13 @@ import com.google.gson.reflect.TypeToken;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
+import io.kubernetes.client.openapi.apis.ApisApi;
 import io.kubernetes.client.openapi.apis.CustomObjectsApi;
+import io.kubernetes.client.openapi.models.V1APIGroup;
 import io.kubernetes.client.openapi.models.V1APIResource;
+import io.kubernetes.client.openapi.models.V1GroupVersionForDiscovery;
 import io.kubernetes.client.openapi.models.V1Namespace;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
-import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 import java.io.IOException;
 import java.util.Map;
@@ -34,7 +36,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import okhttp3.Call;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_GROUP;
-import static org.jdrupes.vmoperator.manager.Constants.VM_OP_VERSION;
 import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
@@ -49,7 +50,6 @@ import org.jgrapes.core.events.Stop;
 public class VmWatcher extends Component {
 
     private ApiClient client;
-    private V1APIResource vmsCrd;
     private String managedNamespace = "qemu-vms";
     private final Map<String, WatchChannel> channels
         = new ConcurrentHashMap<>();
@@ -72,44 +72,67 @@ public class VmWatcher extends Component {
      */
     @Handler
     public void onStart(Start event) throws IOException, ApiException {
-        client = Config.defaultClient();
-        Configuration.setDefaultApiClient(client);
-
-        // Get access to API
+        client = Configuration.getDefaultApiClient();
+        // Get all our API versions
+        var apis = new ApisApi(client).getAPIVersions();
+        var vmOpApiVersions = apis.getGroups().stream()
+            .filter(g -> g.getName().equals(VM_OP_GROUP)).findFirst()
+            .map(V1APIGroup::getVersions).stream().flatMap(l -> l.stream())
+            .map(V1GroupVersionForDiscovery::getVersion).toList();
         var coa = new CustomObjectsApi(client);
+        for (var version : vmOpApiVersions) {
+            // Start a watcher for each existing CRD version.
+            coa.getAPIResources(VM_OP_GROUP, version)
+                .getResources().stream()
+                .filter(r -> Constants.VM_OP_KIND_VM.equals(r.getKind()))
+                .findFirst()
+                .ifPresent(crd -> serveCrVersion(coa, crd, version));
+        }
+    }
 
-        // Derive all information from the CRD
-        var resources
-            = coa.getAPIResources(VM_OP_GROUP, VM_OP_VERSION);
-        vmsCrd = resources.getResources().stream()
-            .filter(r -> Constants.VM_OP_KIND_VM.equals(r.getKind()))
-            .findFirst().get();
-
-        // Watch the resources (vm definitions)
-        Call call = coa.listNamespacedCustomObjectCall(
-            VM_OP_GROUP, VM_OP_VERSION, managedNamespace, vmsCrd.getName(),
-            null, false, null, null, null, null, null, null, null, true, null);
-        new Thread(() -> {
-            try (Watch<V1Namespace> watch = Watch.createWatch(client, call,
-                new TypeToken<Watch.Response<V1Namespace>>() {
-                }.getType())) {
-                for (Watch.Response<V1Namespace> item : watch) {
-                    handleVmDefinitionEvent(item);
+    private void serveCrVersion(CustomObjectsApi coa, V1APIResource crd,
+            String version) {
+        Call call;
+        try {
+            call = coa.listNamespacedCustomObjectCall(VM_OP_GROUP, version,
+                managedNamespace, crd.getName(), null, false, null, null, null,
+                null, null, null, null, true, null);
+        } catch (ApiException e) {
+            logger.log(Level.FINE, e,
+                () -> "Probem watching: " + e.getMessage());
+            return;
+        }
+        @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+        var watcher = new Thread(() -> {
+            try {
+                // Watch sometimes terminates without apparent reason.
+                while (true) {
+                    try (Watch<V1Namespace> watch
+                        = Watch.createWatch(client, call,
+                            new TypeToken<Watch.Response<V1Namespace>>() {
+                            }.getType())) {
+                        for (Watch.Response<V1Namespace> item : watch) {
+                            handleVmDefinitionEvent(crd, item);
+                        }
+                    }
                 }
             } catch (IOException | ApiException e) {
-                logger.log(Level.FINE, e, () -> "Probem while watching: "
+                logger.log(Level.FINE, e, () -> "Probem watching: "
                     + e.getMessage());
             }
             fire(new Stop());
-        }).start();
+        });
+        watcher.setDaemon(true);
+        watcher.start();
     }
 
-    private void handleVmDefinitionEvent(Watch.Response<V1Namespace> item) {
+    private void handleVmDefinitionEvent(V1APIResource vmsCrd,
+            Watch.Response<V1Namespace> item) {
         V1ObjectMeta metadata = item.object.getMetadata();
         WatchChannel channel = channels.computeIfAbsent(metadata.getName(),
             k -> new WatchChannel(channel(), newEventPipeline(), client));
-        channel.pipeline().fire(new VmDefChanged(
-            VmDefChanged.Type.valueOf(item.type), vmsCrd, metadata), channel);
+        channel.pipeline().fire(new VmDefChanged(VmDefChanged.Type
+            .valueOf(item.type), vmsCrd, item.object), channel);
     }
 
     /**
@@ -121,7 +144,7 @@ public class VmWatcher extends Component {
     @Handler(priority = -10_000)
     public void onVmDefChanged(VmDefChanged event, WatchChannel channel) {
         if (event.type() == Type.DELETED) {
-            channels.remove(event.metadata().getName());
+            channels.remove(event.object().getMetadata().getName());
         }
     }
 

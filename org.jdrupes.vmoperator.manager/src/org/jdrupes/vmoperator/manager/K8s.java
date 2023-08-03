@@ -41,6 +41,16 @@ import java.util.Optional;
 public class K8s {
 
     /**
+     * Given a groupVersion, returns only the version.
+     *
+     * @param groupVersion the group version
+     * @return the string
+     */
+    public static String version(String groupVersion) {
+        return groupVersion.substring(groupVersion.lastIndexOf('/') + 1);
+    }
+
+    /**
      * Get PVC API.
      *
      * @param client the client

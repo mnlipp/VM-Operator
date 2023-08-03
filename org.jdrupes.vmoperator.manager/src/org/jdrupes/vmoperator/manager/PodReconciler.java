@@ -64,7 +64,7 @@ import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
         // Check if exists
         DynamicKubernetesApi podApi = new DynamicKubernetesApi("", "v1",
             "pods", channel.client());
-        var existing = K8s.get(podApi, event.metadata());
+        var existing = K8s.get(podApi, event.object().getMetadata());
 
         // Get state
         var state = GsonPtr.to((JsonObject) model.get("cr")).to("spec", "vm")
