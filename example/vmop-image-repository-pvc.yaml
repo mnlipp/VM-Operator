@@ -1,0 +1,15 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: vmop-image-repository
+  namespace: qemu-vms
+  labels:
+    app.kubernetes.io/name: vmoperator
+spec:
+  storageClassName: rook-cephfs
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi

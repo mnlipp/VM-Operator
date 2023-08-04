@@ -31,6 +31,8 @@ spec:
       mountPath: /etc/opt/vmrunner
     - name: vm-data
       mountPath: /var/local/vm-data
+    - name: vmop-image-repository
+      mountPath: /var/local/vmop-image-repository
     volumeDevices:
     <#assign diskCounter = 0/>
     <#list cr.spec.vm.disks.asList() as disk>
@@ -65,6 +67,9 @@ spec:
   - name: vm-data
     persistentVolumeClaim:
       claimName: ${ cr.metadata.name.asString }-runner-data
+  - name: vmop-image-repository
+    persistentVolumeClaim:
+      claimName: vmop-image-repository
   <#assign diskCounter = 0/>
   <#list cr.spec.vm.disks.asList() as disk>
   <#if disk.volumeClaimTemplate.metadata??
