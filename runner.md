@@ -1,12 +1,11 @@
----
-layout: default
+---layout: default
 title: VM-Operator Runner
 ---
 
 # The Runner
 
-For most use cases, Qemu needs to be started and controlled by a manager
-process, which is called runner in this context. 
+For most use cases, Qemu needs to be started and controlled by a another 
+programm that manages the Qemu process. This programm is called runner in this context. 
 
 The most prominent reason
 is that this is the only way to shutdown a VM cleanly. Qemu handles
