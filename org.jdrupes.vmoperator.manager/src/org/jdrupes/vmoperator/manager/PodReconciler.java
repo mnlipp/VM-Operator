@@ -66,12 +66,14 @@ import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
             "pods", channel.client());
         var existing = K8s.get(podApi, event.object().getMetadata());
 
-        // Get state
-        var state = GsonPtr.to((JsonObject) model.get("cr")).to("spec", "vm")
-            .getAsString("state").get();
+        // Get state. Note that model is only available if event type
+        // is not DELETED.
+        var delete = event.type() == Type.DELETED
+            || GsonPtr.to((JsonObject) model.get("cr")).to("spec", "vm")
+                .getAsString("state").orElse("").equals(STATE_STOPPED);
 
         // If deleted or stopped, delete
-        if (event.type() == Type.DELETED || STATE_STOPPED.equals(state)) {
+        if (delete) {
             if (existing.isPresent()) {
                 K8s.delete(podApi, existing.get());
             }
