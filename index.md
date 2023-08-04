@@ -9,6 +9,14 @@ description: A Kubernetes operator for running VMs as pods
 The goal of this project is to provide the means for running Qemu
 based VMs in Kubernetes pods. 
 
+The image used for the VM pods combines Qemu and a control programm 
+for starting and managing the Qemu process. It is called "the runner".
+
+While you can deploy a runner manually (or with the help of some helm templates),
+the preferred way is to deploy "the manager" component which acts as 
+a Kubernetes operator for the runners and thus the VMs.
+
+## Motivation
 The project was triggered by a remark in the discussion about RedHat
 [dropping SPICE support](https://bugzilla.redhat.com/show_bug.cgi?id=2030592) 
 from the RHEL packages. Which means that you have to run Qemu in a
