@@ -165,66 +165,59 @@
 <span class="source-line-no">152</span><span id="line-152"></span>
 <span class="source-line-no">153</span><span id="line-153">    private void serveCrVersion(CustomObjectsApi coa, V1APIResource crd,</span>
 <span class="source-line-no">154</span><span id="line-154">            String version) {</span>
-<span class="source-line-no">155</span><span id="line-155">        Call call;</span>
-<span class="source-line-no">156</span><span id="line-156">        try {</span>
-<span class="source-line-no">157</span><span id="line-157">            call = coa.listNamespacedCustomObjectCall(VM_OP_GROUP, version,</span>
-<span class="source-line-no">158</span><span id="line-158">                managedNamespace, crd.getName(), null, false, null, null, null,</span>
-<span class="source-line-no">159</span><span id="line-159">                null, null, null, null, true, null);</span>
-<span class="source-line-no">160</span><span id="line-160">        } catch (ApiException e) {</span>
-<span class="source-line-no">161</span><span id="line-161">            logger.log(Level.FINE, e,</span>
-<span class="source-line-no">162</span><span id="line-162">                () -&gt; "Probem watching: " + e.getMessage());</span>
-<span class="source-line-no">163</span><span id="line-163">            return;</span>
-<span class="source-line-no">164</span><span id="line-164">        }</span>
-<span class="source-line-no">165</span><span id="line-165">        @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")</span>
-<span class="source-line-no">166</span><span id="line-166">        var watcher = new Thread(() -&gt; {</span>
-<span class="source-line-no">167</span><span id="line-167">            try {</span>
-<span class="source-line-no">168</span><span id="line-168">                // Watch sometimes terminates without apparent reason.</span>
-<span class="source-line-no">169</span><span id="line-169">                while (true) {</span>
-<span class="source-line-no">170</span><span id="line-170">                    try (Watch&lt;V1Namespace&gt; watch</span>
-<span class="source-line-no">171</span><span id="line-171">                        = Watch.createWatch(client, call,</span>
-<span class="source-line-no">172</span><span id="line-172">                            new TypeToken&lt;Watch.Response&lt;V1Namespace&gt;&gt;() {</span>
-<span class="source-line-no">173</span><span id="line-173">                            }.getType())) {</span>
-<span class="source-line-no">174</span><span id="line-174">                        for (Watch.Response&lt;V1Namespace&gt; item : watch) {</span>
-<span class="source-line-no">175</span><span id="line-175">                            handleVmDefinitionEvent(crd, item);</span>
-<span class="source-line-no">176</span><span id="line-176">                        }</span>
-<span class="source-line-no">177</span><span id="line-177">                    } catch (IllegalStateException e) {</span>
-<span class="source-line-no">178</span><span id="line-178">                        logger.log(Level.FINE, e, () -&gt; "Probem watching: "</span>
-<span class="source-line-no">179</span><span id="line-179">                            + e.getMessage());</span>
-<span class="source-line-no">180</span><span id="line-180">                    }</span>
-<span class="source-line-no">181</span><span id="line-181">                }</span>
-<span class="source-line-no">182</span><span id="line-182">            } catch (IOException | ApiException e) {</span>
-<span class="source-line-no">183</span><span id="line-183">                logger.log(Level.FINE, e, () -&gt; "Probem watching: "</span>
-<span class="source-line-no">184</span><span id="line-184">                    + e.getMessage());</span>
-<span class="source-line-no">185</span><span id="line-185">            }</span>
-<span class="source-line-no">186</span><span id="line-186">            fire(new Stop());</span>
-<span class="source-line-no">187</span><span id="line-187">        });</span>
-<span class="source-line-no">188</span><span id="line-188">        watcher.setDaemon(true);</span>
-<span class="source-line-no">189</span><span id="line-189">        watcher.start();</span>
-<span class="source-line-no">190</span><span id="line-190">    }</span>
-<span class="source-line-no">191</span><span id="line-191"></span>
-<span class="source-line-no">192</span><span id="line-192">    private void handleVmDefinitionEvent(V1APIResource vmsCrd,</span>
-<span class="source-line-no">193</span><span id="line-193">            Watch.Response&lt;V1Namespace&gt; item) {</span>
-<span class="source-line-no">194</span><span id="line-194">        V1ObjectMeta metadata = item.object.getMetadata();</span>
-<span class="source-line-no">195</span><span id="line-195">        WatchChannel channel = channels.computeIfAbsent(metadata.getName(),</span>
-<span class="source-line-no">196</span><span id="line-196">            k -&gt; new WatchChannel(channel(), newEventPipeline(), client));</span>
-<span class="source-line-no">197</span><span id="line-197">        channel.pipeline().fire(new VmDefChanged(VmDefChanged.Type</span>
-<span class="source-line-no">198</span><span id="line-198">            .valueOf(item.type), vmsCrd, item.object), channel);</span>
-<span class="source-line-no">199</span><span id="line-199">    }</span>
-<span class="source-line-no">200</span><span id="line-200"></span>
-<span class="source-line-no">201</span><span id="line-201">    /**</span>
-<span class="source-line-no">202</span><span id="line-202">     * Remove VM channel when VM is deleted.</span>
-<span class="source-line-no">203</span><span id="line-203">     *</span>
-<span class="source-line-no">204</span><span id="line-204">     * @param event the event</span>
-<span class="source-line-no">205</span><span id="line-205">     * @param channel the channel</span>
-<span class="source-line-no">206</span><span id="line-206">     */</span>
-<span class="source-line-no">207</span><span id="line-207">    @Handler(priority = -10_000)</span>
-<span class="source-line-no">208</span><span id="line-208">    public void onVmDefChanged(VmDefChanged event, WatchChannel channel) {</span>
-<span class="source-line-no">209</span><span id="line-209">        if (event.type() == Type.DELETED) {</span>
-<span class="source-line-no">210</span><span id="line-210">            channels.remove(event.object().getMetadata().getName());</span>
-<span class="source-line-no">211</span><span id="line-211">        }</span>
-<span class="source-line-no">212</span><span id="line-212">    }</span>
-<span class="source-line-no">213</span><span id="line-213"></span>
-<span class="source-line-no">214</span><span id="line-214">}</span>
+<span class="source-line-no">155</span><span id="line-155">        @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")</span>
+<span class="source-line-no">156</span><span id="line-156">        var watcher = new Thread(() -&gt; {</span>
+<span class="source-line-no">157</span><span id="line-157">            try {</span>
+<span class="source-line-no">158</span><span id="line-158">                // Watch sometimes terminates without apparent reason.</span>
+<span class="source-line-no">159</span><span id="line-159">                while (true) {</span>
+<span class="source-line-no">160</span><span id="line-160">                    var call = coa.listNamespacedCustomObjectCall(VM_OP_GROUP,</span>
+<span class="source-line-no">161</span><span id="line-161">                        version, managedNamespace, crd.getName(), null, false,</span>
+<span class="source-line-no">162</span><span id="line-162">                        null, null, null, null, null, null, null, true, null);</span>
+<span class="source-line-no">163</span><span id="line-163">                    try (Watch&lt;V1Namespace&gt; watch</span>
+<span class="source-line-no">164</span><span id="line-164">                        = Watch.createWatch(client, call,</span>
+<span class="source-line-no">165</span><span id="line-165">                            new TypeToken&lt;Watch.Response&lt;V1Namespace&gt;&gt;() {</span>
+<span class="source-line-no">166</span><span id="line-166">                            }.getType())) {</span>
+<span class="source-line-no">167</span><span id="line-167">                        for (Watch.Response&lt;V1Namespace&gt; item : watch) {</span>
+<span class="source-line-no">168</span><span id="line-168">                            handleVmDefinitionEvent(crd, item);</span>
+<span class="source-line-no">169</span><span id="line-169">                        }</span>
+<span class="source-line-no">170</span><span id="line-170">                    } catch (IllegalStateException e) {</span>
+<span class="source-line-no">171</span><span id="line-171">                        logger.log(Level.FINE, e, () -&gt; "Probem watching: "</span>
+<span class="source-line-no">172</span><span id="line-172">                            + e.getMessage());</span>
+<span class="source-line-no">173</span><span id="line-173">                    }</span>
+<span class="source-line-no">174</span><span id="line-174">                }</span>
+<span class="source-line-no">175</span><span id="line-175">            } catch (IOException | ApiException e) {</span>
+<span class="source-line-no">176</span><span id="line-176">                logger.log(Level.FINE, e, () -&gt; "Probem watching: "</span>
+<span class="source-line-no">177</span><span id="line-177">                    + e.getMessage());</span>
+<span class="source-line-no">178</span><span id="line-178">            }</span>
+<span class="source-line-no">179</span><span id="line-179">            fire(new Stop());</span>
+<span class="source-line-no">180</span><span id="line-180">        });</span>
+<span class="source-line-no">181</span><span id="line-181">        watcher.setDaemon(true);</span>
+<span class="source-line-no">182</span><span id="line-182">        watcher.start();</span>
+<span class="source-line-no">183</span><span id="line-183">    }</span>
+<span class="source-line-no">184</span><span id="line-184"></span>
+<span class="source-line-no">185</span><span id="line-185">    private void handleVmDefinitionEvent(V1APIResource vmsCrd,</span>
+<span class="source-line-no">186</span><span id="line-186">            Watch.Response&lt;V1Namespace&gt; item) {</span>
+<span class="source-line-no">187</span><span id="line-187">        V1ObjectMeta metadata = item.object.getMetadata();</span>
+<span class="source-line-no">188</span><span id="line-188">        WatchChannel channel = channels.computeIfAbsent(metadata.getName(),</span>
+<span class="source-line-no">189</span><span id="line-189">            k -&gt; new WatchChannel(channel(), newEventPipeline(), client));</span>
+<span class="source-line-no">190</span><span id="line-190">        channel.pipeline().fire(new VmDefChanged(VmDefChanged.Type</span>
+<span class="source-line-no">191</span><span id="line-191">            .valueOf(item.type), vmsCrd, item.object), channel);</span>
+<span class="source-line-no">192</span><span id="line-192">    }</span>
+<span class="source-line-no">193</span><span id="line-193"></span>
+<span class="source-line-no">194</span><span id="line-194">    /**</span>
+<span class="source-line-no">195</span><span id="line-195">     * Remove VM channel when VM is deleted.</span>
+<span class="source-line-no">196</span><span id="line-196">     *</span>
+<span class="source-line-no">197</span><span id="line-197">     * @param event the event</span>
+<span class="source-line-no">198</span><span id="line-198">     * @param channel the channel</span>
+<span class="source-line-no">199</span><span id="line-199">     */</span>
+<span class="source-line-no">200</span><span id="line-200">    @Handler(priority = -10_000)</span>
+<span class="source-line-no">201</span><span id="line-201">    public void onVmDefChanged(VmDefChanged event, WatchChannel channel) {</span>
+<span class="source-line-no">202</span><span id="line-202">        if (event.type() == Type.DELETED) {</span>
+<span class="source-line-no">203</span><span id="line-203">            channels.remove(event.object().getMetadata().getName());</span>
+<span class="source-line-no">204</span><span id="line-204">        }</span>
+<span class="source-line-no">205</span><span id="line-205">    }</span>
+<span class="source-line-no">206</span><span id="line-206"></span>
+<span class="source-line-no">207</span><span id="line-207">}</span>
 
 
 
