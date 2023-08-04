@@ -9,7 +9,7 @@ For most use cases, Qemu needs to be started and controlled by a another
 programm that manages the Qemu process. This programm is called runner in this context. 
 
 The most prominent reason
-is that this is the only way to shutdown a VM cleanly. Qemu handles
+for this second program is that it allows a VM to be shutdown cleanly. Qemu handles
 the TERM signal by flushing all buffers and stopping, leaving the disks in
 a [crash consistent state](https://gitlab.com/qemu-project/qemu/-/issues/148).
 For a graceful shutdown, a parent process must handle the TERM signal, send
