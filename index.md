@@ -11,10 +11,10 @@ based VMs in Kubernetes pods.
 
 The image used for the VM pods combines Qemu and a control program
 for starting and managing the Qemu process. This application is called
-"the runner".
+"[the runner](runner.md)".
 
 While you can deploy a runner manually (or with the help of some 
-helm templates), the preferred way is to deploy "the manager"
+helm templates), the preferred way is to deploy "[the manager](manager.md)"
 component which acts as a Kubernetes operator for runners 
 and thus the VMs.
 
