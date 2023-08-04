@@ -9,13 +9,14 @@ description: A Kubernetes operator for running VMs as pods
 The goal of this project is to provide the means for running Qemu
 based VMs in Kubernetes pods. 
 
-The image used for the VM pods combines Qemu and a control programm 
-for starting and managing the Qemu process. It is called "the runner".
+The image used for the VM pods combines Qemu and a control program
+for starting and managing the Qemu process. This application is called
+"the runner".
 
-While you can configure a pod with a runner manually 
-(or with the help of some helm templates),
-the preferred way is to deploy "the manager" component which acts as 
-a Kubernetes operator for runners and thus the VMs.
+While you can deploy a runner manually (or with the help of some 
+helm templates), the preferred way is to deploy "the manager"
+component which acts as a Kubernetes operator for runners 
+and thus the VMs.
 
 ## Motivation
 The project was triggered by a remark in the discussion about RedHat

@@ -6,11 +6,11 @@ title: VM-Operator Runner
 # The Runner
 
 For most use cases, Qemu needs to be started and controlled by a another 
-programm that manages the Qemu process. This programm is called the 
+program that manages the Qemu process. This program is called the 
 runner in this context. 
 
-The most prominent reason
-for this second program is that it allows a VM to be shutdown cleanly. Qemu handles
+The most prominent reason for this second program is that it allows
+a VM to be shutdown cleanly in response to a TERM signal. Qemu handles
 the TERM signal by flushing all buffers and stopping, leaving the disks in
 a [crash consistent state](https://gitlab.com/qemu-project/qemu/-/issues/148).
 For a graceful shutdown, a parent process must handle the TERM signal, send
