@@ -152,21 +152,14 @@ public class VmWatcher extends Component {
 
     private void serveCrVersion(CustomObjectsApi coa, V1APIResource crd,
             String version) {
-        Call call;
-        try {
-            call = coa.listNamespacedCustomObjectCall(VM_OP_GROUP, version,
-                managedNamespace, crd.getName(), null, false, null, null, null,
-                null, null, null, null, true, null);
-        } catch (ApiException e) {
-            logger.log(Level.FINE, e,
-                () -> "Probem watching: " + e.getMessage());
-            return;
-        }
         @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
         var watcher = new Thread(() -> {
             try {
                 // Watch sometimes terminates without apparent reason.
                 while (true) {
+                    var call = coa.listNamespacedCustomObjectCall(VM_OP_GROUP,
+                        version, managedNamespace, crd.getName(), null, false,
+                        null, null, null, null, null, null, null, true, null);
                     try (Watch<V1Namespace> watch
                         = Watch.createWatch(client, call,
                             new TypeToken<Watch.Response<V1Namespace>>() {
