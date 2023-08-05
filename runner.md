@@ -5,7 +5,7 @@ title: VM-Operator Runner
 
 # The Runner
 
-For most use cases, Qemu needs to be started and controlled by a another 
+For most use cases, Qemu needs to be started and controlled by another 
 program that manages the Qemu process. This program is called the 
 runner in this context. 
 
