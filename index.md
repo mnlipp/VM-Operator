@@ -1,7 +1,7 @@
 ---
 layout: default
 title: VM-Operator by mnlipp
-description: A Kubernetes operator for running VMs as pods
+description: A Kubernetes operator for running virtual machines (notably Qemu VMs) as pods
 ---
 
 # Welcome to VM-Operator
