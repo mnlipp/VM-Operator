@@ -41,6 +41,7 @@ import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
@@ -51,6 +52,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.jdrupes.vmoperator.runner.qemu.StateController.State;
+import org.jdrupes.vmoperator.runner.qemu.events.ChangeMediumCommand;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
 import static org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand.Command.CONTINUE;
 import static org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand.Command.SET_CURRENT_CPUS;
@@ -155,7 +157,8 @@ import org.jgrapes.util.events.WatchFile;
  * @enduml
  * 
  */
-@SuppressWarnings({ "PMD.ExcessiveImports", "PMD.AvoidPrintStackTrace" })
+@SuppressWarnings({ "PMD.ExcessiveImports", "PMD.AvoidPrintStackTrace",
+    "PMD.DataflowAnomalyAnalysis" })
 public class Runner extends Component {
 
     public static final String APP_NAME = "vmrunner";
@@ -331,37 +334,49 @@ public class Runner extends Component {
         return yamlMapper.readValue(out.toString(), JsonNode.class);
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "PMD.AvoidLiteralsInIfCondition",
+        "PMD.AvoidInstantiatingObjectsInLoops" })
     private void updateConfiguration(Map<String, Object> conf) {
         logger.fine(() -> "Updating configuration");
-        Optional.ofNullable((Map<String, Object>) conf.get("vm"))
-            .map(vm -> vm.get("currentRam")).map(Configuration::parseMemory)
-            .ifPresent(cr -> {
-                if (config.vm.currentRam != null
-                    && config.vm.currentRam.equals(cr)) {
-                    return;
+        var newConf = yamlMapper.convertValue(conf, Configuration.class);
+        Optional.ofNullable(newConf.vm.currentRam).ifPresent(cr -> {
+            if (config.vm.currentRam != null
+                && config.vm.currentRam.equals(cr)) {
+                return;
+            }
+            synchronized (state) {
+                config.vm.currentRam = cr;
+                if (state.get() == State.RUNNING) {
+                    fire(new MonitorCommand(SET_CURRENT_RAM, cr));
                 }
+            }
+        });
+        if (config.vm.currentCpus != newConf.vm.currentCpus) {
+            synchronized (state) {
+                config.vm.currentCpus = newConf.vm.currentCpus;
+                if (state.get() == State.RUNNING) {
+                    fire(new MonitorCommand(SET_CURRENT_CPUS,
+                        newConf.vm.currentCpus));
+                }
+            }
+        }
+
+        int cdCounter = 0;
+        for (int i = 0; i < Math.min(config.vm.drives.length,
+            newConf.vm.drives.length); i++) {
+            if (!"ide-cd".equals(config.vm.drives[i].type)) {
+                continue;
+            }
+            String curFile = config.vm.drives[i].file;
+            String newFile = newConf.vm.drives[i].file;
+            if (!Objects.equals(curFile, newFile)) {
+                config.vm.drives[i].file = newConf.vm.drives[i].file;
                 synchronized (state) {
-                    config.vm.currentRam = cr;
-                    if (state.get() == State.RUNNING) {
-                        fire(new MonitorCommand(SET_CURRENT_RAM, cr));
-                    }
+                    fire(new ChangeMediumCommand("cd" + cdCounter, newFile));
                 }
-            });
-        Optional.ofNullable((Map<String, Object>) conf.get("vm"))
-            .map(vm -> vm.get("currentCpus"))
-            .map(v -> v instanceof Number number ? number.intValue() : null)
-            .ifPresent(cpus -> {
-                if (config.vm.currentCpus == cpus) {
-                    return;
-                }
-                synchronized (state) {
-                    config.vm.currentCpus = cpus;
-                    if (state.get() == State.RUNNING) {
-                        fire(new MonitorCommand(SET_CURRENT_CPUS, cpus));
-                    }
-                }
-            });
+            }
+            cdCounter += 1;
+        }
     }
 
     /**

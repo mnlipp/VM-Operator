@@ -58,6 +58,9 @@ import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
     private void reconcileDisk(DynamicKubernetesObject vmDefinition,
             int index, JsonObject diskDef, WatchChannel channel)
             throws ApiException {
+        if (!diskDef.has("volumeClaimTemplate")) {
+            return;
+        }
         var pvcObject = new DynamicKubernetesObject();
         var pvcRaw = GsonPtr.to(pvcObject.getRaw());
         var vmRaw = GsonPtr.to(vmDefinition.getRaw());

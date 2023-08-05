@@ -36,6 +36,7 @@ spec:
     volumeDevices:
     <#assign diskCounter = 0/>
     <#list cr.spec.vm.disks.asList() as disk>
+    <#if disk.volumeClaimTemplate??>
     <#if disk.volumeClaimTemplate.metadata??
       && disk.volumeClaimTemplate.metadata.name??>
       <#assign diskName = "disk-" + disk.volumeClaimTemplate.metadata.name.asString>
@@ -45,6 +46,7 @@ spec:
     - name: ${ diskName }
       devicePath: /dev/${ diskName }
     <#assign diskCounter = diskCounter + 1/>
+    </#if>
     </#list>
     securityContext:
       privileged: true
@@ -72,6 +74,7 @@ spec:
       claimName: vmop-image-repository
   <#assign diskCounter = 0/>
   <#list cr.spec.vm.disks.asList() as disk>
+  <#if disk.volumeClaimTemplate??>
   <#if disk.volumeClaimTemplate.metadata??
     && disk.volumeClaimTemplate.metadata.name??>
     <#assign claimName = disk.volumeClaimTemplate.metadata.name.asString>
@@ -84,6 +87,7 @@ spec:
     persistentVolumeClaim:
       claimName: ${ claimName }
   <#assign diskCounter = diskCounter + 1/>
+  </#if>
   </#list>
   hostNetwork: true
   terminationGracePeriodSeconds: ${ (cr.spec.vm.powerdownTimeout.asInt + 5)?c }

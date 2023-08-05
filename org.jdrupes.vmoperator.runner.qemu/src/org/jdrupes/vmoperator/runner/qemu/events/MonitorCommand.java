@@ -32,7 +32,7 @@ public class MonitorCommand extends Event<Void> {
      * The available commands.
      */
     public enum Command {
-        CONTINUE, SET_CURRENT_CPUS, SET_CURRENT_RAM
+        CONTINUE, SET_CURRENT_CPUS, SET_CURRENT_RAM, CHANGE_MEDIUM
     }
 
     private final Command command;

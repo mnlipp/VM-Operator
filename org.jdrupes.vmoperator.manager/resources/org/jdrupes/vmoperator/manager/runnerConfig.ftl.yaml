@@ -136,15 +136,28 @@ data:
         drives:
         <#assign drvCounter = 0/>
         <#list cr.spec.vm.disks.asList() as disk>
-        <#if disk.volumeClaimTemplate.metadata??
+        <#if disk.volumeClaimTemplate?? 
+          && disk.volumeClaimTemplate.metadata??
           && disk.volumeClaimTemplate.metadata.name??>
           <#assign name = disk.volumeClaimTemplate.metadata.name.asString>
         <#else>
           <#assign name = "" + drvCounter>
         </#if>
+        <#if disk.volumeClaimTemplate??> 
         - type: raw
           resource: /dev/disk-${ name }
-        <#assign drvCounter = drvCounter + 1/>
+          <#if disk.bootindex??>
+          bootindex: ${ disk.bootindex.asInt?c }
+          </#if>
+          <#assign drvCounter = drvCounter + 1/>
+        </#if>
+        <#if disk.cdromImage??> 
+        - type: ide-cd
+          file: "${ disk.cdromImage.path.asString }"
+          <#if disk.bootindex??>
+          bootindex: ${ disk.bootindex.asInt?c }
+          </#if>
+        </#if>
         </#list>
         
         display:

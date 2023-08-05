@@ -19,7 +19,6 @@
 package org.jdrupes.vmoperator.runner.qemu;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -106,6 +105,7 @@ public class QemuMonitor extends Component {
         }
         attach(new RamController(channel(), this));
         attach(new CpuController(channel(), this));
+        attach(new CdromController(channel(), this));
     }
 
     /**
@@ -246,7 +246,7 @@ public class QemuMonitor extends Component {
                 fire(new MonitorReady());
                 return;
             }
-            if (response.has("return")) {
+            if (response.has("return") || response.has("error")) {
                 String executed = executing.poll();
                 logger.fine(
                     () -> String.format("(Previous \"monitor(in)\" is result "

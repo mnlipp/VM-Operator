@@ -144,8 +144,8 @@
     <#assign cdCounter = 0/>
     <#list vm.drives![] as drive>
     <#if (drive.type!"") == "ide-cd">
-    - [ "-drive", "id=drive-cdrom${ cdCounter },if=none,media=cdrom,cache=none\
-        <#if drive.file??>,file=${ drive.file }</#if>" ]
+    - [ "-drive", "id=drive-cdrom${ cdCounter },if=none,media=cdrom,\
+        readonly=on<#if drive.file??>,file=${ drive.file }</#if>" ]
     #   (IDE is old, but faster than usb-storage. virtio-blk-pci does not  
     #    work without file [empty drive])
     - [ "-device", "ide-cd,id=cd${ cdCounter },bus=ide.${ cdCounter },\

@@ -312,9 +312,11 @@ class Configuration implements Dto {
         return true;
     }
 
+    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
     private void checkDrives() {
         for (Drive drive : vm.drives) {
-            if (drive.file != null || drive.device != null) {
+            if (drive.file != null || drive.device != null
+                || "ide-cd".equals(drive.type)) {
                 continue;
             }
             if (drive.resource == null) {
