@@ -18,17 +18,22 @@
 
 package org.jdrupes.vmoperator.runner.qemu.events;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import org.jdrupes.vmoperator.runner.qemu.commands.QmpCommand;
+
 /**
- * Signals that the connection to the Qemu monitor socket has been
- * established successfully.
+ * The Class CpuAdded.
  */
-public class MonitorReady extends MonitorEvent {
+public class CpuAdded extends MonitorResult {
 
     /**
-     * Instantiates a new monitor ready.
+     * Instantiates a new cpu added.
+     *
+     * @param command the command
+     * @param response the response
      */
-    public MonitorReady() {
-        super(Kind.READY, null);
+    public CpuAdded(QmpCommand command, JsonNode response) {
+        super(command, response);
     }
 
 }

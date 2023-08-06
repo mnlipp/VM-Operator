@@ -18,17 +18,41 @@
 
 package org.jdrupes.vmoperator.runner.qemu.events;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import org.jdrupes.vmoperator.runner.qemu.CdMediaController.TrayState;
+
 /**
- * Signals that the connection to the Qemu monitor socket has been
- * established successfully.
+ * The Class TrayMovedEvent.
  */
-public class MonitorReady extends MonitorEvent {
+public class TrayMovedEvent extends MonitorEvent {
 
     /**
-     * Instantiates a new monitor ready.
+     * Instantiates a new tray moved.
+     *
+     * @param kind the kind
+     * @param data the data
      */
-    public MonitorReady() {
-        super(Kind.READY, null);
+    public TrayMovedEvent(Kind kind, JsonNode data) {
+        super(kind, data);
     }
 
+    /**
+     * returns the drive id.
+     *
+     * @return the string
+     */
+    public String driveId() {
+        return data().get("id").asText();
+    }
+
+    /**
+     * Returns the tray state.
+     *
+     * @return the tray state
+     */
+    public TrayState state() {
+        return data().get("tray-open").asBoolean()
+            ? TrayState.OPEN
+            : TrayState.CLOSED;
+    }
 }

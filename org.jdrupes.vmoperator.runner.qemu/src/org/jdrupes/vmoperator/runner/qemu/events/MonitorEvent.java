@@ -18,9 +18,10 @@
 
 package org.jdrupes.vmoperator.runner.qemu.events;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import java.util.Optional;
 import org.jgrapes.core.Event;
 
-// TODO: Auto-generated Javadoc
 /**
  * Signals the reception of an event from the monitor.
  */
@@ -30,18 +31,45 @@ public class MonitorEvent extends Event<Void> {
      * The kind of monitor event.
      */
     public enum Kind {
-        READY
+        READY, DEVICE_TRAY_MOVED
     }
 
     private final Kind kind;
+    private final JsonNode data;
+
+    /**
+     * Create event from response.
+     *
+     * @param response the response
+     * @return the optional
+     */
+    @SuppressWarnings("PMD.TooFewBranchesForASwitchStatement")
+    public static Optional<MonitorEvent> from(JsonNode response) {
+        try {
+            var kind
+                = MonitorEvent.Kind.valueOf(response.get("event").asText());
+            switch (kind) {
+            case DEVICE_TRAY_MOVED:
+                return Optional
+                    .of(new TrayMovedEvent(kind, response.get("data")));
+            default:
+                return Optional
+                    .of(new MonitorEvent(kind, response.get("data")));
+            }
+        } catch (IllegalArgumentException e) {
+            return Optional.empty();
+        }
+    }
 
     /**
      * Instantiates a new monitor event.
      *
      * @param kind the kind
+     * @param data the data
      */
-    public MonitorEvent(Kind kind) {
+    protected MonitorEvent(Kind kind, JsonNode data) {
         this.kind = kind;
+        this.data = data;
     }
 
     /**
@@ -51,5 +79,14 @@ public class MonitorEvent extends Event<Void> {
      */
     public Kind kind() {
         return kind;
+    }
+
+    /**
+     * Returns the data associated with the event.
+     *
+     * @return the object[]
+     */
+    public JsonNode data() {
+        return data;
     }
 }

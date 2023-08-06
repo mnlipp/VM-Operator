@@ -18,19 +18,20 @@
 
 package org.jdrupes.vmoperator.runner.qemu;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
-import java.util.logging.Level;
+import org.jdrupes.vmoperator.runner.qemu.commands.QmpAddCpu;
+import org.jdrupes.vmoperator.runner.qemu.commands.QmpDelCpu;
+import org.jdrupes.vmoperator.runner.qemu.commands.QmpQueryHotpluggableCpus;
+import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
+import org.jdrupes.vmoperator.runner.qemu.events.CpuAdded;
+import org.jdrupes.vmoperator.runner.qemu.events.CpuDeleted;
+import org.jdrupes.vmoperator.runner.qemu.events.HotpluggableCpuResult;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
-import static org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand.Command.SET_CURRENT_CPUS;
-import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommandCompleted;
-import org.jdrupes.vmoperator.runner.qemu.events.MonitorResult;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.annotation.Handler;
@@ -41,11 +42,9 @@ import org.jgrapes.core.annotation.Handler;
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class CpuController extends Component {
 
-    private static ObjectMapper mapper;
-    private static JsonNode queryHotpluggableCpus;
-
-    private final QemuMonitor monitor;
+    private Integer currentCpus;
     private Integer desiredCpus;
+    private ConfigureQemu suspendedConfigure;
 
     /**
      * Instantiates a new CPU controller.
@@ -53,35 +52,27 @@ public class CpuController extends Component {
      * @param componentChannel the component channel
      * @param monitor the monitor
      */
-    @SuppressWarnings("PMD.AssignmentToNonFinalStatic")
-    public CpuController(Channel componentChannel, QemuMonitor monitor) {
+    public CpuController(Channel componentChannel) {
         super(componentChannel);
-        if (mapper == null) {
-            mapper = new ObjectMapper();
-            try {
-                queryHotpluggableCpus = mapper.readValue(
-                    "{\"execute\":\"query-hotpluggable-cpus\",\"arguments\":{}}",
-                    JsonNode.class);
-            } catch (IOException e) {
-                logger.log(Level.SEVERE, e,
-                    () -> "Cannot initialize class: " + e.getMessage());
-            }
-        }
-        this.monitor = monitor;
     }
 
     /**
-     * On monitor command.
+     * On configure qemu.
      *
      * @param event the event
      */
     @Handler
-    public void onMonitorCommand(MonitorCommand event) {
-        if (event.command() != SET_CURRENT_CPUS) {
-            return;
-        }
-        desiredCpus = (Integer) event.arguments()[0];
-        monitor.sendToMonitor(queryHotpluggableCpus);
+    public void onConfigureQemu(ConfigureQemu event) {
+        Optional.ofNullable(event.configuration().vm.currentCpus)
+            .ifPresent(cpus -> {
+                if (desiredCpus != null && desiredCpus.equals(cpus)) {
+                    return;
+                }
+                event.suspendHandling();
+                suspendedConfigure = event;
+                desiredCpus = cpus;
+                fire(new MonitorCommand(new QmpQueryHotpluggableCpus()));
+            });
     }
 
     /**
@@ -90,17 +81,11 @@ public class CpuController extends Component {
      * @param result the result
      */
     @Handler
-    public void onMonitorResult(MonitorResult result) {
-        if (!result.executed()
-            .equals(queryHotpluggableCpus.get("execute").asText())
-            || desiredCpus == null) {
-            return;
-        }
-
+    public void onHotpluggableCpuResult(HotpluggableCpuResult result) {
         // Sort
         List<ObjectNode> used = new ArrayList<>();
         List<ObjectNode> unused = new ArrayList<>();
-        for (var itr = result.returned().iterator(); itr.hasNext();) {
+        for (var itr = result.values().iterator(); itr.hasNext();) {
             ObjectNode cpu = (ObjectNode) itr.next();
             if (cpu.has("qom-path")) {
                 used.add(cpu);
@@ -108,15 +93,47 @@ public class CpuController extends Component {
                 unused.add(cpu);
             }
         }
-
+        currentCpus = used.size();
+        if (desiredCpus == null) {
+            return;
+        }
         // Process
         int diff = used.size() - desiredCpus;
         diff = addCpus(used, unused, diff);
-        diff = deleteCpus(used, diff);
-        fire(new MonitorCommandCompleted(SET_CURRENT_CPUS, desiredCpus + diff));
-        desiredCpus = null;
+        deleteCpus(used, diff);
     }
 
+    /**
+     * On cpu added.
+     *
+     * @param event the event
+     */
+    @Handler
+    public void onCpuAdded(CpuAdded event) {
+        currentCpus += 1;
+        checkCpus();
+    }
+
+    /**
+     * On cpu deleted.
+     *
+     * @param event the event
+     */
+    @Handler
+    public void onCpuDeleted(CpuDeleted event) {
+        currentCpus -= 1;
+        checkCpus();
+    }
+
+    private void checkCpus() {
+        if (suspendedConfigure != null && desiredCpus != null
+            && currentCpus == desiredCpus.intValue()) {
+            suspendedConfigure.resumeHandling();
+            suspendedConfigure = null;
+        }
+    }
+
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     private int addCpus(List<ObjectNode> used, List<ObjectNode> unused,
             int diff) {
         Set<String> usedIds = new HashSet<>();
@@ -129,24 +146,18 @@ public class CpuController extends Component {
         }
         int nextId = 1;
         while (diff < 0 && !unused.isEmpty()) {
-            ObjectNode cmd = mapper.createObjectNode();
-            cmd.put("execute", "device_add");
-            ObjectNode args = mapper.createObjectNode();
-            cmd.set("arguments", args);
-            args.setAll((ObjectNode) (unused.get(0).get("props").deepCopy()));
-            args.set("driver", unused.get(0).get("type"));
             String id;
             do {
                 id = "cpu-" + nextId++;
             } while (usedIds.contains(id));
-            args.put("id", id);
-            monitor.sendToMonitor(cmd);
+            fire(new MonitorCommand(new QmpAddCpu(unused.get(0), id)));
             unused.remove(0);
             diff += 1;
         }
         return diff;
     }
 
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     private int deleteCpus(List<ObjectNode> used, int diff) {
         while (diff > 0 && !used.isEmpty()) {
             ObjectNode cpu = used.remove(0);
@@ -155,12 +166,7 @@ public class CpuController extends Component {
                 continue;
             }
             String id = qomPath.substring(qomPath.lastIndexOf('/') + 1);
-            ObjectNode cmd = mapper.createObjectNode();
-            cmd.put("execute", "device_del");
-            ObjectNode args = mapper.createObjectNode();
-            cmd.set("arguments", args);
-            args.put("id", id);
-            monitor.sendToMonitor(cmd);
+            fire(new MonitorCommand(new QmpDelCpu(id)));
             diff -= 1;
         }
         return diff;

@@ -18,37 +18,22 @@
 
 package org.jdrupes.vmoperator.runner.qemu.events;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import org.jdrupes.vmoperator.runner.qemu.commands.QmpCommand;
+
 /**
- * The Class ChangeMediumCommand.
+ * The Class HotpluggableCpuResult.
  */
-public class ChangeMediumCommand extends MonitorCommand {
+public class HotpluggableCpuResult extends MonitorResult {
 
     /**
-     * Instantiates a new change medium command.
+     * Instantiates a new hotpluggable cpu result.
      *
-     * @param id the id
-     * @param file the file path
+     * @param command the command
+     * @param response the response
      */
-    public ChangeMediumCommand(String id, String file) {
-        super(Command.CHANGE_MEDIUM, id, file);
+    public HotpluggableCpuResult(QmpCommand command, JsonNode response) {
+        super(command, response);
     }
 
-    /**
-     * Gets the id.
-     *
-     * @return the id
-     */
-    @SuppressWarnings("PMD.ShortMethodName")
-    public String id() {
-        return (String) arguments()[0];
-    }
-
-    /**
-     * Gets the file.
-     *
-     * @return the file
-     */
-    public String file() {
-        return (String) arguments()[1];
-    }
 }

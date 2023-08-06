@@ -18,17 +18,39 @@
 
 package org.jdrupes.vmoperator.runner.qemu.events;
 
+import org.jgrapes.core.Channel;
+import org.jgrapes.core.Event;
+
 /**
- * Signals that the connection to the Qemu monitor socket has been
- * established successfully.
+ * The Class RunnerStateChange.
  */
-public class MonitorReady extends MonitorEvent {
+public class RunnerStateChange extends Event<Void> {
 
     /**
-     * Instantiates a new monitor ready.
+     * The state.
      */
-    public MonitorReady() {
-        super(Kind.READY, null);
+    public enum State {
+        INITIALIZING, STARTING, RUNNING, TERMINATING
     }
 
+    private final State state;
+
+    /**
+     * Instantiates a new runner state change.
+     *
+     * @param channels the channels
+     */
+    public RunnerStateChange(State state, Channel... channels) {
+        super(channels);
+        this.state = state;
+    }
+
+    /**
+     * Returns the new state.
+     *
+     * @return the state
+     */
+    public State state() {
+        return state;
+    }
 }

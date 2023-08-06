@@ -41,7 +41,6 @@ import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
@@ -51,14 +50,12 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import org.jdrupes.vmoperator.runner.qemu.StateController.State;
-import org.jdrupes.vmoperator.runner.qemu.events.ChangeMediumCommand;
+import org.jdrupes.vmoperator.runner.qemu.commands.QmpCont;
+import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
-import static org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand.Command.CONTINUE;
-import static org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand.Command.SET_CURRENT_CPUS;
-import static org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand.Command.SET_CURRENT_RAM;
-import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommandCompleted;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorReady;
+import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;
+import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;
 import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
 import org.jdrupes.vmoperator.util.FsdUtils;
 import org.jgrapes.core.Component;
@@ -120,8 +117,8 @@ import org.jgrapes.util.events.WatchFile;
  *     monitor --> configure: ClientConnected[for monitor]
  *     monitor -> error: ConnectError[for monitor]
  *     
- *     configure: entry/fire configuration commands
- *     configure --> success: last completed/fire cont command
+ *     configure: entry/fire ConfigureQemu
+ *     configure --> success: ConfigureQemu (last handler)/fire cont command
  * }
  * 
  * Initializing --> which: Started
@@ -161,6 +158,7 @@ import org.jgrapes.util.events.WatchFile;
     "PMD.DataflowAnomalyAnalysis" })
 public class Runner extends Component {
 
+    /** The Constant APP_NAME. */
     public static final String APP_NAME = "vmrunner";
     private static final String TEMPLATE_DIR
         = "/opt/" + APP_NAME + "/templates";
@@ -174,20 +172,19 @@ public class Runner extends Component {
     @SuppressWarnings("PMD.UseConcurrentHashMap")
     private Configuration config = new Configuration();
     private final freemarker.template.Configuration fmConfig;
-    private final StateController state;
     private CommandDefinition swtpmDefinition;
     private CommandDefinition qemuDefinition;
     private final QemuMonitor qemuMonitor;
+    private State state = State.INITIALIZING;
 
     /**
      * Instantiates a new runner.
-     * @param cmdLine 
      *
+     * @param cmdLine the cmd line
      * @throws IOException Signals that an I/O exception has occurred.
      */
     @SuppressWarnings("PMD.SystemPrintln")
     public Runner(CommandLine cmdLine) throws IOException {
-        state = new StateController(this);
         yamlMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
             false);
 
@@ -237,7 +234,9 @@ public class Runner extends Component {
                 processInitialConfiguration(c);
                 return;
             }
-            updateConfiguration(c);
+            logger.fine(() -> "Updating configuration");
+            var newConf = yamlMapper.convertValue(c, Configuration.class);
+            fire(new ConfigureQemu(newConf, state));
         });
     }
 
@@ -334,51 +333,6 @@ public class Runner extends Component {
         return yamlMapper.readValue(out.toString(), JsonNode.class);
     }
 
-    @SuppressWarnings({ "PMD.AvoidLiteralsInIfCondition",
-        "PMD.AvoidInstantiatingObjectsInLoops" })
-    private void updateConfiguration(Map<String, Object> conf) {
-        logger.fine(() -> "Updating configuration");
-        var newConf = yamlMapper.convertValue(conf, Configuration.class);
-        Optional.ofNullable(newConf.vm.currentRam).ifPresent(cr -> {
-            if (config.vm.currentRam != null
-                && config.vm.currentRam.equals(cr)) {
-                return;
-            }
-            synchronized (state) {
-                config.vm.currentRam = cr;
-                if (state.get() == State.RUNNING) {
-                    fire(new MonitorCommand(SET_CURRENT_RAM, cr));
-                }
-            }
-        });
-        if (config.vm.currentCpus != newConf.vm.currentCpus) {
-            synchronized (state) {
-                config.vm.currentCpus = newConf.vm.currentCpus;
-                if (state.get() == State.RUNNING) {
-                    fire(new MonitorCommand(SET_CURRENT_CPUS,
-                        newConf.vm.currentCpus));
-                }
-            }
-        }
-
-        int cdCounter = 0;
-        for (int i = 0; i < Math.min(config.vm.drives.length,
-            newConf.vm.drives.length); i++) {
-            if (!"ide-cd".equals(config.vm.drives[i].type)) {
-                continue;
-            }
-            String curFile = config.vm.drives[i].file;
-            String newFile = newConf.vm.drives[i].file;
-            if (!Objects.equals(curFile, newFile)) {
-                config.vm.drives[i].file = newConf.vm.drives[i].file;
-                synchronized (state) {
-                    fire(new ChangeMediumCommand("cd" + cdCounter, newFile));
-                }
-            }
-            cdCounter += 1;
-        }
-    }
-
     /**
      * Handle the start event.
      *
@@ -424,7 +378,8 @@ public class Runner extends Component {
      */
     @Handler
     public void onStarted(Started event) {
-        state.set(State.STARTING);
+        state = State.STARTING;
+        fire(new RunnerStateChange(state));
         // Start first process
         if (config.vm.useTpm && swtpmDefinition != null) {
             startProcess(swtpmDefinition);
@@ -507,33 +462,26 @@ public class Runner extends Component {
     }
 
     /**
-     * On qemu monitor started.
+     * On monitor ready.
      *
      * @param event the event
      */
     @Handler
     public void onMonitorReady(MonitorReady event) {
-        synchronized (state) {
-            Optional.ofNullable(config.vm.currentRam).ifPresent(ram -> {
-                fire(new MonitorCommand(SET_CURRENT_RAM, ram));
-            });
-            Optional.ofNullable(config.vm.currentCpus).ifPresent(cpus -> {
-                fire(new MonitorCommand(SET_CURRENT_CPUS, cpus));
-            });
-        }
+        fire(new ConfigureQemu(config, state));
     }
 
     /**
-     * On monitor command completed.
+     * On configure qemu.
      *
      * @param event the event
      */
-    @Handler
-    public void onMonitorCommandCompleted(MonitorCommandCompleted event) {
-        if (state.get() != State.RUNNING
-            && event.command() == SET_CURRENT_CPUS) {
-            fire(new MonitorCommand(CONTINUE));
-            state.set(State.RUNNING);
+    @Handler(priority = -1000)
+    public void onConfigureQemu(ConfigureQemu event) {
+        if (state == State.STARTING) {
+            fire(new MonitorCommand(new QmpCont()));
+            state = State.RUNNING;
+            fire(new RunnerStateChange(state));
         }
     }
 
@@ -547,15 +495,14 @@ public class Runner extends Component {
     public void onProcessExited(ProcessExited event, ProcessChannel channel) {
         channel.associated(CommandDefinition.class).ifPresent(procDef -> {
             // No process(es) may exit during startup
-            if (state.get() == State.STARTING) {
+            if (state == State.STARTING) {
                 logger.severe(() -> "Process " + procDef.name
                     + " has exited with value " + event.exitValue()
                     + " during startup.");
                 fire(new Stop());
                 return;
             }
-            if (procDef.equals(qemuDefinition)
-                && state.get() == State.RUNNING) {
+            if (procDef.equals(qemuDefinition) && state == State.RUNNING) {
                 fire(new Stop());
             }
             logger.info(() -> "Process " + procDef.name
@@ -570,11 +517,12 @@ public class Runner extends Component {
      */
     @Handler(priority = 10_000)
     public void onStop(Stop event) {
-        state.set(State.TERMINATING);
+        state = State.TERMINATING;
+        fire(new RunnerStateChange(state));
     }
 
     private void shutdown() {
-        if (state.get() != State.TERMINATING) {
+        if (state != State.TERMINATING) {
             fire(new Stop());
         }
         try {

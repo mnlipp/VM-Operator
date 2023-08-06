@@ -19,6 +19,12 @@
 package org.jdrupes.vmoperator.runner.qemu.events;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.jdrupes.vmoperator.runner.qemu.commands.QmpAddCpu;
+import org.jdrupes.vmoperator.runner.qemu.commands.QmpCommand;
+import org.jdrupes.vmoperator.runner.qemu.commands.QmpDelCpu;
+import org.jdrupes.vmoperator.runner.qemu.commands.QmpQueryHotpluggableCpus;
+import org.jgrapes.core.Channel;
+import org.jgrapes.core.Components;
 import org.jgrapes.core.Event;
 
 /**
@@ -26,33 +32,83 @@ import org.jgrapes.core.Event;
  */
 public class MonitorResult extends Event<Void> {
 
-    private final String executed;
-    private final JsonNode returned;
+    private final QmpCommand executed;
+    private final JsonNode response;
+
+    /**
+     * Create event from data.
+     *
+     * @param command the command
+     * @param response the response
+     * @return the monitor result
+     */
+    public static MonitorResult from(QmpCommand command, JsonNode response) {
+        if (command instanceof QmpQueryHotpluggableCpus) {
+            return new HotpluggableCpuResult(command, response);
+        }
+        if (command instanceof QmpAddCpu) {
+            return new CpuAdded(command, response);
+        }
+        if (command instanceof QmpDelCpu) {
+            return new CpuDeleted(command, response);
+        }
+        return new MonitorResult(command, response);
+    }
 
     /**
      * Instantiates a new monitor result.
      *
-     * @param executed the command executed
+     * @param executed the executed
      * @param response the response
      */
-    public MonitorResult(String executed, JsonNode response) {
-        this.executed = executed;
-        this.returned = response.get("return");
+    protected MonitorResult(QmpCommand command, JsonNode response) {
+        this.executed = command;
+        this.response = response;
     }
 
     /**
-     * Return the executed command.
+     * Returns the executed executed.
      *
-     * @return the string
+     * @return the executed
      */
-    public String executed() {
+    public QmpCommand executed() {
         return executed;
     }
 
     /**
-     * Return the values returned.
+     * Returns true if executed has been executed successfully.
+     *
+     * @return true, if successful
      */
-    public JsonNode returned() {
-        return returned;
+    public boolean successful() {
+        return response.has("return");
+    }
+
+    /**
+     * Returns the values that come with the response.
+     *
+     * @return the json node
+     */
+    public JsonNode values() {
+        if (response.has("return")) {
+            return response.get("return");
+        }
+        if (response.has("error")) {
+            return response.get("error");
+        }
+        return null;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append(Components.objectName(this))
+            .append(" [").append(executed).append(", ").append(successful());
+        if (channels() != null) {
+            builder.append(", channels=");
+            builder.append(Channel.toString(channels()));
+        }
+        builder.append(']');
+        return builder.toString();
     }
 }

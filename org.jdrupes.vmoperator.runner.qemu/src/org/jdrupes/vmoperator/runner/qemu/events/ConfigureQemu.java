@@ -18,46 +18,46 @@
 
 package org.jdrupes.vmoperator.runner.qemu.events;
 
-import org.jdrupes.vmoperator.runner.qemu.commands.QmpCommand;
+import org.jdrupes.vmoperator.runner.qemu.Configuration;
+import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;
 import org.jgrapes.core.Channel;
-import org.jgrapes.core.Components;
 import org.jgrapes.core.Event;
 
 /**
- * A command to be executed by the monitor.
+ * The Class ConfigureQemu.
  */
-public class MonitorCommand extends Event<Void> {
+public class ConfigureQemu extends Event<Void> {
 
-    private final QmpCommand command;
+    private final Configuration configuration;
+    private final State state;
 
     /**
-     * Instantiates a new exec qmp command.
+     * Instantiates a new configure qemu.
      *
-     * @param command the command
+     * @param channels the channels
      */
-    public MonitorCommand(QmpCommand command) {
-        this.command = command;
+    public ConfigureQemu(Configuration configuration, State state,
+            Channel... channels) {
+        super(channels);
+        this.state = state;
+        this.configuration = configuration;
     }
 
     /**
-     * Gets the command.
+     * Returns the configuration.
      *
-     * @return the command
+     * @return the configuration
      */
-    public QmpCommand command() {
-        return command;
+    public Configuration configuration() {
+        return configuration;
     }
 
-    @Override
-    public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append(Components.objectName(this))
-            .append(" [").append(command);
-        if (channels() != null) {
-            builder.append(", channels=");
-            builder.append(Channel.toString(channels()));
-        }
-        builder.append(']');
-        return builder.toString();
+    /**
+     * Returns the runner's state.
+     *
+     * @return the state
+     */
+    public State state() {
+        return state;
     }
 }

@@ -16,53 +16,39 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.jdrupes.vmoperator.runner.qemu;
+package org.jdrupes.vmoperator.runner.qemu.commands;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
+// TODO: Auto-generated Javadoc
 /**
- * The context.
+ * The Class QmpQueryHotpluggableCpus.
  */
-/* default */ class StateController {
+public class QmpQueryHotpluggableCpus extends QmpCommand {
 
-    private final Runner runner;
-
-    /**
-     * The state.
-     */
-    enum State {
-        INITIALIZING, STARTING, RUNNING, TERMINATING
-    }
-
-    private State state = State.INITIALIZING;
+    @SuppressWarnings({ "PMD.FieldNamingConventions",
+        "PMD.VariableNamingConventions" })
+    private static final JsonNode jsonTemplate = parseJson(
+        "{\"execute\":\"query-hotpluggable-cpus\",\"arguments\":{}}");
 
     /**
-     * Instantiates a new state controller.
+     * To Json.
      *
-     * @param runner the runner
+     * @return the json node
      */
-    public StateController(Runner runner) {
-        this.runner = runner;
+    @Override
+    public JsonNode toJson() {
+        return jsonTemplate.deepCopy();
     }
 
     /**
-     * Sets the state.
+     * To string.
      *
-     * @param state the new state
+     * @return the string
      */
-    public void set(State state) {
-        this.state = state;
-    }
-
-    /**
-     * Returns the state.
-     *
-     * @return the state
-     */
-    public State get() {
-        return state;
-    }
-
     @Override
     public String toString() {
-        return "StateController [state=" + state + "]";
+        return "QmpQueryHotpluggableCpus()";
     }
+
 }

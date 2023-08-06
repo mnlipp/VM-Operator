@@ -16,19 +16,38 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.jdrupes.vmoperator.runner.qemu.events;
+package org.jdrupes.vmoperator.runner.qemu.commands;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Signals that the connection to the Qemu monitor socket has been
- * established successfully.
+ * The Class QmpCont.
  */
-public class MonitorReady extends MonitorEvent {
+public class QmpCont extends QmpCommand {
+
+    @SuppressWarnings({ "PMD.FieldNamingConventions",
+        "PMD.VariableNamingConventions" })
+    private static final JsonNode jsonTemplate
+        = parseJson("{ \"execute\": \"cont\" }");
 
     /**
-     * Instantiates a new monitor ready.
+     * To Json.
+     *
+     * @return the json node
      */
-    public MonitorReady() {
-        super(Kind.READY, null);
+    @Override
+    public JsonNode toJson() {
+        return jsonTemplate.deepCopy();
+    }
+
+    /**
+     * To string.
+     *
+     * @return the string
+     */
+    @Override
+    public String toString() {
+        return "QmpCont()";
     }
 
 }

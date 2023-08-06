@@ -40,7 +40,7 @@ import org.jdrupes.vmoperator.util.FsdUtils;
  * The configuration information from the configuration file.
  */
 @SuppressWarnings("PMD.ExcessivePublicCount")
-class Configuration implements Dto {
+public class Configuration implements Dto {
     @SuppressWarnings("PMD.FieldNamingConventions")
     protected final Logger logger = Logger.getLogger(getClass().getName());
 
