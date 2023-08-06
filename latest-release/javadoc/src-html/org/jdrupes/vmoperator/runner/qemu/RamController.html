@@ -31,68 +31,51 @@
 <span class="source-line-no">018</span><span id="line-18"></span>
 <span class="source-line-no">019</span><span id="line-19">package org.jdrupes.vmoperator.runner.qemu;</span>
 <span class="source-line-no">020</span><span id="line-20"></span>
-<span class="source-line-no">021</span><span id="line-21">import com.fasterxml.jackson.databind.JsonNode;</span>
-<span class="source-line-no">022</span><span id="line-22">import com.fasterxml.jackson.databind.ObjectMapper;</span>
-<span class="source-line-no">023</span><span id="line-23">import com.fasterxml.jackson.databind.node.ObjectNode;</span>
-<span class="source-line-no">024</span><span id="line-24">import java.io.IOException;</span>
-<span class="source-line-no">025</span><span id="line-25">import java.math.BigInteger;</span>
-<span class="source-line-no">026</span><span id="line-26">import java.util.logging.Level;</span>
-<span class="source-line-no">027</span><span id="line-27">import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;</span>
-<span class="source-line-no">028</span><span id="line-28">import static org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand.Command.SET_CURRENT_RAM;</span>
-<span class="source-line-no">029</span><span id="line-29">import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommandCompleted;</span>
-<span class="source-line-no">030</span><span id="line-30">import org.jgrapes.core.Channel;</span>
-<span class="source-line-no">031</span><span id="line-31">import org.jgrapes.core.Component;</span>
-<span class="source-line-no">032</span><span id="line-32">import org.jgrapes.core.annotation.Handler;</span>
-<span class="source-line-no">033</span><span id="line-33"></span>
-<span class="source-line-no">034</span><span id="line-34">/**</span>
-<span class="source-line-no">035</span><span id="line-35"> * The Class CpuController.</span>
-<span class="source-line-no">036</span><span id="line-36"> */</span>
-<span class="source-line-no">037</span><span id="line-37">public class RamController extends Component {</span>
-<span class="source-line-no">038</span><span id="line-38"></span>
-<span class="source-line-no">039</span><span id="line-39">    private static ObjectMapper mapper;</span>
-<span class="source-line-no">040</span><span id="line-40">    private static JsonNode setBalloon;</span>
-<span class="source-line-no">041</span><span id="line-41">    private final QemuMonitor monitor;</span>
-<span class="source-line-no">042</span><span id="line-42"></span>
-<span class="source-line-no">043</span><span id="line-43">    /**</span>
-<span class="source-line-no">044</span><span id="line-44">     * Instantiates a new CPU controller.</span>
-<span class="source-line-no">045</span><span id="line-45">     *</span>
-<span class="source-line-no">046</span><span id="line-46">     * @param componentChannel the component channel</span>
-<span class="source-line-no">047</span><span id="line-47">     * @param monitor the monitor</span>
-<span class="source-line-no">048</span><span id="line-48">     */</span>
-<span class="source-line-no">049</span><span id="line-49">    @SuppressWarnings("PMD.AssignmentToNonFinalStatic")</span>
-<span class="source-line-no">050</span><span id="line-50">    public RamController(Channel componentChannel, QemuMonitor monitor) {</span>
-<span class="source-line-no">051</span><span id="line-51">        super(componentChannel);</span>
-<span class="source-line-no">052</span><span id="line-52">        if (mapper == null) {</span>
-<span class="source-line-no">053</span><span id="line-53">            mapper = new ObjectMapper();</span>
-<span class="source-line-no">054</span><span id="line-54">            try {</span>
-<span class="source-line-no">055</span><span id="line-55">                setBalloon = mapper.readValue("{ \"execute\": \"balloon\", "</span>
-<span class="source-line-no">056</span><span id="line-56">                    + "\"arguments\": " + "{ \"value\": 0 } }", JsonNode.class);</span>
-<span class="source-line-no">057</span><span id="line-57">            } catch (IOException e) {</span>
-<span class="source-line-no">058</span><span id="line-58">                logger.log(Level.SEVERE, e,</span>
-<span class="source-line-no">059</span><span id="line-59">                    () -&gt; "Cannot initialize class: " + e.getMessage());</span>
-<span class="source-line-no">060</span><span id="line-60">            }</span>
-<span class="source-line-no">061</span><span id="line-61">        }</span>
-<span class="source-line-no">062</span><span id="line-62">        this.monitor = monitor;</span>
+<span class="source-line-no">021</span><span id="line-21">import java.math.BigInteger;</span>
+<span class="source-line-no">022</span><span id="line-22">import java.util.Optional;</span>
+<span class="source-line-no">023</span><span id="line-23">import org.jdrupes.vmoperator.runner.qemu.commands.QmpSetBalloon;</span>
+<span class="source-line-no">024</span><span id="line-24">import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;</span>
+<span class="source-line-no">025</span><span id="line-25">import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;</span>
+<span class="source-line-no">026</span><span id="line-26">import org.jgrapes.core.Channel;</span>
+<span class="source-line-no">027</span><span id="line-27">import org.jgrapes.core.Component;</span>
+<span class="source-line-no">028</span><span id="line-28">import org.jgrapes.core.annotation.Handler;</span>
+<span class="source-line-no">029</span><span id="line-29"></span>
+<span class="source-line-no">030</span><span id="line-30">/**</span>
+<span class="source-line-no">031</span><span id="line-31"> * The Class RamController.</span>
+<span class="source-line-no">032</span><span id="line-32"> */</span>
+<span class="source-line-no">033</span><span id="line-33">public class RamController extends Component {</span>
+<span class="source-line-no">034</span><span id="line-34"></span>
+<span class="source-line-no">035</span><span id="line-35">    private BigInteger currentRam;</span>
+<span class="source-line-no">036</span><span id="line-36"></span>
+<span class="source-line-no">037</span><span id="line-37">    /**</span>
+<span class="source-line-no">038</span><span id="line-38">     * Instantiates a new CPU controller.</span>
+<span class="source-line-no">039</span><span id="line-39">     *</span>
+<span class="source-line-no">040</span><span id="line-40">     * @param componentChannel the component channel</span>
+<span class="source-line-no">041</span><span id="line-41">     * @param monitor the monitor</span>
+<span class="source-line-no">042</span><span id="line-42">     */</span>
+<span class="source-line-no">043</span><span id="line-43">    @SuppressWarnings("PMD.AssignmentToNonFinalStatic")</span>
+<span class="source-line-no">044</span><span id="line-44">    public RamController(Channel componentChannel) {</span>
+<span class="source-line-no">045</span><span id="line-45">        super(componentChannel);</span>
+<span class="source-line-no">046</span><span id="line-46">    }</span>
+<span class="source-line-no">047</span><span id="line-47"></span>
+<span class="source-line-no">048</span><span id="line-48">    /**</span>
+<span class="source-line-no">049</span><span id="line-49">     * On configure qemu.</span>
+<span class="source-line-no">050</span><span id="line-50">     *</span>
+<span class="source-line-no">051</span><span id="line-51">     * @param event the event</span>
+<span class="source-line-no">052</span><span id="line-52">     */</span>
+<span class="source-line-no">053</span><span id="line-53">    @Handler</span>
+<span class="source-line-no">054</span><span id="line-54">    public void onConfigureQemu(ConfigureQemu event) {</span>
+<span class="source-line-no">055</span><span id="line-55">        Optional.ofNullable(event.configuration().vm.currentRam)</span>
+<span class="source-line-no">056</span><span id="line-56">            .ifPresent(cr -&gt; {</span>
+<span class="source-line-no">057</span><span id="line-57">                if (currentRam != null &amp;&amp; currentRam.equals(cr)) {</span>
+<span class="source-line-no">058</span><span id="line-58">                    return;</span>
+<span class="source-line-no">059</span><span id="line-59">                }</span>
+<span class="source-line-no">060</span><span id="line-60">                currentRam = cr;</span>
+<span class="source-line-no">061</span><span id="line-61">                fire(new MonitorCommand(new QmpSetBalloon(cr)));</span>
+<span class="source-line-no">062</span><span id="line-62">            });</span>
 <span class="source-line-no">063</span><span id="line-63">    }</span>
 <span class="source-line-no">064</span><span id="line-64"></span>
-<span class="source-line-no">065</span><span id="line-65">    /**</span>
-<span class="source-line-no">066</span><span id="line-66">     * On monitor command.</span>
-<span class="source-line-no">067</span><span id="line-67">     *</span>
-<span class="source-line-no">068</span><span id="line-68">     * @param event the event</span>
-<span class="source-line-no">069</span><span id="line-69">     */</span>
-<span class="source-line-no">070</span><span id="line-70">    @Handler</span>
-<span class="source-line-no">071</span><span id="line-71">    public void onMonitorCommand(MonitorCommand event) {</span>
-<span class="source-line-no">072</span><span id="line-72">        if (event.command() != SET_CURRENT_RAM) {</span>
-<span class="source-line-no">073</span><span id="line-73">            return;</span>
-<span class="source-line-no">074</span><span id="line-74">        }</span>
-<span class="source-line-no">075</span><span id="line-75">        var msg = setBalloon.deepCopy();</span>
-<span class="source-line-no">076</span><span id="line-76">        ((ObjectNode) msg.get("arguments")).put("value",</span>
-<span class="source-line-no">077</span><span id="line-77">            (BigInteger) event.arguments()[0]);</span>
-<span class="source-line-no">078</span><span id="line-78">        monitor.sendToMonitor(msg);</span>
-<span class="source-line-no">079</span><span id="line-79">        fire(new MonitorCommandCompleted(event.command(), null));</span>
-<span class="source-line-no">080</span><span id="line-80">    }</span>
-<span class="source-line-no">081</span><span id="line-81"></span>
-<span class="source-line-no">082</span><span id="line-82">}</span>
+<span class="source-line-no">065</span><span id="line-65">}</span>
 
 
 

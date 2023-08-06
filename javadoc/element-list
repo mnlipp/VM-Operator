@@ -1,4 +1,5 @@
 org.jdrupes.vmoperator.manager
 org.jdrupes.vmoperator.runner.qemu
+org.jdrupes.vmoperator.runner.qemu.commands
 org.jdrupes.vmoperator.runner.qemu.events
 org.jdrupes.vmoperator.util
