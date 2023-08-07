@@ -21,7 +21,7 @@ package org.jdrupes.vmoperator.runner.qemu.commands;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * The Class QmpCont.
+ * A {@link QmpCommand} that causes the Qemu process to continue execution.
  */
 public class QmpCont extends QmpCommand {
 
@@ -30,21 +30,11 @@ public class QmpCont extends QmpCommand {
     private static final JsonNode jsonTemplate
         = parseJson("{ \"execute\": \"cont\" }");
 
-    /**
-     * To Json.
-     *
-     * @return the json node
-     */
     @Override
     public JsonNode toJson() {
         return jsonTemplate.deepCopy();
     }
 
-    /**
-     * To string.
-     *
-     * @return the string
-     */
     @Override
     public String toString() {
         return "QmpCont()";

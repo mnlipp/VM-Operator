@@ -24,7 +24,12 @@ import org.jgrapes.core.Channel;
 import org.jgrapes.core.Event;
 
 /**
- * The Class ConfigureQemu.
+ * An {@link Event} that notifies controllers about an updated 
+ * configuration. Controllers should adapt the resource that they
+ * manage to the new configuration. If the adaption cannot be
+ * made by the handler alone, it should call {@link Event#suspendHandling()}
+ * on the event and only {@link Event#resumeHandling() resume handling}
+ * when the adaption has completed.
  */
 public class ConfigureQemu extends Event<Void> {
 
@@ -32,7 +37,7 @@ public class ConfigureQemu extends Event<Void> {
     private final State state;
 
     /**
-     * Instantiates a new configure qemu.
+     * Instantiates a new configuration event.
      *
      * @param channels the channels
      */
@@ -53,7 +58,7 @@ public class ConfigureQemu extends Event<Void> {
     }
 
     /**
-     * Returns the runner's state.
+     * Returns the runner's state when the event was fired.
      *
      * @return the state
      */

@@ -21,7 +21,7 @@ package org.jdrupes.vmoperator.runner.qemu.commands;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * The Class QmpSetBalloon.
+ * A {@link QmpCommand} that send a powerdown to the VM.
  */
 public class QmpPowerdown extends QmpCommand {
 
@@ -30,11 +30,6 @@ public class QmpPowerdown extends QmpCommand {
     private static final JsonNode jsonTemplate
         = parseJson("{ \"execute\": \"system_powerdown\" }");
 
-    /**
-     * To Json.
-     *
-     * @return the json node
-     */
     @Override
     public JsonNode toJson() {
         return jsonTemplate.deepCopy();

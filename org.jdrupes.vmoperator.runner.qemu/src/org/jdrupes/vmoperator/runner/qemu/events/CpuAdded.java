@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCommand;
 
 /**
- * The Class CpuAdded.
+ * A {@link MonitorResult} that indicates that a CPU has been added.
  */
 public class CpuAdded extends MonitorResult {
 

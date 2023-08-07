@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCommand;
 
 /**
- * The Class CpuDeleted.
+ * A {@link MonitorResult} that indicates that a CPU has been deleted.
  */
 public class CpuDeleted extends MonitorResult {
 

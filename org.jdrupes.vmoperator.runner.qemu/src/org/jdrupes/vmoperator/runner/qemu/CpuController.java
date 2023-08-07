@@ -30,7 +30,7 @@ import org.jdrupes.vmoperator.runner.qemu.commands.QmpQueryHotpluggableCpus;
 import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
 import org.jdrupes.vmoperator.runner.qemu.events.CpuAdded;
 import org.jdrupes.vmoperator.runner.qemu.events.CpuDeleted;
-import org.jdrupes.vmoperator.runner.qemu.events.HotpluggableCpuResult;
+import org.jdrupes.vmoperator.runner.qemu.events.HotpluggableCpuStatus;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
@@ -50,7 +50,6 @@ public class CpuController extends Component {
      * Instantiates a new CPU controller.
      *
      * @param componentChannel the component channel
-     * @param monitor the monitor
      */
     public CpuController(Channel componentChannel) {
         super(componentChannel);
@@ -81,7 +80,7 @@ public class CpuController extends Component {
      * @param result the result
      */
     @Handler
-    public void onHotpluggableCpuResult(HotpluggableCpuResult result) {
+    public void onHotpluggableCpuStatus(HotpluggableCpuStatus result) {
         // Sort
         List<ObjectNode> used = new ArrayList<>();
         List<ObjectNode> unused = new ArrayList<>();

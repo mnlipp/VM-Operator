@@ -38,7 +38,6 @@ public class RamController extends Component {
      * Instantiates a new CPU controller.
      *
      * @param componentChannel the component channel
-     * @param monitor the monitor
      */
     @SuppressWarnings("PMD.AssignmentToNonFinalStatic")
     public RamController(Channel componentChannel) {

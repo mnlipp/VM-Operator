@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.jdrupes.vmoperator.runner.qemu.CdMediaController.TrayState;
 
 /**
- * The Class TrayMovedEvent.
+ * Signals a change of tray state of one of the VM's CDROM drives.
  */
 public class TrayMovedEvent extends MonitorEvent {
 

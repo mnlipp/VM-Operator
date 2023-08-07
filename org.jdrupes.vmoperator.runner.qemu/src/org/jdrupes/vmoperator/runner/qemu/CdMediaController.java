@@ -27,7 +27,6 @@ import org.jdrupes.vmoperator.runner.qemu.commands.QmpOpenTray;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpRemoveMedium;
 import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
-import org.jdrupes.vmoperator.runner.qemu.events.MonitorResult;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;
 import org.jdrupes.vmoperator.runner.qemu.events.TrayMovedEvent;
 import org.jgrapes.core.Channel;
@@ -55,7 +54,6 @@ public class CdMediaController extends Component {
      * Instantiates a new cdrom controller.
      *
      * @param componentChannel the component channel
-     * @param monitor the monitor
      */
     @SuppressWarnings("PMD.AssignmentToNonFinalStatic")
     public CdMediaController(Channel componentChannel) {
@@ -118,31 +116,6 @@ public class CdMediaController extends Component {
         if (event.state() == TrayState.OPEN
             && pending.containsKey(event.driveId())) {
             changeMedium(event.driveId());
-        }
-    }
-
-    /**
-     * On monitor result.
-     *
-     * @param result the result
-     */
-    @Handler
-    public void onMonitorResult(MonitorResult result) {
-        if (result.executed() instanceof QmpOpenTray) {
-//            if (!result.executed().equals(changeMedium.get("execute").asText())
-//                    && !result.executed()
-//                        .equals(removeMedium.get("execute").asText())) {
-//                    return;
-//                }
-//                String drive = result.arguments().get("id").asText();
-//                String newFile = pending.get(drive);
-//                if (newFile == null) {
-//                    return;
-//                }
-//                if (result.successful()) {
-//                    fire(new MonitorCommandCompleted(CHANGE_MEDIUM, drive, newFile));
-//                    pending.remove(drive);
-//                }
         }
     }
 }

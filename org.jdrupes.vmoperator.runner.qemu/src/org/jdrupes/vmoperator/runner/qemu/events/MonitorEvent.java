@@ -23,7 +23,8 @@ import java.util.Optional;
 import org.jgrapes.core.Event;
 
 /**
- * Signals the reception of an event from the monitor.
+ * An {@link Event} that signals the reception of a QMP event from 
+ * the Qemu process.
  */
 public class MonitorEvent extends Event<Void> {
 

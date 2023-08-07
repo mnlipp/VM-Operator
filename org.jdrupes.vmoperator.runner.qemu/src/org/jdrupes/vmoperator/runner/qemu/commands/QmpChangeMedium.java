@@ -21,8 +21,9 @@ package org.jdrupes.vmoperator.runner.qemu.commands;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+// TODO: Auto-generated Javadoc
 /**
- * The Class QmpChangeMedium.
+ * A {@link QmpCommand} that triggers a media change in a CDROM drive.
  */
 public class QmpChangeMedium extends QmpCommand {
 
@@ -36,20 +37,16 @@ public class QmpChangeMedium extends QmpCommand {
     private final String file;
 
     /**
-     * Instantiates a new sets the current ram.
+     * Instantiates a new qmp change medium.
      *
      * @param driveId the drive id
+     * @param file the file
      */
     public QmpChangeMedium(String driveId, String file) {
         this.driveId = driveId;
         this.file = file;
     }
 
-    /**
-     * To Json.
-     *
-     * @return the json node
-     */
     @Override
     public JsonNode toJson() {
         var cmd = jsonTemplate.deepCopy();
@@ -58,11 +55,6 @@ public class QmpChangeMedium extends QmpCommand {
         return cmd;
     }
 
-    /**
-     * To string.
-     *
-     * @return the string
-     */
     @Override
     public String toString() {
         return "QmpRemoveMedium(" + driveId + ")";

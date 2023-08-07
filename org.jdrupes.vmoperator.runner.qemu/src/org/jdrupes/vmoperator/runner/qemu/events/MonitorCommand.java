@@ -24,7 +24,8 @@ import org.jgrapes.core.Components;
 import org.jgrapes.core.Event;
 
 /**
- * A command to be executed by the monitor.
+ * An {@link Event} that causes some component to send a QMP
+ * command to the Qemu process.
  */
 public class MonitorCommand extends Event<Void> {
 

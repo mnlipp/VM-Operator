@@ -21,7 +21,7 @@ package org.jdrupes.vmoperator.runner.qemu.commands;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * The Class QmpCapabilities.
+ * A {@link QmpCommand} that configures the Qmp capabilities.
  */
 public class QmpCapabilities extends QmpCommand {
 
@@ -30,21 +30,11 @@ public class QmpCapabilities extends QmpCommand {
     private static final JsonNode jsonTemplate
         = parseJson("{ \"execute\": \"qmp_capabilities\" }");
 
-    /**
-     * To Json.
-     *
-     * @return the json node
-     */
     @Override
     public JsonNode toJson() {
         return jsonTemplate.deepCopy();
     }
 
-    /**
-     * To string.
-     *
-     * @return the string
-     */
     @Override
     public String toString() {
         return "QmpCapabilities()";

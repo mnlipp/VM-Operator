@@ -22,9 +22,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCommand;
 
 /**
- * The Class HotpluggableCpuResult.
+ * A {@link MonitorResult} that reports the hot pluggable CPU status.
  */
-public class HotpluggableCpuResult extends MonitorResult {
+public class HotpluggableCpuStatus extends MonitorResult {
 
     /**
      * Instantiates a new hotpluggable cpu result.
@@ -32,7 +32,7 @@ public class HotpluggableCpuResult extends MonitorResult {
      * @param command the command
      * @param response the response
      */
-    public HotpluggableCpuResult(QmpCommand command, JsonNode response) {
+    public HotpluggableCpuStatus(QmpCommand command, JsonNode response) {
         super(command, response);
     }
 

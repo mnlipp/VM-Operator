@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
- * The Class QmpAddCpu.
+ * A {@link QmpCommand} that plugs a CPU into an unused slot.
  */
 public class QmpAddCpu extends QmpCommand {
 
@@ -41,11 +41,6 @@ public class QmpAddCpu extends QmpCommand {
         this.cpuId = cpuId;
     }
 
-    /**
-     * To Json.
-     *
-     * @return the json node
-     */
     @Override
     public JsonNode toJson() {
         ObjectNode cmd = mapper.createObjectNode();
@@ -58,11 +53,6 @@ public class QmpAddCpu extends QmpCommand {
         return cmd;
     }
 
-    /**
-     * To string.
-     *
-     * @return the string
-     */
     @Override
     public String toString() {
         return "QmpAddCpu(" + unused.get("type") + ", " + cpuId + ")";

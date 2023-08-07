@@ -20,9 +20,8 @@ package org.jdrupes.vmoperator.runner.qemu.commands;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-// TODO: Auto-generated Javadoc
 /**
- * The Class QmpQueryHotpluggableCpus.
+ * A {@link QmpCommand} that queries the hotpluggable CPUs.
  */
 public class QmpQueryHotpluggableCpus extends QmpCommand {
 
@@ -31,21 +30,11 @@ public class QmpQueryHotpluggableCpus extends QmpCommand {
     private static final JsonNode jsonTemplate = parseJson(
         "{\"execute\":\"query-hotpluggable-cpus\",\"arguments\":{}}");
 
-    /**
-     * To Json.
-     *
-     * @return the json node
-     */
     @Override
     public JsonNode toJson() {
         return jsonTemplate.deepCopy();
     }
 
-    /**
-     * To string.
-     *
-     * @return the string
-     */
     @Override
     public String toString() {
         return "QmpQueryHotpluggableCpus()";

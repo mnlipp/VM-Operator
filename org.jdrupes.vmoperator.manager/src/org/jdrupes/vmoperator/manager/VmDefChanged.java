@@ -44,7 +44,8 @@ public class VmDefChanged extends Event<Void> {
      * Instantiates a new VM changed event.
      *
      * @param type the type
-     * @param metadata the metadata
+     * @param crd the crd
+     * @param object the object
      */
     public VmDefChanged(Type type, V1APIResource crd, V1Namespace object) {
         this.type = type;

@@ -22,8 +22,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigInteger;
 
+// TODO: Auto-generated Javadoc
 /**
- * The Class QmpSetBalloon.
+ * A {@link QmpCommand} that sets the balloon value.
  */
 public class QmpSetBalloon extends QmpCommand {
 
@@ -35,17 +36,14 @@ public class QmpSetBalloon extends QmpCommand {
     private final BigInteger size;
 
     /**
-     * Instantiates a new sets the current ram.
+     * Instantiates a new qmp set balloon.
+     *
+     * @param size the size
      */
     public QmpSetBalloon(BigInteger size) {
         this.size = size;
     }
 
-    /**
-     * To Json.
-     *
-     * @return the json node
-     */
     @Override
     public JsonNode toJson() {
         var cmd = jsonTemplate.deepCopy();

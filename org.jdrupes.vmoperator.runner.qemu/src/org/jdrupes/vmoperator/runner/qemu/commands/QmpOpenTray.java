@@ -21,8 +21,9 @@ package org.jdrupes.vmoperator.runner.qemu.commands;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+// TODO: Auto-generated Javadoc
 /**
- * The Class QmpOpenTray.
+ * A {@link QmpCommand} that causes a CDROM drive's tray to be opened.
  */
 public class QmpOpenTray extends QmpCommand {
 
@@ -34,7 +35,7 @@ public class QmpOpenTray extends QmpCommand {
     private final String driveId;
 
     /**
-     * Instantiates a new sets the current ram.
+     * Instantiates a new qmp open tray.
      *
      * @param driveId the drive id
      */
@@ -42,11 +43,6 @@ public class QmpOpenTray extends QmpCommand {
         this.driveId = driveId;
     }
 
-    /**
-     * To Json.
-     *
-     * @return the json node
-     */
     @Override
     public JsonNode toJson() {
         var cmd = jsonTemplate.deepCopy();
@@ -54,11 +50,6 @@ public class QmpOpenTray extends QmpCommand {
         return cmd;
     }
 
-    /**
-     * To string.
-     *
-     * @return the string
-     */
     @Override
     public String toString() {
         return "QmpOpenTray(" + driveId + ")";

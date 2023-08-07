@@ -28,7 +28,7 @@ import org.jgrapes.core.Components;
 import org.jgrapes.core.Event;
 
 /**
- * Signals the reception of a result from the monitor.
+ * Signals the reception of a result from executing a QMP command.
  */
 public class MonitorResult extends Event<Void> {
 
@@ -44,7 +44,7 @@ public class MonitorResult extends Event<Void> {
      */
     public static MonitorResult from(QmpCommand command, JsonNode response) {
         if (command instanceof QmpQueryHotpluggableCpus) {
-            return new HotpluggableCpuResult(command, response);
+            return new HotpluggableCpuStatus(command, response);
         }
         if (command instanceof QmpAddCpu) {
             return new CpuAdded(command, response);
@@ -58,7 +58,7 @@ public class MonitorResult extends Event<Void> {
     /**
      * Instantiates a new monitor result.
      *
-     * @param executed the executed
+     * @param command the command
      * @param response the response
      */
     protected MonitorResult(QmpCommand command, JsonNode response) {

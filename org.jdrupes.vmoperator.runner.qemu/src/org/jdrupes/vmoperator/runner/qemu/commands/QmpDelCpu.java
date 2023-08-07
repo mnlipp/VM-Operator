@@ -21,8 +21,9 @@ package org.jdrupes.vmoperator.runner.qemu.commands;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+// TODO: Auto-generated Javadoc
 /**
- * The Class QmpDelCpu.
+ * A {@link QmpCommand} that removes a CPU with the given id.
  */
 public class QmpDelCpu extends QmpCommand {
 
@@ -34,19 +35,14 @@ public class QmpDelCpu extends QmpCommand {
     private final String cpuId;
 
     /**
-     * Instantiates a new sets the current ram.
+     * Instantiates a new qmp del cpu.
      *
-     * @param size the size
+     * @param cpuId the cpu id
      */
     public QmpDelCpu(String cpuId) {
         this.cpuId = cpuId;
     }
 
-    /**
-     * To Json.
-     *
-     * @return the json node
-     */
     @Override
     public JsonNode toJson() {
         var cmd = jsonTemplate.deepCopy();
@@ -54,11 +50,6 @@ public class QmpDelCpu extends QmpCommand {
         return cmd;
     }
 
-    /**
-     * To string.
-     *
-     * @return the string
-     */
     @Override
     public String toString() {
         return "QmpDelCpu(" + cpuId + ")";

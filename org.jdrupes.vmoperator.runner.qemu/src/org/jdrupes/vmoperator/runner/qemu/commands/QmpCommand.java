@@ -50,7 +50,7 @@ public abstract class QmpCommand {
     }
 
     /**
-     * To json.
+     * Returns the Json to be sent to the Qemu process.
      *
      * @return the json node
      */
