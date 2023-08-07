@@ -115,73 +115,73 @@
 <span class="source-line-no">102</span><span id="line-102">        deleteCpus(used, diff);</span>
 <span class="source-line-no">103</span><span id="line-103">    }</span>
 <span class="source-line-no">104</span><span id="line-104"></span>
-<span class="source-line-no">105</span><span id="line-105">    /**</span>
-<span class="source-line-no">106</span><span id="line-106">     * On cpu added.</span>
-<span class="source-line-no">107</span><span id="line-107">     *</span>
-<span class="source-line-no">108</span><span id="line-108">     * @param event the event</span>
-<span class="source-line-no">109</span><span id="line-109">     */</span>
-<span class="source-line-no">110</span><span id="line-110">    @Handler</span>
-<span class="source-line-no">111</span><span id="line-111">    public void onCpuAdded(CpuAdded event) {</span>
-<span class="source-line-no">112</span><span id="line-112">        currentCpus += 1;</span>
-<span class="source-line-no">113</span><span id="line-113">        checkCpus();</span>
-<span class="source-line-no">114</span><span id="line-114">    }</span>
-<span class="source-line-no">115</span><span id="line-115"></span>
-<span class="source-line-no">116</span><span id="line-116">    /**</span>
-<span class="source-line-no">117</span><span id="line-117">     * On cpu deleted.</span>
-<span class="source-line-no">118</span><span id="line-118">     *</span>
-<span class="source-line-no">119</span><span id="line-119">     * @param event the event</span>
-<span class="source-line-no">120</span><span id="line-120">     */</span>
-<span class="source-line-no">121</span><span id="line-121">    @Handler</span>
-<span class="source-line-no">122</span><span id="line-122">    public void onCpuDeleted(CpuDeleted event) {</span>
-<span class="source-line-no">123</span><span id="line-123">        currentCpus -= 1;</span>
-<span class="source-line-no">124</span><span id="line-124">        checkCpus();</span>
-<span class="source-line-no">125</span><span id="line-125">    }</span>
-<span class="source-line-no">126</span><span id="line-126"></span>
-<span class="source-line-no">127</span><span id="line-127">    private void checkCpus() {</span>
-<span class="source-line-no">128</span><span id="line-128">        if (suspendedConfigure != null &amp;&amp; desiredCpus != null</span>
-<span class="source-line-no">129</span><span id="line-129">            &amp;&amp; currentCpus == desiredCpus.intValue()) {</span>
-<span class="source-line-no">130</span><span id="line-130">            suspendedConfigure.resumeHandling();</span>
-<span class="source-line-no">131</span><span id="line-131">            suspendedConfigure = null;</span>
-<span class="source-line-no">132</span><span id="line-132">        }</span>
-<span class="source-line-no">133</span><span id="line-133">    }</span>
-<span class="source-line-no">134</span><span id="line-134"></span>
-<span class="source-line-no">135</span><span id="line-135">    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")</span>
-<span class="source-line-no">136</span><span id="line-136">    private int addCpus(List&lt;ObjectNode&gt; used, List&lt;ObjectNode&gt; unused,</span>
-<span class="source-line-no">137</span><span id="line-137">            int diff) {</span>
-<span class="source-line-no">138</span><span id="line-138">        Set&lt;String&gt; usedIds = new HashSet&lt;&gt;();</span>
-<span class="source-line-no">139</span><span id="line-139">        for (var cpu : used) {</span>
-<span class="source-line-no">140</span><span id="line-140">            String qomPath = cpu.get("qom-path").asText();</span>
-<span class="source-line-no">141</span><span id="line-141">            if (qomPath.startsWith("/machine/peripheral/cpu-")) {</span>
-<span class="source-line-no">142</span><span id="line-142">                usedIds</span>
-<span class="source-line-no">143</span><span id="line-143">                    .add(qomPath.substring(qomPath.lastIndexOf('/') + 1));</span>
-<span class="source-line-no">144</span><span id="line-144">            }</span>
-<span class="source-line-no">145</span><span id="line-145">        }</span>
-<span class="source-line-no">146</span><span id="line-146">        int nextId = 1;</span>
-<span class="source-line-no">147</span><span id="line-147">        while (diff &lt; 0 &amp;&amp; !unused.isEmpty()) {</span>
-<span class="source-line-no">148</span><span id="line-148">            String id;</span>
-<span class="source-line-no">149</span><span id="line-149">            do {</span>
-<span class="source-line-no">150</span><span id="line-150">                id = "cpu-" + nextId++;</span>
-<span class="source-line-no">151</span><span id="line-151">            } while (usedIds.contains(id));</span>
-<span class="source-line-no">152</span><span id="line-152">            fire(new MonitorCommand(new QmpAddCpu(unused.get(0), id)));</span>
-<span class="source-line-no">153</span><span id="line-153">            unused.remove(0);</span>
-<span class="source-line-no">154</span><span id="line-154">            diff += 1;</span>
-<span class="source-line-no">155</span><span id="line-155">        }</span>
-<span class="source-line-no">156</span><span id="line-156">        return diff;</span>
-<span class="source-line-no">157</span><span id="line-157">    }</span>
-<span class="source-line-no">158</span><span id="line-158"></span>
-<span class="source-line-no">159</span><span id="line-159">    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")</span>
-<span class="source-line-no">160</span><span id="line-160">    private int deleteCpus(List&lt;ObjectNode&gt; used, int diff) {</span>
-<span class="source-line-no">161</span><span id="line-161">        while (diff &gt; 0 &amp;&amp; !used.isEmpty()) {</span>
-<span class="source-line-no">162</span><span id="line-162">            ObjectNode cpu = used.remove(0);</span>
-<span class="source-line-no">163</span><span id="line-163">            String qomPath = cpu.get("qom-path").asText();</span>
-<span class="source-line-no">164</span><span id="line-164">            if (!qomPath.startsWith("/machine/peripheral/cpu-")) {</span>
-<span class="source-line-no">165</span><span id="line-165">                continue;</span>
-<span class="source-line-no">166</span><span id="line-166">            }</span>
-<span class="source-line-no">167</span><span id="line-167">            String id = qomPath.substring(qomPath.lastIndexOf('/') + 1);</span>
-<span class="source-line-no">168</span><span id="line-168">            fire(new MonitorCommand(new QmpDelCpu(id)));</span>
-<span class="source-line-no">169</span><span id="line-169">            diff -= 1;</span>
-<span class="source-line-no">170</span><span id="line-170">        }</span>
-<span class="source-line-no">171</span><span id="line-171">        return diff;</span>
+<span class="source-line-no">105</span><span id="line-105">    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")</span>
+<span class="source-line-no">106</span><span id="line-106">    private int addCpus(List&lt;ObjectNode&gt; used, List&lt;ObjectNode&gt; unused,</span>
+<span class="source-line-no">107</span><span id="line-107">            int diff) {</span>
+<span class="source-line-no">108</span><span id="line-108">        Set&lt;String&gt; usedIds = new HashSet&lt;&gt;();</span>
+<span class="source-line-no">109</span><span id="line-109">        for (var cpu : used) {</span>
+<span class="source-line-no">110</span><span id="line-110">            String qomPath = cpu.get("qom-path").asText();</span>
+<span class="source-line-no">111</span><span id="line-111">            if (qomPath.startsWith("/machine/peripheral/cpu-")) {</span>
+<span class="source-line-no">112</span><span id="line-112">                usedIds</span>
+<span class="source-line-no">113</span><span id="line-113">                    .add(qomPath.substring(qomPath.lastIndexOf('/') + 1));</span>
+<span class="source-line-no">114</span><span id="line-114">            }</span>
+<span class="source-line-no">115</span><span id="line-115">        }</span>
+<span class="source-line-no">116</span><span id="line-116">        int nextId = 1;</span>
+<span class="source-line-no">117</span><span id="line-117">        while (diff &lt; 0 &amp;&amp; !unused.isEmpty()) {</span>
+<span class="source-line-no">118</span><span id="line-118">            String id;</span>
+<span class="source-line-no">119</span><span id="line-119">            do {</span>
+<span class="source-line-no">120</span><span id="line-120">                id = "cpu-" + nextId++;</span>
+<span class="source-line-no">121</span><span id="line-121">            } while (usedIds.contains(id));</span>
+<span class="source-line-no">122</span><span id="line-122">            fire(new MonitorCommand(new QmpAddCpu(unused.get(0), id)));</span>
+<span class="source-line-no">123</span><span id="line-123">            unused.remove(0);</span>
+<span class="source-line-no">124</span><span id="line-124">            diff += 1;</span>
+<span class="source-line-no">125</span><span id="line-125">        }</span>
+<span class="source-line-no">126</span><span id="line-126">        return diff;</span>
+<span class="source-line-no">127</span><span id="line-127">    }</span>
+<span class="source-line-no">128</span><span id="line-128"></span>
+<span class="source-line-no">129</span><span id="line-129">    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")</span>
+<span class="source-line-no">130</span><span id="line-130">    private int deleteCpus(List&lt;ObjectNode&gt; used, int diff) {</span>
+<span class="source-line-no">131</span><span id="line-131">        while (diff &gt; 0 &amp;&amp; !used.isEmpty()) {</span>
+<span class="source-line-no">132</span><span id="line-132">            ObjectNode cpu = used.remove(0);</span>
+<span class="source-line-no">133</span><span id="line-133">            String qomPath = cpu.get("qom-path").asText();</span>
+<span class="source-line-no">134</span><span id="line-134">            if (!qomPath.startsWith("/machine/peripheral/cpu-")) {</span>
+<span class="source-line-no">135</span><span id="line-135">                continue;</span>
+<span class="source-line-no">136</span><span id="line-136">            }</span>
+<span class="source-line-no">137</span><span id="line-137">            String id = qomPath.substring(qomPath.lastIndexOf('/') + 1);</span>
+<span class="source-line-no">138</span><span id="line-138">            fire(new MonitorCommand(new QmpDelCpu(id)));</span>
+<span class="source-line-no">139</span><span id="line-139">            diff -= 1;</span>
+<span class="source-line-no">140</span><span id="line-140">        }</span>
+<span class="source-line-no">141</span><span id="line-141">        return diff;</span>
+<span class="source-line-no">142</span><span id="line-142">    }</span>
+<span class="source-line-no">143</span><span id="line-143"></span>
+<span class="source-line-no">144</span><span id="line-144">    /**</span>
+<span class="source-line-no">145</span><span id="line-145">     * On cpu added.</span>
+<span class="source-line-no">146</span><span id="line-146">     *</span>
+<span class="source-line-no">147</span><span id="line-147">     * @param event the event</span>
+<span class="source-line-no">148</span><span id="line-148">     */</span>
+<span class="source-line-no">149</span><span id="line-149">    @Handler</span>
+<span class="source-line-no">150</span><span id="line-150">    public void onCpuAdded(CpuAdded event) {</span>
+<span class="source-line-no">151</span><span id="line-151">        currentCpus += 1;</span>
+<span class="source-line-no">152</span><span id="line-152">        checkCpus();</span>
+<span class="source-line-no">153</span><span id="line-153">    }</span>
+<span class="source-line-no">154</span><span id="line-154"></span>
+<span class="source-line-no">155</span><span id="line-155">    /**</span>
+<span class="source-line-no">156</span><span id="line-156">     * On cpu deleted.</span>
+<span class="source-line-no">157</span><span id="line-157">     *</span>
+<span class="source-line-no">158</span><span id="line-158">     * @param event the event</span>
+<span class="source-line-no">159</span><span id="line-159">     */</span>
+<span class="source-line-no">160</span><span id="line-160">    @Handler</span>
+<span class="source-line-no">161</span><span id="line-161">    public void onCpuDeleted(CpuDeleted event) {</span>
+<span class="source-line-no">162</span><span id="line-162">        currentCpus -= 1;</span>
+<span class="source-line-no">163</span><span id="line-163">        checkCpus();</span>
+<span class="source-line-no">164</span><span id="line-164">    }</span>
+<span class="source-line-no">165</span><span id="line-165"></span>
+<span class="source-line-no">166</span><span id="line-166">    private void checkCpus() {</span>
+<span class="source-line-no">167</span><span id="line-167">        if (suspendedConfigure != null &amp;&amp; desiredCpus != null</span>
+<span class="source-line-no">168</span><span id="line-168">            &amp;&amp; currentCpus == desiredCpus.intValue()) {</span>
+<span class="source-line-no">169</span><span id="line-169">            suspendedConfigure.resumeHandling();</span>
+<span class="source-line-no">170</span><span id="line-170">            suspendedConfigure = null;</span>
+<span class="source-line-no">171</span><span id="line-171">        }</span>
 <span class="source-line-no">172</span><span id="line-172">    }</span>
 <span class="source-line-no">173</span><span id="line-173">}</span>
 
