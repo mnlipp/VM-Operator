@@ -167,11 +167,11 @@ spec:
                         type: object
                         oneOf:
                         - properties:
-                            volumeClaimTemplate:
+                            volumeClaimTemplate: {}
                           required:
                           - volumeClaimTemplate
                         - properties:
-                            cdrom:
+                            cdrom: {}
                           required:
                           - cdrom
                         properties:
