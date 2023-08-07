@@ -57,7 +57,7 @@ public class QmpChangeMedium extends QmpCommand {
 
     @Override
     public String toString() {
-        return "QmpRemoveMedium(" + driveId + ")";
+        return "QmpChangeMedium(" + driveId + ", " + file + ")";
     }
 
 }
