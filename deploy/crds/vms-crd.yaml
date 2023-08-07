@@ -39,8 +39,8 @@ spec:
                   description: Defines the VM.
                   oneOf:
                   - properties:
-                      maximumCpus:
-                      cpuTopology:
+                      maximumCpus: {}
+                      cpuTopology: {}
                   properties:
                     state:
                       description: >-
@@ -131,8 +131,8 @@ spec:
                         type: object
                         oneOf:
                         - properties:
-                            tap:
-                            user:
+                            tap: {}
+                            user: {}
                         properties:
                           tap:
                             type: object
@@ -166,13 +166,9 @@ spec:
                       items:
                         type: object
                         oneOf:
-                        - properties:
-                            volumeClaimTemplate:
-                          required:
+                        - required:
                           - volumeClaimTemplate
-                        - properties:
-                            cdrom: {}
-                          required:
+                        - required:
                           - cdrom
                         properties:
                           volumeClaimTemplate:
