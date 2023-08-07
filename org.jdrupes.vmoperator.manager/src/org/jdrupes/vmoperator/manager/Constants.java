@@ -41,4 +41,7 @@ public class Constants {
     /** The Constant STATE_STOPPED. */
     public static final String STATE_STOPPED = "Stopped";
 
+    /** The Constant IMAGE_REPO_PATH. */
+    public static final String IMAGE_REPO_PATH
+        = "/var/local/vmop-image-repository";
 }

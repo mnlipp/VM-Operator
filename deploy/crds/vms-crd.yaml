@@ -431,13 +431,13 @@ spec:
                                     type: string
                                 type: object
                             type: object
-                          cdromImage:
+                          cdrom:
                             type: object
                             properties:
-                              path:
+                              image:
                                 type: string
                             required:
-                            - path
+                            - image
                           bootindex:
                             type: integer
                         oneOf:
@@ -446,9 +446,9 @@ spec:
                           required:
                           - volumeClaimTemplate
                         - properties:
-                            cdromImage:
+                            cdrom:
                           required:
-                          - cdromImage
+                          - cdrom
                       default: []
                     display:
                       type: object

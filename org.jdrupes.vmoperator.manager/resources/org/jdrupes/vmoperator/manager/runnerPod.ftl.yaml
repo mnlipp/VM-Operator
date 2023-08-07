@@ -32,7 +32,7 @@ spec:
     - name: vm-data
       mountPath: /var/local/vm-data
     - name: vmop-image-repository
-      mountPath: /var/local/vmop-image-repository
+      mountPath: ${ constants.IMAGE_REPO_PATH }
     volumeDevices:
     <#assign diskCounter = 0/>
     <#list cr.spec.vm.disks.asList() as disk>

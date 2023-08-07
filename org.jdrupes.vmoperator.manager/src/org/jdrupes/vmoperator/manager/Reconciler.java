@@ -18,6 +18,8 @@
 
 package org.jdrupes.vmoperator.manager;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import freemarker.core.ParseException;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapperBuilder;
@@ -108,7 +110,7 @@ public class Reconciler extends Component {
 
             // Prepare Freemarker model
             model = new HashMap<>();
-            model.put("cr", vmDef.getRaw());
+            model.put("cr", patchCr(vmDef.getRaw().deepCopy()));
             model.put("constants",
                 (TemplateHashModel) new DefaultObjectWrapperBuilder(
                     Configuration.VERSION_2_3_32)
@@ -128,6 +130,24 @@ public class Reconciler extends Component {
             cmReconciler.reconcile(event, model, channel);
             disksReconciler.deleteDisks(event, channel);
         }
+    }
+
+    private Object patchCr(JsonObject vmDef) {
+        // Adjust cdromImage path
+        var disks
+            = GsonPtr.to(vmDef).to("spec", "vm", "disks").get(JsonArray.class);
+        for (var disk : disks) {
+            var cdrom = (JsonObject) ((JsonObject) disk).get("cdrom");
+            if (cdrom == null) {
+                continue;
+            }
+            String image = cdrom.get("image").getAsString();
+            if (!image.contains("/")) {
+                cdrom.addProperty("image",
+                    Constants.IMAGE_REPO_PATH + "/" + image);
+            }
+        }
+        return vmDef;
     }
 
 }

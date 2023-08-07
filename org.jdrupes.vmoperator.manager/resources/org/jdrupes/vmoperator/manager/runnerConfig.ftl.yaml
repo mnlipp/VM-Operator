@@ -151,9 +151,9 @@ data:
           </#if>
           <#assign drvCounter = drvCounter + 1/>
         </#if>
-        <#if disk.cdromImage??> 
+        <#if disk.cdrom??> 
         - type: ide-cd
-          file: "${ disk.cdromImage.path.asString }"
+          file: "${ disk.cdrom.image.asString }"
           <#if disk.bootindex??>
           bootindex: ${ disk.bootindex.asInt?c }
           </#if>
