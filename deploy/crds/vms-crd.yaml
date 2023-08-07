@@ -37,6 +37,10 @@ spec:
                 vm:
                   type: object
                   description: Defines the VM.
+                  oneOf:
+                  - properties:
+                      maximumCpus: {}
+                      cpuTopology: {}
                   properties:
                     state:
                       description: >-
@@ -52,9 +56,6 @@ spec:
                         depend on it) it is recommaned to specify it 
                         explicitly or to carefully backup the data 
                         directory.
-                      type: string
-                    host:
-                      description: The host to run this vm on.
                       type: string
                     useTpm:
                       description: Whether to provide a software TPM.
@@ -128,6 +129,10 @@ spec:
                         description: >-
                           Supported types are "tap" and "user" (for debugging).
                         type: object
+                        oneOf:
+                        - properties:
+                            tap: {}
+                            user: {}
                         properties:
                           tap:
                             type: object
@@ -151,10 +156,6 @@ spec:
                                 default: "virtio-net"
                               net:
                                 type: string
-                        oneOf:
-                        - properties:
-                            tap:
-                            user:
                       default: []
                     disks:
                       description: >-
@@ -164,6 +165,15 @@ spec:
                       type: array
                       items:
                         type: object
+                        oneOf:
+                        - properties:
+                            volumeClaimTemplate:
+                          required:
+                          - volumeClaimTemplate
+                        - properties:
+                            cdrom:
+                          required:
+                          - cdrom
                         properties:
                           volumeClaimTemplate:
                             description: >-
@@ -440,15 +450,6 @@ spec:
                             - image
                           bootindex:
                             type: integer
-                        oneOf:
-                        - properties:
-                            volumeClaimTemplate:
-                          required:
-                          - volumeClaimTemplate
-                        - properties:
-                            cdrom:
-                          required:
-                          - cdrom
                       default: []
                     display:
                       type: object
@@ -467,10 +468,6 @@ spec:
                               type: integer
                               default: 2
                       default: { spice: { port: 5900, usbRedirects: 2 } }
-                  oneOf:
-                  - properties:
-                      maximumCpus:
-                      cpuTopology:
               required:
               - vm              
             status:
