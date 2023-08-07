@@ -42,6 +42,7 @@ import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.Components;
 import org.jgrapes.core.Components.Timer;
+import org.jgrapes.core.EventPipeline;
 import org.jgrapes.core.annotation.Handler;
 import org.jgrapes.core.events.Start;
 import org.jgrapes.core.events.Stop;
@@ -69,7 +70,7 @@ public class QemuMonitor extends Component {
 
     private static ObjectMapper mapper = new ObjectMapper();
 
-    @SuppressWarnings("PMD.UseConcurrentHashMap")
+    private EventPipeline rep;
     private Path socketPath;
     private int powerdownTimeout;
     private SocketIOChannel monitorChannel;
@@ -113,6 +114,7 @@ public class QemuMonitor extends Component {
      */
     @Handler
     public void onStart(Start event) throws IOException {
+        rep = event.associated(EventPipeline.class).get();
         if (socketPath == null) {
             return;
         }
@@ -175,7 +177,7 @@ public class QemuMonitor extends Component {
     @Handler
     public void onConnectError(ConnectError event, SocketIOChannel channel) {
         event.event().associated(QemuMonitor.class).ifPresent(qm -> {
-            fire(new Stop());
+            rep.fire(new Stop());
         });
     }
 
@@ -201,7 +203,7 @@ public class QemuMonitor extends Component {
         try {
             var response = mapper.readValue(line, ObjectNode.class);
             if (response.has("QMP")) {
-                fire(new MonitorReady());
+                rep.fire(new MonitorReady());
                 return;
             }
             if (response.has("return") || response.has("error")) {
@@ -209,11 +211,11 @@ public class QemuMonitor extends Component {
                 logger.fine(
                     () -> String.format("(Previous \"monitor(in)\" is result "
                         + "from executing %s)", executed));
-                fire(MonitorResult.from(executed, response));
+                rep.fire(MonitorResult.from(executed, response));
                 return;
             }
             if (response.has("event")) {
-                MonitorEvent.from(response).ifPresent(this::fire);
+                MonitorEvent.from(response).ifPresent(rep::fire);
             }
         } catch (JsonProcessingException e) {
             throw new IOException(e);

@@ -60,6 +60,7 @@ import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
 import org.jdrupes.vmoperator.util.FsdUtils;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.Components;
+import org.jgrapes.core.EventPipeline;
 import org.jgrapes.core.TypedIdKey;
 import org.jgrapes.core.annotation.Handler;
 import org.jgrapes.core.events.Start;
@@ -167,6 +168,7 @@ public class Runner extends Component {
     private static final String SAVED_TEMPLATE = "VM.ftl.yaml";
     private static final String FW_VARS = "fw-vars.fd";
 
+    private EventPipeline rep;
     private final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
     private final JsonNode defaults;
     @SuppressWarnings("PMD.UseConcurrentHashMap")
@@ -236,7 +238,7 @@ public class Runner extends Component {
             }
             logger.fine(() -> "Updating configuration");
             var newConf = yamlMapper.convertValue(c, Configuration.class);
-            fire(new ConfigureQemu(newConf, state));
+            rep.fire(new ConfigureQemu(newConf, state));
         });
     }
 
@@ -338,8 +340,10 @@ public class Runner extends Component {
      *
      * @param event the event
      */
-    @Handler
+    @Handler(priority = 100)
     public void onStart(Start event) {
+        rep = newEventPipeline();
+        event.setAssociated(EventPipeline.class, rep);
         try {
             if (config == null) {
                 // Missing configuration, fail
@@ -499,11 +503,11 @@ public class Runner extends Component {
                 logger.severe(() -> "Process " + procDef.name
                     + " has exited with value " + event.exitValue()
                     + " during startup.");
-                fire(new Stop());
+                rep.fire(new Stop());
                 return;
             }
             if (procDef.equals(qemuDefinition) && state == State.RUNNING) {
-                fire(new Stop());
+                rep.fire(new Stop());
             }
             logger.info(() -> "Process " + procDef.name
                 + " has exited with value " + event.exitValue());
