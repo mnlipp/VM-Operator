@@ -102,36 +102,6 @@ public class CpuController extends Component {
         deleteCpus(used, diff);
     }
 
-    /**
-     * On cpu added.
-     *
-     * @param event the event
-     */
-    @Handler
-    public void onCpuAdded(CpuAdded event) {
-        currentCpus += 1;
-        checkCpus();
-    }
-
-    /**
-     * On cpu deleted.
-     *
-     * @param event the event
-     */
-    @Handler
-    public void onCpuDeleted(CpuDeleted event) {
-        currentCpus -= 1;
-        checkCpus();
-    }
-
-    private void checkCpus() {
-        if (suspendedConfigure != null && desiredCpus != null
-            && currentCpus == desiredCpus.intValue()) {
-            suspendedConfigure.resumeHandling();
-            suspendedConfigure = null;
-        }
-    }
-
     @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     private int addCpus(List<ObjectNode> used, List<ObjectNode> unused,
             int diff) {
@@ -169,5 +139,35 @@ public class CpuController extends Component {
             diff -= 1;
         }
         return diff;
+    }
+
+    /**
+     * On cpu added.
+     *
+     * @param event the event
+     */
+    @Handler
+    public void onCpuAdded(CpuAdded event) {
+        currentCpus += 1;
+        checkCpus();
+    }
+
+    /**
+     * On cpu deleted.
+     *
+     * @param event the event
+     */
+    @Handler
+    public void onCpuDeleted(CpuDeleted event) {
+        currentCpus -= 1;
+        checkCpus();
+    }
+
+    private void checkCpus() {
+        if (suspendedConfigure != null && desiredCpus != null
+            && currentCpus == desiredCpus.intValue()) {
+            suspendedConfigure.resumeHandling();
+            suspendedConfigure = null;
+        }
     }
 }
