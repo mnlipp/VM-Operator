@@ -34,50 +34,41 @@
 <span class="source-line-no">021</span><span id="line-21">import com.fasterxml.jackson.databind.JsonNode;</span>
 <span class="source-line-no">022</span><span id="line-22">import com.fasterxml.jackson.databind.node.ObjectNode;</span>
 <span class="source-line-no">023</span><span id="line-23"></span>
-<span class="source-line-no">024</span><span id="line-24">/**</span>
-<span class="source-line-no">025</span><span id="line-25"> * The Class QmpOpenTray.</span>
-<span class="source-line-no">026</span><span id="line-26"> */</span>
-<span class="source-line-no">027</span><span id="line-27">public class QmpOpenTray extends QmpCommand {</span>
-<span class="source-line-no">028</span><span id="line-28"></span>
-<span class="source-line-no">029</span><span id="line-29">    @SuppressWarnings({ "PMD.FieldNamingConventions",</span>
-<span class="source-line-no">030</span><span id="line-30">        "PMD.VariableNamingConventions" })</span>
-<span class="source-line-no">031</span><span id="line-31">    private static final JsonNode jsonTemplate</span>
-<span class="source-line-no">032</span><span id="line-32">        = parseJson("{ \"execute\": \"blockdev-open-tray\",\"arguments\": {"</span>
-<span class="source-line-no">033</span><span id="line-33">            + "\"id\": \"\" } }");</span>
-<span class="source-line-no">034</span><span id="line-34">    private final String driveId;</span>
-<span class="source-line-no">035</span><span id="line-35"></span>
-<span class="source-line-no">036</span><span id="line-36">    /**</span>
-<span class="source-line-no">037</span><span id="line-37">     * Instantiates a new sets the current ram.</span>
-<span class="source-line-no">038</span><span id="line-38">     *</span>
-<span class="source-line-no">039</span><span id="line-39">     * @param driveId the drive id</span>
-<span class="source-line-no">040</span><span id="line-40">     */</span>
-<span class="source-line-no">041</span><span id="line-41">    public QmpOpenTray(String driveId) {</span>
-<span class="source-line-no">042</span><span id="line-42">        this.driveId = driveId;</span>
-<span class="source-line-no">043</span><span id="line-43">    }</span>
-<span class="source-line-no">044</span><span id="line-44"></span>
-<span class="source-line-no">045</span><span id="line-45">    /**</span>
-<span class="source-line-no">046</span><span id="line-46">     * To Json.</span>
-<span class="source-line-no">047</span><span id="line-47">     *</span>
-<span class="source-line-no">048</span><span id="line-48">     * @return the json node</span>
-<span class="source-line-no">049</span><span id="line-49">     */</span>
-<span class="source-line-no">050</span><span id="line-50">    @Override</span>
-<span class="source-line-no">051</span><span id="line-51">    public JsonNode toJson() {</span>
-<span class="source-line-no">052</span><span id="line-52">        var cmd = jsonTemplate.deepCopy();</span>
-<span class="source-line-no">053</span><span id="line-53">        ((ObjectNode) cmd.get("arguments")).put("id", driveId);</span>
-<span class="source-line-no">054</span><span id="line-54">        return cmd;</span>
-<span class="source-line-no">055</span><span id="line-55">    }</span>
-<span class="source-line-no">056</span><span id="line-56"></span>
-<span class="source-line-no">057</span><span id="line-57">    /**</span>
-<span class="source-line-no">058</span><span id="line-58">     * To string.</span>
-<span class="source-line-no">059</span><span id="line-59">     *</span>
-<span class="source-line-no">060</span><span id="line-60">     * @return the string</span>
-<span class="source-line-no">061</span><span id="line-61">     */</span>
-<span class="source-line-no">062</span><span id="line-62">    @Override</span>
-<span class="source-line-no">063</span><span id="line-63">    public String toString() {</span>
-<span class="source-line-no">064</span><span id="line-64">        return "QmpOpenTray(" + driveId + ")";</span>
-<span class="source-line-no">065</span><span id="line-65">    }</span>
-<span class="source-line-no">066</span><span id="line-66"></span>
-<span class="source-line-no">067</span><span id="line-67">}</span>
+<span class="source-line-no">024</span><span id="line-24">// TODO: Auto-generated Javadoc</span>
+<span class="source-line-no">025</span><span id="line-25">/**</span>
+<span class="source-line-no">026</span><span id="line-26"> * A {@link QmpCommand} that causes a CDROM drive's tray to be opened.</span>
+<span class="source-line-no">027</span><span id="line-27"> */</span>
+<span class="source-line-no">028</span><span id="line-28">public class QmpOpenTray extends QmpCommand {</span>
+<span class="source-line-no">029</span><span id="line-29"></span>
+<span class="source-line-no">030</span><span id="line-30">    @SuppressWarnings({ "PMD.FieldNamingConventions",</span>
+<span class="source-line-no">031</span><span id="line-31">        "PMD.VariableNamingConventions" })</span>
+<span class="source-line-no">032</span><span id="line-32">    private static final JsonNode jsonTemplate</span>
+<span class="source-line-no">033</span><span id="line-33">        = parseJson("{ \"execute\": \"blockdev-open-tray\",\"arguments\": {"</span>
+<span class="source-line-no">034</span><span id="line-34">            + "\"id\": \"\" } }");</span>
+<span class="source-line-no">035</span><span id="line-35">    private final String driveId;</span>
+<span class="source-line-no">036</span><span id="line-36"></span>
+<span class="source-line-no">037</span><span id="line-37">    /**</span>
+<span class="source-line-no">038</span><span id="line-38">     * Instantiates a new qmp open tray.</span>
+<span class="source-line-no">039</span><span id="line-39">     *</span>
+<span class="source-line-no">040</span><span id="line-40">     * @param driveId the drive id</span>
+<span class="source-line-no">041</span><span id="line-41">     */</span>
+<span class="source-line-no">042</span><span id="line-42">    public QmpOpenTray(String driveId) {</span>
+<span class="source-line-no">043</span><span id="line-43">        this.driveId = driveId;</span>
+<span class="source-line-no">044</span><span id="line-44">    }</span>
+<span class="source-line-no">045</span><span id="line-45"></span>
+<span class="source-line-no">046</span><span id="line-46">    @Override</span>
+<span class="source-line-no">047</span><span id="line-47">    public JsonNode toJson() {</span>
+<span class="source-line-no">048</span><span id="line-48">        var cmd = jsonTemplate.deepCopy();</span>
+<span class="source-line-no">049</span><span id="line-49">        ((ObjectNode) cmd.get("arguments")).put("id", driveId);</span>
+<span class="source-line-no">050</span><span id="line-50">        return cmd;</span>
+<span class="source-line-no">051</span><span id="line-51">    }</span>
+<span class="source-line-no">052</span><span id="line-52"></span>
+<span class="source-line-no">053</span><span id="line-53">    @Override</span>
+<span class="source-line-no">054</span><span id="line-54">    public String toString() {</span>
+<span class="source-line-no">055</span><span id="line-55">        return "QmpOpenTray(" + driveId + ")";</span>
+<span class="source-line-no">056</span><span id="line-56">    }</span>
+<span class="source-line-no">057</span><span id="line-57"></span>
+<span class="source-line-no">058</span><span id="line-58">}</span>
 
 
 

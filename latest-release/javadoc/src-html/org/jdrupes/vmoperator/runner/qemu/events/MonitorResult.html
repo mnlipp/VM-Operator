@@ -41,7 +41,7 @@
 <span class="source-line-no">028</span><span id="line-28">import org.jgrapes.core.Event;</span>
 <span class="source-line-no">029</span><span id="line-29"></span>
 <span class="source-line-no">030</span><span id="line-30">/**</span>
-<span class="source-line-no">031</span><span id="line-31"> * Signals the reception of a result from the monitor.</span>
+<span class="source-line-no">031</span><span id="line-31"> * Signals the reception of a result from executing a QMP command.</span>
 <span class="source-line-no">032</span><span id="line-32"> */</span>
 <span class="source-line-no">033</span><span id="line-33">public class MonitorResult extends Event&lt;Void&gt; {</span>
 <span class="source-line-no">034</span><span id="line-34"></span>
@@ -57,7 +57,7 @@
 <span class="source-line-no">044</span><span id="line-44">     */</span>
 <span class="source-line-no">045</span><span id="line-45">    public static MonitorResult from(QmpCommand command, JsonNode response) {</span>
 <span class="source-line-no">046</span><span id="line-46">        if (command instanceof QmpQueryHotpluggableCpus) {</span>
-<span class="source-line-no">047</span><span id="line-47">            return new HotpluggableCpuResult(command, response);</span>
+<span class="source-line-no">047</span><span id="line-47">            return new HotpluggableCpuStatus(command, response);</span>
 <span class="source-line-no">048</span><span id="line-48">        }</span>
 <span class="source-line-no">049</span><span id="line-49">        if (command instanceof QmpAddCpu) {</span>
 <span class="source-line-no">050</span><span id="line-50">            return new CpuAdded(command, response);</span>
@@ -71,7 +71,7 @@
 <span class="source-line-no">058</span><span id="line-58">    /**</span>
 <span class="source-line-no">059</span><span id="line-59">     * Instantiates a new monitor result.</span>
 <span class="source-line-no">060</span><span id="line-60">     *</span>
-<span class="source-line-no">061</span><span id="line-61">     * @param executed the executed</span>
+<span class="source-line-no">061</span><span id="line-61">     * @param command the command</span>
 <span class="source-line-no">062</span><span id="line-62">     * @param response the response</span>
 <span class="source-line-no">063</span><span id="line-63">     */</span>
 <span class="source-line-no">064</span><span id="line-64">    protected MonitorResult(QmpCommand command, JsonNode response) {</span>
