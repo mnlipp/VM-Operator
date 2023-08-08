@@ -48,12 +48,12 @@
 <span class="source-line-no">035</span><span id="line-35">import org.jdrupes.vmoperator.runner.qemu.commands.QmpCapabilities;</span>
 <span class="source-line-no">036</span><span id="line-36">import org.jdrupes.vmoperator.runner.qemu.commands.QmpCommand;</span>
 <span class="source-line-no">037</span><span id="line-37">import org.jdrupes.vmoperator.runner.qemu.commands.QmpPowerdown;</span>
-<span class="source-line-no">038</span><span id="line-38">import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;</span>
-<span class="source-line-no">039</span><span id="line-39">import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;</span>
-<span class="source-line-no">040</span><span id="line-40">import org.jdrupes.vmoperator.runner.qemu.events.MonitorEvent;</span>
-<span class="source-line-no">041</span><span id="line-41">import org.jdrupes.vmoperator.runner.qemu.events.MonitorReady;</span>
-<span class="source-line-no">042</span><span id="line-42">import org.jdrupes.vmoperator.runner.qemu.events.MonitorResult;</span>
-<span class="source-line-no">043</span><span id="line-43">import org.jdrupes.vmoperator.runner.qemu.events.PowerdownEvent;</span>
+<span class="source-line-no">038</span><span id="line-38">import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;</span>
+<span class="source-line-no">039</span><span id="line-39">import org.jdrupes.vmoperator.runner.qemu.events.MonitorEvent;</span>
+<span class="source-line-no">040</span><span id="line-40">import org.jdrupes.vmoperator.runner.qemu.events.MonitorReady;</span>
+<span class="source-line-no">041</span><span id="line-41">import org.jdrupes.vmoperator.runner.qemu.events.MonitorResult;</span>
+<span class="source-line-no">042</span><span id="line-42">import org.jdrupes.vmoperator.runner.qemu.events.PowerdownEvent;</span>
+<span class="source-line-no">043</span><span id="line-43">import org.jdrupes.vmoperator.runner.qemu.events.RunnerConfigurationUpdate;</span>
 <span class="source-line-no">044</span><span id="line-44">import org.jgrapes.core.Channel;</span>
 <span class="source-line-no">045</span><span id="line-45">import org.jgrapes.core.Component;</span>
 <span class="source-line-no">046</span><span id="line-46">import org.jgrapes.core.Components;</span>
@@ -356,7 +356,7 @@
 <span class="source-line-no">343</span><span id="line-343">     * @param event the event</span>
 <span class="source-line-no">344</span><span id="line-344">     */</span>
 <span class="source-line-no">345</span><span id="line-345">    @Handler</span>
-<span class="source-line-no">346</span><span id="line-346">    public void onConfigureQemu(ConfigureQemu event) {</span>
+<span class="source-line-no">346</span><span id="line-346">    public void onConfigureQemu(RunnerConfigurationUpdate event) {</span>
 <span class="source-line-no">347</span><span id="line-347">        int newTimeout = event.configuration().vm.powerdownTimeout;</span>
 <span class="source-line-no">348</span><span id="line-348">        if (powerdownTimeout != newTimeout) {</span>
 <span class="source-line-no">349</span><span id="line-349">            powerdownTimeout = newTimeout;</span>
