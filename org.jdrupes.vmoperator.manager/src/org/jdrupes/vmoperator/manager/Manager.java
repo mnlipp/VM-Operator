@@ -45,9 +45,9 @@ import org.jgrapes.util.events.WatchFile;
 /**
  * The application class.
  */
-public class Operator extends Component {
+public class Manager extends Component {
 
-    private static Operator app;
+    private static Manager app;
 
     /**
      * Instantiates a new manager.
@@ -55,7 +55,7 @@ public class Operator extends Component {
      *
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    public Operator(CommandLine cmdLine) throws IOException {
+    public Manager(CommandLine cmdLine) throws IOException {
         // Prepare component tree
         attach(new NioDispatcher());
         attach(new FileSystemWatcher(channel()));
@@ -92,7 +92,7 @@ public class Operator extends Component {
                 props = Files.newInputStream(path.get());
             } else {
                 props
-                    = Operator.class.getResourceAsStream("logging.properties");
+                    = Manager.class.getResourceAsStream("logging.properties");
             }
             LogManager.getLogManager().readConfiguration(props);
         } catch (IOException e) {
@@ -109,9 +109,9 @@ public class Operator extends Component {
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     public static void main(String[] args) {
         try {
-            Logger.getLogger(Operator.class.getName())
+            Logger.getLogger(Manager.class.getName())
                 .fine(() -> "Version: "
-                    + Operator.class.getPackage().getImplementationVersion());
+                    + Manager.class.getPackage().getImplementationVersion());
             CommandLineParser parser = new DefaultParser();
             // parse the command line arguments
             final Options options = new Options();
@@ -119,7 +119,7 @@ public class Operator extends Component {
                 + "tion file (defaults to /etc/opt/vmoperator/config.yaml)."));
             CommandLine cmd = parser.parse(options, args);
             // The Operator is the root component
-            app = new Operator(cmd);
+            app = new Manager(cmd);
 
             // Prepare Stop
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -135,7 +135,7 @@ public class Operator extends Component {
             Components.start(app);
         } catch (IOException | InterruptedException
                 | org.apache.commons.cli.ParseException e) {
-            Logger.getLogger(Operator.class.getName()).log(Level.SEVERE, e,
+            Logger.getLogger(Manager.class.getName()).log(Level.SEVERE, e,
                 () -> "Failed to start runner: " + e.getMessage());
         }
     }
