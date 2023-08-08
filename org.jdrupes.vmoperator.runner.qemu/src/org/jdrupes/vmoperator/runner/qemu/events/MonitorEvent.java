@@ -32,7 +32,7 @@ public class MonitorEvent extends Event<Void> {
      * The kind of monitor event.
      */
     public enum Kind {
-        READY, DEVICE_TRAY_MOVED
+        READY, POWERDOWN, DEVICE_TRAY_MOVED
     }
 
     private final Kind kind;
@@ -50,6 +50,8 @@ public class MonitorEvent extends Event<Void> {
             var kind
                 = MonitorEvent.Kind.valueOf(response.get("event").asText());
             switch (kind) {
+            case POWERDOWN:
+                return Optional.of(new PowerdownEvent(kind, null));
             case DEVICE_TRAY_MOVED:
                 return Optional
                     .of(new TrayMovedEvent(kind, response.get("data")));

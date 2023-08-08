@@ -16,28 +16,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.jdrupes.vmoperator.runner.qemu.commands;
+package org.jdrupes.vmoperator.runner.qemu.events;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.jdrupes.vmoperator.runner.qemu.commands.QmpPowerdown;
 
 /**
- * A {@link QmpCommand} that send a system_powerdown to the VM.
+ * Signals the processing of the {@link QmpPowerdown} event.
  */
-public class QmpPowerdown extends QmpCommand {
+public class PowerdownEvent extends MonitorEvent {
 
-    @SuppressWarnings({ "PMD.FieldNamingConventions",
-        "PMD.VariableNamingConventions" })
-    private static final JsonNode jsonTemplate
-        = parseJson("{ \"execute\": \"system_powerdown\" }");
-
-    @Override
-    public JsonNode toJson() {
-        return jsonTemplate.deepCopy();
+    /**
+     * Instantiates a new powerdown event.
+     *
+     * @param kind the kind
+     * @param data the data
+     */
+    public PowerdownEvent(Kind kind, JsonNode data) {
+        super(kind, data);
     }
-
-    @Override
-    public String toString() {
-        return "QmpPowerdown()";
-    }
-
 }

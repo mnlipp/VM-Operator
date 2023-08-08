@@ -28,16 +28,19 @@ import java.net.UnixDomainSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.logging.Level;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCapabilities;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCommand;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpPowerdown;
+import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorEvent;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorReady;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorResult;
+import org.jdrupes.vmoperator.runner.qemu.events.PowerdownEvent;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.Components;
@@ -75,8 +78,10 @@ public class QemuMonitor extends Component {
     private int powerdownTimeout;
     private SocketIOChannel monitorChannel;
     private final Queue<QmpCommand> executing = new LinkedList<>();
+    private Instant powerdownStartedAt;
     private Stop suspendedStop;
     private Timer powerdownTimer;
+    private boolean powerdownConfirmed;
 
     /**
      * Instantiates a new qemu monitor.
@@ -93,10 +98,10 @@ public class QemuMonitor extends Component {
     }
 
     /**
-     * As the configuration of this component depends on the configuration
-     * of the {@link Runner}, it doesn't have a handler for the 
-     * {@link ConfigurationUpdate} event. The values are forwarded from the
-     * {@link Runner} instead.
+     * As the initial configuration of this component depends on the 
+     * configuration of the {@link Runner}, it doesn't have a handler 
+     * for the {@link ConfigurationUpdate} event. The values are 
+     * forwarded from the {@link Runner} instead.
      *
      * @param socketPath the socket path
      * @param powerdownTimeout 
@@ -232,10 +237,10 @@ public class QemuMonitor extends Component {
         channel.associated(QemuMonitor.class).ifPresent(qm -> {
             monitorChannel = null;
             synchronized (this) {
+                if (powerdownTimer != null) {
+                    powerdownTimer.cancel();
+                }
                 if (suspendedStop != null) {
-                    if (powerdownTimer != null) {
-                        powerdownTimer.cancel();
-                    }
                     suspendedStop.resumeHandling();
                     suspendedStop = null;
                 }
@@ -284,17 +289,72 @@ public class QemuMonitor extends Component {
             // We have a connection to Qemu, attempt ACPI shutdown.
             event.suspendHandling();
             suspendedStop = event;
-            fire(new MonitorCommand(new QmpPowerdown()));
 
-            // Schedule timer as fallback
+            // Attempt powerdown command. If not confirmed, assume
+            // "hanging" qemu process.
             powerdownTimer = Components.schedule(t -> {
+                // Powerdown not confirmed
+                logger.fine(() -> "QMP powerdown command has not effect.");
+                synchronized (this) {
+                    powerdownTimer = null;
+                    if (suspendedStop != null) {
+                        suspendedStop.resumeHandling();
+                        suspendedStop = null;
+                    }
+                }
+            }, Duration.ofSeconds(1));
+            logger.fine(() -> "Attempting QMP powerdown.");
+            powerdownStartedAt = Instant.now();
+            fire(new MonitorCommand(new QmpPowerdown()));
+        }
+    }
+
+    /**
+     * On powerdown event.
+     *
+     * @param event the event
+     */
+    @Handler
+    public void onPowerdownEvent(PowerdownEvent event) {
+        synchronized (this) {
+            // Cancel confirmation timeout
+            if (powerdownTimer != null) {
+                powerdownTimer.cancel();
+            }
+
+            // (Re-)schedule timer as fallback
+            logger.fine(() -> "QMP powerdown confirmed, waiting...");
+            powerdownTimer = Components.schedule(t -> {
+                logger.fine(() -> "Powerdown timeout reached.");
                 synchronized (this) {
                     if (suspendedStop != null) {
                         suspendedStop.resumeHandling();
                         suspendedStop = null;
                     }
                 }
-            }, Duration.ofSeconds(powerdownTimeout));
+            }, powerdownStartedAt.plusSeconds(powerdownTimeout));
+            powerdownConfirmed = true;
         }
     }
+
+    /**
+     * On configure qemu.
+     *
+     * @param event the event
+     */
+    @Handler
+    public void onConfigureQemu(ConfigureQemu event) {
+        int newTimeout = event.configuration().vm.powerdownTimeout;
+        if (powerdownTimeout != newTimeout) {
+            powerdownTimeout = newTimeout;
+            synchronized (this) {
+                if (powerdownTimer != null && powerdownConfirmed) {
+                    powerdownTimer
+                        .reschedule(powerdownStartedAt.plusSeconds(newTimeout));
+                }
+
+            }
+        }
+    }
+
 }
