@@ -103,12 +103,12 @@ public class Reconciler extends Component {
 
         // Update state
         if (event.type() != Type.DELETED) {
-            channel.setState(
+            channel.setVmDefinition(
                 patchCr(K8s.get(vmCrApi, defMeta).get().getRaw().deepCopy()));
         }
 
         // Get common data for all reconciles
-        JsonObject vmDef = channel.state();
+        JsonObject vmDef = channel.vmDefinition();
         @SuppressWarnings("PMD.UseConcurrentHashMap")
         Map<String, Object> model = new HashMap<>();
         model.put("cr", vmDef);

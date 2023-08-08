@@ -31,7 +31,7 @@ public class VmChannel extends DefaultSubchannel {
 
     private final EventPipeline pipeline;
     private final ApiClient client;
-    private JsonObject state;
+    private JsonObject vmDefinition;
 
     /**
      * Instantiates a new watch channel.
@@ -48,24 +48,24 @@ public class VmChannel extends DefaultSubchannel {
     }
 
     /**
-     * Sets the last known state of the resource.
+     * Sets the last known definition of the resource.
      *
-     * @param state the state
+     * @param definition the definition
      * @return the watch channel
      */
     @SuppressWarnings("PMD.LinguisticNaming")
-    public VmChannel setState(JsonObject state) {
-        this.state = state;
+    public VmChannel setVmDefinition(JsonObject definition) {
+        this.vmDefinition = definition;
         return this;
     }
 
     /**
-     * Returns the last known state of the resource.
+     * Returns the last known definition of the VM.
      *
      * @return the json object
      */
-    public JsonObject state() {
-        return state;
+    public JsonObject vmDefinition() {
+        return vmDefinition;
     }
 
     /**
