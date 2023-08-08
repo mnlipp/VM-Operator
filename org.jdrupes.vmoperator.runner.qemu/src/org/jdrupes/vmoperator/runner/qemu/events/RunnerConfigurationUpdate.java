@@ -31,7 +31,7 @@ import org.jgrapes.core.Event;
  * on the event and only {@link Event#resumeHandling() resume handling}
  * when the adaption has completed.
  */
-public class ConfigureQemu extends Event<Void> {
+public class RunnerConfigurationUpdate extends Event<Void> {
 
     private final Configuration configuration;
     private final State state;
@@ -41,7 +41,7 @@ public class ConfigureQemu extends Event<Void> {
      *
      * @param channels the channels
      */
-    public ConfigureQemu(Configuration configuration, State state,
+    public RunnerConfigurationUpdate(Configuration configuration, State state,
             Channel... channels) {
         super(channels);
         this.state = state;

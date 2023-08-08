@@ -35,12 +35,12 @@ import java.util.logging.Level;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCapabilities;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCommand;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpPowerdown;
-import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorEvent;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorReady;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorResult;
 import org.jdrupes.vmoperator.runner.qemu.events.PowerdownEvent;
+import org.jdrupes.vmoperator.runner.qemu.events.RunnerConfigurationUpdate;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.Components;
@@ -343,7 +343,7 @@ public class QemuMonitor extends Component {
      * @param event the event
      */
     @Handler
-    public void onConfigureQemu(ConfigureQemu event) {
+    public void onConfigureQemu(RunnerConfigurationUpdate event) {
         int newTimeout = event.configuration().vm.powerdownTimeout;
         if (powerdownTimeout != newTimeout) {
             powerdownTimeout = newTimeout;

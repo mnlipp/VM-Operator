@@ -51,9 +51,9 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCont;
-import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorReady;
+import org.jdrupes.vmoperator.runner.qemu.events.RunnerConfigurationUpdate;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;
 import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
@@ -118,8 +118,8 @@ import org.jgrapes.util.events.WatchFile;
  *     monitor --> configure: ClientConnected[for monitor]
  *     monitor -> error: ConnectError[for monitor]
  *     
- *     configure: entry/fire ConfigureQemu
- *     configure --> success: ConfigureQemu (last handler)/fire cont command
+ *     configure: entry/fire RunnerConfigurationUpdate
+ *     configure --> success: RunnerConfigurationUpdate (last handler)/fire cont command
  * }
  * 
  * Initializing --> which: Started
@@ -238,7 +238,7 @@ public class Runner extends Component {
             }
             logger.fine(() -> "Updating configuration");
             var newConf = yamlMapper.convertValue(c, Configuration.class);
-            rep.fire(new ConfigureQemu(newConf, state));
+            rep.fire(new RunnerConfigurationUpdate(newConf, state));
         });
     }
 
@@ -473,7 +473,7 @@ public class Runner extends Component {
      */
     @Handler
     public void onMonitorReady(MonitorReady event) {
-        fire(new ConfigureQemu(config, state));
+        fire(new RunnerConfigurationUpdate(config, state));
     }
 
     /**
@@ -482,7 +482,7 @@ public class Runner extends Component {
      * @param event the event
      */
     @Handler(priority = -1000)
-    public void onConfigureQemu(ConfigureQemu event) {
+    public void onConfigureQemu(RunnerConfigurationUpdate event) {
         if (state == State.STARTING) {
             fire(new MonitorCommand(new QmpCont()));
             state = State.RUNNING;
