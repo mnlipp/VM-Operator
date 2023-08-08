@@ -124,7 +124,8 @@ public class Configuration implements Dto {
         if (matcher.group(3) != null) {
             unit = unitMap.get(matcher.group(3));
             if (unit == null) {
-                throw new NumberFormatException(amount.toString());
+                throw new NumberFormatException("Illegal unit \""
+                    + matcher.group(3) + "\" in \"" + amount.toString() + "\"");
             }
         }
         var number = matcher.group(1);
