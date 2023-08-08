@@ -43,93 +43,93 @@
 <span class="source-line-no">030</span><span id="line-30">import freemarker.template.TemplateNotFoundException;</span>
 <span class="source-line-no">031</span><span id="line-31">import io.kubernetes.client.openapi.ApiException;</span>
 <span class="source-line-no">032</span><span id="line-32">import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;</span>
-<span class="source-line-no">033</span><span id="line-33">import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;</span>
-<span class="source-line-no">034</span><span id="line-34">import java.io.IOException;</span>
-<span class="source-line-no">035</span><span id="line-35">import java.util.HashMap;</span>
-<span class="source-line-no">036</span><span id="line-36">import java.util.Map;</span>
-<span class="source-line-no">037</span><span id="line-37">import static org.jdrupes.vmoperator.manager.Constants.VM_OP_GROUP;</span>
-<span class="source-line-no">038</span><span id="line-38">import org.jdrupes.vmoperator.manager.VmDefChanged.Type;</span>
-<span class="source-line-no">039</span><span id="line-39">import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;</span>
-<span class="source-line-no">040</span><span id="line-40">import org.jgrapes.core.Channel;</span>
-<span class="source-line-no">041</span><span id="line-41">import org.jgrapes.core.Component;</span>
-<span class="source-line-no">042</span><span id="line-42">import org.jgrapes.core.annotation.Handler;</span>
-<span class="source-line-no">043</span><span id="line-43"></span>
-<span class="source-line-no">044</span><span id="line-44">/**</span>
-<span class="source-line-no">045</span><span id="line-45"> * Adapts Kubenetes resources to changes in VM definitions (CRs). </span>
-<span class="source-line-no">046</span><span id="line-46"> */</span>
-<span class="source-line-no">047</span><span id="line-47">@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",</span>
-<span class="source-line-no">048</span><span id="line-48">    "PMD.AvoidDuplicateLiterals" })</span>
-<span class="source-line-no">049</span><span id="line-49">public class Reconciler extends Component {</span>
-<span class="source-line-no">050</span><span id="line-50"></span>
-<span class="source-line-no">051</span><span id="line-51">    @SuppressWarnings("PMD.SingularField")</span>
-<span class="source-line-no">052</span><span id="line-52">    private final Configuration fmConfig;</span>
-<span class="source-line-no">053</span><span id="line-53">    private final CmReconciler cmReconciler;</span>
-<span class="source-line-no">054</span><span id="line-54">    private final DataReconciler dataReconciler;</span>
-<span class="source-line-no">055</span><span id="line-55">    private final DisksReconciler disksReconciler;</span>
-<span class="source-line-no">056</span><span id="line-56">    private final PodReconciler podReconciler;</span>
-<span class="source-line-no">057</span><span id="line-57"></span>
-<span class="source-line-no">058</span><span id="line-58">    /**</span>
-<span class="source-line-no">059</span><span id="line-59">     * Instantiates a new reconciler.</span>
-<span class="source-line-no">060</span><span id="line-60">     *</span>
-<span class="source-line-no">061</span><span id="line-61">     * @param componentChannel the component channel</span>
-<span class="source-line-no">062</span><span id="line-62">     */</span>
-<span class="source-line-no">063</span><span id="line-63">    public Reconciler(Channel componentChannel) {</span>
-<span class="source-line-no">064</span><span id="line-64">        super(componentChannel);</span>
-<span class="source-line-no">065</span><span id="line-65"></span>
-<span class="source-line-no">066</span><span id="line-66">        // Configure freemarker library</span>
-<span class="source-line-no">067</span><span id="line-67">        fmConfig = new Configuration(Configuration.VERSION_2_3_32);</span>
-<span class="source-line-no">068</span><span id="line-68">        fmConfig.setDefaultEncoding("utf-8");</span>
-<span class="source-line-no">069</span><span id="line-69">        fmConfig.setObjectWrapper(new ExtendedObjectWrapper(</span>
-<span class="source-line-no">070</span><span id="line-70">            fmConfig.getIncompatibleImprovements()));</span>
-<span class="source-line-no">071</span><span id="line-71">        fmConfig.setTemplateExceptionHandler(</span>
-<span class="source-line-no">072</span><span id="line-72">            TemplateExceptionHandler.RETHROW_HANDLER);</span>
-<span class="source-line-no">073</span><span id="line-73">        fmConfig.setLogTemplateExceptions(false);</span>
-<span class="source-line-no">074</span><span id="line-74">        fmConfig.setClassForTemplateLoading(Reconciler.class, "");</span>
-<span class="source-line-no">075</span><span id="line-75"></span>
-<span class="source-line-no">076</span><span id="line-76">        cmReconciler = new CmReconciler(fmConfig);</span>
-<span class="source-line-no">077</span><span id="line-77">        disksReconciler = new DisksReconciler();</span>
-<span class="source-line-no">078</span><span id="line-78">        dataReconciler = new DataReconciler(fmConfig);</span>
-<span class="source-line-no">079</span><span id="line-79">        podReconciler = new PodReconciler(fmConfig);</span>
-<span class="source-line-no">080</span><span id="line-80">    }</span>
-<span class="source-line-no">081</span><span id="line-81"></span>
-<span class="source-line-no">082</span><span id="line-82">    /**</span>
-<span class="source-line-no">083</span><span id="line-83">     * Handles the change event.</span>
-<span class="source-line-no">084</span><span id="line-84">     *</span>
-<span class="source-line-no">085</span><span id="line-85">     * @param event the event</span>
-<span class="source-line-no">086</span><span id="line-86">     * @param channel the channel</span>
-<span class="source-line-no">087</span><span id="line-87">     * @throws ApiException the api exception</span>
-<span class="source-line-no">088</span><span id="line-88">     * @throws IOException </span>
-<span class="source-line-no">089</span><span id="line-89">     * @throws ParseException </span>
-<span class="source-line-no">090</span><span id="line-90">     * @throws MalformedTemplateNameException </span>
-<span class="source-line-no">091</span><span id="line-91">     * @throws TemplateNotFoundException </span>
-<span class="source-line-no">092</span><span id="line-92">     * @throws TemplateException </span>
-<span class="source-line-no">093</span><span id="line-93">     * @throws KubectlException </span>
-<span class="source-line-no">094</span><span id="line-94">     */</span>
-<span class="source-line-no">095</span><span id="line-95">    @Handler</span>
-<span class="source-line-no">096</span><span id="line-96">    @SuppressWarnings("PMD.ConfusingTernary")</span>
-<span class="source-line-no">097</span><span id="line-97">    public void onVmDefChanged(VmDefChanged event, WatchChannel channel)</span>
-<span class="source-line-no">098</span><span id="line-98">            throws ApiException, TemplateException, IOException {</span>
-<span class="source-line-no">099</span><span id="line-99">        // Get complete VM (CR) definition</span>
-<span class="source-line-no">100</span><span id="line-100">        var apiVersion = K8s.version(event.object().getApiVersion());</span>
-<span class="source-line-no">101</span><span id="line-101">        DynamicKubernetesApi vmCrApi = new DynamicKubernetesApi(VM_OP_GROUP,</span>
-<span class="source-line-no">102</span><span id="line-102">            apiVersion, event.crd().getName(), channel.client());</span>
-<span class="source-line-no">103</span><span id="line-103">        var defMeta = event.object().getMetadata();</span>
-<span class="source-line-no">104</span><span id="line-104"></span>
-<span class="source-line-no">105</span><span id="line-105">        // Get common data for all reconciles</span>
-<span class="source-line-no">106</span><span id="line-106">        DynamicKubernetesObject vmDef = null;</span>
-<span class="source-line-no">107</span><span id="line-107">        Map&lt;String, Object&gt; model = null;</span>
-<span class="source-line-no">108</span><span id="line-108">        if (event.type() != Type.DELETED) {</span>
-<span class="source-line-no">109</span><span id="line-109">            vmDef = K8s.get(vmCrApi, defMeta).get();</span>
-<span class="source-line-no">110</span><span id="line-110"></span>
-<span class="source-line-no">111</span><span id="line-111">            // Prepare Freemarker model</span>
-<span class="source-line-no">112</span><span id="line-112">            model = new HashMap&lt;&gt;();</span>
-<span class="source-line-no">113</span><span id="line-113">            model.put("cr", patchCr(vmDef.getRaw().deepCopy()));</span>
-<span class="source-line-no">114</span><span id="line-114">            model.put("constants",</span>
-<span class="source-line-no">115</span><span id="line-115">                (TemplateHashModel) new DefaultObjectWrapperBuilder(</span>
-<span class="source-line-no">116</span><span id="line-116">                    Configuration.VERSION_2_3_32)</span>
-<span class="source-line-no">117</span><span id="line-117">                        .build().getStaticModels()</span>
-<span class="source-line-no">118</span><span id="line-118">                        .get(Constants.class.getName()));</span>
-<span class="source-line-no">119</span><span id="line-119">        }</span>
+<span class="source-line-no">033</span><span id="line-33">import java.io.IOException;</span>
+<span class="source-line-no">034</span><span id="line-34">import java.util.HashMap;</span>
+<span class="source-line-no">035</span><span id="line-35">import java.util.Map;</span>
+<span class="source-line-no">036</span><span id="line-36">import static org.jdrupes.vmoperator.manager.Constants.VM_OP_GROUP;</span>
+<span class="source-line-no">037</span><span id="line-37">import org.jdrupes.vmoperator.manager.VmDefChanged.Type;</span>
+<span class="source-line-no">038</span><span id="line-38">import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;</span>
+<span class="source-line-no">039</span><span id="line-39">import org.jgrapes.core.Channel;</span>
+<span class="source-line-no">040</span><span id="line-40">import org.jgrapes.core.Component;</span>
+<span class="source-line-no">041</span><span id="line-41">import org.jgrapes.core.annotation.Handler;</span>
+<span class="source-line-no">042</span><span id="line-42"></span>
+<span class="source-line-no">043</span><span id="line-43">/**</span>
+<span class="source-line-no">044</span><span id="line-44"> * Adapts Kubenetes resources to changes in VM definitions (CRs). </span>
+<span class="source-line-no">045</span><span id="line-45"> */</span>
+<span class="source-line-no">046</span><span id="line-46">@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",</span>
+<span class="source-line-no">047</span><span id="line-47">    "PMD.AvoidDuplicateLiterals" })</span>
+<span class="source-line-no">048</span><span id="line-48">public class Reconciler extends Component {</span>
+<span class="source-line-no">049</span><span id="line-49"></span>
+<span class="source-line-no">050</span><span id="line-50">    @SuppressWarnings("PMD.SingularField")</span>
+<span class="source-line-no">051</span><span id="line-51">    private final Configuration fmConfig;</span>
+<span class="source-line-no">052</span><span id="line-52">    private final CmReconciler cmReconciler;</span>
+<span class="source-line-no">053</span><span id="line-53">    private final DataReconciler dataReconciler;</span>
+<span class="source-line-no">054</span><span id="line-54">    private final DisksReconciler disksReconciler;</span>
+<span class="source-line-no">055</span><span id="line-55">    private final PodReconciler podReconciler;</span>
+<span class="source-line-no">056</span><span id="line-56"></span>
+<span class="source-line-no">057</span><span id="line-57">    /**</span>
+<span class="source-line-no">058</span><span id="line-58">     * Instantiates a new reconciler.</span>
+<span class="source-line-no">059</span><span id="line-59">     *</span>
+<span class="source-line-no">060</span><span id="line-60">     * @param componentChannel the component channel</span>
+<span class="source-line-no">061</span><span id="line-61">     */</span>
+<span class="source-line-no">062</span><span id="line-62">    public Reconciler(Channel componentChannel) {</span>
+<span class="source-line-no">063</span><span id="line-63">        super(componentChannel);</span>
+<span class="source-line-no">064</span><span id="line-64"></span>
+<span class="source-line-no">065</span><span id="line-65">        // Configure freemarker library</span>
+<span class="source-line-no">066</span><span id="line-66">        fmConfig = new Configuration(Configuration.VERSION_2_3_32);</span>
+<span class="source-line-no">067</span><span id="line-67">        fmConfig.setDefaultEncoding("utf-8");</span>
+<span class="source-line-no">068</span><span id="line-68">        fmConfig.setObjectWrapper(new ExtendedObjectWrapper(</span>
+<span class="source-line-no">069</span><span id="line-69">            fmConfig.getIncompatibleImprovements()));</span>
+<span class="source-line-no">070</span><span id="line-70">        fmConfig.setTemplateExceptionHandler(</span>
+<span class="source-line-no">071</span><span id="line-71">            TemplateExceptionHandler.RETHROW_HANDLER);</span>
+<span class="source-line-no">072</span><span id="line-72">        fmConfig.setLogTemplateExceptions(false);</span>
+<span class="source-line-no">073</span><span id="line-73">        fmConfig.setClassForTemplateLoading(Reconciler.class, "");</span>
+<span class="source-line-no">074</span><span id="line-74"></span>
+<span class="source-line-no">075</span><span id="line-75">        cmReconciler = new CmReconciler(fmConfig);</span>
+<span class="source-line-no">076</span><span id="line-76">        disksReconciler = new DisksReconciler();</span>
+<span class="source-line-no">077</span><span id="line-77">        dataReconciler = new DataReconciler(fmConfig);</span>
+<span class="source-line-no">078</span><span id="line-78">        podReconciler = new PodReconciler(fmConfig);</span>
+<span class="source-line-no">079</span><span id="line-79">    }</span>
+<span class="source-line-no">080</span><span id="line-80"></span>
+<span class="source-line-no">081</span><span id="line-81">    /**</span>
+<span class="source-line-no">082</span><span id="line-82">     * Handles the change event.</span>
+<span class="source-line-no">083</span><span id="line-83">     *</span>
+<span class="source-line-no">084</span><span id="line-84">     * @param event the event</span>
+<span class="source-line-no">085</span><span id="line-85">     * @param channel the channel</span>
+<span class="source-line-no">086</span><span id="line-86">     * @throws ApiException the api exception</span>
+<span class="source-line-no">087</span><span id="line-87">     * @throws IOException </span>
+<span class="source-line-no">088</span><span id="line-88">     * @throws ParseException </span>
+<span class="source-line-no">089</span><span id="line-89">     * @throws MalformedTemplateNameException </span>
+<span class="source-line-no">090</span><span id="line-90">     * @throws TemplateNotFoundException </span>
+<span class="source-line-no">091</span><span id="line-91">     * @throws TemplateException </span>
+<span class="source-line-no">092</span><span id="line-92">     * @throws KubectlException </span>
+<span class="source-line-no">093</span><span id="line-93">     */</span>
+<span class="source-line-no">094</span><span id="line-94">    @Handler</span>
+<span class="source-line-no">095</span><span id="line-95">    @SuppressWarnings("PMD.ConfusingTernary")</span>
+<span class="source-line-no">096</span><span id="line-96">    public void onVmDefChanged(VmDefChanged event, VmChannel channel)</span>
+<span class="source-line-no">097</span><span id="line-97">            throws ApiException, TemplateException, IOException {</span>
+<span class="source-line-no">098</span><span id="line-98">        // Get complete VM (CR) definition</span>
+<span class="source-line-no">099</span><span id="line-99">        var apiVersion = K8s.version(event.object().getApiVersion());</span>
+<span class="source-line-no">100</span><span id="line-100">        DynamicKubernetesApi vmCrApi = new DynamicKubernetesApi(VM_OP_GROUP,</span>
+<span class="source-line-no">101</span><span id="line-101">            apiVersion, event.crd().getName(), channel.client());</span>
+<span class="source-line-no">102</span><span id="line-102">        var defMeta = event.object().getMetadata();</span>
+<span class="source-line-no">103</span><span id="line-103"></span>
+<span class="source-line-no">104</span><span id="line-104">        // Update state</span>
+<span class="source-line-no">105</span><span id="line-105">        if (event.type() != Type.DELETED) {</span>
+<span class="source-line-no">106</span><span id="line-106">            channel.setState(</span>
+<span class="source-line-no">107</span><span id="line-107">                patchCr(K8s.get(vmCrApi, defMeta).get().getRaw().deepCopy()));</span>
+<span class="source-line-no">108</span><span id="line-108">        }</span>
+<span class="source-line-no">109</span><span id="line-109"></span>
+<span class="source-line-no">110</span><span id="line-110">        // Get common data for all reconciles</span>
+<span class="source-line-no">111</span><span id="line-111">        JsonObject vmDef = channel.state();</span>
+<span class="source-line-no">112</span><span id="line-112">        @SuppressWarnings("PMD.UseConcurrentHashMap")</span>
+<span class="source-line-no">113</span><span id="line-113">        Map&lt;String, Object&gt; model = new HashMap&lt;&gt;();</span>
+<span class="source-line-no">114</span><span id="line-114">        model.put("cr", vmDef);</span>
+<span class="source-line-no">115</span><span id="line-115">        model.put("constants",</span>
+<span class="source-line-no">116</span><span id="line-116">            (TemplateHashModel) new DefaultObjectWrapperBuilder(</span>
+<span class="source-line-no">117</span><span id="line-117">                Configuration.VERSION_2_3_32)</span>
+<span class="source-line-no">118</span><span id="line-118">                    .build().getStaticModels()</span>
+<span class="source-line-no">119</span><span id="line-119">                    .get(Constants.class.getName()));</span>
 <span class="source-line-no">120</span><span id="line-120"></span>
 <span class="source-line-no">121</span><span id="line-121">        // Reconcile</span>
 <span class="source-line-no">122</span><span id="line-122">        if (event.type() != Type.DELETED) {</span>
@@ -145,7 +145,7 @@
 <span class="source-line-no">132</span><span id="line-132">        }</span>
 <span class="source-line-no">133</span><span id="line-133">    }</span>
 <span class="source-line-no">134</span><span id="line-134"></span>
-<span class="source-line-no">135</span><span id="line-135">    private Object patchCr(JsonObject vmDef) {</span>
+<span class="source-line-no">135</span><span id="line-135">    private JsonObject patchCr(JsonObject vmDef) {</span>
 <span class="source-line-no">136</span><span id="line-136">        // Adjust cdromImage path</span>
 <span class="source-line-no">137</span><span id="line-137">        var disks</span>
 <span class="source-line-no">138</span><span id="line-138">            = GsonPtr.to(vmDef).to("spec", "vm", "disks").get(JsonArray.class);</span>
