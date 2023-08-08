@@ -89,6 +89,10 @@ balloon device) and to changes of the number of CPUs. Note that
 in order to get new CPUs online on Linux guests, you need a 
 [udev rule](https://docs.kernel.org/core-api/cpu_hotplug.html#user-space-notification) which is not installed by default[^simplest].
 
+The runner also changes the images loaded in CDROM drives. If the
+drive is locked, i.e. if it doesn't respond to the "open tray" command
+the change will be suspended until the VM opens the tray.
+
 [^simplest]: The simplest form of the rule is probably:
     ```
     ACTION=="add", SUBSYSTEM=="cpu", ATTR{online}="1"
