@@ -69,7 +69,11 @@ public class CdMediaController extends Component {
     @SuppressWarnings({ "PMD.AvoidLiteralsInIfCondition",
         "PMD.AvoidInstantiatingObjectsInLoops" })
     public void onConfigureQemu(ConfigureQemu event) {
+        if (event.state() == State.TERMINATING) {
+            return;
+        }
 
+        // Compare known and desired images.
         int cdCounter = 0;
         var drives = event.configuration().vm.drives;
         for (int i = 0; i < drives.length; i++) {
