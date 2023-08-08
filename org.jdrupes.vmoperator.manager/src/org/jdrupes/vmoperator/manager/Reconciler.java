@@ -142,7 +142,7 @@ public class Reconciler extends Component {
                 continue;
             }
             String image = cdrom.get("image").getAsString();
-            if (!image.contains("/")) {
+            if (!image.contains("/") && !image.isEmpty()) {
                 cdrom.addProperty("image",
                     Constants.IMAGE_REPO_PATH + "/" + image);
             }
