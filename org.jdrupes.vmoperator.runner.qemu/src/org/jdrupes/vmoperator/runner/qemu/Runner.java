@@ -342,15 +342,16 @@ public class Runner extends Component {
      */
     @Handler(priority = 100)
     public void onStart(Start event) {
+        if (config == null) {
+            // Missing configuration, fail
+            event.cancel(true);
+            fire(new Stop());
+            return;
+        }
+
         rep = newEventPipeline();
         event.setAssociated(EventPipeline.class, rep);
         try {
-            if (config == null) {
-                // Missing configuration, fail
-                fire(new Stop());
-                return;
-            }
-
             // Store process id
             try (var pidFile = Files.newBufferedWriter(
                 config.runtimeDir.resolve("runner.pid"))) {
