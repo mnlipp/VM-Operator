@@ -93,6 +93,8 @@ The runner also changes the images loaded in CDROM drives. If the
 drive is locked, i.e. if it doesn't respond to the "open tray" command
 the change will be suspended until the VM opens the tray.
 
+Finally, `powerdownTimeout` can be changed while the qemu process runs.
+
 [^simplest]: The simplest form of the rule is probably:
     ```
     ACTION=="add", SUBSYSTEM=="cpu", ATTR{online}="1"
