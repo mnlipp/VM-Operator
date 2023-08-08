@@ -55,7 +55,7 @@ import java.util.Map;
      * @throws IOException Signals that an I/O exception has occurred.
      */
     @SuppressWarnings("PMD.ConfusingTernary")
-    public void reconcile(Map<String, Object> model, WatchChannel channel)
+    public void reconcile(Map<String, Object> model, VmChannel channel)
             throws TemplateException, ApiException, IOException {
         // Combine template and data and parse result
         var fmTemplate = fmConfig.getTemplate("runnerDataPvc.ftl.yaml");

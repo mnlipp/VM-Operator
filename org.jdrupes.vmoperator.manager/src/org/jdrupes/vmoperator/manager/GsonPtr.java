@@ -165,6 +165,28 @@ public class GsonPtr {
     }
 
     /**
+     * Returns the Integer value of the selected {@link JsonPrimitive}.
+     *
+     * @param selectors the selectors
+     * @return the as string
+     */
+    public Optional<Integer> getAsInt(Object... selectors) {
+        return get(JsonPrimitive.class, selectors)
+            .map(JsonPrimitive::getAsInt);
+    }
+
+    /**
+     * Returns the Long value of the selected {@link JsonPrimitive}.
+     *
+     * @param selectors the selectors
+     * @return the as string
+     */
+    public Optional<Long> getAsLong(Object... selectors) {
+        return get(JsonPrimitive.class, selectors)
+            .map(JsonPrimitive::getAsLong);
+    }
+
+    /**
      * Sets the selected value. This pointer must point to a
      * {@link JsonObject} or {@link JsonArray}. The selector must
      * be a {@link String} or an integer respectively.

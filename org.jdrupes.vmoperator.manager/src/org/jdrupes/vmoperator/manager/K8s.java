@@ -31,6 +31,7 @@ import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimList;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.util.generic.GenericKubernetesApi;
+import io.kubernetes.client.util.generic.options.DeleteOptions;
 import io.kubernetes.client.util.generic.options.PatchOptions;
 import java.util.Optional;
 
@@ -97,8 +98,8 @@ public class K8s {
      * @return the object
      */
     public static <T extends KubernetesObject, LT extends KubernetesListObject>
-            Optional<T> get(GenericKubernetesApi<T, LT> api, V1ObjectMeta meta)
-                    throws ApiException {
+            Optional<T>
+            get(GenericKubernetesApi<T, LT> api, V1ObjectMeta meta) {
         var response = api.get(meta.getNamespace(), meta.getName());
         if (response.isSuccess()) {
             return Optional.of(response.getObject());
@@ -119,6 +120,21 @@ public class K8s {
                     throws ApiException {
         api.delete(object.getMetadata().getNamespace(),
             object.getMetadata().getName()).throwsApiException();
+    }
+
+    /**
+     * Delete an object.
+     *
+     * @param <T> the generic type
+     * @param <LT> the generic type
+     * @param api the api
+     * @param object the object
+     */
+    public static <T extends KubernetesObject, LT extends KubernetesListObject>
+            void delete(GenericKubernetesApi<T, LT> api, T object,
+                    DeleteOptions options) throws ApiException {
+        api.delete(object.getMetadata().getNamespace(),
+            object.getMetadata().getName(), options).throwsApiException();
     }
 
     /**

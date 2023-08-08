@@ -39,7 +39,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
-import okhttp3.Call;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
@@ -57,7 +56,7 @@ public class VmWatcher extends Component {
 
     private ApiClient client;
     private String managedNamespace = "qemu-vms";
-    private final Map<String, WatchChannel> channels
+    private final Map<String, VmChannel> channels
         = new ConcurrentHashMap<>();
 
     /**
@@ -90,13 +89,14 @@ public class VmWatcher extends Component {
         var coa = new CustomObjectsApi(client);
         purge(coa, vmOpApiVersions);
 
-        // Start a watcher for each existing CRD version.
+        // Start a watcher thread for each existing CRD version.
+        // The watcher will send us an "ADDED" for each existing VM.
         for (var version : vmOpApiVersions) {
             coa.getAPIResources(VM_OP_GROUP, version)
                 .getResources().stream()
                 .filter(r -> Constants.VM_OP_KIND_VM.equals(r.getKind()))
                 .findFirst()
-                .ifPresent(crd -> serveCrVersion(coa, crd, version));
+                .ifPresent(crd -> watchVmDefs(coa, crd, version));
         }
     }
 
@@ -150,7 +150,7 @@ public class VmWatcher extends Component {
         return result;
     }
 
-    private void serveCrVersion(CustomObjectsApi coa, V1APIResource crd,
+    private void watchVmDefs(CustomObjectsApi coa, V1APIResource crd,
             String version) {
         @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
         var watcher = new Thread(() -> {
@@ -165,7 +165,7 @@ public class VmWatcher extends Component {
                             new TypeToken<Watch.Response<V1Namespace>>() {
                             }.getType())) {
                         for (Watch.Response<V1Namespace> item : watch) {
-                            handleVmDefinitionEvent(crd, item);
+                            handleVmDefinitionChange(crd, item);
                         }
                     } catch (IllegalStateException e) {
                         logger.log(Level.FINE, e, () -> "Probem watching: "
@@ -182,11 +182,11 @@ public class VmWatcher extends Component {
         watcher.start();
     }
 
-    private void handleVmDefinitionEvent(V1APIResource vmsCrd,
+    private void handleVmDefinitionChange(V1APIResource vmsCrd,
             Watch.Response<V1Namespace> item) {
         V1ObjectMeta metadata = item.object.getMetadata();
-        WatchChannel channel = channels.computeIfAbsent(metadata.getName(),
-            k -> new WatchChannel(channel(), newEventPipeline(), client));
+        VmChannel channel = channels.computeIfAbsent(metadata.getName(),
+            k -> new VmChannel(channel(), newEventPipeline(), client));
         channel.pipeline().fire(new VmDefChanged(VmDefChanged.Type
             .valueOf(item.type), vmsCrd, item.object), channel);
     }
@@ -198,7 +198,7 @@ public class VmWatcher extends Component {
      * @param channel the channel
      */
     @Handler(priority = -10_000)
-    public void onVmDefChanged(VmDefChanged event, WatchChannel channel) {
+    public void onVmDefChanged(VmDefChanged event, VmChannel channel) {
         if (event.type() == Type.DELETED) {
             channels.remove(event.object().getMetadata().getName());
         }

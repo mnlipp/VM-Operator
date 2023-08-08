@@ -83,8 +83,8 @@ public class VmDefChanged extends Event<Void> {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        builder.append(Components.objectName(this)).append(" [").append(type)
-            .append(' ').append(object.getMetadata().getName());
+        builder.append(Components.objectName(this)).append(" [")
+            .append(object.getMetadata().getName()).append(' ').append(type);
         if (channels() != null) {
             builder.append(", channels=");
             builder.append(Channel.toString(channels()));

@@ -25,6 +25,7 @@ import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
 import io.kubernetes.client.util.generic.dynamic.Dynamics;
+import io.kubernetes.client.util.generic.options.DeleteOptions;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
@@ -59,15 +60,14 @@ import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
      * @throws ApiException the api exception
      */
     public void reconcile(VmDefChanged event, Map<String, Object> model,
-            WatchChannel channel)
+            VmChannel channel)
             throws IOException, TemplateException, ApiException {
         // Check if exists
         DynamicKubernetesApi podApi = new DynamicKubernetesApi("", "v1",
             "pods", channel.client());
         var existing = K8s.get(podApi, event.object().getMetadata());
 
-        // Get state. Note that model is only available if event type
-        // is not DELETED.
+        // Get desired state.
         var delete = event.type() == Type.DELETED
             || GsonPtr.to((JsonObject) model.get("cr")).to("spec", "vm")
                 .getAsString("state").orElse("").equals(STATE_STOPPED);
@@ -75,7 +75,11 @@ import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
         // If deleted or stopped, delete
         if (delete) {
             if (existing.isPresent()) {
-                K8s.delete(podApi, existing.get());
+                var opts = new DeleteOptions();
+                opts.setGracePeriodSeconds(
+                    GsonPtr.to((JsonObject) model.get("cr")).to("spec", "vm")
+                        .getAsLong("powerdownTimeout").get() + 1);
+                K8s.delete(podApi, existing.get(), opts);
             }
             return;
         }

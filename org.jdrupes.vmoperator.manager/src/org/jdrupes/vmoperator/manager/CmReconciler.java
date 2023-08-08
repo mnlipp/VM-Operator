@@ -58,7 +58,7 @@ import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
      * @throws ApiException the api exception
      */
     public DynamicKubernetesObject reconcile(VmDefChanged event,
-            Map<String, Object> model, WatchChannel channel)
+            Map<String, Object> model, VmChannel channel)
             throws IOException, TemplateException, ApiException {
         // Get API and check if exists
         DynamicKubernetesApi cmApi = new DynamicKubernetesApi("", "v1",

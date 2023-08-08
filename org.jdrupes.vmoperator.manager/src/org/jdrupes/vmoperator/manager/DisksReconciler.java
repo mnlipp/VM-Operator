@@ -42,10 +42,10 @@ import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
      * @param channel the channel
      * @throws ApiException the api exception
      */
-    public void reconcile(DynamicKubernetesObject vmDef,
-            WatchChannel channel) throws ApiException {
+    public void reconcile(JsonObject vmDef,
+            VmChannel channel) throws ApiException {
         @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-        var disks = GsonPtr.to(vmDef.getRaw())
+        var disks = GsonPtr.to(vmDef)
             .get(JsonArray.class, "spec", "vm", "disks")
             .map(JsonArray::asList).orElse(Collections.emptyList());
         int index = 0;
@@ -55,15 +55,15 @@ import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
     }
 
     @SuppressWarnings({ "PMD.AvoidDuplicateLiterals", "PMD.ConfusingTernary" })
-    private void reconcileDisk(DynamicKubernetesObject vmDefinition,
-            int index, JsonObject diskDef, WatchChannel channel)
+    private void reconcileDisk(JsonObject vmDefinition,
+            int index, JsonObject diskDef, VmChannel channel)
             throws ApiException {
         if (!diskDef.has("volumeClaimTemplate")) {
             return;
         }
         var pvcObject = new DynamicKubernetesObject();
         var pvcRaw = GsonPtr.to(pvcObject.getRaw());
-        var vmRaw = GsonPtr.to(vmDefinition.getRaw());
+        var vmRaw = GsonPtr.to(vmDefinition);
         var pvcTpl = GsonPtr.to(diskDef).to("volumeClaimTemplate");
 
         // Copy base and metadata from template and add missing/additional data.
@@ -110,7 +110,7 @@ import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
      * @param channel the channel
      * @throws ApiException the api exception
      */
-    public void deleteDisks(VmDefChanged event, WatchChannel channel)
+    public void deleteDisks(VmDefChanged event, VmChannel channel)
             throws ApiException {
         // Get API and check and list related
         var pvcApi = K8s.pvcApi(channel.client());

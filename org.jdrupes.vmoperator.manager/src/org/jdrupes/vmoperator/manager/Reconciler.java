@@ -30,7 +30,6 @@ import freemarker.template.TemplateHashModel;
 import freemarker.template.TemplateNotFoundException;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
-import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -94,7 +93,7 @@ public class Reconciler extends Component {
      */
     @Handler
     @SuppressWarnings("PMD.ConfusingTernary")
-    public void onVmDefChanged(VmDefChanged event, WatchChannel channel)
+    public void onVmDefChanged(VmDefChanged event, VmChannel channel)
             throws ApiException, TemplateException, IOException {
         // Get complete VM (CR) definition
         var apiVersion = K8s.version(event.object().getApiVersion());
@@ -102,21 +101,22 @@ public class Reconciler extends Component {
             apiVersion, event.crd().getName(), channel.client());
         var defMeta = event.object().getMetadata();
 
-        // Get common data for all reconciles
-        DynamicKubernetesObject vmDef = null;
-        Map<String, Object> model = null;
+        // Update state
         if (event.type() != Type.DELETED) {
-            vmDef = K8s.get(vmCrApi, defMeta).get();
-
-            // Prepare Freemarker model
-            model = new HashMap<>();
-            model.put("cr", patchCr(vmDef.getRaw().deepCopy()));
-            model.put("constants",
-                (TemplateHashModel) new DefaultObjectWrapperBuilder(
-                    Configuration.VERSION_2_3_32)
-                        .build().getStaticModels()
-                        .get(Constants.class.getName()));
+            channel.setState(
+                patchCr(K8s.get(vmCrApi, defMeta).get().getRaw().deepCopy()));
         }
+
+        // Get common data for all reconciles
+        JsonObject vmDef = channel.state();
+        @SuppressWarnings("PMD.UseConcurrentHashMap")
+        Map<String, Object> model = new HashMap<>();
+        model.put("cr", vmDef);
+        model.put("constants",
+            (TemplateHashModel) new DefaultObjectWrapperBuilder(
+                Configuration.VERSION_2_3_32)
+                    .build().getStaticModels()
+                    .get(Constants.class.getName()));
 
         // Reconcile
         if (event.type() != Type.DELETED) {
@@ -132,7 +132,7 @@ public class Reconciler extends Component {
         }
     }
 
-    private Object patchCr(JsonObject vmDef) {
+    private JsonObject patchCr(JsonObject vmDef) {
         // Adjust cdromImage path
         var disks
             = GsonPtr.to(vmDef).to("spec", "vm", "disks").get(JsonArray.class);

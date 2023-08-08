@@ -18,32 +18,54 @@
 
 package org.jdrupes.vmoperator.manager;
 
+import com.google.gson.JsonObject;
 import io.kubernetes.client.openapi.ApiClient;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.EventPipeline;
 import org.jgrapes.core.Subchannel.DefaultSubchannel;
 
 /**
- * A subchannel used to send the events related to a specific
- * VM.
+ * A subchannel used to send the events related to a specific VM.
  */
-public class WatchChannel extends DefaultSubchannel {
+public class VmChannel extends DefaultSubchannel {
 
     private final EventPipeline pipeline;
     private final ApiClient client;
+    private JsonObject state;
 
     /**
      * Instantiates a new watch channel.
      *
      * @param mainChannel the main channel
      * @param pipeline the pipeline
-     * @param client 
+     * @param client the client
      */
-    public WatchChannel(Channel mainChannel, EventPipeline pipeline,
+    public VmChannel(Channel mainChannel, EventPipeline pipeline,
             ApiClient client) {
         super(mainChannel);
         this.pipeline = pipeline;
         this.client = client;
+    }
+
+    /**
+     * Sets the last known state of the resource.
+     *
+     * @param state the state
+     * @return the watch channel
+     */
+    @SuppressWarnings("PMD.LinguisticNaming")
+    public VmChannel setState(JsonObject state) {
+        this.state = state;
+        return this;
+    }
+
+    /**
+     * Returns the last known state of the resource.
+     *
+     * @return the json object
+     */
+    public JsonObject state() {
+        return state;
     }
 
     /**
