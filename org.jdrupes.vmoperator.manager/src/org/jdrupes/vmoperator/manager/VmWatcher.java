@@ -121,7 +121,7 @@ public class VmWatcher extends Component {
             "app.kubernetes.io/managed-by=vmoperator,"
                 + "app.kubernetes.io/name=vmrunner");
         for (String resource : List.of("apps/v1/statefulsets",
-            "v1/persistentvolumeclaims", "v1/configmaps", "v1/secrets")) {
+            "v1/configmaps", "v1/secrets")) {
             var resParts = new LinkedList<>(List.of(resource.split("/")));
             var group = resParts.size() == 3 ? resParts.poll() : "";
             var version = resParts.poll();
