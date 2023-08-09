@@ -44,14 +44,14 @@ machine in a common configuration in a Kubernetes cluster.
 
 VMs are not the typical workload managed by Kubernetes. You can neither
 have replicas nor can the containers simply be restarted without a major 
-impact on the "application". Therefore the managing features provided
-by deployments etc. cannot be used. Qemu in its container must be
-run using a simple pod, which is managed according to its own, 
-rather special requirements. Therefore something simpler such as Docker 
-or Podman might be considered sufficient. 
+impact on the "application". So there are many features for managing
+pods that we cannot make use of. Qemu in its container can simply be
+deployed as a pod or using a stateful set with replica 1, which is rather
+close to simply deploying the pod (you get the restart and some PVC
+management "for free").
 
 A second look, however, reveals that Kubernetes has more to offer.
-* It has a well defined API for managing pods.
+* It has a well defined API for managing resources.
 * It provides access to different kinds of managed storage for the VMs.
 * Its managing features *are* useful for running the component that
 manages the pods with the VMs.
