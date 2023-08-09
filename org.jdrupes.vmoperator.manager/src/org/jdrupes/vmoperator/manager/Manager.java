@@ -86,8 +86,8 @@ public class Manager extends Component {
     static {
         try {
             InputStream props;
-            var path = FsdUtils.findConfigFile(Constants.APP_NAME,
-                "logging.properties");
+            var path
+                = FsdUtils.findConfigFile(VM_OP_NAME, "logging.properties");
             if (path.isPresent()) {
                 props = Files.newInputStream(path.get());
             } else {
