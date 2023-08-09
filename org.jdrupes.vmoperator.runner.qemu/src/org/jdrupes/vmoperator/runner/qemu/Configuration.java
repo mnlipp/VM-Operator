@@ -337,7 +337,7 @@ public class Configuration implements Dto {
     private boolean checkRuntimeDir() {
         // Runtime directory (sockets etc.)
         if (runtimeDir == null) {
-            var appDir = FsdUtils.runtimeDir(Runner.APP_NAME);
+            var appDir = FsdUtils.runtimeDir(Runner.APP_NAME.replace("-", ""));
             if (!Files.exists(appDir) && appDir.toFile().mkdirs()) {
                 try {
                     // When appDir is derived from XDG_RUNTIME_DIR
@@ -353,7 +353,8 @@ public class Configuration implements Dto {
                         runtimeDir));
                 }
             }
-            runtimeDir = FsdUtils.runtimeDir(Runner.APP_NAME).resolve(vm.name);
+            runtimeDir = FsdUtils.runtimeDir(Runner.APP_NAME.replace("-", ""))
+                .resolve(vm.name);
             runtimeDir.toFile().mkdir();
             swtpmSocket = runtimeDir.resolve("swtpm-sock");
             monitorSocket = runtimeDir.resolve("monitor.sock");
@@ -372,7 +373,8 @@ public class Configuration implements Dto {
     private boolean checkDataDir() {
         // Data directory
         if (dataDir == null) {
-            dataDir = FsdUtils.dataHome(Runner.APP_NAME).resolve(vm.name);
+            dataDir = FsdUtils.dataHome(Runner.APP_NAME.replace("-", ""))
+                .resolve(vm.name);
         }
         if (!Files.exists(dataDir)) {
             dataDir.toFile().mkdirs();

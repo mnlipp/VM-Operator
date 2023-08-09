@@ -160,9 +160,9 @@ import org.jgrapes.util.events.WatchFile;
 public class Runner extends Component {
 
     /** The Constant APP_NAME. */
-    public static final String APP_NAME = "vmrunner";
+    public static final String APP_NAME = "vm-runner";
     private static final String TEMPLATE_DIR
-        = "/opt/" + APP_NAME + "/templates";
+        = "/opt/" + APP_NAME.replace("-", "") + "/templates";
     private static final String DEFAULT_TEMPLATE
         = "Standard-VM-latest.ftl.yaml";
     private static final String SAVED_TEMPLATE = "VM.ftl.yaml";
@@ -214,7 +214,7 @@ public class Runner extends Component {
 
         // Configuration store with file in /etc/opt (default)
         File config = new File(cmdLine.getOptionValue('c',
-            "/etc/opt/" + APP_NAME + "/config.yaml"));
+            "/etc/opt/" + APP_NAME.replace("-", "") + "/config.yaml"));
         // Don't rely on night config to produce a good exception
         // for this simple case
         if (!Files.isReadable(config.toPath())) {
@@ -552,7 +552,7 @@ public class Runner extends Component {
     static {
         try {
             InputStream props;
-            var path = FsdUtils.findConfigFile(Runner.APP_NAME,
+            var path = FsdUtils.findConfigFile(Runner.APP_NAME.replace("-", ""),
                 "logging.properties");
             if (path.isPresent()) {
                 props = Files.newInputStream(path.get());
