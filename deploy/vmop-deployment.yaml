@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vm-operator
+  labels:
+    app.kubernetes.io/name: vm-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vm-operator
+      app.kubernetes.io/component: manager
+  template:
+    metadata:
+      name: vm-operator
+      namespace: qemu-vms
+      labels:
+        app.kubernetes.io/name: vm-operator
+        app.kubernetes.io/component: manager
+    spec:
+      containers:
+        - name: vm-operator
+          image: >-
+            docker-registry.lan.mnl.de/vmoperator/org.jdrupes.vmoperator.manager:latest
+          volumeMounts:
+            - name: config
+              mountPath: /etc/opt/vmoperator
+            - name: vmop-image-repository
+              mountPath: /var/local/vmop-image-repository
+          imagePullPolicy: Always
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+      volumes:
+      - name: config
+        configMap:
+          name: vm-operator
+      - name: vmop-image-repository
+        persistentVolumeClaim:
+          claimName: vmop-image-repository
+      nodeSelector:
+        kubernetes.io/os: linux
+      serviceAccountName: vm-operator
+      serviceAccount: vm-operator
+      securityContext:
+        runAsUser: 65534
+        runAsNonRoot: true

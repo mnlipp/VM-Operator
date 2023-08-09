@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: qemu-vms
+
+resources:
+- crds/vms-crd.yaml
+- vmop-cluster-role.yaml
+- vmop-service-account.yaml
+- vmop-role-binding.yaml
+- vmop-image-repository-pvc.yaml
+- vmop-config-map.yaml
+- vmop-deployment.yaml

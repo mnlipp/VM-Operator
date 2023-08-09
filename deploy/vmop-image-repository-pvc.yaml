@@ -1,0 +1,13 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: vmop-image-repository
+  labels:
+    app.kubernetes.io/name: vm-operator
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  volumeMode: Filesystem

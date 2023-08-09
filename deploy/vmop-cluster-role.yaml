@@ -1,0 +1,33 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: vm-operator
+  labels:
+    app.kubernetes.io/name: vm-operator
+rules:
+- apiGroups:
+  - vmoperator.jdrupes.org
+  resources:
+  - vms
+  verbs:
+  - '*'
+- apiGroups:
+  - apps
+  resources:
+  - statefulsets
+  verbs:
+  - '*'
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - secrets
+  verbs:
+  - '*'
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - list
+  - delete
