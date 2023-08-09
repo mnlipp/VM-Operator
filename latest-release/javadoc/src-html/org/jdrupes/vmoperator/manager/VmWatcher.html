@@ -131,8 +131,8 @@
 <span class="source-line-no">118</span><span id="line-118"></span>
 <span class="source-line-no">119</span><span id="line-119">        ListOptions opts = new ListOptions();</span>
 <span class="source-line-no">120</span><span id="line-120">        opts.setLabelSelector(</span>
-<span class="source-line-no">121</span><span id="line-121">            "app.kubernetes.io/managed-by=vmoperator,"</span>
-<span class="source-line-no">122</span><span id="line-122">                + "app.kubernetes.io/name=vmrunner");</span>
+<span class="source-line-no">121</span><span id="line-121">            "app.kubernetes.io/managed-by=" + Constants.VM_OP_NAME + ","</span>
+<span class="source-line-no">122</span><span id="line-122">                + "app.kubernetes.io/name=" + Constants.APP_NAME);</span>
 <span class="source-line-no">123</span><span id="line-123">        for (String resource : List.of("apps/v1/statefulsets",</span>
 <span class="source-line-no">124</span><span id="line-124">            "v1/configmaps", "v1/secrets")) {</span>
 <span class="source-line-no">125</span><span id="line-125">            var resParts = new LinkedList&lt;&gt;(List.of(resource.split("/")));</span>

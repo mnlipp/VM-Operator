@@ -76,7 +76,7 @@
 <span class="source-line-no">063</span><span id="line-63"></span>
 <span class="source-line-no">064</span><span id="line-64">        // Configuration store with file in /etc/opt (default)</span>
 <span class="source-line-no">065</span><span id="line-65">        File config = new File(cmdLine.getOptionValue('c',</span>
-<span class="source-line-no">066</span><span id="line-66">            "/etc/opt/" + VM_OP_NAME + "/config.yaml"));</span>
+<span class="source-line-no">066</span><span id="line-66">            "/etc/opt/" + VM_OP_NAME.replace("-", "") + "/config.yaml"));</span>
 <span class="source-line-no">067</span><span id="line-67">        // Don't rely on night config to produce a good exception</span>
 <span class="source-line-no">068</span><span id="line-68">        // for this simple case</span>
 <span class="source-line-no">069</span><span id="line-69">        if (!Files.isReadable(config.toPath())) {</span>
@@ -99,8 +99,8 @@
 <span class="source-line-no">086</span><span id="line-86">    static {</span>
 <span class="source-line-no">087</span><span id="line-87">        try {</span>
 <span class="source-line-no">088</span><span id="line-88">            InputStream props;</span>
-<span class="source-line-no">089</span><span id="line-89">            var path</span>
-<span class="source-line-no">090</span><span id="line-90">                = FsdUtils.findConfigFile(VM_OP_NAME, "logging.properties");</span>
+<span class="source-line-no">089</span><span id="line-89">            var path = FsdUtils.findConfigFile(VM_OP_NAME.replace("-", ""),</span>
+<span class="source-line-no">090</span><span id="line-90">                "logging.properties");</span>
 <span class="source-line-no">091</span><span id="line-91">            if (path.isPresent()) {</span>
 <span class="source-line-no">092</span><span id="line-92">                props = Files.newInputStream(path.get());</span>
 <span class="source-line-no">093</span><span id="line-93">            } else {</span>

@@ -173,9 +173,9 @@
 <span class="source-line-no">160</span><span id="line-160">public class Runner extends Component {</span>
 <span class="source-line-no">161</span><span id="line-161"></span>
 <span class="source-line-no">162</span><span id="line-162">    /** The Constant APP_NAME. */</span>
-<span class="source-line-no">163</span><span id="line-163">    public static final String APP_NAME = "vmrunner";</span>
+<span class="source-line-no">163</span><span id="line-163">    public static final String APP_NAME = "vm-runner";</span>
 <span class="source-line-no">164</span><span id="line-164">    private static final String TEMPLATE_DIR</span>
-<span class="source-line-no">165</span><span id="line-165">        = "/opt/" + APP_NAME + "/templates";</span>
+<span class="source-line-no">165</span><span id="line-165">        = "/opt/" + APP_NAME.replace("-", "") + "/templates";</span>
 <span class="source-line-no">166</span><span id="line-166">    private static final String DEFAULT_TEMPLATE</span>
 <span class="source-line-no">167</span><span id="line-167">        = "Standard-VM-latest.ftl.yaml";</span>
 <span class="source-line-no">168</span><span id="line-168">    private static final String SAVED_TEMPLATE = "VM.ftl.yaml";</span>
@@ -227,7 +227,7 @@
 <span class="source-line-no">214</span><span id="line-214"></span>
 <span class="source-line-no">215</span><span id="line-215">        // Configuration store with file in /etc/opt (default)</span>
 <span class="source-line-no">216</span><span id="line-216">        File config = new File(cmdLine.getOptionValue('c',</span>
-<span class="source-line-no">217</span><span id="line-217">            "/etc/opt/" + APP_NAME + "/config.yaml"));</span>
+<span class="source-line-no">217</span><span id="line-217">            "/etc/opt/" + APP_NAME.replace("-", "") + "/config.yaml"));</span>
 <span class="source-line-no">218</span><span id="line-218">        // Don't rely on night config to produce a good exception</span>
 <span class="source-line-no">219</span><span id="line-219">        // for this simple case</span>
 <span class="source-line-no">220</span><span id="line-220">        if (!Files.isReadable(config.toPath())) {</span>
@@ -565,7 +565,7 @@
 <span class="source-line-no">552</span><span id="line-552">    static {</span>
 <span class="source-line-no">553</span><span id="line-553">        try {</span>
 <span class="source-line-no">554</span><span id="line-554">            InputStream props;</span>
-<span class="source-line-no">555</span><span id="line-555">            var path = FsdUtils.findConfigFile(Runner.APP_NAME,</span>
+<span class="source-line-no">555</span><span id="line-555">            var path = FsdUtils.findConfigFile(Runner.APP_NAME.replace("-", ""),</span>
 <span class="source-line-no">556</span><span id="line-556">                "logging.properties");</span>
 <span class="source-line-no">557</span><span id="line-557">            if (path.isPresent()) {</span>
 <span class="source-line-no">558</span><span id="line-558">                props = Files.newInputStream(path.get());</span>
