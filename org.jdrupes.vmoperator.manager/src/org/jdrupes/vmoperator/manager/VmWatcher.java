@@ -118,8 +118,8 @@ public class VmWatcher extends Component {
 
         ListOptions opts = new ListOptions();
         opts.setLabelSelector(
-            "app.kubernetes.io/managed-by=vmoperator,"
-                + "app.kubernetes.io/name=vmrunner");
+            "app.kubernetes.io/managed-by=" + Constants.VM_OP_NAME + ","
+                + "app.kubernetes.io/name=" + Constants.APP_NAME);
         for (String resource : List.of("apps/v1/statefulsets",
             "v1/configmaps", "v1/secrets")) {
             var resParts = new LinkedList<>(List.of(resource.split("/")));

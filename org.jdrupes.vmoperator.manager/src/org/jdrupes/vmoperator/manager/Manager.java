@@ -63,7 +63,7 @@ public class Manager extends Component {
 
         // Configuration store with file in /etc/opt (default)
         File config = new File(cmdLine.getOptionValue('c',
-            "/etc/opt/" + VM_OP_NAME + "/config.yaml"));
+            "/etc/opt/" + VM_OP_NAME.replace("-", "") + "/config.yaml"));
         // Don't rely on night config to produce a good exception
         // for this simple case
         if (!Files.isReadable(config.toPath())) {
@@ -86,8 +86,8 @@ public class Manager extends Component {
     static {
         try {
             InputStream props;
-            var path
-                = FsdUtils.findConfigFile(VM_OP_NAME, "logging.properties");
+            var path = FsdUtils.findConfigFile(VM_OP_NAME.replace("-", ""),
+                "logging.properties");
             if (path.isPresent()) {
                 props = Files.newInputStream(path.get());
             } else {

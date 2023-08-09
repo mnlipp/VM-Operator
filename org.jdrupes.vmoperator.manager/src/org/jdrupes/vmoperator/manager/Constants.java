@@ -24,7 +24,7 @@ package org.jdrupes.vmoperator.manager;
 public class Constants {
 
     /** The Constant VM_OP_NAME. */
-    public static final String VM_OP_NAME = "vmoperator";
+    public static final String VM_OP_NAME = "vm-operator";
 
     /** The Constant VM_OP_GROUP. */
     public static final String VM_OP_GROUP = "vmoperator.jdrupes.org";
@@ -33,7 +33,7 @@ public class Constants {
     public static final String VM_OP_KIND_VM = "VirtualMachine";
 
     /** The Constant APP_NAME. */
-    public static final String APP_NAME = "vmrunner";
+    public static final String APP_NAME = "vm-runner";
 
     /** The Constant STATE_RUNNING. */
     public static final String STATE_RUNNING = "Running";
