@@ -44,7 +44,7 @@
 <span class="source-line-no">031</span><span id="line-31"></span>
 <span class="source-line-no">032</span><span id="line-32">    private final EventPipeline pipeline;</span>
 <span class="source-line-no">033</span><span id="line-33">    private final ApiClient client;</span>
-<span class="source-line-no">034</span><span id="line-34">    private JsonObject state;</span>
+<span class="source-line-no">034</span><span id="line-34">    private JsonObject vmDefinition;</span>
 <span class="source-line-no">035</span><span id="line-35"></span>
 <span class="source-line-no">036</span><span id="line-36">    /**</span>
 <span class="source-line-no">037</span><span id="line-37">     * Instantiates a new watch channel.</span>
@@ -61,24 +61,24 @@
 <span class="source-line-no">048</span><span id="line-48">    }</span>
 <span class="source-line-no">049</span><span id="line-49"></span>
 <span class="source-line-no">050</span><span id="line-50">    /**</span>
-<span class="source-line-no">051</span><span id="line-51">     * Sets the last known state of the resource.</span>
+<span class="source-line-no">051</span><span id="line-51">     * Sets the last known definition of the resource.</span>
 <span class="source-line-no">052</span><span id="line-52">     *</span>
-<span class="source-line-no">053</span><span id="line-53">     * @param state the state</span>
+<span class="source-line-no">053</span><span id="line-53">     * @param definition the definition</span>
 <span class="source-line-no">054</span><span id="line-54">     * @return the watch channel</span>
 <span class="source-line-no">055</span><span id="line-55">     */</span>
 <span class="source-line-no">056</span><span id="line-56">    @SuppressWarnings("PMD.LinguisticNaming")</span>
-<span class="source-line-no">057</span><span id="line-57">    public VmChannel setState(JsonObject state) {</span>
-<span class="source-line-no">058</span><span id="line-58">        this.state = state;</span>
+<span class="source-line-no">057</span><span id="line-57">    public VmChannel setVmDefinition(JsonObject definition) {</span>
+<span class="source-line-no">058</span><span id="line-58">        this.vmDefinition = definition;</span>
 <span class="source-line-no">059</span><span id="line-59">        return this;</span>
 <span class="source-line-no">060</span><span id="line-60">    }</span>
 <span class="source-line-no">061</span><span id="line-61"></span>
 <span class="source-line-no">062</span><span id="line-62">    /**</span>
-<span class="source-line-no">063</span><span id="line-63">     * Returns the last known state of the resource.</span>
+<span class="source-line-no">063</span><span id="line-63">     * Returns the last known definition of the VM.</span>
 <span class="source-line-no">064</span><span id="line-64">     *</span>
 <span class="source-line-no">065</span><span id="line-65">     * @return the json object</span>
 <span class="source-line-no">066</span><span id="line-66">     */</span>
-<span class="source-line-no">067</span><span id="line-67">    public JsonObject state() {</span>
-<span class="source-line-no">068</span><span id="line-68">        return state;</span>
+<span class="source-line-no">067</span><span id="line-67">    public JsonObject vmDefinition() {</span>
+<span class="source-line-no">068</span><span id="line-68">        return vmDefinition;</span>
 <span class="source-line-no">069</span><span id="line-69">    }</span>
 <span class="source-line-no">070</span><span id="line-70"></span>
 <span class="source-line-no">071</span><span id="line-71">    /**</span>
