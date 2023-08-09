@@ -105,7 +105,7 @@ public class VmWatcher extends Component {
         // Get existing CRs (VMs)
         Set<String> known = new HashSet<>();
         for (var version : vmOpApiVersions) {
-            // Start a watcher for each existing CRD version.
+            // Get all known CR instances.
             coa.getAPIResources(VM_OP_GROUP, version)
                 .getResources().stream()
                 .filter(r -> Constants.VM_OP_KIND_VM.equals(r.getKind()))
