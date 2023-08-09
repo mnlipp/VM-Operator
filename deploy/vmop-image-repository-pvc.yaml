@@ -6,7 +6,7 @@ metadata:
     app.kubernetes.io/name: vm-operator
 spec:
   accessModes:
-  - ReadWriteOnce
+  - ReadOnlyMany
   resources:
     requests:
       storage: 100Gi
