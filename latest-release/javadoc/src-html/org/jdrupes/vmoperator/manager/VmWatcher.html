@@ -134,7 +134,7 @@
 <span class="source-line-no">121</span><span id="line-121">            "app.kubernetes.io/managed-by=vmoperator,"</span>
 <span class="source-line-no">122</span><span id="line-122">                + "app.kubernetes.io/name=vmrunner");</span>
 <span class="source-line-no">123</span><span id="line-123">        for (String resource : List.of("apps/v1/statefulsets",</span>
-<span class="source-line-no">124</span><span id="line-124">            "v1/persistentvolumeclaims", "v1/configmaps", "v1/secrets")) {</span>
+<span class="source-line-no">124</span><span id="line-124">            "v1/configmaps", "v1/secrets")) {</span>
 <span class="source-line-no">125</span><span id="line-125">            var resParts = new LinkedList&lt;&gt;(List.of(resource.split("/")));</span>
 <span class="source-line-no">126</span><span id="line-126">            var group = resParts.size() == 3 ? resParts.poll() : "";</span>
 <span class="source-line-no">127</span><span id="line-127">            var version = resParts.poll();</span>
