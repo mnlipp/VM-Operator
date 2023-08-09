@@ -31,7 +31,7 @@ application {
     mainClass = 'org.jdrupes.vmoperator.runner.qemu.Runner'
 }
 
-task buildArchContainer(type: Exec) {
+task buildArchImage(type: Exec) {
     dependsOn installDist
     inputs.files 'src/org/jdrupes/vmoperator/runner/qemu/Containerfile.arch'
     
@@ -39,20 +39,20 @@ task buildArchContainer(type: Exec) {
         '-f', 'src/org/jdrupes/vmoperator/runner/qemu/Containerfile.arch', '.'
 }
 
-task tagArchContainer(type: Exec) {
-    dependsOn buildArchContainer
+task tagLatestArchImage(type: Exec) {
+    dependsOn buildArchImage
     
     commandLine 'podman', 'tag', "${project.name}:${project.version}",\
         "${project.name}:latest"
 }
 
-task buildContainer {
-    dependsOn buildArchContainer
-    dependsOn tagArchContainer
+task buildLatestArchImage {
+    dependsOn buildArchImage
+    dependsOn tagLatestArchImage
 }
 
-task pushArchContainer(type: Exec) {
-    dependsOn buildContainer
+task pushArchImage(type: Exec) {
+    dependsOn buildArchImage
 
     commandLine 'podman', 'push', '--tls-verify=false', \
         "localhost/${project.name}:${project.version}", \
@@ -60,8 +60,8 @@ task pushArchContainer(type: Exec) {
             + "/${project.name}-arch:${project.version}"
 }
 
-task pushArchContainerAsLatest(type: Exec) {
-    dependsOn buildContainer
+task pushArchLatestImage(type: Exec) {
+    dependsOn buildLatestArchImage
 
     commandLine 'podman', 'push', '--tls-verify=false', \
         "localhost/${project.name}:${project.version}", \
@@ -69,8 +69,8 @@ task pushArchContainerAsLatest(type: Exec) {
             + "/${project.name}-arch:latest"
 }
 
-task pushContainer {
-    dependsOn pushArchContainer
-    dependsOn pushArchContainerAsLatest
+task pushImages {
+    dependsOn pushArchImage
+    dependsOn pushArchLatestImage
 }
 
