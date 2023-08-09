@@ -139,13 +139,13 @@ data:
         <#if disk.volumeClaimTemplate?? 
           && disk.volumeClaimTemplate.metadata??
           && disk.volumeClaimTemplate.metadata.name??>
-          <#assign name = disk.volumeClaimTemplate.metadata.name.asString>
+          <#assign diskName = disk.volumeClaimTemplate.metadata.name.asString + "-disk">
         <#else>
-          <#assign name = "" + drvCounter>
+          <#assign diskName = "disk-" + drvCounter>
         </#if>
         <#if disk.volumeClaimTemplate??> 
         - type: raw
-          resource: /dev/disk-${ name }
+          resource: /dev/${ diskName }
           <#if disk.bootindex??>
           bootindex: ${ disk.bootindex.asInt?c }
           </#if>

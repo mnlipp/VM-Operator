@@ -50,9 +50,7 @@ public class Reconciler extends Component {
     @SuppressWarnings("PMD.SingularField")
     private final Configuration fmConfig;
     private final CmReconciler cmReconciler;
-    private final DataReconciler dataReconciler;
-    private final DisksReconciler disksReconciler;
-    private final PodReconciler podReconciler;
+    private final StsReconciler stsReconciler;
 
     /**
      * Instantiates a new reconciler.
@@ -73,9 +71,7 @@ public class Reconciler extends Component {
         fmConfig.setClassForTemplateLoading(Reconciler.class, "");
 
         cmReconciler = new CmReconciler(fmConfig);
-        disksReconciler = new DisksReconciler();
-        dataReconciler = new DataReconciler(fmConfig);
-        podReconciler = new PodReconciler(fmConfig);
+        stsReconciler = new StsReconciler(fmConfig);
     }
 
     /**
@@ -120,15 +116,12 @@ public class Reconciler extends Component {
 
         // Reconcile
         if (event.type() != Type.DELETED) {
-            dataReconciler.reconcile(model, channel);
-            disksReconciler.reconcile(vmDef, channel);
             var configMap = cmReconciler.reconcile(event, model, channel);
             model.put("cm", configMap.getRaw());
-            podReconciler.reconcile(event, model, channel);
+            stsReconciler.reconcile(event, model, channel);
         } else {
-            podReconciler.reconcile(event, model, channel);
+            stsReconciler.reconcile(event, model, channel);
             cmReconciler.reconcile(event, model, channel);
-            disksReconciler.deleteDisks(event, channel);
         }
     }
 

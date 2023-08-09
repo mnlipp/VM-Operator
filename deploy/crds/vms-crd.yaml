@@ -178,39 +178,12 @@ spec:
                               (for whatever reason) is to use a label selector alongside 
                               manually created PersistentVolumes.
                             properties:
-                              apiVersion:
-                                description: >-
-                                  APIVersion defines the versioned schema of this
-                                  representation of an object. Servers should convert recognized
-                                  schemas to the latest internal value, and may reject unrecognized
-                                  values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-                                type: string
-                                default: v1
-                              kind:
-                                description: >-
-                                  Kind is a string value representing the REST
-                                  resource this object represents. Servers may infer this
-                                  from the endpoint the client submits requests to. Cannot
-                                  be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-                                type: string
-                                default: PersistentVolumeClaim
                               metadata:
                                 description: >-
                                   EmbeddedMetadata contains metadata relevant to
                                   an EmbeddedResource.
                                 type: object
                                 properties:
-                                  namespace:
-                                    description: >-
-                                      Namespace defines the space within which each 
-                                      name must be unique. An empty namespace is equivalent to the 
-                                      "default" namespace, but "default" is the canonical 
-                                      representation. Not all objects are required to be scoped 
-                                      to a namespace - the value of this field for those objects 
-                                      will be empty. Must be a DNS_LABEL. Cannot be updated. 
-                                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces.
-                                      The default value is the VM's namespace.
-                                    type: string
                                   name:
                                     description: >-
                                       Name must be unique within a namespace.

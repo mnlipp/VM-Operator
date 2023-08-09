@@ -34,6 +34,7 @@ import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -100,6 +101,8 @@ public class VmWatcher extends Component {
         }
     }
 
+    @SuppressWarnings({ "PMD.AvoidInstantiatingObjectsInLoops",
+        "PMD.CognitiveComplexity" })
     private void purge(CustomObjectsApi coa, List<String> vmOpApiVersions)
             throws ApiException {
         // Get existing CRs (VMs)
@@ -117,20 +120,28 @@ public class VmWatcher extends Component {
         opts.setLabelSelector(
             "app.kubernetes.io/managed-by=vmoperator,"
                 + "app.kubernetes.io/name=vmrunner");
-        for (var version : vmOpApiVersions) {
-            for (String resource : List.of("pods", "configmaps",
-                "persistentvolumeclaims", "secrets")) {
-                // Get resources, selected by label
-                @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
-                var api
-                    = new DynamicKubernetesApi("", version, resource, client);
-                for (var obj : api.list(managedNamespace, opts).getObject()
-                    .getItems()) {
-                    String instance = obj.getMetadata().getLabels()
-                        .get("app.kubernetes.io/instance");
-                    if (!known.contains(instance)) {
-                        api.delete(managedNamespace,
-                            obj.getMetadata().getName());
+        for (String resource : List.of("apps/v1/statefulsets",
+            "v1/persistentvolumeclaims", "v1/configmaps", "v1/secrets")) {
+            var resParts = new LinkedList<>(List.of(resource.split("/")));
+            var group = resParts.size() == 3 ? resParts.poll() : "";
+            var version = resParts.poll();
+            var plural = resParts.poll();
+            // Get resources, selected by label
+            @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+            var api = new DynamicKubernetesApi(group, version, plural, client);
+            var listObj = api.list(managedNamespace, opts).getObject();
+            if (listObj == null) {
+                continue;
+            }
+            for (var obj : listObj.getItems()) {
+                String instance = obj.getMetadata().getLabels()
+                    .get("app.kubernetes.io/instance");
+                if (!known.contains(instance)) {
+                    var resName = obj.getMetadata().getName();
+                    var result = api.delete(managedNamespace, resName);
+                    if (!result.isSuccess()) {
+                        logger.warning(() -> "Cannot cleanup resource \""
+                            + resName + "\": " + result.toString());
                     }
                 }
             }

@@ -25,18 +25,17 @@ import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
 import io.kubernetes.client.util.generic.dynamic.Dynamics;
-import io.kubernetes.client.util.generic.options.DeleteOptions;
+import io.kubernetes.client.util.generic.options.PatchOptions;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
-import static org.jdrupes.vmoperator.manager.Constants.STATE_STOPPED;
 import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
 
 /**
  * Delegee for reconciling the pod.
  */
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
-/* default */ class PodReconciler {
+/* default */ class StsReconciler {
 
     private final Configuration fmConfig;
 
@@ -45,12 +44,12 @@ import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
      *
      * @param fmConfig the fm config
      */
-    public PodReconciler(Configuration fmConfig) {
+    public StsReconciler(Configuration fmConfig) {
         this.fmConfig = fmConfig;
     }
 
     /**
-     * Reconcile pod.
+     * Reconcile stateful set.
      *
      * @param event the event
      * @param model the model
@@ -63,51 +62,38 @@ import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
             VmChannel channel)
             throws IOException, TemplateException, ApiException {
         // Check if exists
-        DynamicKubernetesApi podApi = new DynamicKubernetesApi("", "v1",
-            "pods", channel.client());
-        var existing = K8s.get(podApi, event.object().getMetadata());
+        DynamicKubernetesApi stsApi = new DynamicKubernetesApi("apps", "v1",
+            "statefulsets", channel.client());
+        // var existing = K8s.get(stsApi, event.object().getMetadata());
 
-        // Get desired state.
-        var delete = event.type() == Type.DELETED
-            || GsonPtr.to((JsonObject) model.get("cr")).to("spec", "vm")
-                .getAsString("state").orElse("").equals(STATE_STOPPED);
-
-        // If deleted or stopped, delete
-        if (delete) {
-            if (existing.isPresent()) {
-                var opts = new DeleteOptions();
-                opts.setGracePeriodSeconds(
-                    GsonPtr.to((JsonObject) model.get("cr")).to("spec", "vm")
-                        .getAsLong("powerdownTimeout").get() + 1);
-                K8s.delete(podApi, existing.get(), opts);
-            }
+        if (event.type() == Type.DELETED) {
+            var meta = GsonPtr.to((JsonObject) model.get("cr")).to("metadata");
+            PatchOptions opts = new PatchOptions();
+            opts.setFieldManager("kubernetes-java-kubectl-apply");
+            stsApi.patch(meta.getAsString("namespace").get(),
+                meta.getAsString("name").get(), V1Patch.PATCH_FORMAT_JSON_PATCH,
+                new V1Patch("[{\"op\": \"replace\", "
+                    + "\"path\": \"/spec/replicas\", \"value\": 0}]"),
+                opts).throwsApiException();
+            stsApi.delete(meta.getAsString("namespace").get(),
+                meta.getAsString("name").get()).throwsApiException();
             return;
         }
 
         // Combine template and data and parse result
-        var fmTemplate = fmConfig.getTemplate("runnerPod.ftl.yaml");
+        var fmTemplate = fmConfig.getTemplate("runnerSts.ftl.yaml");
         StringWriter out = new StringWriter();
         fmTemplate.process(model, out);
         // Avoid Yaml.load due to
         // https://github.com/kubernetes-client/java/issues/2741
-        var podDef = Dynamics.newFromYaml(out.toString());
-
-        // Check if update
-        if (existing.isEmpty()) {
-            podApi.create(podDef);
-        } else {
-            // only annotations are updated
-            var metadata = new JsonObject();
-            metadata.add("annotations", GsonPtr.to(podDef.getRaw())
-                .to("metadata").get(JsonObject.class, "annotations").get());
-            var patch = new JsonObject();
-            patch.add("metadata", metadata);
-            podApi.patch(existing.get().getMetadata().getNamespace(),
-                existing.get().getMetadata().getName(),
-                V1Patch.PATCH_FORMAT_JSON_MERGE_PATCH,
-                new V1Patch(channel.client().getJSON().serialize(patch)))
-                .throwsApiException();
-        }
+        var stsDef = Dynamics.newFromYaml(out.toString());
+        PatchOptions opts = new PatchOptions();
+        opts.setForce(false);
+        opts.setFieldManager("kubernetes-java-kubectl-apply");
+        stsApi.patch(stsDef.getMetadata().getNamespace(),
+            stsDef.getMetadata().getName(), V1Patch.PATCH_FORMAT_APPLY_YAML,
+            new V1Patch(channel.client().getJSON().serialize(stsDef)),
+            opts).throwsApiException();
     }
 
 }
