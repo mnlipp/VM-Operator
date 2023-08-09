@@ -24,6 +24,54 @@ dependencies {
 }
 
 application {
+    applicationName = 'vm-manager'
+    applicationDefaultJvmArgs = ['-Xms50m',
+        '-Djava.util.logging.manager=org.jdrupes.vmoperator.util.LongLoggingManager'
+        ]
     // Define the main class for the application.
     mainClass = 'org.jdrupes.vmoperator.manager.Manager'
 }
+
+task buildImage(type: Exec) {
+    dependsOn installDist
+    inputs.files 'src/org/jdrupes/vmoperator/manager/Containerfile'
+    
+    commandLine 'podman', 'build', '-t', "${project.name}:${project.version}",\
+        '-f', 'src/org/jdrupes/vmoperator/manager/Containerfile', '.'
+}
+
+task tagLatestImage(type: Exec) {
+    dependsOn buildImage
+    
+    commandLine 'podman', 'tag', "${project.name}:${project.version}",\
+        "${project.name}:latest"
+}
+
+task buildLatestImage {
+    dependsOn buildImage
+    dependsOn tagLatestImage
+}
+
+task pushImage(type: Exec) {
+    dependsOn buildImage
+
+    commandLine 'podman', 'push', '--tls-verify=false', \
+        "localhost/${project.name}:${project.version}", \
+        "${project.rootProject.properties['docker.registry']}" \
+            + "/${project.name}:${project.version}"
+}
+
+task pushLatestImage(type: Exec) {
+    dependsOn buildLatestImage
+
+    commandLine 'podman', 'push', '--tls-verify=false', \
+        "localhost/${project.name}:${project.version}", \
+        "${project.rootProject.properties['docker.registry']}" \
+            + "/${project.name}:latest"
+}
+
+task pushImages {
+    dependsOn pushImage
+    dependsOn pushLatestImage
+}
+

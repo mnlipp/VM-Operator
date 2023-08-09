@@ -1,0 +1,7 @@
+FROM ghcr.io/graalvm/jdk-community:17
+
+RUN microdnf install findutils && microdnf clean all
+
+COPY build/install/vm-manager /opt/vmmanager
+
+CMD ["/opt/vmmanager/bin/vm-manager"]
