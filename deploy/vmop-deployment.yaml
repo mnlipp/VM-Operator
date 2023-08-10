@@ -21,7 +21,7 @@ spec:
       containers:
         - name: vm-operator
           image: >-
-            docker-registry.lan.mnl.de/vmoperator/org.jdrupes.vmoperator.manager:latest
+            ghcr.io/mnlipp/org.jdrupes.vmoperator.manager:latest
           volumeMounts:
             - name: config
               mountPath: /etc/opt/vmoperator
