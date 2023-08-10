@@ -2,4 +2,4 @@
 
 "/Manager":
   "/Controller":
-    namespace: qemu-vms
+    namespace: vmop-dev
