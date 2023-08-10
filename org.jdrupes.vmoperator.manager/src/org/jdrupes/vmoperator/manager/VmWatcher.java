@@ -33,6 +33,8 @@ import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -45,9 +47,11 @@ import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
+import org.jgrapes.core.Components;
 import org.jgrapes.core.annotation.Handler;
 import org.jgrapes.core.events.Start;
 import org.jgrapes.core.events.Stop;
+import org.jgrapes.util.events.ConfigurationUpdate;
 
 /**
  * Watches for changes of VM definitions.
@@ -56,7 +60,7 @@ import org.jgrapes.core.events.Stop;
 public class VmWatcher extends Component {
 
     private ApiClient client;
-    private String managedNamespace = "qemu-vms";
+    private String namespaceToWatch;
     private final Map<String, VmChannel> channels
         = new ConcurrentHashMap<>();
 
@@ -70,16 +74,49 @@ public class VmWatcher extends Component {
     }
 
     /**
+     * On configuration update.
+     *
+     * @param event the event
+     */
+    @Handler
+    public void onConfigurationUpdate(ConfigurationUpdate event) {
+        event.structured(Components.manager(parent()).componentPath())
+            .ifPresent(c -> {
+                if (c.containsKey("namespace")) {
+                    namespaceToWatch = (String) c.get("namespace");
+                }
+            });
+    }
+
+    /**
      * Handle the start event.
      *
      * @param event the event
      * @throws IOException 
      * @throws ApiException 
      */
-    @Handler
+    @Handler(priority = 10)
     public void onStart(Start event) throws IOException, ApiException {
-        client = Configuration.getDefaultApiClient();
+        // Get namespace
+        if (namespaceToWatch == null) {
+            var path = Path
+                .of("/var/run/secrets/kubernetes.io/serviceaccount/namespace");
+            if (Files.isReadable(path)) {
+                namespaceToWatch = Files.lines(path).findFirst().orElse(null);
+            }
+        }
+        if (namespaceToWatch == null) {
+            logger.severe(() -> "Namespace to watch not configured and"
+                + " no file in kubernetes directory.");
+            event.cancel(true);
+            fire(new Stop());
+            return;
+        }
+        logger
+            .fine(() -> "Controlling namespace \"" + namespaceToWatch + "\".");
+
         // Get all our API versions
+        client = Configuration.getDefaultApiClient();
         var apis = new ApisApi(client).getAPIVersions();
         var vmOpApiVersions = apis.getGroups().stream()
             .filter(g -> g.getName().equals(VM_OP_GROUP)).findFirst()
@@ -129,7 +166,7 @@ public class VmWatcher extends Component {
             // Get resources, selected by label
             @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
             var api = new DynamicKubernetesApi(group, version, plural, client);
-            var listObj = api.list(managedNamespace, opts).getObject();
+            var listObj = api.list(namespaceToWatch, opts).getObject();
             if (listObj == null) {
                 continue;
             }
@@ -138,7 +175,7 @@ public class VmWatcher extends Component {
                     .get("app.kubernetes.io/instance");
                 if (!known.contains(instance)) {
                     var resName = obj.getMetadata().getName();
-                    var result = api.delete(managedNamespace, resName);
+                    var result = api.delete(namespaceToWatch, resName);
                     if (!result.isSuccess()) {
                         logger.warning(() -> "Cannot cleanup resource \""
                             + resName + "\": " + result.toString());
@@ -152,7 +189,7 @@ public class VmWatcher extends Component {
         Set<String> result = new HashSet<>();
         var api = new DynamicKubernetesApi(VM_OP_GROUP, version,
             crd.getName(), client);
-        for (var item : api.list(managedNamespace).getObject().getItems()) {
+        for (var item : api.list(namespaceToWatch).getObject().getItems()) {
             if (!VM_OP_KIND_VM.equals(item.getKind())) {
                 continue;
             }
@@ -169,7 +206,7 @@ public class VmWatcher extends Component {
                 // Watch sometimes terminates without apparent reason.
                 while (true) {
                     var call = coa.listNamespacedCustomObjectCall(VM_OP_GROUP,
-                        version, managedNamespace, crd.getName(), null, false,
+                        version, namespaceToWatch, crd.getName(), null, false,
                         null, null, null, null, null, null, null, true, null);
                     try (Watch<V1Namespace> watch
                         = Watch.createWatch(client, call,

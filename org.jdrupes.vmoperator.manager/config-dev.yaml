@@ -2,4 +2,4 @@
 
 "/Manager":
   "/Controller":
-    test: yes
+    namespace: qemu-vms
