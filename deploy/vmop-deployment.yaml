@@ -13,7 +13,6 @@ spec:
   template:
     metadata:
       name: vm-operator
-      namespace: qemu-vms
       labels:
         app.kubernetes.io/name: vm-operator
         app.kubernetes.io/component: manager
