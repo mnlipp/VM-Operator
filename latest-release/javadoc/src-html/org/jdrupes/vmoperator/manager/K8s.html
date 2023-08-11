@@ -164,7 +164,7 @@
 <span class="source-line-no">151</span><span id="line-151">            T apply(GenericKubernetesApi&lt;T, LT&gt; api, T existing, String update)</span>
 <span class="source-line-no">152</span><span id="line-152">                    throws ApiException {</span>
 <span class="source-line-no">153</span><span id="line-153">        PatchOptions opts = new PatchOptions();</span>
-<span class="source-line-no">154</span><span id="line-154">        opts.setForce(false);</span>
+<span class="source-line-no">154</span><span id="line-154">        opts.setForce(true);</span>
 <span class="source-line-no">155</span><span id="line-155">        opts.setFieldManager("kubernetes-java-kubectl-apply");</span>
 <span class="source-line-no">156</span><span id="line-156">        var response = api.patch(existing.getMetadata().getNamespace(),</span>
 <span class="source-line-no">157</span><span id="line-157">            existing.getMetadata().getName(), V1Patch.PATCH_FORMAT_APPLY_YAML,</span>
