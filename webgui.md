@@ -5,4 +5,4 @@ title: VM-Operator Web-GUI
 
 # The Web-GUI
 
-*To be continued.*
+*Planned for version 2.0.*
