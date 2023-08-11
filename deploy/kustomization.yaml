@@ -3,7 +3,7 @@ kind: Kustomization
 
 resources:
 - crds/vms-crd.yaml
-- vmop-cluster-role.yaml
+- vmop-role.yaml
 - vmop-service-account.yaml
 - vmop-role-binding.yaml
 - vmop-image-repository-pvc.yaml
