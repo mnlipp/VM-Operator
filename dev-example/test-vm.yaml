@@ -1,30 +1,29 @@
 apiVersion: "vmoperator.jdrupes.org/v1"
 kind: VirtualMachine
 metadata:
-  namespace: vmop-demo
+  namespace: vmop-dev
   name: test-vm
 spec:
-
   image:
-    # Defaults:
-    # repository: ghcr.io
-    # path: mnlipp/org.jdrupes.vmoperator.runner.qemu-arch
-    # version: latest
+    repository: docker-registry.lan.mnl.de
+    path: vmoperator/org.jdrupes.vmoperator.runner.qemu-arch
     pullPolicy: Always
 
   vm:
-    maximumCpus: 4
-    currentCpus: 3
+    state: Running
+    bootMenu: yes
     maximumRam: "8 GiB"
     currentRam: "4 GiB"
+    maximumCpus: 4
+    currentCpus: 4
   
     networks:
-    - tap: {}
-    
+    - tap:
+        mac: "00:16:3e:33:59:10"
     disks:
     - volumeClaimTemplate:
         metadata:
-          name: test-vm-system
+          name: system
         spec:
           storageClassName: ""
           selector:
@@ -35,7 +34,12 @@ spec:
           resources:
             requests:
               storage: 40Gi
+    - cdrom:
+        # image: ""
+        image: https://download.fedoraproject.org/pub/fedora/linux/releases/38/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-38-1.6.iso
+        # image: "Fedora-Workstation-Live-x86_64-38-1.6.iso"
 
+#    - hostDevice: /dev/vgmain/test-vm
     display:
       spice:
         port: 5910

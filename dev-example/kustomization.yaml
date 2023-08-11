@@ -1,0 +1,35 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- ../deploy
+
+namespace: vmop-dev
+
+patches:
+- patch: |-
+    kind: PersistentVolumeClaim
+    apiVersion: v1
+    metadata:
+      name: vmop-image-repository
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
+      storageClassName: local-path
+
+- target:
+    group: apps
+    version: v1
+    kind: Deployment
+    name: vm-operator
+  patch: |-
+    - op: replace
+      path: /spec/template/spec/containers/0/image
+      value: docker-registry.lan.mnl.de/vmoperator/org.jdrupes.vmoperator.manager:latest
+    - op: replace
+      path: /spec/replicas
+      value: 0
+      
