@@ -3,9 +3,9 @@
 The CRD must be deployed independently. Apart from that, the 
 `kustomize.yaml` 
 
-  * creates a small image repository and
+*   creates a small image repository and
  
-  * deploys the operator in namespace `vmop-dev` with a replica of 0.
+*   deploys the operator in namespace `vmop-dev` with a replica of 0.
  
 This allows you to run the manager in your IDE.
 
