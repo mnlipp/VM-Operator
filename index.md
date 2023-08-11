@@ -18,6 +18,9 @@ helm templates), the preferred way is to deploy "[the manager](manager.md)"
 component which acts as a Kubernetes operator for runners 
 and thus the VMs.
 
+If you just want to try out things, you can skip the remainder of this
+page and proceed to "[the manager](manager.md)".
+
 ## Motivation
 The project was triggered by a remark in the discussion about RedHat
 [dropping SPICE support](https://bugzilla.redhat.com/show_bug.cgi?id=2030592) 
