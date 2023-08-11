@@ -31,6 +31,8 @@ import freemarker.template.TemplateNotFoundException;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_GROUP;
@@ -135,9 +137,20 @@ public class Reconciler extends Component {
                 continue;
             }
             String image = cdrom.get("image").getAsString();
-            if (!image.contains("/") && !image.isEmpty()) {
-                cdrom.addProperty("image",
-                    Constants.IMAGE_REPO_PATH + "/" + image);
+            if (image.isEmpty()) {
+                continue;
+            }
+            try {
+                @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+                var imageUri = new URI("file://" + Constants.IMAGE_REPO_PATH
+                    + "/").resolve(image);
+                if ("file".equals(imageUri.getScheme())) {
+                    cdrom.addProperty("image", imageUri.getPath());
+                } else {
+                    cdrom.addProperty("image", imageUri.toString());
+                }
+            } catch (URISyntaxException e) {
+                logger.warning(() -> "Invalid CDROM image: " + image);
             }
         }
         return vmDef;
