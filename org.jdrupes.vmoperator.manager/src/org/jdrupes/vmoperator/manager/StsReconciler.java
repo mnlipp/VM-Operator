@@ -29,6 +29,7 @@ import io.kubernetes.client.util.generic.options.PatchOptions;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
+import java.util.logging.Logger;
 import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
 
 /**
@@ -37,6 +38,7 @@ import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 /* default */ class StsReconciler {
 
+    protected final Logger logger = Logger.getLogger(getClass().getName());
     private final Configuration fmConfig;
 
     /**
@@ -61,11 +63,10 @@ import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
     public void reconcile(VmDefChanged event, Map<String, Object> model,
             VmChannel channel)
             throws IOException, TemplateException, ApiException {
-        // Check if exists
         DynamicKubernetesApi stsApi = new DynamicKubernetesApi("apps", "v1",
             "statefulsets", channel.client());
-        // var existing = K8s.get(stsApi, event.object().getMetadata());
 
+        // Maybe delete
         if (event.type() == Type.DELETED) {
             var meta = GsonPtr.to((JsonObject) model.get("cr")).to("metadata");
             PatchOptions opts = new PatchOptions();
@@ -77,6 +78,16 @@ import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
                 opts).throwsApiException();
             stsApi.delete(meta.getAsString("namespace").get(),
                 meta.getAsString("name").get()).throwsApiException();
+            return;
+        }
+
+        // Never change existing if replicas is greater 0 (would cause
+        // update and thus VM restart). Apply will happen when replicas
+        // changes from 0 to 1, i.e. on next powerdown/powerup.
+        var metadata = event.object().getMetadata();
+        var existing = K8s.get(stsApi, metadata);
+        if (existing.isPresent() && GsonPtr.to(existing.get().getRaw())
+            .to("spec").getAsInt("replicas").orElse(1) > 0) {
             return;
         }
 
