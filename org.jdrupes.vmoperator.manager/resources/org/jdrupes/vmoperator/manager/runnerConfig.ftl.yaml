@@ -117,7 +117,7 @@ data:
           </#if>
         <#elseif itf.user??>
         - type: user
-          device: ${ itf.tap.device.asString }
+          device: ${ itf.user.device.asString }
           <#if itf.user.net??>
           net: "${ itf.user.net.asString }"
           </#if>
