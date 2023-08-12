@@ -110,7 +110,9 @@ import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
         var podApi = new DynamicKubernetesApi("", "v1", "pods", client);
         var pods = podApi
             .list(newCm.getMetadata().getNamespace(), listOpts).getObject();
-        if (pods == null) {
+
+        // If the VM is being created, the pod may not exist yet.
+        if (pods == null || pods.getItems().size() == 0) {
             return;
         }
         var pod = pods.getItems().get(0);
