@@ -216,12 +216,12 @@ public class VmWatcher extends Component {
                             handleVmDefinitionChange(crd, item);
                         }
                     } catch (IllegalStateException e) {
-                        logger.log(Level.FINE, e, () -> "Probem watching: "
-                            + e.getMessage());
+                        logger.log(Level.FINE, e, () -> "Probem watching "
+                            + "(retrying): " + e.getMessage());
                     }
                 }
             } catch (IOException | ApiException e) {
-                logger.log(Level.FINE, e, () -> "Probem watching: "
+                logger.log(Level.SEVERE, e, () -> "Probem watching: "
                     + e.getMessage());
             }
             fire(new Stop());
