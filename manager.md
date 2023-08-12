@@ -28,12 +28,17 @@ The next step is to create a namespace for the manager and the VMs, e.g.
 kubectl create namespace vmop-demo
 ```
 
-Finally you have to create an account, the role, the binding etc. Sample 
-files for creating these resources using the default namespace can be found 
-in the [deploy](https://github.com/mnlipp/VM-Operator/tree/main/deploy)
+Finally you have to create an account, the role, the binding etc. The 
+default files for creating these resources using the default namespace 
+can be found in the 
+[deploy](https://github.com/mnlipp/VM-Operator/tree/main/deploy)
 directory. I recommend to use 
-[kustomize](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/) together with a copy of the file from the 
+[kustomize](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/) to create your own configuration. 
+
+Use one of the `kustomize.yaml` files from the
 [example](https://github.com/mnlipp/VM-Operator/tree/main/example) directory.
+The directory contains two examples. Shown below is the example file that 
+uses storage from `local-path`. This should work everywhere.
 
 ```yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -44,27 +49,43 @@ resources:
 
 namespace: vmop-demo
 
-# patches:
-# - patch: |-
-#     kind: PersistentVolumeClaim
-#     apiVersion: v1
-#     metadata:
-#       name: vmop-image-repository
-#     spec:
-#       accessModes:
-#       - ReadWriteOnce
-#       resources:
-#         requests:
-#           storage: 10Gi
-#       storageClassName: local-path
+patches:
+- patch: |-
+    kind: PersistentVolumeClaim
+    apiVersion: v1
+    metadata:
+      name: vmop-image-repository
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
+      storageClassName: local-path
 ```
 
-The `kustomize.yaml` file adds a namespace to all resource definitions and
-allows you to patch the PVC for a volume that is mounted into all pods 
-that run a VM. This volume is intended to be used as a common repository
-for CDROM images. The PVC must exist and it must be bound before any 
-pods can be run.
+The sample file adds a namespace (`vmop-demo`) to all resource 
+definitions and patches the PVC `vmop-image-repository`. This is a volume
+that is mounted into all pods that run a VM. The volume is intended 
+to be used as a common repository for CDROM images. The PVC must exist
+and it must be bound before any pods can run.
+
+Check that the pod with the manager is running:
+
+```sh
+kubectl -n vmop-demo get pods -l app.kubernetes.io/name=vm-operator
+```
+
+Proceed to the description of [the controller](controller.html)
+for creating your first VM.
 
 ## Running during development
 
-*To be continued*
+The [dev-example](https://github.com/mnlipp/VM-Operator/tree/main/dev-example)
+directory contains a `kustomize.yaml` that uses the development namespace 
+`vmop-dev` and creates a deployment for the manager with 0 replicas.
+
+This environment can be used for running the manager in the IDE. As the 
+namespace to manage cannot be detected from the environment, you must use
+ `-c ../dev-example/config.yaml` as argument when starting the manager. This 
+configures it to use the namespace `vmop-dev`.
