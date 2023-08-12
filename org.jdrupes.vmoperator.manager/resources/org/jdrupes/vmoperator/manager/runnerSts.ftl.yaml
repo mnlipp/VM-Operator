@@ -29,9 +29,15 @@ spec:
       containers:
       - name: ${ cr.metadata.name.asString }
         <#assign image = cr.spec.image>
-        image: ${ image.repository.asString }/${ image.path.asString }:${ image.version.asString }
+        <#if image.repository?? && image.path??>
+        image: ${ image.repository.asString }/${ image.path.asString }<#if image.version??>:${ image.version.asString }</#if>
+        <#else>
+        image: ${ source.asString }
+        </#if>
         resources: {}
+        <#if image.pullPolicy??>
         imagePullPolicy: ${ image.pullPolicy.asString }
+        </#if>
         volumeMounts:
         # Not needed because pod is priviledged:
         # - mountPath: /dev/kvm

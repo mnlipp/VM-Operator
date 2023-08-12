@@ -20,7 +20,16 @@ spec:
                   description: >-
                     The image to use for the pod. Must run a runner.
                   type: object
+                  oneOf:
+                  - properties:
+                      source: {}
+                      path: {}
                   properties:
+                    source:
+                      description: >-
+                        The image to use for the pod. Must run a "runner".
+                      type: string
+                      default: "ghcr.io/mnlipp/org.jdrupes.vmoperator.runner.qemu-arch:latest"
                     repository: 
                       type: string
                       default: "ghcr.io"
@@ -31,9 +40,12 @@ spec:
                       type: string
                       default: "latest"
                     pullPolicy:
+                      description: >-
+                        Image pull policy. One of Always, Never, IfNotPresent.
+                        Defaults to Always if :latest tag is specified, or IfNotPresent
+                        otherwise.
+                      enum: [ "Always", "Never", "IfNotPresent" ]
                       type: string
-                      enum: [ "IfNotPresent", "Always" ]
-                      default: "IfNotPresent"
                 vm:
                   type: object
                   description: Defines the VM.
