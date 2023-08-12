@@ -26,18 +26,13 @@ spec:
         metadata:
           name: test-vm-system
         spec:
-          storageClassName: ""
-          selector:
-            matchLabels:
-              app.kubernetes.io/name: vmrunner
-              app.kubernetes.io/instance: test-vm
-              vmrunner.jdrupes.org/disk: system
+          storageClassName: rook-ceph-block
           resources:
             requests:
               storage: 40Gi
     - cdrom:
-        image: ""
-        # image: https://download.fedoraproject.org/pub/fedora/linux/releases/38/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-38-1.6.iso
+        # image: ""
+        image: https://download.fedoraproject.org/pub/fedora/linux/releases/38/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-38-1.6.iso
         # image: "Fedora-Workstation-Live-x86_64-38-1.6.iso"
 
     display:
