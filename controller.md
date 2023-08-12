@@ -5,14 +5,15 @@ title: VM-Operator Controller
 
 # The Controller
 
-The controller component watches the custom resources of type VirtualMachine.
-It does precisely what the illustration from the 
-[Operator Whitepaper](https://github.com/cncf/tag-app-delivery/blob/eece8f7307f2970f46f100f51932db106db46968/operator-wg/whitepaper/Operator-WhitePaper_v1-0.md#operator-components-in-kubernetes) shows.
+The controller component (which is part of the manager) does precisely 
+what the picture from the 
+[Operator Whitepaper](https://github.com/cncf/tag-app-delivery/blob/eece8f7307f2970f46f100f51932db106db46968/operator-wg/whitepaper/Operator-WhitePaper_v1-0.md#operator-components-in-kubernetes) illustrates.
 
 <img src="02_2_operator.png" width="90%"/>
 
-Here is the CR from the 
-["local-path" example](https://github.com/mnlipp/VM-Operator/tree/main/example/local-path).
+To get anything started, you therefore have to first create a custom 
+resource of kind `VirtualMachine`. Here is a sample definition from the 
+["local-path" example](https://github.com/mnlipp/VM-Operator/tree/main/example/local-path):
 
 ```yaml
 apiVersion: "vmoperator.jdrupes.org/v1"
@@ -36,7 +37,7 @@ spec:
     currentRam: "4 GiB"
   
     networks:
-    - tap: {}
+    - user: {}
     
     disks:
     - volumeClaimTemplate:
@@ -62,6 +63,8 @@ spec:
         port: 5910
 ```
 
+## Defining disks
+
 Maybe the most important part is the definition of the VM's disk.
 As you can see this is done by adding a `volumeClaimTemplate` to the
 list of disks. As the name indicates, this template is used by the
@@ -72,6 +75,23 @@ first.
 Provided that you have enough storage space of class "local-path"
 available, you can use "local-path" as "storageClassName" and delete
 the "selector".
+
+If you have ceph or some other full fledged storage solution installed,
+provisioning a disk can happen automatically as shown in this example:
+
+```yaml
+    disks:
+    - volumeClaimTemplate:
+        metadata:
+          name: test-vm-system
+        spec:
+          storageClassName: rook-ceph-block
+          resources:
+            requests:
+              storage: 40Gi
+```
+
+## Further reading
 
 For a detailed description of the available configuration options see the
 [CRD](https://github.com/mnlipp/VM-Operator/blob/main/deploy/crds/vms-crd.yaml).
