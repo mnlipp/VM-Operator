@@ -37,8 +37,7 @@ directory. I recommend to use
 
 Use one of the `kustomize.yaml` files from the
 [example](https://github.com/mnlipp/VM-Operator/tree/main/example) directory.
-The directory contains two examples. Shown below is the example file that 
-uses storage from `local-path`. This should work everywhere.
+The directory contains two examples. 
 
 ```yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -56,11 +55,14 @@ patches:
     metadata:
       name: vmop-image-repository
     spec:
+      # Default is ReadOnlyMany
       accessModes:
       - ReadWriteOnce
       resources:
         requests:
+          # Default is 100Gi
           storage: 10Gi
+      # Default is to use the default storage class
       storageClassName: local-path
 ```
 
