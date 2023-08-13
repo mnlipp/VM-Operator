@@ -33,7 +33,8 @@ import org.jgrapes.core.events.Start;
 public class Controller extends Component {
 
     /**
-     * Instantiates a new manager.
+     * Implements a controller as defined in the
+     * [Operator Whitepaper](https://github.com/cncf/tag-app-delivery/blob/eece8f7307f2970f46f100f51932db106db46968/operator-wg/whitepaper/Operator-WhitePaper_v1-0.md#operator-components-in-kubernetes).
      *
      * @throws IOException Signals that an I/O exception has occurred.
      */
