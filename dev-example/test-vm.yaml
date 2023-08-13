@@ -39,7 +39,6 @@ spec:
         # image: https://download.fedoraproject.org/pub/fedora/linux/releases/38/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-38-1.6.iso
         # image: "Fedora-Workstation-Live-x86_64-38-1.6.iso"
 
-#    - hostDevice: /dev/vgmain/test-vm
     display:
       spice:
         port: 5910
