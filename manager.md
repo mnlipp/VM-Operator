@@ -72,6 +72,8 @@ that is mounted into all pods that run a VM. The volume is intended
 to be used as a common repository for CDROM images. The PVC must exist
 and it must be bound before any pods can run.
 
+
+
 Check that the pod with the manager is running:
 
 ```sh
