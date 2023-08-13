@@ -66,28 +66,41 @@ import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
         DynamicKubernetesApi stsApi = new DynamicKubernetesApi("apps", "v1",
             "statefulsets", channel.client());
 
-        // Maybe delete
+        // If exists, adjust replicas
+        var metadata = event.object().getMetadata();
+        var existing = K8s.get(stsApi, metadata);
+        if (existing.isPresent()) {
+            var current = GsonPtr.to(existing.get().getRaw())
+                .to("spec").getAsInt("replicas").orElse(1);
+            int desired;
+            if (event.type() == Type.DELETED) {
+                desired = 0;
+            } else {
+                var state = GsonPtr.to((JsonObject) model.get("cr"))
+                    .to("spec", "vm").getAsString("state").orElse("Stopped");
+                desired = "Running".equals(state) ? 1 : 0;
+            }
+            if (desired != current) {
+                PatchOptions opts = new PatchOptions();
+                opts.setFieldManager("kubernetes-java-kubectl-apply");
+                stsApi.patch(metadata.getNamespace(), metadata.getName(),
+                    V1Patch.PATCH_FORMAT_JSON_PATCH,
+                    new V1Patch("[{\"op\": \"replace\", \"path\": "
+                        + "\"/spec/replicas\", \"value\": " + desired + "}]"),
+                    opts).throwsApiException();
+            }
+        }
+
+        // Maybe delete (replicas have been set to 0)
         if (event.type() == Type.DELETED) {
-            var meta = GsonPtr.to((JsonObject) model.get("cr")).to("metadata");
-            PatchOptions opts = new PatchOptions();
-            opts.setFieldManager("kubernetes-java-kubectl-apply");
-            stsApi.patch(meta.getAsString("namespace").get(),
-                meta.getAsString("name").get(), V1Patch.PATCH_FORMAT_JSON_PATCH,
-                new V1Patch("[{\"op\": \"replace\", "
-                    + "\"path\": \"/spec/replicas\", \"value\": 0}]"),
-                opts).throwsApiException();
-            stsApi.delete(meta.getAsString("namespace").get(),
-                meta.getAsString("name").get()).throwsApiException();
+            stsApi.delete(metadata.getNamespace(), metadata.getName())
+                .throwsApiException();
             return;
         }
 
-        // Never change existing if replicas is greater 0 (would cause
-        // update and thus VM restart). Apply will happen when replicas
-        // changes from 0 to 1, i.e. on next powerdown/powerup.
-        var metadata = event.object().getMetadata();
-        var existing = K8s.get(stsApi, metadata);
-        if (existing.isPresent() && GsonPtr.to(existing.get().getRaw())
-            .to("spec").getAsInt("replicas").orElse(1) > 0) {
+        // Apart from replicas, only properties that are of no interest
+        // may be changed for an existing stateful set.
+        if (existing.isPresent()) {
             return;
         }
 
