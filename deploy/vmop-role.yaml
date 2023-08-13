@@ -12,11 +12,16 @@ rules:
   verbs:
   - '*'
 - apiGroups:
+  - apps
+  resources:
+  - statefulsets
+  verbs:
+  - '*'
+- apiGroups:
   - ""
   resources:
   - configmaps
   - secrets
-  - statefulsets
   - services
   verbs:
   - '*'
