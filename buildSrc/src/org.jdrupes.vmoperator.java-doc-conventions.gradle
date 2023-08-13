@@ -61,6 +61,7 @@ task java11doc (type: JavaExec) {
         args = ['-doctitle', """VM-Operator 
                 (runner.qemu-${-> findProject(':org.jdrupes.vmoperator.runner.qemu').version}, 
                 manager-${-> findProject(':org.jdrupes.vmoperator.manager').version})""",
+            '-package',
             '-use',
             '-linksource',
             '-link', 'https://docs.oracle.com/en/java/javase/17/docs/api/',
