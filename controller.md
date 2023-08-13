@@ -12,7 +12,7 @@ what the picture from the
 <img src="02_2_operator.png" width="90%"/>
 
 To get anything started, you therefore have to first create a custom 
-resource of kind `VirtualMachine`. Here is a sample definition from the 
+resource of kind `VirtualMachine`. Here is the sample definition from the 
 ["local-path" example](https://github.com/mnlipp/VM-Operator/tree/main/example/local-path):
 
 ```yaml
@@ -65,7 +65,7 @@ spec:
 
 ## Defining disks
 
-Maybe the most important part is the definition of the VM's disk.
+Maybe the most important part is the definition of the VM's disks.
 As you can see this is done by adding a `volumeClaimTemplate` to the
 list of disks. As its name indicates, this template is used by the
 controller to generate a PVC. The example does not use storage from
