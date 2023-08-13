@@ -28,15 +28,13 @@ import org.jgrapes.core.annotation.Handler;
 import org.jgrapes.core.events.Start;
 
 /**
- * The application class.
+ * Implements a controller as defined in the
+ * [Operator Whitepaper](https://github.com/cncf/tag-app-delivery/blob/eece8f7307f2970f46f100f51932db106db46968/operator-wg/whitepaper/Operator-WhitePaper_v1-0.md#operator-components-in-kubernetes).
  */
 public class Controller extends Component {
 
     /**
-     * Implements a controller as defined in the
-     * [Operator Whitepaper](https://github.com/cncf/tag-app-delivery/blob/eece8f7307f2970f46f100f51932db106db46968/operator-wg/whitepaper/Operator-WhitePaper_v1-0.md#operator-components-in-kubernetes).
-     *
-     * @throws IOException Signals that an I/O exception has occurred.
+     * Creates a new instance.
      */
     public Controller(Channel componentChannel) {
         super(componentChannel);
