@@ -71,12 +71,13 @@ list of disks. As its name suggests, such a template is used by the
 controller to generate a PVC.
 
 The example template does not define any storage. Rather it references
-some PV that you must have created first. Provided that you have
-enough storage space of class "local-path" available, you can use
-"local-path" as "storageClassName" and delete the "selector", causing the storage volume to be created automatically.
+some PV that you must have created first. This may be your first approach
+if you have existing storage from running the VM outside Kubernetes
+(e.g. with libvirtd).
 
-If you have ceph or some other full fledged storage provider installed,
-provisioning a disk can happen automatically as shown in this example:
+If you have ceph or some other full fledged storage provider installed
+and create a new VM, provisioning a disk can happen automatically
+as shown in this example:
 
 ```yaml
     disks:
