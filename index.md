@@ -48,7 +48,7 @@ machine in a common configuration in a Kubernetes cluster.
 VMs are not the typical workload managed by Kubernetes. You can neither
 have replicas nor can the containers simply be restarted without a major 
 impact on the "application". So there are many features for managing
-pods that we cannot make use of. Qemu in its container can simply be
+pods that we cannot make use of. Qemu in its container can only be
 deployed as a pod or using a stateful set with replica 1, which is rather
 close to simply deploying the pod (you get the restart and some PVC
 management "for free").
@@ -60,5 +60,5 @@ A second look, however, reveals that Kubernetes has more to offer.
 manages the pods with the VMs.
 
 And if you use Kubernetes anyway, well then the VMs within Kubernetes 
-provide you with a unified view on all (or more of) your workloads,
+provide you with a unified view of all (or most of) your workloads,
 which simplifies the maintenance of your platform.
