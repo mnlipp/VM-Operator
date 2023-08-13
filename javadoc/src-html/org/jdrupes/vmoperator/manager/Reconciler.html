@@ -66,110 +66,114 @@
 <span class="source-line-no">053</span><span id="line-53">    private final Configuration fmConfig;</span>
 <span class="source-line-no">054</span><span id="line-54">    private final CmReconciler cmReconciler;</span>
 <span class="source-line-no">055</span><span id="line-55">    private final StsReconciler stsReconciler;</span>
-<span class="source-line-no">056</span><span id="line-56"></span>
-<span class="source-line-no">057</span><span id="line-57">    /**</span>
-<span class="source-line-no">058</span><span id="line-58">     * Instantiates a new reconciler.</span>
-<span class="source-line-no">059</span><span id="line-59">     *</span>
-<span class="source-line-no">060</span><span id="line-60">     * @param componentChannel the component channel</span>
-<span class="source-line-no">061</span><span id="line-61">     */</span>
-<span class="source-line-no">062</span><span id="line-62">    public Reconciler(Channel componentChannel) {</span>
-<span class="source-line-no">063</span><span id="line-63">        super(componentChannel);</span>
-<span class="source-line-no">064</span><span id="line-64"></span>
-<span class="source-line-no">065</span><span id="line-65">        // Configure freemarker library</span>
-<span class="source-line-no">066</span><span id="line-66">        fmConfig = new Configuration(Configuration.VERSION_2_3_32);</span>
-<span class="source-line-no">067</span><span id="line-67">        fmConfig.setDefaultEncoding("utf-8");</span>
-<span class="source-line-no">068</span><span id="line-68">        fmConfig.setObjectWrapper(new ExtendedObjectWrapper(</span>
-<span class="source-line-no">069</span><span id="line-69">            fmConfig.getIncompatibleImprovements()));</span>
-<span class="source-line-no">070</span><span id="line-70">        fmConfig.setTemplateExceptionHandler(</span>
-<span class="source-line-no">071</span><span id="line-71">            TemplateExceptionHandler.RETHROW_HANDLER);</span>
-<span class="source-line-no">072</span><span id="line-72">        fmConfig.setLogTemplateExceptions(false);</span>
-<span class="source-line-no">073</span><span id="line-73">        fmConfig.setClassForTemplateLoading(Reconciler.class, "");</span>
-<span class="source-line-no">074</span><span id="line-74"></span>
-<span class="source-line-no">075</span><span id="line-75">        cmReconciler = new CmReconciler(fmConfig);</span>
-<span class="source-line-no">076</span><span id="line-76">        stsReconciler = new StsReconciler(fmConfig);</span>
-<span class="source-line-no">077</span><span id="line-77">    }</span>
-<span class="source-line-no">078</span><span id="line-78"></span>
-<span class="source-line-no">079</span><span id="line-79">    /**</span>
-<span class="source-line-no">080</span><span id="line-80">     * Handles the change event.</span>
-<span class="source-line-no">081</span><span id="line-81">     *</span>
-<span class="source-line-no">082</span><span id="line-82">     * @param event the event</span>
-<span class="source-line-no">083</span><span id="line-83">     * @param channel the channel</span>
-<span class="source-line-no">084</span><span id="line-84">     * @throws ApiException the api exception</span>
-<span class="source-line-no">085</span><span id="line-85">     * @throws IOException </span>
-<span class="source-line-no">086</span><span id="line-86">     * @throws ParseException </span>
-<span class="source-line-no">087</span><span id="line-87">     * @throws MalformedTemplateNameException </span>
-<span class="source-line-no">088</span><span id="line-88">     * @throws TemplateNotFoundException </span>
-<span class="source-line-no">089</span><span id="line-89">     * @throws TemplateException </span>
-<span class="source-line-no">090</span><span id="line-90">     * @throws KubectlException </span>
-<span class="source-line-no">091</span><span id="line-91">     */</span>
-<span class="source-line-no">092</span><span id="line-92">    @Handler</span>
-<span class="source-line-no">093</span><span id="line-93">    @SuppressWarnings("PMD.ConfusingTernary")</span>
-<span class="source-line-no">094</span><span id="line-94">    public void onVmDefChanged(VmDefChanged event, VmChannel channel)</span>
-<span class="source-line-no">095</span><span id="line-95">            throws ApiException, TemplateException, IOException {</span>
-<span class="source-line-no">096</span><span id="line-96">        // Get complete VM (CR) definition</span>
-<span class="source-line-no">097</span><span id="line-97">        var apiVersion = K8s.version(event.object().getApiVersion());</span>
-<span class="source-line-no">098</span><span id="line-98">        DynamicKubernetesApi vmCrApi = new DynamicKubernetesApi(VM_OP_GROUP,</span>
-<span class="source-line-no">099</span><span id="line-99">            apiVersion, event.crd().getName(), channel.client());</span>
-<span class="source-line-no">100</span><span id="line-100">        var defMeta = event.object().getMetadata();</span>
-<span class="source-line-no">101</span><span id="line-101"></span>
-<span class="source-line-no">102</span><span id="line-102">        // Update state</span>
-<span class="source-line-no">103</span><span id="line-103">        if (event.type() != Type.DELETED) {</span>
-<span class="source-line-no">104</span><span id="line-104">            channel.setVmDefinition(</span>
-<span class="source-line-no">105</span><span id="line-105">                patchCr(K8s.get(vmCrApi, defMeta).get().getRaw().deepCopy()));</span>
-<span class="source-line-no">106</span><span id="line-106">        }</span>
-<span class="source-line-no">107</span><span id="line-107"></span>
-<span class="source-line-no">108</span><span id="line-108">        // Get common data for all reconciles</span>
-<span class="source-line-no">109</span><span id="line-109">        JsonObject vmDef = channel.vmDefinition();</span>
-<span class="source-line-no">110</span><span id="line-110">        @SuppressWarnings("PMD.UseConcurrentHashMap")</span>
-<span class="source-line-no">111</span><span id="line-111">        Map&lt;String, Object&gt; model = new HashMap&lt;&gt;();</span>
-<span class="source-line-no">112</span><span id="line-112">        model.put("cr", vmDef);</span>
-<span class="source-line-no">113</span><span id="line-113">        model.put("constants",</span>
-<span class="source-line-no">114</span><span id="line-114">            (TemplateHashModel) new DefaultObjectWrapperBuilder(</span>
-<span class="source-line-no">115</span><span id="line-115">                Configuration.VERSION_2_3_32)</span>
-<span class="source-line-no">116</span><span id="line-116">                    .build().getStaticModels()</span>
-<span class="source-line-no">117</span><span id="line-117">                    .get(Constants.class.getName()));</span>
-<span class="source-line-no">118</span><span id="line-118"></span>
-<span class="source-line-no">119</span><span id="line-119">        // Reconcile</span>
-<span class="source-line-no">120</span><span id="line-120">        if (event.type() != Type.DELETED) {</span>
-<span class="source-line-no">121</span><span id="line-121">            var configMap = cmReconciler.reconcile(event, model, channel);</span>
-<span class="source-line-no">122</span><span id="line-122">            model.put("cm", configMap.getRaw());</span>
-<span class="source-line-no">123</span><span id="line-123">            stsReconciler.reconcile(event, model, channel);</span>
-<span class="source-line-no">124</span><span id="line-124">        } else {</span>
+<span class="source-line-no">056</span><span id="line-56">    private final ServiceReconciler serviceReconciler;</span>
+<span class="source-line-no">057</span><span id="line-57"></span>
+<span class="source-line-no">058</span><span id="line-58">    /**</span>
+<span class="source-line-no">059</span><span id="line-59">     * Instantiates a new reconciler.</span>
+<span class="source-line-no">060</span><span id="line-60">     *</span>
+<span class="source-line-no">061</span><span id="line-61">     * @param componentChannel the component channel</span>
+<span class="source-line-no">062</span><span id="line-62">     */</span>
+<span class="source-line-no">063</span><span id="line-63">    public Reconciler(Channel componentChannel) {</span>
+<span class="source-line-no">064</span><span id="line-64">        super(componentChannel);</span>
+<span class="source-line-no">065</span><span id="line-65"></span>
+<span class="source-line-no">066</span><span id="line-66">        // Configure freemarker library</span>
+<span class="source-line-no">067</span><span id="line-67">        fmConfig = new Configuration(Configuration.VERSION_2_3_32);</span>
+<span class="source-line-no">068</span><span id="line-68">        fmConfig.setDefaultEncoding("utf-8");</span>
+<span class="source-line-no">069</span><span id="line-69">        fmConfig.setObjectWrapper(new ExtendedObjectWrapper(</span>
+<span class="source-line-no">070</span><span id="line-70">            fmConfig.getIncompatibleImprovements()));</span>
+<span class="source-line-no">071</span><span id="line-71">        fmConfig.setTemplateExceptionHandler(</span>
+<span class="source-line-no">072</span><span id="line-72">            TemplateExceptionHandler.RETHROW_HANDLER);</span>
+<span class="source-line-no">073</span><span id="line-73">        fmConfig.setLogTemplateExceptions(false);</span>
+<span class="source-line-no">074</span><span id="line-74">        fmConfig.setClassForTemplateLoading(Reconciler.class, "");</span>
+<span class="source-line-no">075</span><span id="line-75"></span>
+<span class="source-line-no">076</span><span id="line-76">        cmReconciler = new CmReconciler(fmConfig);</span>
+<span class="source-line-no">077</span><span id="line-77">        stsReconciler = new StsReconciler(fmConfig);</span>
+<span class="source-line-no">078</span><span id="line-78">        serviceReconciler = new ServiceReconciler(fmConfig);</span>
+<span class="source-line-no">079</span><span id="line-79">    }</span>
+<span class="source-line-no">080</span><span id="line-80"></span>
+<span class="source-line-no">081</span><span id="line-81">    /**</span>
+<span class="source-line-no">082</span><span id="line-82">     * Handles the change event.</span>
+<span class="source-line-no">083</span><span id="line-83">     *</span>
+<span class="source-line-no">084</span><span id="line-84">     * @param event the event</span>
+<span class="source-line-no">085</span><span id="line-85">     * @param channel the channel</span>
+<span class="source-line-no">086</span><span id="line-86">     * @throws ApiException the api exception</span>
+<span class="source-line-no">087</span><span id="line-87">     * @throws IOException </span>
+<span class="source-line-no">088</span><span id="line-88">     * @throws ParseException </span>
+<span class="source-line-no">089</span><span id="line-89">     * @throws MalformedTemplateNameException </span>
+<span class="source-line-no">090</span><span id="line-90">     * @throws TemplateNotFoundException </span>
+<span class="source-line-no">091</span><span id="line-91">     * @throws TemplateException </span>
+<span class="source-line-no">092</span><span id="line-92">     * @throws KubectlException </span>
+<span class="source-line-no">093</span><span id="line-93">     */</span>
+<span class="source-line-no">094</span><span id="line-94">    @Handler</span>
+<span class="source-line-no">095</span><span id="line-95">    @SuppressWarnings("PMD.ConfusingTernary")</span>
+<span class="source-line-no">096</span><span id="line-96">    public void onVmDefChanged(VmDefChanged event, VmChannel channel)</span>
+<span class="source-line-no">097</span><span id="line-97">            throws ApiException, TemplateException, IOException {</span>
+<span class="source-line-no">098</span><span id="line-98">        // Get complete VM (CR) definition</span>
+<span class="source-line-no">099</span><span id="line-99">        var apiVersion = K8s.version(event.object().getApiVersion());</span>
+<span class="source-line-no">100</span><span id="line-100">        DynamicKubernetesApi vmCrApi = new DynamicKubernetesApi(VM_OP_GROUP,</span>
+<span class="source-line-no">101</span><span id="line-101">            apiVersion, event.crd().getName(), channel.client());</span>
+<span class="source-line-no">102</span><span id="line-102">        var defMeta = event.object().getMetadata();</span>
+<span class="source-line-no">103</span><span id="line-103"></span>
+<span class="source-line-no">104</span><span id="line-104">        // Update state</span>
+<span class="source-line-no">105</span><span id="line-105">        if (event.type() != Type.DELETED) {</span>
+<span class="source-line-no">106</span><span id="line-106">            channel.setVmDefinition(</span>
+<span class="source-line-no">107</span><span id="line-107">                patchCr(K8s.get(vmCrApi, defMeta).get().getRaw().deepCopy()));</span>
+<span class="source-line-no">108</span><span id="line-108">        }</span>
+<span class="source-line-no">109</span><span id="line-109"></span>
+<span class="source-line-no">110</span><span id="line-110">        // Get common data for all reconciles</span>
+<span class="source-line-no">111</span><span id="line-111">        JsonObject vmDef = channel.vmDefinition();</span>
+<span class="source-line-no">112</span><span id="line-112">        @SuppressWarnings("PMD.UseConcurrentHashMap")</span>
+<span class="source-line-no">113</span><span id="line-113">        Map&lt;String, Object&gt; model = new HashMap&lt;&gt;();</span>
+<span class="source-line-no">114</span><span id="line-114">        model.put("cr", vmDef);</span>
+<span class="source-line-no">115</span><span id="line-115">        model.put("constants",</span>
+<span class="source-line-no">116</span><span id="line-116">            (TemplateHashModel) new DefaultObjectWrapperBuilder(</span>
+<span class="source-line-no">117</span><span id="line-117">                Configuration.VERSION_2_3_32)</span>
+<span class="source-line-no">118</span><span id="line-118">                    .build().getStaticModels()</span>
+<span class="source-line-no">119</span><span id="line-119">                    .get(Constants.class.getName()));</span>
+<span class="source-line-no">120</span><span id="line-120"></span>
+<span class="source-line-no">121</span><span id="line-121">        // Reconcile</span>
+<span class="source-line-no">122</span><span id="line-122">        if (event.type() != Type.DELETED) {</span>
+<span class="source-line-no">123</span><span id="line-123">            var configMap = cmReconciler.reconcile(event, model, channel);</span>
+<span class="source-line-no">124</span><span id="line-124">            model.put("cm", configMap.getRaw());</span>
 <span class="source-line-no">125</span><span id="line-125">            stsReconciler.reconcile(event, model, channel);</span>
-<span class="source-line-no">126</span><span id="line-126">            cmReconciler.reconcile(event, model, channel);</span>
-<span class="source-line-no">127</span><span id="line-127">        }</span>
-<span class="source-line-no">128</span><span id="line-128">    }</span>
-<span class="source-line-no">129</span><span id="line-129"></span>
-<span class="source-line-no">130</span><span id="line-130">    private JsonObject patchCr(JsonObject vmDef) {</span>
-<span class="source-line-no">131</span><span id="line-131">        // Adjust cdromImage path</span>
-<span class="source-line-no">132</span><span id="line-132">        var disks</span>
-<span class="source-line-no">133</span><span id="line-133">            = GsonPtr.to(vmDef).to("spec", "vm", "disks").get(JsonArray.class);</span>
-<span class="source-line-no">134</span><span id="line-134">        for (var disk : disks) {</span>
-<span class="source-line-no">135</span><span id="line-135">            var cdrom = (JsonObject) ((JsonObject) disk).get("cdrom");</span>
-<span class="source-line-no">136</span><span id="line-136">            if (cdrom == null) {</span>
-<span class="source-line-no">137</span><span id="line-137">                continue;</span>
-<span class="source-line-no">138</span><span id="line-138">            }</span>
-<span class="source-line-no">139</span><span id="line-139">            String image = cdrom.get("image").getAsString();</span>
-<span class="source-line-no">140</span><span id="line-140">            if (image.isEmpty()) {</span>
+<span class="source-line-no">126</span><span id="line-126">            serviceReconciler.reconcile(event, model, channel);</span>
+<span class="source-line-no">127</span><span id="line-127">        } else {</span>
+<span class="source-line-no">128</span><span id="line-128">            serviceReconciler.reconcile(event, model, channel);</span>
+<span class="source-line-no">129</span><span id="line-129">            stsReconciler.reconcile(event, model, channel);</span>
+<span class="source-line-no">130</span><span id="line-130">            cmReconciler.reconcile(event, model, channel);</span>
+<span class="source-line-no">131</span><span id="line-131">        }</span>
+<span class="source-line-no">132</span><span id="line-132">    }</span>
+<span class="source-line-no">133</span><span id="line-133"></span>
+<span class="source-line-no">134</span><span id="line-134">    private JsonObject patchCr(JsonObject vmDef) {</span>
+<span class="source-line-no">135</span><span id="line-135">        // Adjust cdromImage path</span>
+<span class="source-line-no">136</span><span id="line-136">        var disks</span>
+<span class="source-line-no">137</span><span id="line-137">            = GsonPtr.to(vmDef).to("spec", "vm", "disks").get(JsonArray.class);</span>
+<span class="source-line-no">138</span><span id="line-138">        for (var disk : disks) {</span>
+<span class="source-line-no">139</span><span id="line-139">            var cdrom = (JsonObject) ((JsonObject) disk).get("cdrom");</span>
+<span class="source-line-no">140</span><span id="line-140">            if (cdrom == null) {</span>
 <span class="source-line-no">141</span><span id="line-141">                continue;</span>
 <span class="source-line-no">142</span><span id="line-142">            }</span>
-<span class="source-line-no">143</span><span id="line-143">            try {</span>
-<span class="source-line-no">144</span><span id="line-144">                @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")</span>
-<span class="source-line-no">145</span><span id="line-145">                var imageUri = new URI("file://" + Constants.IMAGE_REPO_PATH</span>
-<span class="source-line-no">146</span><span id="line-146">                    + "/").resolve(image);</span>
-<span class="source-line-no">147</span><span id="line-147">                if ("file".equals(imageUri.getScheme())) {</span>
-<span class="source-line-no">148</span><span id="line-148">                    cdrom.addProperty("image", imageUri.getPath());</span>
-<span class="source-line-no">149</span><span id="line-149">                } else {</span>
-<span class="source-line-no">150</span><span id="line-150">                    cdrom.addProperty("image", imageUri.toString());</span>
-<span class="source-line-no">151</span><span id="line-151">                }</span>
-<span class="source-line-no">152</span><span id="line-152">            } catch (URISyntaxException e) {</span>
-<span class="source-line-no">153</span><span id="line-153">                logger.warning(() -&gt; "Invalid CDROM image: " + image);</span>
-<span class="source-line-no">154</span><span id="line-154">            }</span>
-<span class="source-line-no">155</span><span id="line-155">        }</span>
-<span class="source-line-no">156</span><span id="line-156">        return vmDef;</span>
-<span class="source-line-no">157</span><span id="line-157">    }</span>
-<span class="source-line-no">158</span><span id="line-158"></span>
-<span class="source-line-no">159</span><span id="line-159">}</span>
+<span class="source-line-no">143</span><span id="line-143">            String image = cdrom.get("image").getAsString();</span>
+<span class="source-line-no">144</span><span id="line-144">            if (image.isEmpty()) {</span>
+<span class="source-line-no">145</span><span id="line-145">                continue;</span>
+<span class="source-line-no">146</span><span id="line-146">            }</span>
+<span class="source-line-no">147</span><span id="line-147">            try {</span>
+<span class="source-line-no">148</span><span id="line-148">                @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")</span>
+<span class="source-line-no">149</span><span id="line-149">                var imageUri = new URI("file://" + Constants.IMAGE_REPO_PATH</span>
+<span class="source-line-no">150</span><span id="line-150">                    + "/").resolve(image);</span>
+<span class="source-line-no">151</span><span id="line-151">                if ("file".equals(imageUri.getScheme())) {</span>
+<span class="source-line-no">152</span><span id="line-152">                    cdrom.addProperty("image", imageUri.getPath());</span>
+<span class="source-line-no">153</span><span id="line-153">                } else {</span>
+<span class="source-line-no">154</span><span id="line-154">                    cdrom.addProperty("image", imageUri.toString());</span>
+<span class="source-line-no">155</span><span id="line-155">                }</span>
+<span class="source-line-no">156</span><span id="line-156">            } catch (URISyntaxException e) {</span>
+<span class="source-line-no">157</span><span id="line-157">                logger.warning(() -&gt; "Invalid CDROM image: " + image);</span>
+<span class="source-line-no">158</span><span id="line-158">            }</span>
+<span class="source-line-no">159</span><span id="line-159">        }</span>
+<span class="source-line-no">160</span><span id="line-160">        return vmDef;</span>
+<span class="source-line-no">161</span><span id="line-161">    }</span>
+<span class="source-line-no">162</span><span id="line-162"></span>
+<span class="source-line-no">163</span><span id="line-163">}</span>
 
 
 
