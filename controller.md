@@ -67,7 +67,7 @@ spec:
 
 Maybe the most important part is the definition of the VM's disk.
 As you can see this is done by adding a `volumeClaimTemplate` to the
-list of disks. As the name indicates, this template is used by the
+list of disks. As its name indicates, this template is used by the
 controller to generate a PVC. The example does not use storage from
 local-path. Rather is references some PV that you must have created 
 first. 
@@ -90,6 +90,11 @@ provisioning a disk can happen automatically as shown in this example:
             requests:
               storage: 40Gi
 ```
+
+The disk will be available as "/dev/disk-*n*" in the VM, were 
+*n* is the index of the disk definition in the list of disks. 
+If .volumeClaimTemplate.metadata.name is defined, then "/dev/*name*-disk"
+is used instead.
 
 ## Further reading
 
