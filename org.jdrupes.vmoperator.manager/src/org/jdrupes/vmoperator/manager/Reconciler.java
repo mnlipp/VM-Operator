@@ -53,6 +53,7 @@ public class Reconciler extends Component {
     private final Configuration fmConfig;
     private final CmReconciler cmReconciler;
     private final StsReconciler stsReconciler;
+    private final ServiceReconciler serviceReconciler;
 
     /**
      * Instantiates a new reconciler.
@@ -74,6 +75,7 @@ public class Reconciler extends Component {
 
         cmReconciler = new CmReconciler(fmConfig);
         stsReconciler = new StsReconciler(fmConfig);
+        serviceReconciler = new ServiceReconciler(fmConfig);
     }
 
     /**
@@ -121,7 +123,9 @@ public class Reconciler extends Component {
             var configMap = cmReconciler.reconcile(event, model, channel);
             model.put("cm", configMap.getRaw());
             stsReconciler.reconcile(event, model, channel);
+            serviceReconciler.reconcile(event, model, channel);
         } else {
+            serviceReconciler.reconcile(event, model, channel);
             stsReconciler.reconcile(event, model, channel);
             cmReconciler.reconcile(event, model, channel);
         }

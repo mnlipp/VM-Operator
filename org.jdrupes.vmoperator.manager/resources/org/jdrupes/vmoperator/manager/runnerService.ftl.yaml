@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: ${ cr.metadata.namespace.asString }
+  name: ${ cr.metadata.name.asString }
+  labels:
+    app.kubernetes.io/name: ${ constants.APP_NAME }
+    app.kubernetes.io/instance: ${ cr.metadata.name.asString }
+    app.kubernetes.io/managed-by: ${ constants.VM_OP_NAME }
+spec:
+  ports:
+  - name: spice
+    port: ${ cr.spec.vm.display.spice.port.asInt?c }
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: ${ cr.metadata.name.asString }
+    app.kubernetes.io/instance: ${ cr.metadata.name.asString }
