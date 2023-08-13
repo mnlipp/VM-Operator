@@ -66,7 +66,7 @@ spec:
 ## Defining disks
 
 Maybe the most important part is the definition of the VM's disks.
-As you can see this is done by adding a `volumeClaimTemplate` to the
+This is done by adding one or more `volumeClaimTemplate`s to the
 list of disks. As its name indicates, this template is used by the
 controller to generate a PVC. The example does not use storage from
 local-path. Rather is references some PV that you must have created 
