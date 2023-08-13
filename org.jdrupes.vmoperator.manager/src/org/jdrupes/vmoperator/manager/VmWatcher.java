@@ -61,8 +61,7 @@ public class VmWatcher extends Component {
 
     private ApiClient client;
     private String namespaceToWatch;
-    private final Map<String, VmChannel> channels
-        = new ConcurrentHashMap<>();
+    private final Map<String, VmChannel> channels = new ConcurrentHashMap<>();
 
     /**
      * Instantiates a new VM definition watcher.
@@ -74,7 +73,7 @@ public class VmWatcher extends Component {
     }
 
     /**
-     * On configuration update.
+     * Configure the component.
      *
      * @param event the event
      */

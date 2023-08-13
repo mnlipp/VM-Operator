@@ -33,7 +33,7 @@ import java.util.logging.Logger;
 import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
 
 /**
- * Delegee for reconciling the pod.
+ * Delegee for reconciling the stateful set (effectively the pod).
  */
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 /* default */ class StsReconciler {

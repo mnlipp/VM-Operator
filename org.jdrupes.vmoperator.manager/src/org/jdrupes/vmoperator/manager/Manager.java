@@ -80,11 +80,12 @@ public class Manager extends Component {
      */
     @Handler(priority = -1000)
     public void onStop(Stop event) {
-        logger.fine(() -> "Applictaion stopped.");
+        logger.fine(() -> "Application stopped.");
     }
 
     static {
         try {
+            // Get logging properties from file and put them in effect
             InputStream props;
             var path = FsdUtils.findConfigFile(VM_OP_NAME.replace("-", ""),
                 "logging.properties");
@@ -109,34 +110,35 @@ public class Manager extends Component {
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     public static void main(String[] args) {
         try {
-            Logger.getLogger(Manager.class.getName())
-                .fine(() -> "Version: "
-                    + Manager.class.getPackage().getImplementationVersion());
+            Logger.getLogger(Manager.class.getName()).fine(() -> "Version: "
+                + Manager.class.getPackage().getImplementationVersion());
+
+            // Parse the command line arguments
             CommandLineParser parser = new DefaultParser();
-            // parse the command line arguments
             final Options options = new Options();
             options.addOption(new Option("c", "config", true, "The configura"
                 + "tion file (defaults to /etc/opt/vmoperator/config.yaml)."));
             CommandLine cmd = parser.parse(options, args);
-            // The Operator is the root component
+
+            // The Manager is the root component
             app = new Manager(cmd);
 
             // Prepare Stop
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 try {
-                    app.fire(new Stop(), Channel.BROADCAST);
+                    app.fire(new Stop());
                     Components.awaitExhaustion();
                 } catch (InterruptedException e) {
                     // Cannot do anything about this.
                 }
             }));
 
-            // Start application
+            // Start the application
             Components.start(app);
         } catch (IOException | InterruptedException
                 | org.apache.commons.cli.ParseException e) {
             Logger.getLogger(Manager.class.getName()).log(Level.SEVERE, e,
-                () -> "Failed to start runner: " + e.getMessage());
+                () -> "Failed to start manager: " + e.getMessage());
         }
     }
 
