@@ -14,8 +14,8 @@ patches:
       name: vmop-image-repository
     spec:
       accessModes:
-      - ReadWriteOnce
+      - ReadOnlyMany
       resources:
         requests:
-          storage: 10Gi
-      storageClassName: local-path
+          storage: 100Gi
+      storageClassName: rook-cephfs
