@@ -23,12 +23,12 @@ metadata:
   name: test-vm
 spec:
 
-  image:
+  # image:
     # Defaults:
     # repository: ghcr.io
     # path: mnlipp/org.jdrupes.vmoperator.runner.qemu-arch
     # version: latest
-    pullPolicy: Always
+    # pullPolicy: Always
 
   vm:
     maximumCpus: 4
