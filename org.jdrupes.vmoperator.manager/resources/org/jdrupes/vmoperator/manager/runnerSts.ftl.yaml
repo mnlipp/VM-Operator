@@ -29,10 +29,10 @@ spec:
       containers:
       - name: ${ cr.metadata.name.asString }
         <#assign image = cr.spec.image>
-        <#if image.repository?? && image.path??>
-        image: ${ image.repository.asString }/${ image.path.asString }<#if image.version??>:${ image.version.asString }</#if>
-        <#else>
+        <#if image.source??>
         image: ${ source.asString }
+        <#else>
+        image: ${ image.repository.asString }/${ image.path.asString }<#if image.version??>:${ image.version.asString }</#if>
         </#if>
         resources: {}
         <#if image.pullPolicy??>

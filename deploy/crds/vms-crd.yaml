@@ -21,24 +21,24 @@ spec:
                     The image to use for the pod. Must run a runner.
                   type: object
                   oneOf:
-                  - properties:
-                      source: {}
-                      path: {}
+                  - required:
+                    - source
+                  - required:
+                    - repository
+                    - path
+                  default: { source: "ghcr.io/mnlipp/org.jdrupes.vmoperator.runner.qemu-arch:latest" }
                   properties:
                     source:
                       description: >-
-                        The image to use for the pod. Must run a "runner".
+                        Specifies the image to use for the pod in a single line
+                        (repo:path[:version]). Must be a "runner" image.
                       type: string
-                      default: "ghcr.io/mnlipp/org.jdrupes.vmoperator.runner.qemu-arch:latest"
                     repository: 
                       type: string
-                      default: "ghcr.io"
                     path:
                       type: string
-                      default: "mnlipp/org.jdrupes.vmoperator.runner.qemu-arch"
                     version:
                       type: string
-                      default: "latest"
                     pullPolicy:
                       description: >-
                         Image pull policy. One of Always, Never, IfNotPresent.
@@ -50,9 +50,10 @@ spec:
                   type: object
                   description: Defines the VM.
                   oneOf:
-                  - properties:
-                      maximumCpus: {}
-                      cpuTopology: {}
+                  - required:
+                    - maximumCpus
+                  - required:
+                    - cpuTopology
                   properties:
                     state:
                       description: >-
@@ -142,9 +143,10 @@ spec:
                           Supported types are "tap" and "user" (for debugging).
                         type: object
                         oneOf:
-                        - properties:
-                            tap: {}
-                            user: {}
+                        - required:
+                          - tap
+                        - required:
+                          - user
                         properties:
                           tap:
                             type: object
