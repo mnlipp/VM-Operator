@@ -3,3 +3,5 @@
 "/Manager":
   "/Controller":
     namespace: vmop-dev
+    runnerData:
+      storageClassName: null

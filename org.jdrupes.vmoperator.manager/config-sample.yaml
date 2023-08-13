@@ -1,0 +1,10 @@
+# The values in comments are the defaults.
+
+"/Manager":
+  "/Controller":
+    # Values used when creating the PVC for the runner's data
+    runnerData:
+      storageClassName: null
+  
+    # Only for development:
+    # namespace: vmop-dev

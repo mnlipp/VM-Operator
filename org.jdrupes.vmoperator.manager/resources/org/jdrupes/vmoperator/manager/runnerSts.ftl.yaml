@@ -30,7 +30,7 @@ spec:
       - name: ${ cr.metadata.name.asString }
         <#assign image = cr.spec.image>
         <#if image.source??>
-        image: ${ source.asString }
+        image: ${ image.source.asString }
         <#else>
         image: ${ image.repository.asString }/${ image.path.asString }<#if image.version??>:${ image.version.asString }</#if>
         </#if>
@@ -101,6 +101,9 @@ spec:
     spec:
       accessModes:
       - ReadWriteOnce
+      <#if config.runnerData?? && config.runnerData.storageClassName??>
+      storageClassName: ${ config.runnerData.storageClassName }
+      </#if>
       resources:
         requests:
           storage: 1Mi

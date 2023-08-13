@@ -40,7 +40,9 @@ import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
 import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
+import org.jgrapes.core.Components;
 import org.jgrapes.core.annotation.Handler;
+import org.jgrapes.util.events.ConfigurationUpdate;
 
 /**
  * Adapts Kubenetes resources to changes in VM definitions (CRs). 
@@ -54,6 +56,8 @@ public class Reconciler extends Component {
     private final CmReconciler cmReconciler;
     private final StsReconciler stsReconciler;
     private final ServiceReconciler serviceReconciler;
+    @SuppressWarnings("PMD.UseConcurrentHashMap")
+    private final Map<String, Object> config = new HashMap<>();
 
     /**
      * Instantiates a new reconciler.
@@ -76,6 +80,21 @@ public class Reconciler extends Component {
         cmReconciler = new CmReconciler(fmConfig);
         stsReconciler = new StsReconciler(fmConfig);
         serviceReconciler = new ServiceReconciler(fmConfig);
+    }
+
+    /**
+     * Configure the component.
+     *
+     * @param event the event
+     */
+    @Handler
+    public void onConfigurationUpdate(ConfigurationUpdate event) {
+        event.structured(Components.manager(parent()).componentPath())
+            .ifPresent(c -> {
+                if (c.containsKey("runnerData")) {
+                    config.put("runnerData", c.get("runnerData"));
+                }
+            });
     }
 
     /**
@@ -117,6 +136,7 @@ public class Reconciler extends Component {
                 Configuration.VERSION_2_3_32)
                     .build().getStaticModels()
                     .get(Constants.class.getName()));
+        model.put("config", config);
 
         // Reconcile
         if (event.type() != Type.DELETED) {
