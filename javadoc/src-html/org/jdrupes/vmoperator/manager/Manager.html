@@ -93,67 +93,69 @@
 <span class="source-line-no">080</span><span id="line-80">     */</span>
 <span class="source-line-no">081</span><span id="line-81">    @Handler(priority = -1000)</span>
 <span class="source-line-no">082</span><span id="line-82">    public void onStop(Stop event) {</span>
-<span class="source-line-no">083</span><span id="line-83">        logger.fine(() -&gt; "Applictaion stopped.");</span>
+<span class="source-line-no">083</span><span id="line-83">        logger.fine(() -&gt; "Application stopped.");</span>
 <span class="source-line-no">084</span><span id="line-84">    }</span>
 <span class="source-line-no">085</span><span id="line-85"></span>
 <span class="source-line-no">086</span><span id="line-86">    static {</span>
 <span class="source-line-no">087</span><span id="line-87">        try {</span>
-<span class="source-line-no">088</span><span id="line-88">            InputStream props;</span>
-<span class="source-line-no">089</span><span id="line-89">            var path = FsdUtils.findConfigFile(VM_OP_NAME.replace("-", ""),</span>
-<span class="source-line-no">090</span><span id="line-90">                "logging.properties");</span>
-<span class="source-line-no">091</span><span id="line-91">            if (path.isPresent()) {</span>
-<span class="source-line-no">092</span><span id="line-92">                props = Files.newInputStream(path.get());</span>
-<span class="source-line-no">093</span><span id="line-93">            } else {</span>
-<span class="source-line-no">094</span><span id="line-94">                props</span>
-<span class="source-line-no">095</span><span id="line-95">                    = Manager.class.getResourceAsStream("logging.properties");</span>
-<span class="source-line-no">096</span><span id="line-96">            }</span>
-<span class="source-line-no">097</span><span id="line-97">            LogManager.getLogManager().readConfiguration(props);</span>
-<span class="source-line-no">098</span><span id="line-98">        } catch (IOException e) {</span>
-<span class="source-line-no">099</span><span id="line-99">            e.printStackTrace(); // NOPMD</span>
-<span class="source-line-no">100</span><span id="line-100">        }</span>
-<span class="source-line-no">101</span><span id="line-101">    }</span>
-<span class="source-line-no">102</span><span id="line-102"></span>
-<span class="source-line-no">103</span><span id="line-103">    /**</span>
-<span class="source-line-no">104</span><span id="line-104">     * The main method.</span>
-<span class="source-line-no">105</span><span id="line-105">     *</span>
-<span class="source-line-no">106</span><span id="line-106">     * @param args the arguments</span>
-<span class="source-line-no">107</span><span id="line-107">     * @throws Exception the exception</span>
-<span class="source-line-no">108</span><span id="line-108">     */</span>
-<span class="source-line-no">109</span><span id="line-109">    @SuppressWarnings("PMD.SignatureDeclareThrowsException")</span>
-<span class="source-line-no">110</span><span id="line-110">    public static void main(String[] args) {</span>
-<span class="source-line-no">111</span><span id="line-111">        try {</span>
-<span class="source-line-no">112</span><span id="line-112">            Logger.getLogger(Manager.class.getName())</span>
-<span class="source-line-no">113</span><span id="line-113">                .fine(() -&gt; "Version: "</span>
-<span class="source-line-no">114</span><span id="line-114">                    + Manager.class.getPackage().getImplementationVersion());</span>
-<span class="source-line-no">115</span><span id="line-115">            CommandLineParser parser = new DefaultParser();</span>
-<span class="source-line-no">116</span><span id="line-116">            // parse the command line arguments</span>
-<span class="source-line-no">117</span><span id="line-117">            final Options options = new Options();</span>
-<span class="source-line-no">118</span><span id="line-118">            options.addOption(new Option("c", "config", true, "The configura"</span>
-<span class="source-line-no">119</span><span id="line-119">                + "tion file (defaults to /etc/opt/vmoperator/config.yaml)."));</span>
-<span class="source-line-no">120</span><span id="line-120">            CommandLine cmd = parser.parse(options, args);</span>
-<span class="source-line-no">121</span><span id="line-121">            // The Operator is the root component</span>
-<span class="source-line-no">122</span><span id="line-122">            app = new Manager(cmd);</span>
-<span class="source-line-no">123</span><span id="line-123"></span>
-<span class="source-line-no">124</span><span id="line-124">            // Prepare Stop</span>
-<span class="source-line-no">125</span><span id="line-125">            Runtime.getRuntime().addShutdownHook(new Thread(() -&gt; {</span>
-<span class="source-line-no">126</span><span id="line-126">                try {</span>
-<span class="source-line-no">127</span><span id="line-127">                    app.fire(new Stop(), Channel.BROADCAST);</span>
-<span class="source-line-no">128</span><span id="line-128">                    Components.awaitExhaustion();</span>
-<span class="source-line-no">129</span><span id="line-129">                } catch (InterruptedException e) {</span>
-<span class="source-line-no">130</span><span id="line-130">                    // Cannot do anything about this.</span>
-<span class="source-line-no">131</span><span id="line-131">                }</span>
-<span class="source-line-no">132</span><span id="line-132">            }));</span>
-<span class="source-line-no">133</span><span id="line-133"></span>
-<span class="source-line-no">134</span><span id="line-134">            // Start application</span>
-<span class="source-line-no">135</span><span id="line-135">            Components.start(app);</span>
-<span class="source-line-no">136</span><span id="line-136">        } catch (IOException | InterruptedException</span>
-<span class="source-line-no">137</span><span id="line-137">                | org.apache.commons.cli.ParseException e) {</span>
-<span class="source-line-no">138</span><span id="line-138">            Logger.getLogger(Manager.class.getName()).log(Level.SEVERE, e,</span>
-<span class="source-line-no">139</span><span id="line-139">                () -&gt; "Failed to start runner: " + e.getMessage());</span>
-<span class="source-line-no">140</span><span id="line-140">        }</span>
-<span class="source-line-no">141</span><span id="line-141">    }</span>
-<span class="source-line-no">142</span><span id="line-142"></span>
-<span class="source-line-no">143</span><span id="line-143">}</span>
+<span class="source-line-no">088</span><span id="line-88">            // Get logging properties from file and put them in effect</span>
+<span class="source-line-no">089</span><span id="line-89">            InputStream props;</span>
+<span class="source-line-no">090</span><span id="line-90">            var path = FsdUtils.findConfigFile(VM_OP_NAME.replace("-", ""),</span>
+<span class="source-line-no">091</span><span id="line-91">                "logging.properties");</span>
+<span class="source-line-no">092</span><span id="line-92">            if (path.isPresent()) {</span>
+<span class="source-line-no">093</span><span id="line-93">                props = Files.newInputStream(path.get());</span>
+<span class="source-line-no">094</span><span id="line-94">            } else {</span>
+<span class="source-line-no">095</span><span id="line-95">                props</span>
+<span class="source-line-no">096</span><span id="line-96">                    = Manager.class.getResourceAsStream("logging.properties");</span>
+<span class="source-line-no">097</span><span id="line-97">            }</span>
+<span class="source-line-no">098</span><span id="line-98">            LogManager.getLogManager().readConfiguration(props);</span>
+<span class="source-line-no">099</span><span id="line-99">        } catch (IOException e) {</span>
+<span class="source-line-no">100</span><span id="line-100">            e.printStackTrace(); // NOPMD</span>
+<span class="source-line-no">101</span><span id="line-101">        }</span>
+<span class="source-line-no">102</span><span id="line-102">    }</span>
+<span class="source-line-no">103</span><span id="line-103"></span>
+<span class="source-line-no">104</span><span id="line-104">    /**</span>
+<span class="source-line-no">105</span><span id="line-105">     * The main method.</span>
+<span class="source-line-no">106</span><span id="line-106">     *</span>
+<span class="source-line-no">107</span><span id="line-107">     * @param args the arguments</span>
+<span class="source-line-no">108</span><span id="line-108">     * @throws Exception the exception</span>
+<span class="source-line-no">109</span><span id="line-109">     */</span>
+<span class="source-line-no">110</span><span id="line-110">    @SuppressWarnings("PMD.SignatureDeclareThrowsException")</span>
+<span class="source-line-no">111</span><span id="line-111">    public static void main(String[] args) {</span>
+<span class="source-line-no">112</span><span id="line-112">        try {</span>
+<span class="source-line-no">113</span><span id="line-113">            Logger.getLogger(Manager.class.getName()).fine(() -&gt; "Version: "</span>
+<span class="source-line-no">114</span><span id="line-114">                + Manager.class.getPackage().getImplementationVersion());</span>
+<span class="source-line-no">115</span><span id="line-115"></span>
+<span class="source-line-no">116</span><span id="line-116">            // Parse the command line arguments</span>
+<span class="source-line-no">117</span><span id="line-117">            CommandLineParser parser = new DefaultParser();</span>
+<span class="source-line-no">118</span><span id="line-118">            final Options options = new Options();</span>
+<span class="source-line-no">119</span><span id="line-119">            options.addOption(new Option("c", "config", true, "The configura"</span>
+<span class="source-line-no">120</span><span id="line-120">                + "tion file (defaults to /etc/opt/vmoperator/config.yaml)."));</span>
+<span class="source-line-no">121</span><span id="line-121">            CommandLine cmd = parser.parse(options, args);</span>
+<span class="source-line-no">122</span><span id="line-122"></span>
+<span class="source-line-no">123</span><span id="line-123">            // The Manager is the root component</span>
+<span class="source-line-no">124</span><span id="line-124">            app = new Manager(cmd);</span>
+<span class="source-line-no">125</span><span id="line-125"></span>
+<span class="source-line-no">126</span><span id="line-126">            // Prepare Stop</span>
+<span class="source-line-no">127</span><span id="line-127">            Runtime.getRuntime().addShutdownHook(new Thread(() -&gt; {</span>
+<span class="source-line-no">128</span><span id="line-128">                try {</span>
+<span class="source-line-no">129</span><span id="line-129">                    app.fire(new Stop());</span>
+<span class="source-line-no">130</span><span id="line-130">                    Components.awaitExhaustion();</span>
+<span class="source-line-no">131</span><span id="line-131">                } catch (InterruptedException e) {</span>
+<span class="source-line-no">132</span><span id="line-132">                    // Cannot do anything about this.</span>
+<span class="source-line-no">133</span><span id="line-133">                }</span>
+<span class="source-line-no">134</span><span id="line-134">            }));</span>
+<span class="source-line-no">135</span><span id="line-135"></span>
+<span class="source-line-no">136</span><span id="line-136">            // Start the application</span>
+<span class="source-line-no">137</span><span id="line-137">            Components.start(app);</span>
+<span class="source-line-no">138</span><span id="line-138">        } catch (IOException | InterruptedException</span>
+<span class="source-line-no">139</span><span id="line-139">                | org.apache.commons.cli.ParseException e) {</span>
+<span class="source-line-no">140</span><span id="line-140">            Logger.getLogger(Manager.class.getName()).log(Level.SEVERE, e,</span>
+<span class="source-line-no">141</span><span id="line-141">                () -&gt; "Failed to start manager: " + e.getMessage());</span>
+<span class="source-line-no">142</span><span id="line-142">        }</span>
+<span class="source-line-no">143</span><span id="line-143">    }</span>
+<span class="source-line-no">144</span><span id="line-144"></span>
+<span class="source-line-no">145</span><span id="line-145">}</span>
 
 
 
