@@ -67,7 +67,7 @@ spec:
 
 Maybe the most important part is the definition of the VM's disks.
 This is done by adding one or more `volumeClaimTemplate`s to the
-list of disks. As its name indicates, this template is used by the
+list of disks. As its name suggests, such a template is used by the
 controller to generate a PVC. The example does not use storage from
 local-path. Rather is references some PV that you must have created 
 first. 
