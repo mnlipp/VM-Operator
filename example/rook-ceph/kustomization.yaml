@@ -7,15 +7,24 @@ resources:
 namespace: vmop-demo
 
 patches:
+# Use storage class rook-cephfs for the shared image repository
 - patch: |-
     kind: PersistentVolumeClaim
     apiVersion: v1
     metadata:
       name: vmop-image-repository
     spec:
-      accessModes:
-      - ReadOnlyMany
-      resources:
-        requests:
-          storage: 100Gi
       storageClassName: rook-cephfs
+
+# Use storage class rook-cepfs for the runner's data (e.g. EFI vars)
+- patch: |-
+    kind: ConfigMap
+    apiVersion: v1
+    metadata:
+      name: vm-operator
+    data:
+      config.yaml: |
+        "/Manager":
+          "/Controller":
+            runnerData:
+              storageClassName: rook-cephfs

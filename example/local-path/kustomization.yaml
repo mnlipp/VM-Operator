@@ -13,9 +13,12 @@ patches:
     metadata:
       name: vmop-image-repository
     spec:
+      # Default is ReadOnlyMany
       accessModes:
       - ReadWriteOnce
       resources:
         requests:
+          # Default is 100Gi
           storage: 10Gi
+      # Default is to use the default storage class
       storageClassName: local-path
