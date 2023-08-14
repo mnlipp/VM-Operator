@@ -36,7 +36,7 @@ directory. I recommend to use
 [kustomize](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/) to create your own configuration. 
 
 Use one of the `kustomize.yaml` files from the
-[example](https://github.com/mnlipp/VM-Operator/tree/main/example) directory.
+[example](https://github.com/mnlipp/VM-Operator/tree/main/example) directory as starting point.
 The directory contains two examples. 
 
 ```yaml
@@ -90,7 +90,7 @@ runner and contains the VM's configuration data such as the EFI vars.
 By default the PVC for this volume is created with the default
 storage class configured. The patch effectively provides a new
 configuration file for the manager that makes the controller
-use local-path as storage class for the PVC.
+use local-path as storage class for this PVC.
 
 Check that the pod with the manager is running:
 
