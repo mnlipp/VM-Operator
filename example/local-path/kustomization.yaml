@@ -34,4 +34,4 @@ patches:
           "/Controller":
             runnerData:
               # Default is to use the default storage class
-              storageClassName: rook-cephfs
+              storageClassName: local-path
