@@ -22,3 +22,16 @@ patches:
           storage: 10Gi
       # Default is to use the default storage class
       storageClassName: local-path
+
+- patch: |-
+    kind: ConfigMap
+    apiVersion: v1
+    metadata:
+      name: vm-operator
+    data:
+      config.yaml: |
+        "/Manager":
+          "/Controller":
+            runnerData:
+              # Default is to use the default storage class
+              storageClassName: rook-cephfs
