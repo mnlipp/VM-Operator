@@ -90,7 +90,9 @@ runner and contains the VM's configuration data such as the EFI vars.
 By default the PVC for this volume is created with the default
 storage class configured. The patch effectively provides a new
 configuration file for the manager that makes the controller
-use local-path as storage class for this PVC.
+use local-path as storage class for this PVC. (The file 
+[config-sample.yaml](https://github.com/mnlipp/VM-Operator/blob/main/org.jdrupes.vmoperator.manager/config-sample.yaml)
+explains all available configuration options.)
 
 Check that the pod with the manager is running:
 
