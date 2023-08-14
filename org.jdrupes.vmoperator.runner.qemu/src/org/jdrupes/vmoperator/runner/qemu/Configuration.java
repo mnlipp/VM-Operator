@@ -19,22 +19,18 @@
 package org.jdrupes.vmoperator.runner.qemu;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 import org.jdrupes.vmoperator.util.Dto;
 import org.jdrupes.vmoperator.util.FsdUtils;
+import org.jdrupes.vmoperator.util.ParseUtils;
 
 /**
  * The configuration information from the configuration file.
@@ -43,33 +39,6 @@ import org.jdrupes.vmoperator.util.FsdUtils;
 public class Configuration implements Dto {
     @SuppressWarnings("PMD.FieldNamingConventions")
     protected final Logger logger = Logger.getLogger(getClass().getName());
-
-    @SuppressWarnings({ "PMD.UseConcurrentHashMap",
-        "PMD.FieldNamingConventions", "PMD.VariableNamingConventions" })
-    private static final Map<String, BigInteger> unitMap = new HashMap<>();
-    @SuppressWarnings({ "PMD.FieldNamingConventions",
-        "PMD.VariableNamingConventions" })
-    private static final Pattern memorySize
-        = Pattern.compile("^\\s*(\\d+(\\.\\d+)?)\\s*([A-Za-z]*)\\s*");
-
-    static {
-        // SI units and common abbreviations
-        BigInteger factor = BigInteger.ONE;
-        unitMap.put("", factor);
-        BigInteger scale = BigInteger.valueOf(1000);
-        for (var unit : List.of("B", "kB", "MB", "GB", "TB", "PB", "EB")) {
-            unitMap.put(unit, factor);
-            factor = factor.multiply(scale);
-        }
-        // Binary units
-        factor = BigInteger.valueOf(1024);
-        scale = BigInteger.valueOf(1024);
-        for (var unit : List.of("KiB", "MiB", "GiB", "TiB", "PiB", "EiB")) {
-            unitMap.put(unit, factor);
-            unitMap.put(unit.substring(0, 2), factor);
-            factor = factor.multiply(scale);
-        }
-    }
 
     /** The data dir. */
     public Path dataDir;
@@ -98,40 +67,6 @@ public class Configuration implements Dto {
     /** The vm. */
     @SuppressWarnings("PMD.ShortVariable")
     public Vm vm;
-
-    /**
-     * Parses a memory size specification.
-     *
-     * @param amount the amount
-     * @return the big integer
-     */
-    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
-    public static BigInteger parseMemory(Object amount) {
-        if (amount == null) {
-            return (BigInteger) amount;
-        }
-        if (amount instanceof BigInteger number) {
-            return number;
-        }
-        if (amount instanceof Number number) {
-            return BigInteger.valueOf(number.longValue());
-        }
-        var matcher = memorySize.matcher(amount.toString());
-        if (!matcher.matches()) {
-            throw new NumberFormatException(amount.toString());
-        }
-        var unit = BigInteger.ONE;
-        if (matcher.group(3) != null) {
-            unit = unitMap.get(matcher.group(3));
-            if (unit == null) {
-                throw new NumberFormatException("Illegal unit \""
-                    + matcher.group(3) + "\" in \"" + amount.toString() + "\"");
-            }
-        }
-        var number = matcher.group(1);
-        return new BigDecimal(number).multiply(new BigDecimal(unit))
-            .toBigInteger();
-    }
 
     /**
      * Subsection "vm".
@@ -209,7 +144,7 @@ public class Configuration implements Dto {
          * @param value the new maximum ram
          */
         public void setMaximumRam(String value) {
-            maximumRam = parseMemory(value);
+            maximumRam = ParseUtils.parseMemory(value);
         }
 
         /**
@@ -218,7 +153,7 @@ public class Configuration implements Dto {
          * @param value the new current ram
          */
         public void setCurrentRam(String value) {
-            currentRam = parseMemory(value);
+            currentRam = ParseUtils.parseMemory(value);
         }
     }
 
