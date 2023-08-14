@@ -45,117 +45,116 @@
 <span class="source-line-no">032</span><span id="line-32">import org.apache.commons.cli.Options;</span>
 <span class="source-line-no">033</span><span id="line-33">import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;</span>
 <span class="source-line-no">034</span><span id="line-34">import org.jdrupes.vmoperator.util.FsdUtils;</span>
-<span class="source-line-no">035</span><span id="line-35">import org.jgrapes.core.Channel;</span>
-<span class="source-line-no">036</span><span id="line-36">import org.jgrapes.core.Component;</span>
-<span class="source-line-no">037</span><span id="line-37">import org.jgrapes.core.Components;</span>
-<span class="source-line-no">038</span><span id="line-38">import org.jgrapes.core.annotation.Handler;</span>
-<span class="source-line-no">039</span><span id="line-39">import org.jgrapes.core.events.Stop;</span>
-<span class="source-line-no">040</span><span id="line-40">import org.jgrapes.io.NioDispatcher;</span>
-<span class="source-line-no">041</span><span id="line-41">import org.jgrapes.util.FileSystemWatcher;</span>
-<span class="source-line-no">042</span><span id="line-42">import org.jgrapes.util.YamlConfigurationStore;</span>
-<span class="source-line-no">043</span><span id="line-43">import org.jgrapes.util.events.WatchFile;</span>
-<span class="source-line-no">044</span><span id="line-44"></span>
-<span class="source-line-no">045</span><span id="line-45">/**</span>
-<span class="source-line-no">046</span><span id="line-46"> * The application class.</span>
-<span class="source-line-no">047</span><span id="line-47"> */</span>
-<span class="source-line-no">048</span><span id="line-48">public class Manager extends Component {</span>
-<span class="source-line-no">049</span><span id="line-49"></span>
-<span class="source-line-no">050</span><span id="line-50">    private static Manager app;</span>
-<span class="source-line-no">051</span><span id="line-51"></span>
-<span class="source-line-no">052</span><span id="line-52">    /**</span>
-<span class="source-line-no">053</span><span id="line-53">     * Instantiates a new manager.</span>
-<span class="source-line-no">054</span><span id="line-54">     * @param cmdLine </span>
-<span class="source-line-no">055</span><span id="line-55">     *</span>
-<span class="source-line-no">056</span><span id="line-56">     * @throws IOException Signals that an I/O exception has occurred.</span>
-<span class="source-line-no">057</span><span id="line-57">     */</span>
-<span class="source-line-no">058</span><span id="line-58">    public Manager(CommandLine cmdLine) throws IOException {</span>
-<span class="source-line-no">059</span><span id="line-59">        // Prepare component tree</span>
-<span class="source-line-no">060</span><span id="line-60">        attach(new NioDispatcher());</span>
-<span class="source-line-no">061</span><span id="line-61">        attach(new FileSystemWatcher(channel()));</span>
-<span class="source-line-no">062</span><span id="line-62">        attach(new Controller(channel()));</span>
-<span class="source-line-no">063</span><span id="line-63"></span>
-<span class="source-line-no">064</span><span id="line-64">        // Configuration store with file in /etc/opt (default)</span>
-<span class="source-line-no">065</span><span id="line-65">        File config = new File(cmdLine.getOptionValue('c',</span>
-<span class="source-line-no">066</span><span id="line-66">            "/etc/opt/" + VM_OP_NAME.replace("-", "") + "/config.yaml"));</span>
-<span class="source-line-no">067</span><span id="line-67">        // Don't rely on night config to produce a good exception</span>
-<span class="source-line-no">068</span><span id="line-68">        // for this simple case</span>
-<span class="source-line-no">069</span><span id="line-69">        if (!Files.isReadable(config.toPath())) {</span>
-<span class="source-line-no">070</span><span id="line-70">            throw new IOException("Cannot read configuration file " + config);</span>
-<span class="source-line-no">071</span><span id="line-71">        }</span>
-<span class="source-line-no">072</span><span id="line-72">        attach(new YamlConfigurationStore(channel(), config, false));</span>
-<span class="source-line-no">073</span><span id="line-73">        fire(new WatchFile(config.toPath()));</span>
-<span class="source-line-no">074</span><span id="line-74">    }</span>
-<span class="source-line-no">075</span><span id="line-75"></span>
-<span class="source-line-no">076</span><span id="line-76">    /**</span>
-<span class="source-line-no">077</span><span id="line-77">     * On stop.</span>
-<span class="source-line-no">078</span><span id="line-78">     *</span>
-<span class="source-line-no">079</span><span id="line-79">     * @param event the event</span>
-<span class="source-line-no">080</span><span id="line-80">     */</span>
-<span class="source-line-no">081</span><span id="line-81">    @Handler(priority = -1000)</span>
-<span class="source-line-no">082</span><span id="line-82">    public void onStop(Stop event) {</span>
-<span class="source-line-no">083</span><span id="line-83">        logger.fine(() -&gt; "Application stopped.");</span>
-<span class="source-line-no">084</span><span id="line-84">    }</span>
-<span class="source-line-no">085</span><span id="line-85"></span>
-<span class="source-line-no">086</span><span id="line-86">    static {</span>
-<span class="source-line-no">087</span><span id="line-87">        try {</span>
-<span class="source-line-no">088</span><span id="line-88">            // Get logging properties from file and put them in effect</span>
-<span class="source-line-no">089</span><span id="line-89">            InputStream props;</span>
-<span class="source-line-no">090</span><span id="line-90">            var path = FsdUtils.findConfigFile(VM_OP_NAME.replace("-", ""),</span>
-<span class="source-line-no">091</span><span id="line-91">                "logging.properties");</span>
-<span class="source-line-no">092</span><span id="line-92">            if (path.isPresent()) {</span>
-<span class="source-line-no">093</span><span id="line-93">                props = Files.newInputStream(path.get());</span>
-<span class="source-line-no">094</span><span id="line-94">            } else {</span>
-<span class="source-line-no">095</span><span id="line-95">                props</span>
-<span class="source-line-no">096</span><span id="line-96">                    = Manager.class.getResourceAsStream("logging.properties");</span>
-<span class="source-line-no">097</span><span id="line-97">            }</span>
-<span class="source-line-no">098</span><span id="line-98">            LogManager.getLogManager().readConfiguration(props);</span>
-<span class="source-line-no">099</span><span id="line-99">        } catch (IOException e) {</span>
-<span class="source-line-no">100</span><span id="line-100">            e.printStackTrace(); // NOPMD</span>
-<span class="source-line-no">101</span><span id="line-101">        }</span>
-<span class="source-line-no">102</span><span id="line-102">    }</span>
-<span class="source-line-no">103</span><span id="line-103"></span>
-<span class="source-line-no">104</span><span id="line-104">    /**</span>
-<span class="source-line-no">105</span><span id="line-105">     * The main method.</span>
-<span class="source-line-no">106</span><span id="line-106">     *</span>
-<span class="source-line-no">107</span><span id="line-107">     * @param args the arguments</span>
-<span class="source-line-no">108</span><span id="line-108">     * @throws Exception the exception</span>
-<span class="source-line-no">109</span><span id="line-109">     */</span>
-<span class="source-line-no">110</span><span id="line-110">    @SuppressWarnings("PMD.SignatureDeclareThrowsException")</span>
-<span class="source-line-no">111</span><span id="line-111">    public static void main(String[] args) {</span>
-<span class="source-line-no">112</span><span id="line-112">        try {</span>
-<span class="source-line-no">113</span><span id="line-113">            Logger.getLogger(Manager.class.getName()).fine(() -&gt; "Version: "</span>
-<span class="source-line-no">114</span><span id="line-114">                + Manager.class.getPackage().getImplementationVersion());</span>
-<span class="source-line-no">115</span><span id="line-115"></span>
-<span class="source-line-no">116</span><span id="line-116">            // Parse the command line arguments</span>
-<span class="source-line-no">117</span><span id="line-117">            CommandLineParser parser = new DefaultParser();</span>
-<span class="source-line-no">118</span><span id="line-118">            final Options options = new Options();</span>
-<span class="source-line-no">119</span><span id="line-119">            options.addOption(new Option("c", "config", true, "The configura"</span>
-<span class="source-line-no">120</span><span id="line-120">                + "tion file (defaults to /etc/opt/vmoperator/config.yaml)."));</span>
-<span class="source-line-no">121</span><span id="line-121">            CommandLine cmd = parser.parse(options, args);</span>
-<span class="source-line-no">122</span><span id="line-122"></span>
-<span class="source-line-no">123</span><span id="line-123">            // The Manager is the root component</span>
-<span class="source-line-no">124</span><span id="line-124">            app = new Manager(cmd);</span>
-<span class="source-line-no">125</span><span id="line-125"></span>
-<span class="source-line-no">126</span><span id="line-126">            // Prepare Stop</span>
-<span class="source-line-no">127</span><span id="line-127">            Runtime.getRuntime().addShutdownHook(new Thread(() -&gt; {</span>
-<span class="source-line-no">128</span><span id="line-128">                try {</span>
-<span class="source-line-no">129</span><span id="line-129">                    app.fire(new Stop());</span>
-<span class="source-line-no">130</span><span id="line-130">                    Components.awaitExhaustion();</span>
-<span class="source-line-no">131</span><span id="line-131">                } catch (InterruptedException e) {</span>
-<span class="source-line-no">132</span><span id="line-132">                    // Cannot do anything about this.</span>
-<span class="source-line-no">133</span><span id="line-133">                }</span>
-<span class="source-line-no">134</span><span id="line-134">            }));</span>
-<span class="source-line-no">135</span><span id="line-135"></span>
-<span class="source-line-no">136</span><span id="line-136">            // Start the application</span>
-<span class="source-line-no">137</span><span id="line-137">            Components.start(app);</span>
-<span class="source-line-no">138</span><span id="line-138">        } catch (IOException | InterruptedException</span>
-<span class="source-line-no">139</span><span id="line-139">                | org.apache.commons.cli.ParseException e) {</span>
-<span class="source-line-no">140</span><span id="line-140">            Logger.getLogger(Manager.class.getName()).log(Level.SEVERE, e,</span>
-<span class="source-line-no">141</span><span id="line-141">                () -&gt; "Failed to start manager: " + e.getMessage());</span>
-<span class="source-line-no">142</span><span id="line-142">        }</span>
-<span class="source-line-no">143</span><span id="line-143">    }</span>
-<span class="source-line-no">144</span><span id="line-144"></span>
-<span class="source-line-no">145</span><span id="line-145">}</span>
+<span class="source-line-no">035</span><span id="line-35">import org.jgrapes.core.Component;</span>
+<span class="source-line-no">036</span><span id="line-36">import org.jgrapes.core.Components;</span>
+<span class="source-line-no">037</span><span id="line-37">import org.jgrapes.core.annotation.Handler;</span>
+<span class="source-line-no">038</span><span id="line-38">import org.jgrapes.core.events.Stop;</span>
+<span class="source-line-no">039</span><span id="line-39">import org.jgrapes.io.NioDispatcher;</span>
+<span class="source-line-no">040</span><span id="line-40">import org.jgrapes.util.FileSystemWatcher;</span>
+<span class="source-line-no">041</span><span id="line-41">import org.jgrapes.util.YamlConfigurationStore;</span>
+<span class="source-line-no">042</span><span id="line-42">import org.jgrapes.util.events.WatchFile;</span>
+<span class="source-line-no">043</span><span id="line-43"></span>
+<span class="source-line-no">044</span><span id="line-44">/**</span>
+<span class="source-line-no">045</span><span id="line-45"> * The application class.</span>
+<span class="source-line-no">046</span><span id="line-46"> */</span>
+<span class="source-line-no">047</span><span id="line-47">public class Manager extends Component {</span>
+<span class="source-line-no">048</span><span id="line-48"></span>
+<span class="source-line-no">049</span><span id="line-49">    private static Manager app;</span>
+<span class="source-line-no">050</span><span id="line-50"></span>
+<span class="source-line-no">051</span><span id="line-51">    /**</span>
+<span class="source-line-no">052</span><span id="line-52">     * Instantiates a new manager.</span>
+<span class="source-line-no">053</span><span id="line-53">     * @param cmdLine </span>
+<span class="source-line-no">054</span><span id="line-54">     *</span>
+<span class="source-line-no">055</span><span id="line-55">     * @throws IOException Signals that an I/O exception has occurred.</span>
+<span class="source-line-no">056</span><span id="line-56">     */</span>
+<span class="source-line-no">057</span><span id="line-57">    public Manager(CommandLine cmdLine) throws IOException {</span>
+<span class="source-line-no">058</span><span id="line-58">        // Prepare component tree</span>
+<span class="source-line-no">059</span><span id="line-59">        attach(new NioDispatcher());</span>
+<span class="source-line-no">060</span><span id="line-60">        attach(new FileSystemWatcher(channel()));</span>
+<span class="source-line-no">061</span><span id="line-61">        attach(new Controller(channel()));</span>
+<span class="source-line-no">062</span><span id="line-62"></span>
+<span class="source-line-no">063</span><span id="line-63">        // Configuration store with file in /etc/opt (default)</span>
+<span class="source-line-no">064</span><span id="line-64">        File config = new File(cmdLine.getOptionValue('c',</span>
+<span class="source-line-no">065</span><span id="line-65">            "/etc/opt/" + VM_OP_NAME.replace("-", "") + "/config.yaml"));</span>
+<span class="source-line-no">066</span><span id="line-66">        // Don't rely on night config to produce a good exception</span>
+<span class="source-line-no">067</span><span id="line-67">        // for this simple case</span>
+<span class="source-line-no">068</span><span id="line-68">        if (!Files.isReadable(config.toPath())) {</span>
+<span class="source-line-no">069</span><span id="line-69">            throw new IOException("Cannot read configuration file " + config);</span>
+<span class="source-line-no">070</span><span id="line-70">        }</span>
+<span class="source-line-no">071</span><span id="line-71">        attach(new YamlConfigurationStore(channel(), config, false));</span>
+<span class="source-line-no">072</span><span id="line-72">        fire(new WatchFile(config.toPath()));</span>
+<span class="source-line-no">073</span><span id="line-73">    }</span>
+<span class="source-line-no">074</span><span id="line-74"></span>
+<span class="source-line-no">075</span><span id="line-75">    /**</span>
+<span class="source-line-no">076</span><span id="line-76">     * On stop.</span>
+<span class="source-line-no">077</span><span id="line-77">     *</span>
+<span class="source-line-no">078</span><span id="line-78">     * @param event the event</span>
+<span class="source-line-no">079</span><span id="line-79">     */</span>
+<span class="source-line-no">080</span><span id="line-80">    @Handler(priority = -1000)</span>
+<span class="source-line-no">081</span><span id="line-81">    public void onStop(Stop event) {</span>
+<span class="source-line-no">082</span><span id="line-82">        logger.fine(() -&gt; "Application stopped.");</span>
+<span class="source-line-no">083</span><span id="line-83">    }</span>
+<span class="source-line-no">084</span><span id="line-84"></span>
+<span class="source-line-no">085</span><span id="line-85">    static {</span>
+<span class="source-line-no">086</span><span id="line-86">        try {</span>
+<span class="source-line-no">087</span><span id="line-87">            // Get logging properties from file and put them in effect</span>
+<span class="source-line-no">088</span><span id="line-88">            InputStream props;</span>
+<span class="source-line-no">089</span><span id="line-89">            var path = FsdUtils.findConfigFile(VM_OP_NAME.replace("-", ""),</span>
+<span class="source-line-no">090</span><span id="line-90">                "logging.properties");</span>
+<span class="source-line-no">091</span><span id="line-91">            if (path.isPresent()) {</span>
+<span class="source-line-no">092</span><span id="line-92">                props = Files.newInputStream(path.get());</span>
+<span class="source-line-no">093</span><span id="line-93">            } else {</span>
+<span class="source-line-no">094</span><span id="line-94">                props</span>
+<span class="source-line-no">095</span><span id="line-95">                    = Manager.class.getResourceAsStream("logging.properties");</span>
+<span class="source-line-no">096</span><span id="line-96">            }</span>
+<span class="source-line-no">097</span><span id="line-97">            LogManager.getLogManager().readConfiguration(props);</span>
+<span class="source-line-no">098</span><span id="line-98">        } catch (IOException e) {</span>
+<span class="source-line-no">099</span><span id="line-99">            e.printStackTrace(); // NOPMD</span>
+<span class="source-line-no">100</span><span id="line-100">        }</span>
+<span class="source-line-no">101</span><span id="line-101">    }</span>
+<span class="source-line-no">102</span><span id="line-102"></span>
+<span class="source-line-no">103</span><span id="line-103">    /**</span>
+<span class="source-line-no">104</span><span id="line-104">     * The main method.</span>
+<span class="source-line-no">105</span><span id="line-105">     *</span>
+<span class="source-line-no">106</span><span id="line-106">     * @param args the arguments</span>
+<span class="source-line-no">107</span><span id="line-107">     * @throws Exception the exception</span>
+<span class="source-line-no">108</span><span id="line-108">     */</span>
+<span class="source-line-no">109</span><span id="line-109">    @SuppressWarnings("PMD.SignatureDeclareThrowsException")</span>
+<span class="source-line-no">110</span><span id="line-110">    public static void main(String[] args) {</span>
+<span class="source-line-no">111</span><span id="line-111">        try {</span>
+<span class="source-line-no">112</span><span id="line-112">            Logger.getLogger(Manager.class.getName()).fine(() -&gt; "Version: "</span>
+<span class="source-line-no">113</span><span id="line-113">                + Manager.class.getPackage().getImplementationVersion());</span>
+<span class="source-line-no">114</span><span id="line-114"></span>
+<span class="source-line-no">115</span><span id="line-115">            // Parse the command line arguments</span>
+<span class="source-line-no">116</span><span id="line-116">            CommandLineParser parser = new DefaultParser();</span>
+<span class="source-line-no">117</span><span id="line-117">            final Options options = new Options();</span>
+<span class="source-line-no">118</span><span id="line-118">            options.addOption(new Option("c", "config", true, "The configura"</span>
+<span class="source-line-no">119</span><span id="line-119">                + "tion file (defaults to /etc/opt/vmoperator/config.yaml)."));</span>
+<span class="source-line-no">120</span><span id="line-120">            CommandLine cmd = parser.parse(options, args);</span>
+<span class="source-line-no">121</span><span id="line-121"></span>
+<span class="source-line-no">122</span><span id="line-122">            // The Manager is the root component</span>
+<span class="source-line-no">123</span><span id="line-123">            app = new Manager(cmd);</span>
+<span class="source-line-no">124</span><span id="line-124"></span>
+<span class="source-line-no">125</span><span id="line-125">            // Prepare Stop</span>
+<span class="source-line-no">126</span><span id="line-126">            Runtime.getRuntime().addShutdownHook(new Thread(() -&gt; {</span>
+<span class="source-line-no">127</span><span id="line-127">                try {</span>
+<span class="source-line-no">128</span><span id="line-128">                    app.fire(new Stop());</span>
+<span class="source-line-no">129</span><span id="line-129">                    Components.awaitExhaustion();</span>
+<span class="source-line-no">130</span><span id="line-130">                } catch (InterruptedException e) {</span>
+<span class="source-line-no">131</span><span id="line-131">                    // Cannot do anything about this.</span>
+<span class="source-line-no">132</span><span id="line-132">                }</span>
+<span class="source-line-no">133</span><span id="line-133">            }));</span>
+<span class="source-line-no">134</span><span id="line-134"></span>
+<span class="source-line-no">135</span><span id="line-135">            // Start the application</span>
+<span class="source-line-no">136</span><span id="line-136">            Components.start(app);</span>
+<span class="source-line-no">137</span><span id="line-137">        } catch (IOException | InterruptedException</span>
+<span class="source-line-no">138</span><span id="line-138">                | org.apache.commons.cli.ParseException e) {</span>
+<span class="source-line-no">139</span><span id="line-139">            Logger.getLogger(Manager.class.getName()).log(Level.SEVERE, e,</span>
+<span class="source-line-no">140</span><span id="line-140">                () -&gt; "Failed to start manager: " + e.getMessage());</span>
+<span class="source-line-no">141</span><span id="line-141">        }</span>
+<span class="source-line-no">142</span><span id="line-142">    }</span>
+<span class="source-line-no">143</span><span id="line-143"></span>
+<span class="source-line-no">144</span><span id="line-144">}</span>
 
 
 
