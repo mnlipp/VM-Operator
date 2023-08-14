@@ -42,7 +42,7 @@ spec:
     disks:
     - volumeClaimTemplate:
         metadata:
-          name: test-vm-system
+          name: system
         spec:
           storageClassName: ""
           selector:
