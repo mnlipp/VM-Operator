@@ -64,6 +64,19 @@ patches:
           storage: 10Gi
       # Default is to use the default storage class
       storageClassName: local-path
+
+- patch: |-
+    kind: ConfigMap
+    apiVersion: v1
+    metadata:
+      name: vm-operator
+    data:
+      config.yaml: |
+        "/Manager":
+          "/Controller":
+            runnerData:
+              # Default is to use the default storage class
+              storageClassName: local-path
 ```
 
 The sample file adds a namespace (`vmop-demo`) to all resource 
@@ -72,7 +85,12 @@ that is mounted into all pods that run a VM. The volume is intended
 to be used as a common repository for CDROM images. The PVC must exist
 and it must be bound before any pods can run.
 
-
+The second patch affects the small volume that is created for each
+runner and contains the VM's configuration data such as the EFI vars.
+By default the PVC for this volume is created with the default
+storage class configured. The patch effectively provides a new
+configuration file for the manager that makes the controller
+use local-path as storage class for the PVC.
 
 Check that the pod with the manager is running:
 
