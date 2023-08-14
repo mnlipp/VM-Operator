@@ -94,6 +94,10 @@ use local-path as storage class for this PVC. (The file
 [config-sample.yaml](https://github.com/mnlipp/VM-Operator/blob/main/org.jdrupes.vmoperator.manager/config-sample.yaml)
 explains all available configuration options.)
 
+Note that you need none of the patches if it is okay to use your cluster's
+default storage class and this class supports ReadWriteMany as 
+access mode.
+
 Check that the pod with the manager is running:
 
 ```sh
