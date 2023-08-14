@@ -18,7 +18,6 @@
 
 package org.jdrupes.vmoperator.manager;
 
-import com.google.gson.JsonObject;
 import freemarker.template.Configuration;
 import freemarker.template.TemplateException;
 import io.kubernetes.client.custom.V1Patch;
@@ -65,42 +64,21 @@ import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
             throws IOException, TemplateException, ApiException {
         DynamicKubernetesApi stsApi = new DynamicKubernetesApi("apps", "v1",
             "statefulsets", channel.client());
-
-        // If exists, adjust replicas
         var metadata = event.object().getMetadata();
-        var existing = K8s.get(stsApi, metadata);
-        if (existing.isPresent()) {
-            var current = GsonPtr.to(existing.get().getRaw())
-                .to("spec").getAsInt("replicas").orElse(1);
-            int desired;
-            if (event.type() == Type.DELETED) {
-                desired = 0;
-            } else {
-                var state = GsonPtr.to((JsonObject) model.get("cr"))
-                    .to("spec", "vm").getAsString("state").orElse("Stopped");
-                desired = "Running".equals(state) ? 1 : 0;
-            }
-            if (desired != current) {
-                PatchOptions opts = new PatchOptions();
-                opts.setFieldManager("kubernetes-java-kubectl-apply");
-                stsApi.patch(metadata.getNamespace(), metadata.getName(),
-                    V1Patch.PATCH_FORMAT_JSON_PATCH,
-                    new V1Patch("[{\"op\": \"replace\", \"path\": "
-                        + "\"/spec/replicas\", \"value\": " + desired + "}]"),
-                    opts).throwsApiException();
-            }
-        }
 
-        // Maybe delete (replicas have been set to 0)
+        // Maybe delete
         if (event.type() == Type.DELETED) {
+            // First set replicas to 0 ...
+            PatchOptions opts = new PatchOptions();
+            opts.setFieldManager("kubernetes-java-kubectl-apply");
+            stsApi.patch(metadata.getNamespace(), metadata.getName(),
+                V1Patch.PATCH_FORMAT_JSON_PATCH,
+                new V1Patch("[{\"op\": \"replace\", \"path\": "
+                    + "\"/spec/replicas\", \"value\": 0}]"),
+                opts).throwsApiException();
+            // ... then delete
             stsApi.delete(metadata.getNamespace(), metadata.getName())
                 .throwsApiException();
-            return;
-        }
-
-        // Apart from replicas, only properties that are of no interest
-        // may be changed for an existing stateful set.
-        if (existing.isPresent()) {
             return;
         }
 
@@ -111,8 +89,23 @@ import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
         // Avoid Yaml.load due to
         // https://github.com/kubernetes-client/java/issues/2741
         var stsDef = Dynamics.newFromYaml(out.toString());
+
+        // If exists apply changes only when transitioning state
+        // or not running.
+        var existing = K8s.get(stsApi, metadata);
+        if (existing.isPresent()) {
+            var current = GsonPtr.to(existing.get().getRaw())
+                .to("spec").getAsInt("replicas").orElse(1);
+            var desired = GsonPtr.to(stsDef.getRaw())
+                .to("spec").getAsInt("replicas").orElse(1);
+            if (current == 1 && desired == 1) {
+                return;
+            }
+        }
+
+        // Do apply changes
         PatchOptions opts = new PatchOptions();
-        opts.setForce(false);
+        opts.setForce(true);
         opts.setFieldManager("kubernetes-java-kubectl-apply");
         stsApi.patch(stsDef.getMetadata().getNamespace(),
             stsDef.getMetadata().getName(), V1Patch.PATCH_FORMAT_APPLY_YAML,
