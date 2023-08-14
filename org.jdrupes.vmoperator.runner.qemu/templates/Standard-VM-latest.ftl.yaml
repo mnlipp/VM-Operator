@@ -91,8 +91,9 @@
         <#if vm.threadsPerCore gt 0>,cores=${ vm.threadsPerCore }</#if>" ]
     </#if>
     <#if vm.accelerator != "none">
-    - [ "-accel", "${ vm.accelerator }"]
+    - [ "-accel", "${ vm.accelerator }" ]
     </#if>
+    - [ "-device", "intel-iommu,device-iotlb=on" ]
     # (More devices:) 
     # * RTC
     - [ "-rtc", "base=${ vm.rtcBase },clock=${ vm.rtcClock },driftfix=slew" ]
