@@ -32,7 +32,6 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
 import org.jdrupes.vmoperator.util.FsdUtils;
-import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.Components;
 import org.jgrapes.core.annotation.Handler;

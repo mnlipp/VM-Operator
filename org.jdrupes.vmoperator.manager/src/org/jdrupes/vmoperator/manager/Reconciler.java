@@ -27,6 +27,8 @@ import freemarker.template.MalformedTemplateNameException;
 import freemarker.template.TemplateException;
 import freemarker.template.TemplateExceptionHandler;
 import freemarker.template.TemplateHashModel;
+import freemarker.template.TemplateMethodModelEx;
+import freemarker.template.TemplateModelException;
 import freemarker.template.TemplateNotFoundException;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
@@ -34,10 +36,12 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_GROUP;
 import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
 import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
+import org.jdrupes.vmoperator.util.ParseUtils;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.Components;
@@ -126,19 +130,8 @@ public class Reconciler extends Component {
                 patchCr(K8s.get(vmCrApi, defMeta).get().getRaw().deepCopy()));
         }
 
-        // Get common data for all reconciles
-        JsonObject vmDef = channel.vmDefinition();
-        @SuppressWarnings("PMD.UseConcurrentHashMap")
-        Map<String, Object> model = new HashMap<>();
-        model.put("cr", vmDef);
-        model.put("constants",
-            (TemplateHashModel) new DefaultObjectWrapperBuilder(
-                Configuration.VERSION_2_3_32)
-                    .build().getStaticModels()
-                    .get(Constants.class.getName()));
-        model.put("config", config);
-
         // Reconcile
+        Map<String, Object> model = prepareModel(channel.vmDefinition());
         if (event.type() != Type.DELETED) {
             var configMap = cmReconciler.reconcile(event, model, channel);
             model.put("cm", configMap.getRaw());
@@ -149,6 +142,39 @@ public class Reconciler extends Component {
             stsReconciler.reconcile(event, model, channel);
             cmReconciler.reconcile(event, model, channel);
         }
+    }
+
+    private Map<String, Object> prepareModel(JsonObject vmDef)
+            throws TemplateModelException {
+        @SuppressWarnings("PMD.UseConcurrentHashMap")
+        Map<String, Object> model = new HashMap<>();
+        model.put("cr", vmDef);
+        model.put("constants",
+            (TemplateHashModel) new DefaultObjectWrapperBuilder(
+                Configuration.VERSION_2_3_32)
+                    .build().getStaticModels()
+                    .get(Constants.class.getName()));
+        model.put("config", config);
+
+        // Methods
+        model.put("parseMemory", new TemplateMethodModelEx() {
+            @Override
+            @SuppressWarnings("PMD.PreserveStackTrace")
+            public Object exec(@SuppressWarnings("rawtypes") List arguments)
+                    throws TemplateModelException {
+                var arg = arguments.get(0);
+                if (arg instanceof Number number) {
+                    return number;
+                }
+                try {
+                    return ParseUtils.parseMemory(arg.toString());
+                } catch (NumberFormatException e) {
+                    throw new TemplateModelException("Cannot parse memory "
+                        + "specified as \"" + arg + "\": " + e.getMessage());
+                }
+            }
+        });
+        return model;
     }
 
     private JsonObject patchCr(JsonObject vmDef) {
