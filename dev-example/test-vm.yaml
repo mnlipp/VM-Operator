@@ -9,6 +9,9 @@ spec:
     path: vmoperator/org.jdrupes.vmoperator.runner.qemu-arch
     pullPolicy: Always
 
+  runnerTemplate:
+    update: true
+
   vm:
     state: Running
     bootMenu: yes

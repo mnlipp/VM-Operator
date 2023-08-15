@@ -914,6 +914,15 @@ spec:
                           type: array
                       type: object
                   type: object
+                runnerTemplate:
+                  description: >-
+                    Runner template configuration.
+                  type: object
+                  properties:
+                    source:
+                      type: string
+                    update:
+                      type: boolean
                 vm:
                   type: object
                   description: Defines the VM.
