@@ -5,14 +5,12 @@ title: VM-Operator Controller
 
 # The Controller
 
-The controller component (which is part of the manager) does precisely 
-what the picture from the 
-[Operator Whitepaper](https://github.com/cncf/tag-app-delivery/blob/eece8f7307f2970f46f100f51932db106db46968/operator-wg/whitepaper/Operator-WhitePaper_v1-0.md#operator-components-in-kubernetes) illustrates.
+The controller component (which is part of the manager) monitors 
+custom resources of kind `VirtualMachine` and creates or modifies 
+other resources in the cluster as required to get the VM defined
+by the CR up and running.
 
-<img src="02_2_operator.png" width="90%"/>
-
-To get anything started, you therefore have to first create a custom 
-resource of kind `VirtualMachine`. Here is the sample definition from the 
+Here is the definition of a VM from the 
 ["local-path" example](https://github.com/mnlipp/VM-Operator/tree/main/example/local-path):
 
 ```yaml
@@ -22,13 +20,6 @@ metadata:
   namespace: vmop-demo
   name: test-vm
 spec:
-
-  # image:
-    # Defaults:
-    # repository: ghcr.io
-    # path: mnlipp/org.jdrupes.vmoperator.runner.qemu-arch
-    # version: latest
-    # pullPolicy: Always
 
   vm:
     maximumCpus: 4
@@ -63,9 +54,16 @@ spec:
         port: 5910
 ```
 
+## Defining the basics
+
+How to define the number of CPUs and the size of the RAM of the VM
+should be obvious from the example. Note that changes of the current
+number of CPUs and the current RAM size will be propagated to running
+VMs if you change them.
+
 ## Defining disks
 
-Maybe the most important part is the definition of the VM's disks.
+Maybe the most interesting part is the definition of the VM's disks.
 This is done by adding one or more `volumeClaimTemplate`s to the
 list of disks. As its name suggests, such a template is used by the
 controller to generate a PVC.
