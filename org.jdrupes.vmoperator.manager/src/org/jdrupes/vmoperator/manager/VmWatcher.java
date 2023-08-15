@@ -21,7 +21,6 @@ package org.jdrupes.vmoperator.manager;
 import com.google.gson.reflect.TypeToken;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.Configuration;
 import io.kubernetes.client.openapi.apis.ApisApi;
 import io.kubernetes.client.openapi.apis.CustomObjectsApi;
 import io.kubernetes.client.openapi.models.V1APIGroup;
@@ -29,6 +28,7 @@ import io.kubernetes.client.openapi.models.V1APIResource;
 import io.kubernetes.client.openapi.models.V1GroupVersionForDiscovery;
 import io.kubernetes.client.openapi.models.V1Namespace;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
 import io.kubernetes.client.util.generic.options.ListOptions;
@@ -59,7 +59,6 @@ import org.jgrapes.util.events.ConfigurationUpdate;
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class VmWatcher extends Component {
 
-    private ApiClient client;
     private String namespaceToWatch;
     private final Map<String, VmChannel> channels = new ConcurrentHashMap<>();
 
@@ -115,7 +114,7 @@ public class VmWatcher extends Component {
             .fine(() -> "Controlling namespace \"" + namespaceToWatch + "\".");
 
         // Get all our API versions
-        client = Configuration.getDefaultApiClient();
+        var client = Config.defaultClient();
         var apis = new ApisApi(client).getAPIVersions();
         var vmOpApiVersions = apis.getGroups().stream()
             .filter(g -> g.getName().equals(VM_OP_GROUP)).findFirst()
@@ -124,7 +123,7 @@ public class VmWatcher extends Component {
 
         // Remove left overs
         var coa = new CustomObjectsApi(client);
-        purge(coa, vmOpApiVersions);
+        purge(client, coa, vmOpApiVersions);
 
         // Start a watcher thread for each existing CRD version.
         // The watcher will send us an "ADDED" for each existing VM.
@@ -133,14 +132,14 @@ public class VmWatcher extends Component {
                 .getResources().stream()
                 .filter(r -> Constants.VM_OP_KIND_VM.equals(r.getKind()))
                 .findFirst()
-                .ifPresent(crd -> watchVmDefs(coa, crd, version));
+                .ifPresent(crd -> watchVmDefs(crd, version));
         }
     }
 
     @SuppressWarnings({ "PMD.AvoidInstantiatingObjectsInLoops",
         "PMD.CognitiveComplexity" })
-    private void purge(CustomObjectsApi coa, List<String> vmOpApiVersions)
-            throws ApiException {
+    private void purge(ApiClient client, CustomObjectsApi coa,
+            List<String> vmOpApiVersions) throws ApiException {
         // Get existing CRs (VMs)
         Set<String> known = new HashSet<>();
         for (var version : vmOpApiVersions) {
@@ -149,7 +148,7 @@ public class VmWatcher extends Component {
                 .getResources().stream()
                 .filter(r -> Constants.VM_OP_KIND_VM.equals(r.getKind()))
                 .findFirst()
-                .ifPresent(crd -> known.addAll(getKnown(crd, version)));
+                .ifPresent(crd -> known.addAll(getKnown(client, crd, version)));
         }
 
         ListOptions opts = new ListOptions();
@@ -184,7 +183,8 @@ public class VmWatcher extends Component {
         }
     }
 
-    private Set<String> getKnown(V1APIResource crd, String version) {
+    private Set<String> getKnown(ApiClient client, V1APIResource crd,
+            String version) {
         Set<String> result = new HashSet<>();
         var api = new DynamicKubernetesApi(VM_OP_GROUP, version,
             crd.getName(), client);
@@ -197,13 +197,14 @@ public class VmWatcher extends Component {
         return result;
     }
 
-    private void watchVmDefs(CustomObjectsApi coa, V1APIResource crd,
-            String version) {
+    private void watchVmDefs(V1APIResource crd, String version) {
         @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
         var watcher = new Thread(() -> {
             try {
                 // Watch sometimes terminates without apparent reason.
                 while (true) {
+                    var client = Config.defaultClient();
+                    var coa = new CustomObjectsApi(client);
                     var call = coa.listNamespacedCustomObjectCall(VM_OP_GROUP,
                         version, namespaceToWatch, crd.getName(), null, false,
                         null, null, null, null, null, null, null, true, null);
@@ -233,7 +234,16 @@ public class VmWatcher extends Component {
             Watch.Response<V1Namespace> item) {
         V1ObjectMeta metadata = item.object.getMetadata();
         VmChannel channel = channels.computeIfAbsent(metadata.getName(),
-            k -> new VmChannel(channel(), newEventPipeline(), client));
+            k -> {
+                try {
+                    return new VmChannel(channel(), newEventPipeline(),
+                        Config.defaultClient());
+                } catch (IOException e) {
+                    logger.log(Level.SEVERE, e, () -> "Failed to create client"
+                        + " for handling changes: " + e.getMessage());
+                    return null;
+                }
+            });
         channel.pipeline().fire(new VmDefChanged(VmDefChanged.Type
             .valueOf(item.type), vmsCrd, item.object), channel);
     }

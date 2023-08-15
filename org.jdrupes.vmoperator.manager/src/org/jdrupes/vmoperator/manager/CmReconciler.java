@@ -33,6 +33,9 @@ import java.io.StringWriter;
 import java.util.Map;
 import java.util.logging.Logger;
 import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
+import org.yaml.snakeyaml.LoaderOptions;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 /**
  * Delegee for reconciling the config map
@@ -85,7 +88,8 @@ import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
         fmTemplate.process(model, out);
         // Avoid Yaml.load due to
         // https://github.com/kubernetes-client/java/issues/2741
-        var mapDef = Dynamics.newFromYaml(out.toString());
+        var mapDef = Dynamics.newFromYaml(
+            new Yaml(new SafeConstructor(new LoaderOptions())), out.toString());
 
         // Apply and maybe force pod update
         var newState = K8s.apply(cmApi, mapDef, out.toString());

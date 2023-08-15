@@ -28,6 +28,9 @@ import java.io.StringWriter;
 import java.util.Map;
 import java.util.logging.Logger;
 import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
+import org.yaml.snakeyaml.LoaderOptions;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 /**
  * Delegee for reconciling the service
@@ -79,7 +82,8 @@ import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
         fmTemplate.process(model, out);
         // Avoid Yaml.load due to
         // https://github.com/kubernetes-client/java/issues/2741
-        var mapDef = Dynamics.newFromYaml(out.toString());
+        var mapDef = Dynamics.newFromYaml(
+            new Yaml(new SafeConstructor(new LoaderOptions())), out.toString());
 
         // Apply
         K8s.apply(svcApi, mapDef, out.toString());

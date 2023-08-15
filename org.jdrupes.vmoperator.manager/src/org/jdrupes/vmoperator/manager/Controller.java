@@ -20,7 +20,6 @@ package org.jdrupes.vmoperator.manager;
 
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
-import io.kubernetes.client.util.Config;
 import java.io.IOException;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
@@ -53,7 +52,8 @@ public class Controller extends Component {
      */
     @Handler(priority = 100)
     public void onStart(Start event) throws IOException, ApiException {
-        var client = Config.defaultClient();
-        Configuration.setDefaultApiClient(client);
+        // Make sure to use thread specific client
+        // https://github.com/kubernetes-client/java/issues/100
+        Configuration.setDefaultApiClient(null);
     }
 }
