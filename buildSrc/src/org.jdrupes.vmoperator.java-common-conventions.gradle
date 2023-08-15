@@ -76,7 +76,7 @@ jar {
         // Set Git revision information in the manifests of built bundles
         attributes([
             "Implementation-Title": project.name,
-            "Implementation-Version": "$project.version (${grgit.describe(always: true)})",
+            "Implementation-Version": "$project.version (built from ${grgit.describe(always: true)})",
             "Implementation-Vendor": grgit.repository.jgit.repository.config.getString("user", null, "name")
                 + " (" + grgit.repository.jgit.repository.config.getString("user", null, "email") + ")",
             "Git-Descriptor": grgit.describe(always: true),
