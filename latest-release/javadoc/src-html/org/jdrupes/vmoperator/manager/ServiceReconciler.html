@@ -41,64 +41,68 @@
 <span class="source-line-no">028</span><span id="line-28">import java.util.Map;</span>
 <span class="source-line-no">029</span><span id="line-29">import java.util.logging.Logger;</span>
 <span class="source-line-no">030</span><span id="line-30">import org.jdrupes.vmoperator.manager.VmDefChanged.Type;</span>
-<span class="source-line-no">031</span><span id="line-31"></span>
-<span class="source-line-no">032</span><span id="line-32">/**</span>
-<span class="source-line-no">033</span><span id="line-33"> * Delegee for reconciling the service</span>
-<span class="source-line-no">034</span><span id="line-34"> */</span>
-<span class="source-line-no">035</span><span id="line-35">@SuppressWarnings("PMD.DataflowAnomalyAnalysis")</span>
-<span class="source-line-no">036</span><span id="line-36">/* default */ class ServiceReconciler {</span>
-<span class="source-line-no">037</span><span id="line-37"></span>
-<span class="source-line-no">038</span><span id="line-38">    protected final Logger logger = Logger.getLogger(getClass().getName());</span>
-<span class="source-line-no">039</span><span id="line-39">    private final Configuration fmConfig;</span>
+<span class="source-line-no">031</span><span id="line-31">import org.yaml.snakeyaml.LoaderOptions;</span>
+<span class="source-line-no">032</span><span id="line-32">import org.yaml.snakeyaml.Yaml;</span>
+<span class="source-line-no">033</span><span id="line-33">import org.yaml.snakeyaml.constructor.SafeConstructor;</span>
+<span class="source-line-no">034</span><span id="line-34"></span>
+<span class="source-line-no">035</span><span id="line-35">/**</span>
+<span class="source-line-no">036</span><span id="line-36"> * Delegee for reconciling the service</span>
+<span class="source-line-no">037</span><span id="line-37"> */</span>
+<span class="source-line-no">038</span><span id="line-38">@SuppressWarnings("PMD.DataflowAnomalyAnalysis")</span>
+<span class="source-line-no">039</span><span id="line-39">/* default */ class ServiceReconciler {</span>
 <span class="source-line-no">040</span><span id="line-40"></span>
-<span class="source-line-no">041</span><span id="line-41">    /**</span>
-<span class="source-line-no">042</span><span id="line-42">     * Instantiates a new service reconciler.</span>
-<span class="source-line-no">043</span><span id="line-43">     *</span>
-<span class="source-line-no">044</span><span id="line-44">     * @param fmConfig the fm config</span>
-<span class="source-line-no">045</span><span id="line-45">     */</span>
-<span class="source-line-no">046</span><span id="line-46">    public ServiceReconciler(Configuration fmConfig) {</span>
-<span class="source-line-no">047</span><span id="line-47">        this.fmConfig = fmConfig;</span>
-<span class="source-line-no">048</span><span id="line-48">    }</span>
-<span class="source-line-no">049</span><span id="line-49"></span>
-<span class="source-line-no">050</span><span id="line-50">    /**</span>
-<span class="source-line-no">051</span><span id="line-51">     * Reconcile.</span>
-<span class="source-line-no">052</span><span id="line-52">     *</span>
-<span class="source-line-no">053</span><span id="line-53">     * @param event the event</span>
-<span class="source-line-no">054</span><span id="line-54">     * @param model the model</span>
-<span class="source-line-no">055</span><span id="line-55">     * @param channel the channel</span>
-<span class="source-line-no">056</span><span id="line-56">     * @throws IOException Signals that an I/O exception has occurred.</span>
-<span class="source-line-no">057</span><span id="line-57">     * @throws TemplateException the template exception</span>
-<span class="source-line-no">058</span><span id="line-58">     * @throws ApiException the api exception</span>
-<span class="source-line-no">059</span><span id="line-59">     */</span>
-<span class="source-line-no">060</span><span id="line-60">    public void reconcile(VmDefChanged event,</span>
-<span class="source-line-no">061</span><span id="line-61">            Map&lt;String, Object&gt; model, VmChannel channel)</span>
-<span class="source-line-no">062</span><span id="line-62">            throws IOException, TemplateException, ApiException {</span>
-<span class="source-line-no">063</span><span id="line-63">        // Get API and check if exists</span>
-<span class="source-line-no">064</span><span id="line-64">        DynamicKubernetesApi svcApi = new DynamicKubernetesApi("", "v1",</span>
-<span class="source-line-no">065</span><span id="line-65">            "services", channel.client());</span>
-<span class="source-line-no">066</span><span id="line-66">        var existing = K8s.get(svcApi, event.object().getMetadata());</span>
-<span class="source-line-no">067</span><span id="line-67"></span>
-<span class="source-line-no">068</span><span id="line-68">        // If deleted, delete</span>
-<span class="source-line-no">069</span><span id="line-69">        if (event.type() == Type.DELETED) {</span>
-<span class="source-line-no">070</span><span id="line-70">            if (existing.isPresent()) {</span>
-<span class="source-line-no">071</span><span id="line-71">                K8s.delete(svcApi, existing.get());</span>
-<span class="source-line-no">072</span><span id="line-72">            }</span>
-<span class="source-line-no">073</span><span id="line-73">            return;</span>
-<span class="source-line-no">074</span><span id="line-74">        }</span>
-<span class="source-line-no">075</span><span id="line-75"></span>
-<span class="source-line-no">076</span><span id="line-76">        // Combine template and data and parse result</span>
-<span class="source-line-no">077</span><span id="line-77">        var fmTemplate = fmConfig.getTemplate("runnerService.ftl.yaml");</span>
-<span class="source-line-no">078</span><span id="line-78">        StringWriter out = new StringWriter();</span>
-<span class="source-line-no">079</span><span id="line-79">        fmTemplate.process(model, out);</span>
-<span class="source-line-no">080</span><span id="line-80">        // Avoid Yaml.load due to</span>
-<span class="source-line-no">081</span><span id="line-81">        // https://github.com/kubernetes-client/java/issues/2741</span>
-<span class="source-line-no">082</span><span id="line-82">        var mapDef = Dynamics.newFromYaml(out.toString());</span>
-<span class="source-line-no">083</span><span id="line-83"></span>
-<span class="source-line-no">084</span><span id="line-84">        // Apply</span>
-<span class="source-line-no">085</span><span id="line-85">        K8s.apply(svcApi, mapDef, out.toString());</span>
-<span class="source-line-no">086</span><span id="line-86">    }</span>
+<span class="source-line-no">041</span><span id="line-41">    protected final Logger logger = Logger.getLogger(getClass().getName());</span>
+<span class="source-line-no">042</span><span id="line-42">    private final Configuration fmConfig;</span>
+<span class="source-line-no">043</span><span id="line-43"></span>
+<span class="source-line-no">044</span><span id="line-44">    /**</span>
+<span class="source-line-no">045</span><span id="line-45">     * Instantiates a new service reconciler.</span>
+<span class="source-line-no">046</span><span id="line-46">     *</span>
+<span class="source-line-no">047</span><span id="line-47">     * @param fmConfig the fm config</span>
+<span class="source-line-no">048</span><span id="line-48">     */</span>
+<span class="source-line-no">049</span><span id="line-49">    public ServiceReconciler(Configuration fmConfig) {</span>
+<span class="source-line-no">050</span><span id="line-50">        this.fmConfig = fmConfig;</span>
+<span class="source-line-no">051</span><span id="line-51">    }</span>
+<span class="source-line-no">052</span><span id="line-52"></span>
+<span class="source-line-no">053</span><span id="line-53">    /**</span>
+<span class="source-line-no">054</span><span id="line-54">     * Reconcile.</span>
+<span class="source-line-no">055</span><span id="line-55">     *</span>
+<span class="source-line-no">056</span><span id="line-56">     * @param event the event</span>
+<span class="source-line-no">057</span><span id="line-57">     * @param model the model</span>
+<span class="source-line-no">058</span><span id="line-58">     * @param channel the channel</span>
+<span class="source-line-no">059</span><span id="line-59">     * @throws IOException Signals that an I/O exception has occurred.</span>
+<span class="source-line-no">060</span><span id="line-60">     * @throws TemplateException the template exception</span>
+<span class="source-line-no">061</span><span id="line-61">     * @throws ApiException the api exception</span>
+<span class="source-line-no">062</span><span id="line-62">     */</span>
+<span class="source-line-no">063</span><span id="line-63">    public void reconcile(VmDefChanged event,</span>
+<span class="source-line-no">064</span><span id="line-64">            Map&lt;String, Object&gt; model, VmChannel channel)</span>
+<span class="source-line-no">065</span><span id="line-65">            throws IOException, TemplateException, ApiException {</span>
+<span class="source-line-no">066</span><span id="line-66">        // Get API and check if exists</span>
+<span class="source-line-no">067</span><span id="line-67">        DynamicKubernetesApi svcApi = new DynamicKubernetesApi("", "v1",</span>
+<span class="source-line-no">068</span><span id="line-68">            "services", channel.client());</span>
+<span class="source-line-no">069</span><span id="line-69">        var existing = K8s.get(svcApi, event.object().getMetadata());</span>
+<span class="source-line-no">070</span><span id="line-70"></span>
+<span class="source-line-no">071</span><span id="line-71">        // If deleted, delete</span>
+<span class="source-line-no">072</span><span id="line-72">        if (event.type() == Type.DELETED) {</span>
+<span class="source-line-no">073</span><span id="line-73">            if (existing.isPresent()) {</span>
+<span class="source-line-no">074</span><span id="line-74">                K8s.delete(svcApi, existing.get());</span>
+<span class="source-line-no">075</span><span id="line-75">            }</span>
+<span class="source-line-no">076</span><span id="line-76">            return;</span>
+<span class="source-line-no">077</span><span id="line-77">        }</span>
+<span class="source-line-no">078</span><span id="line-78"></span>
+<span class="source-line-no">079</span><span id="line-79">        // Combine template and data and parse result</span>
+<span class="source-line-no">080</span><span id="line-80">        var fmTemplate = fmConfig.getTemplate("runnerService.ftl.yaml");</span>
+<span class="source-line-no">081</span><span id="line-81">        StringWriter out = new StringWriter();</span>
+<span class="source-line-no">082</span><span id="line-82">        fmTemplate.process(model, out);</span>
+<span class="source-line-no">083</span><span id="line-83">        // Avoid Yaml.load due to</span>
+<span class="source-line-no">084</span><span id="line-84">        // https://github.com/kubernetes-client/java/issues/2741</span>
+<span class="source-line-no">085</span><span id="line-85">        var mapDef = Dynamics.newFromYaml(</span>
+<span class="source-line-no">086</span><span id="line-86">            new Yaml(new SafeConstructor(new LoaderOptions())), out.toString());</span>
 <span class="source-line-no">087</span><span id="line-87"></span>
-<span class="source-line-no">088</span><span id="line-88">}</span>
+<span class="source-line-no">088</span><span id="line-88">        // Apply</span>
+<span class="source-line-no">089</span><span id="line-89">        K8s.apply(svcApi, mapDef, out.toString());</span>
+<span class="source-line-no">090</span><span id="line-90">    }</span>
+<span class="source-line-no">091</span><span id="line-91"></span>
+<span class="source-line-no">092</span><span id="line-92">}</span>
 
 
 

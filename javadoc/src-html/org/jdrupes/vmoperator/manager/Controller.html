@@ -33,41 +33,41 @@
 <span class="source-line-no">020</span><span id="line-20"></span>
 <span class="source-line-no">021</span><span id="line-21">import io.kubernetes.client.openapi.ApiException;</span>
 <span class="source-line-no">022</span><span id="line-22">import io.kubernetes.client.openapi.Configuration;</span>
-<span class="source-line-no">023</span><span id="line-23">import io.kubernetes.client.util.Config;</span>
-<span class="source-line-no">024</span><span id="line-24">import java.io.IOException;</span>
-<span class="source-line-no">025</span><span id="line-25">import org.jgrapes.core.Channel;</span>
-<span class="source-line-no">026</span><span id="line-26">import org.jgrapes.core.Component;</span>
-<span class="source-line-no">027</span><span id="line-27">import org.jgrapes.core.annotation.Handler;</span>
-<span class="source-line-no">028</span><span id="line-28">import org.jgrapes.core.events.Start;</span>
-<span class="source-line-no">029</span><span id="line-29"></span>
-<span class="source-line-no">030</span><span id="line-30">/**</span>
-<span class="source-line-no">031</span><span id="line-31"> * Implements a controller as defined in the</span>
-<span class="source-line-no">032</span><span id="line-32"> * [Operator Whitepaper](https://github.com/cncf/tag-app-delivery/blob/eece8f7307f2970f46f100f51932db106db46968/operator-wg/whitepaper/Operator-WhitePaper_v1-0.md#operator-components-in-kubernetes).</span>
-<span class="source-line-no">033</span><span id="line-33"> */</span>
-<span class="source-line-no">034</span><span id="line-34">public class Controller extends Component {</span>
-<span class="source-line-no">035</span><span id="line-35"></span>
-<span class="source-line-no">036</span><span id="line-36">    /**</span>
-<span class="source-line-no">037</span><span id="line-37">     * Creates a new instance.</span>
-<span class="source-line-no">038</span><span id="line-38">     */</span>
-<span class="source-line-no">039</span><span id="line-39">    public Controller(Channel componentChannel) {</span>
-<span class="source-line-no">040</span><span id="line-40">        super(componentChannel);</span>
-<span class="source-line-no">041</span><span id="line-41">        // Prepare component tree</span>
-<span class="source-line-no">042</span><span id="line-42">        attach(new VmWatcher(channel()));</span>
-<span class="source-line-no">043</span><span id="line-43">        attach(new Reconciler(channel()));</span>
-<span class="source-line-no">044</span><span id="line-44">    }</span>
-<span class="source-line-no">045</span><span id="line-45"></span>
-<span class="source-line-no">046</span><span id="line-46">    /**</span>
-<span class="source-line-no">047</span><span id="line-47">     * Handle the start event. Has higher priority because it configures</span>
-<span class="source-line-no">048</span><span id="line-48">     * the default Kubernetes client.</span>
-<span class="source-line-no">049</span><span id="line-49">     *</span>
-<span class="source-line-no">050</span><span id="line-50">     * @param event the event</span>
-<span class="source-line-no">051</span><span id="line-51">     * @throws IOException </span>
-<span class="source-line-no">052</span><span id="line-52">     * @throws ApiException </span>
-<span class="source-line-no">053</span><span id="line-53">     */</span>
-<span class="source-line-no">054</span><span id="line-54">    @Handler(priority = 100)</span>
-<span class="source-line-no">055</span><span id="line-55">    public void onStart(Start event) throws IOException, ApiException {</span>
-<span class="source-line-no">056</span><span id="line-56">        var client = Config.defaultClient();</span>
-<span class="source-line-no">057</span><span id="line-57">        Configuration.setDefaultApiClient(client);</span>
+<span class="source-line-no">023</span><span id="line-23">import java.io.IOException;</span>
+<span class="source-line-no">024</span><span id="line-24">import org.jgrapes.core.Channel;</span>
+<span class="source-line-no">025</span><span id="line-25">import org.jgrapes.core.Component;</span>
+<span class="source-line-no">026</span><span id="line-26">import org.jgrapes.core.annotation.Handler;</span>
+<span class="source-line-no">027</span><span id="line-27">import org.jgrapes.core.events.Start;</span>
+<span class="source-line-no">028</span><span id="line-28"></span>
+<span class="source-line-no">029</span><span id="line-29">/**</span>
+<span class="source-line-no">030</span><span id="line-30"> * Implements a controller as defined in the</span>
+<span class="source-line-no">031</span><span id="line-31"> * [Operator Whitepaper](https://github.com/cncf/tag-app-delivery/blob/eece8f7307f2970f46f100f51932db106db46968/operator-wg/whitepaper/Operator-WhitePaper_v1-0.md#operator-components-in-kubernetes).</span>
+<span class="source-line-no">032</span><span id="line-32"> */</span>
+<span class="source-line-no">033</span><span id="line-33">public class Controller extends Component {</span>
+<span class="source-line-no">034</span><span id="line-34"></span>
+<span class="source-line-no">035</span><span id="line-35">    /**</span>
+<span class="source-line-no">036</span><span id="line-36">     * Creates a new instance.</span>
+<span class="source-line-no">037</span><span id="line-37">     */</span>
+<span class="source-line-no">038</span><span id="line-38">    public Controller(Channel componentChannel) {</span>
+<span class="source-line-no">039</span><span id="line-39">        super(componentChannel);</span>
+<span class="source-line-no">040</span><span id="line-40">        // Prepare component tree</span>
+<span class="source-line-no">041</span><span id="line-41">        attach(new VmWatcher(channel()));</span>
+<span class="source-line-no">042</span><span id="line-42">        attach(new Reconciler(channel()));</span>
+<span class="source-line-no">043</span><span id="line-43">    }</span>
+<span class="source-line-no">044</span><span id="line-44"></span>
+<span class="source-line-no">045</span><span id="line-45">    /**</span>
+<span class="source-line-no">046</span><span id="line-46">     * Handle the start event. Has higher priority because it configures</span>
+<span class="source-line-no">047</span><span id="line-47">     * the default Kubernetes client.</span>
+<span class="source-line-no">048</span><span id="line-48">     *</span>
+<span class="source-line-no">049</span><span id="line-49">     * @param event the event</span>
+<span class="source-line-no">050</span><span id="line-50">     * @throws IOException </span>
+<span class="source-line-no">051</span><span id="line-51">     * @throws ApiException </span>
+<span class="source-line-no">052</span><span id="line-52">     */</span>
+<span class="source-line-no">053</span><span id="line-53">    @Handler(priority = 100)</span>
+<span class="source-line-no">054</span><span id="line-54">    public void onStart(Start event) throws IOException, ApiException {</span>
+<span class="source-line-no">055</span><span id="line-55">        // Make sure to use thread specific client</span>
+<span class="source-line-no">056</span><span id="line-56">        // https://github.com/kubernetes-client/java/issues/100</span>
+<span class="source-line-no">057</span><span id="line-57">        Configuration.setDefaultApiClient(null);</span>
 <span class="source-line-no">058</span><span id="line-58">    }</span>
 <span class="source-line-no">059</span><span id="line-59">}</span>
 

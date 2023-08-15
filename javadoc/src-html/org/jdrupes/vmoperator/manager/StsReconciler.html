@@ -43,90 +43,94 @@
 <span class="source-line-no">030</span><span id="line-30">import java.util.Map;</span>
 <span class="source-line-no">031</span><span id="line-31">import java.util.logging.Logger;</span>
 <span class="source-line-no">032</span><span id="line-32">import org.jdrupes.vmoperator.manager.VmDefChanged.Type;</span>
-<span class="source-line-no">033</span><span id="line-33"></span>
-<span class="source-line-no">034</span><span id="line-34">/**</span>
-<span class="source-line-no">035</span><span id="line-35"> * Delegee for reconciling the stateful set (effectively the pod).</span>
-<span class="source-line-no">036</span><span id="line-36"> */</span>
-<span class="source-line-no">037</span><span id="line-37">@SuppressWarnings("PMD.DataflowAnomalyAnalysis")</span>
-<span class="source-line-no">038</span><span id="line-38">/* default */ class StsReconciler {</span>
-<span class="source-line-no">039</span><span id="line-39"></span>
-<span class="source-line-no">040</span><span id="line-40">    protected final Logger logger = Logger.getLogger(getClass().getName());</span>
-<span class="source-line-no">041</span><span id="line-41">    private final Configuration fmConfig;</span>
+<span class="source-line-no">033</span><span id="line-33">import org.yaml.snakeyaml.LoaderOptions;</span>
+<span class="source-line-no">034</span><span id="line-34">import org.yaml.snakeyaml.Yaml;</span>
+<span class="source-line-no">035</span><span id="line-35">import org.yaml.snakeyaml.constructor.SafeConstructor;</span>
+<span class="source-line-no">036</span><span id="line-36"></span>
+<span class="source-line-no">037</span><span id="line-37">/**</span>
+<span class="source-line-no">038</span><span id="line-38"> * Delegee for reconciling the stateful set (effectively the pod).</span>
+<span class="source-line-no">039</span><span id="line-39"> */</span>
+<span class="source-line-no">040</span><span id="line-40">@SuppressWarnings("PMD.DataflowAnomalyAnalysis")</span>
+<span class="source-line-no">041</span><span id="line-41">/* default */ class StsReconciler {</span>
 <span class="source-line-no">042</span><span id="line-42"></span>
-<span class="source-line-no">043</span><span id="line-43">    /**</span>
-<span class="source-line-no">044</span><span id="line-44">     * Instantiates a new config map reconciler.</span>
-<span class="source-line-no">045</span><span id="line-45">     *</span>
-<span class="source-line-no">046</span><span id="line-46">     * @param fmConfig the fm config</span>
-<span class="source-line-no">047</span><span id="line-47">     */</span>
-<span class="source-line-no">048</span><span id="line-48">    public StsReconciler(Configuration fmConfig) {</span>
-<span class="source-line-no">049</span><span id="line-49">        this.fmConfig = fmConfig;</span>
-<span class="source-line-no">050</span><span id="line-50">    }</span>
-<span class="source-line-no">051</span><span id="line-51"></span>
-<span class="source-line-no">052</span><span id="line-52">    /**</span>
-<span class="source-line-no">053</span><span id="line-53">     * Reconcile stateful set.</span>
-<span class="source-line-no">054</span><span id="line-54">     *</span>
-<span class="source-line-no">055</span><span id="line-55">     * @param event the event</span>
-<span class="source-line-no">056</span><span id="line-56">     * @param model the model</span>
-<span class="source-line-no">057</span><span id="line-57">     * @param channel the channel</span>
-<span class="source-line-no">058</span><span id="line-58">     * @throws IOException Signals that an I/O exception has occurred.</span>
-<span class="source-line-no">059</span><span id="line-59">     * @throws TemplateException the template exception</span>
-<span class="source-line-no">060</span><span id="line-60">     * @throws ApiException the api exception</span>
-<span class="source-line-no">061</span><span id="line-61">     */</span>
-<span class="source-line-no">062</span><span id="line-62">    public void reconcile(VmDefChanged event, Map&lt;String, Object&gt; model,</span>
-<span class="source-line-no">063</span><span id="line-63">            VmChannel channel)</span>
-<span class="source-line-no">064</span><span id="line-64">            throws IOException, TemplateException, ApiException {</span>
-<span class="source-line-no">065</span><span id="line-65">        DynamicKubernetesApi stsApi = new DynamicKubernetesApi("apps", "v1",</span>
-<span class="source-line-no">066</span><span id="line-66">            "statefulsets", channel.client());</span>
-<span class="source-line-no">067</span><span id="line-67">        var metadata = event.object().getMetadata();</span>
-<span class="source-line-no">068</span><span id="line-68"></span>
-<span class="source-line-no">069</span><span id="line-69">        // Maybe delete</span>
-<span class="source-line-no">070</span><span id="line-70">        if (event.type() == Type.DELETED) {</span>
-<span class="source-line-no">071</span><span id="line-71">            // First set replicas to 0 ...</span>
-<span class="source-line-no">072</span><span id="line-72">            PatchOptions opts = new PatchOptions();</span>
-<span class="source-line-no">073</span><span id="line-73">            opts.setFieldManager("kubernetes-java-kubectl-apply");</span>
-<span class="source-line-no">074</span><span id="line-74">            stsApi.patch(metadata.getNamespace(), metadata.getName(),</span>
-<span class="source-line-no">075</span><span id="line-75">                V1Patch.PATCH_FORMAT_JSON_PATCH,</span>
-<span class="source-line-no">076</span><span id="line-76">                new V1Patch("[{\"op\": \"replace\", \"path\": "</span>
-<span class="source-line-no">077</span><span id="line-77">                    + "\"/spec/replicas\", \"value\": 0}]"),</span>
-<span class="source-line-no">078</span><span id="line-78">                opts).throwsApiException();</span>
-<span class="source-line-no">079</span><span id="line-79">            // ... then delete</span>
-<span class="source-line-no">080</span><span id="line-80">            stsApi.delete(metadata.getNamespace(), metadata.getName())</span>
-<span class="source-line-no">081</span><span id="line-81">                .throwsApiException();</span>
-<span class="source-line-no">082</span><span id="line-82">            return;</span>
-<span class="source-line-no">083</span><span id="line-83">        }</span>
-<span class="source-line-no">084</span><span id="line-84"></span>
-<span class="source-line-no">085</span><span id="line-85">        // Combine template and data and parse result</span>
-<span class="source-line-no">086</span><span id="line-86">        var fmTemplate = fmConfig.getTemplate("runnerSts.ftl.yaml");</span>
-<span class="source-line-no">087</span><span id="line-87">        StringWriter out = new StringWriter();</span>
-<span class="source-line-no">088</span><span id="line-88">        fmTemplate.process(model, out);</span>
-<span class="source-line-no">089</span><span id="line-89">        // Avoid Yaml.load due to</span>
-<span class="source-line-no">090</span><span id="line-90">        // https://github.com/kubernetes-client/java/issues/2741</span>
-<span class="source-line-no">091</span><span id="line-91">        var stsDef = Dynamics.newFromYaml(out.toString());</span>
-<span class="source-line-no">092</span><span id="line-92"></span>
-<span class="source-line-no">093</span><span id="line-93">        // If exists apply changes only when transitioning state</span>
-<span class="source-line-no">094</span><span id="line-94">        // or not running.</span>
-<span class="source-line-no">095</span><span id="line-95">        var existing = K8s.get(stsApi, metadata);</span>
-<span class="source-line-no">096</span><span id="line-96">        if (existing.isPresent()) {</span>
-<span class="source-line-no">097</span><span id="line-97">            var current = GsonPtr.to(existing.get().getRaw())</span>
-<span class="source-line-no">098</span><span id="line-98">                .to("spec").getAsInt("replicas").orElse(1);</span>
-<span class="source-line-no">099</span><span id="line-99">            var desired = GsonPtr.to(stsDef.getRaw())</span>
-<span class="source-line-no">100</span><span id="line-100">                .to("spec").getAsInt("replicas").orElse(1);</span>
-<span class="source-line-no">101</span><span id="line-101">            if (current == 1 &amp;&amp; desired == 1) {</span>
-<span class="source-line-no">102</span><span id="line-102">                return;</span>
-<span class="source-line-no">103</span><span id="line-103">            }</span>
-<span class="source-line-no">104</span><span id="line-104">        }</span>
-<span class="source-line-no">105</span><span id="line-105"></span>
-<span class="source-line-no">106</span><span id="line-106">        // Do apply changes</span>
-<span class="source-line-no">107</span><span id="line-107">        PatchOptions opts = new PatchOptions();</span>
-<span class="source-line-no">108</span><span id="line-108">        opts.setForce(true);</span>
-<span class="source-line-no">109</span><span id="line-109">        opts.setFieldManager("kubernetes-java-kubectl-apply");</span>
-<span class="source-line-no">110</span><span id="line-110">        stsApi.patch(stsDef.getMetadata().getNamespace(),</span>
-<span class="source-line-no">111</span><span id="line-111">            stsDef.getMetadata().getName(), V1Patch.PATCH_FORMAT_APPLY_YAML,</span>
-<span class="source-line-no">112</span><span id="line-112">            new V1Patch(channel.client().getJSON().serialize(stsDef)),</span>
-<span class="source-line-no">113</span><span id="line-113">            opts).throwsApiException();</span>
-<span class="source-line-no">114</span><span id="line-114">    }</span>
-<span class="source-line-no">115</span><span id="line-115"></span>
-<span class="source-line-no">116</span><span id="line-116">}</span>
+<span class="source-line-no">043</span><span id="line-43">    protected final Logger logger = Logger.getLogger(getClass().getName());</span>
+<span class="source-line-no">044</span><span id="line-44">    private final Configuration fmConfig;</span>
+<span class="source-line-no">045</span><span id="line-45"></span>
+<span class="source-line-no">046</span><span id="line-46">    /**</span>
+<span class="source-line-no">047</span><span id="line-47">     * Instantiates a new config map reconciler.</span>
+<span class="source-line-no">048</span><span id="line-48">     *</span>
+<span class="source-line-no">049</span><span id="line-49">     * @param fmConfig the fm config</span>
+<span class="source-line-no">050</span><span id="line-50">     */</span>
+<span class="source-line-no">051</span><span id="line-51">    public StsReconciler(Configuration fmConfig) {</span>
+<span class="source-line-no">052</span><span id="line-52">        this.fmConfig = fmConfig;</span>
+<span class="source-line-no">053</span><span id="line-53">    }</span>
+<span class="source-line-no">054</span><span id="line-54"></span>
+<span class="source-line-no">055</span><span id="line-55">    /**</span>
+<span class="source-line-no">056</span><span id="line-56">     * Reconcile stateful set.</span>
+<span class="source-line-no">057</span><span id="line-57">     *</span>
+<span class="source-line-no">058</span><span id="line-58">     * @param event the event</span>
+<span class="source-line-no">059</span><span id="line-59">     * @param model the model</span>
+<span class="source-line-no">060</span><span id="line-60">     * @param channel the channel</span>
+<span class="source-line-no">061</span><span id="line-61">     * @throws IOException Signals that an I/O exception has occurred.</span>
+<span class="source-line-no">062</span><span id="line-62">     * @throws TemplateException the template exception</span>
+<span class="source-line-no">063</span><span id="line-63">     * @throws ApiException the api exception</span>
+<span class="source-line-no">064</span><span id="line-64">     */</span>
+<span class="source-line-no">065</span><span id="line-65">    public void reconcile(VmDefChanged event, Map&lt;String, Object&gt; model,</span>
+<span class="source-line-no">066</span><span id="line-66">            VmChannel channel)</span>
+<span class="source-line-no">067</span><span id="line-67">            throws IOException, TemplateException, ApiException {</span>
+<span class="source-line-no">068</span><span id="line-68">        DynamicKubernetesApi stsApi = new DynamicKubernetesApi("apps", "v1",</span>
+<span class="source-line-no">069</span><span id="line-69">            "statefulsets", channel.client());</span>
+<span class="source-line-no">070</span><span id="line-70">        var metadata = event.object().getMetadata();</span>
+<span class="source-line-no">071</span><span id="line-71"></span>
+<span class="source-line-no">072</span><span id="line-72">        // Maybe delete</span>
+<span class="source-line-no">073</span><span id="line-73">        if (event.type() == Type.DELETED) {</span>
+<span class="source-line-no">074</span><span id="line-74">            // First set replicas to 0 ...</span>
+<span class="source-line-no">075</span><span id="line-75">            PatchOptions opts = new PatchOptions();</span>
+<span class="source-line-no">076</span><span id="line-76">            opts.setFieldManager("kubernetes-java-kubectl-apply");</span>
+<span class="source-line-no">077</span><span id="line-77">            stsApi.patch(metadata.getNamespace(), metadata.getName(),</span>
+<span class="source-line-no">078</span><span id="line-78">                V1Patch.PATCH_FORMAT_JSON_PATCH,</span>
+<span class="source-line-no">079</span><span id="line-79">                new V1Patch("[{\"op\": \"replace\", \"path\": "</span>
+<span class="source-line-no">080</span><span id="line-80">                    + "\"/spec/replicas\", \"value\": 0}]"),</span>
+<span class="source-line-no">081</span><span id="line-81">                opts).throwsApiException();</span>
+<span class="source-line-no">082</span><span id="line-82">            // ... then delete</span>
+<span class="source-line-no">083</span><span id="line-83">            stsApi.delete(metadata.getNamespace(), metadata.getName())</span>
+<span class="source-line-no">084</span><span id="line-84">                .throwsApiException();</span>
+<span class="source-line-no">085</span><span id="line-85">            return;</span>
+<span class="source-line-no">086</span><span id="line-86">        }</span>
+<span class="source-line-no">087</span><span id="line-87"></span>
+<span class="source-line-no">088</span><span id="line-88">        // Combine template and data and parse result</span>
+<span class="source-line-no">089</span><span id="line-89">        var fmTemplate = fmConfig.getTemplate("runnerSts.ftl.yaml");</span>
+<span class="source-line-no">090</span><span id="line-90">        StringWriter out = new StringWriter();</span>
+<span class="source-line-no">091</span><span id="line-91">        fmTemplate.process(model, out);</span>
+<span class="source-line-no">092</span><span id="line-92">        // Avoid Yaml.load due to</span>
+<span class="source-line-no">093</span><span id="line-93">        // https://github.com/kubernetes-client/java/issues/2741</span>
+<span class="source-line-no">094</span><span id="line-94">        var stsDef = Dynamics.newFromYaml(</span>
+<span class="source-line-no">095</span><span id="line-95">            new Yaml(new SafeConstructor(new LoaderOptions())), out.toString());</span>
+<span class="source-line-no">096</span><span id="line-96"></span>
+<span class="source-line-no">097</span><span id="line-97">        // If exists apply changes only when transitioning state</span>
+<span class="source-line-no">098</span><span id="line-98">        // or not running.</span>
+<span class="source-line-no">099</span><span id="line-99">        var existing = K8s.get(stsApi, metadata);</span>
+<span class="source-line-no">100</span><span id="line-100">        if (existing.isPresent()) {</span>
+<span class="source-line-no">101</span><span id="line-101">            var current = GsonPtr.to(existing.get().getRaw())</span>
+<span class="source-line-no">102</span><span id="line-102">                .to("spec").getAsInt("replicas").orElse(1);</span>
+<span class="source-line-no">103</span><span id="line-103">            var desired = GsonPtr.to(stsDef.getRaw())</span>
+<span class="source-line-no">104</span><span id="line-104">                .to("spec").getAsInt("replicas").orElse(1);</span>
+<span class="source-line-no">105</span><span id="line-105">            if (current == 1 &amp;&amp; desired == 1) {</span>
+<span class="source-line-no">106</span><span id="line-106">                return;</span>
+<span class="source-line-no">107</span><span id="line-107">            }</span>
+<span class="source-line-no">108</span><span id="line-108">        }</span>
+<span class="source-line-no">109</span><span id="line-109"></span>
+<span class="source-line-no">110</span><span id="line-110">        // Do apply changes</span>
+<span class="source-line-no">111</span><span id="line-111">        PatchOptions opts = new PatchOptions();</span>
+<span class="source-line-no">112</span><span id="line-112">        opts.setForce(true);</span>
+<span class="source-line-no">113</span><span id="line-113">        opts.setFieldManager("kubernetes-java-kubectl-apply");</span>
+<span class="source-line-no">114</span><span id="line-114">        stsApi.patch(stsDef.getMetadata().getNamespace(),</span>
+<span class="source-line-no">115</span><span id="line-115">            stsDef.getMetadata().getName(), V1Patch.PATCH_FORMAT_APPLY_YAML,</span>
+<span class="source-line-no">116</span><span id="line-116">            new V1Patch(channel.client().getJSON().serialize(stsDef)),</span>
+<span class="source-line-no">117</span><span id="line-117">            opts).throwsApiException();</span>
+<span class="source-line-no">118</span><span id="line-118">    }</span>
+<span class="source-line-no">119</span><span id="line-119"></span>
+<span class="source-line-no">120</span><span id="line-120">}</span>
 
 
 
