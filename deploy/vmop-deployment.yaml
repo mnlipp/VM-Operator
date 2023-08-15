@@ -33,6 +33,10 @@ spec:
                 - ALL
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
+          resources:
+            requests:
+              cpu: 100m
+              memory: 32Mi
       volumes:
       - name: config
         configMap:
