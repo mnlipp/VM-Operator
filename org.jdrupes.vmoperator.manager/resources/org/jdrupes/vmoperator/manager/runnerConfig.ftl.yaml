@@ -7,6 +7,12 @@ metadata:
     app.kubernetes.io/name: ${ constants.APP_NAME }
     app.kubernetes.io/instance: ${ cr.metadata.name.asString }
     app.kubernetes.io/managed-by: ${ constants.VM_OP_NAME }
+  ownerReferences:
+  - apiVersion: ${ cr.apiVersion.asString }
+    kind: ${ constants.VM_OP_KIND_VM }
+    name: ${ cr.metadata.name.asString }
+    uid: ${ cr.metadata.uid.asString }
+    controller: false
   
 data:
   config.yaml: |
