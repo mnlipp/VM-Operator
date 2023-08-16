@@ -7,6 +7,8 @@ metadata:
     app.kubernetes.io/name: ${ constants.APP_NAME }
     app.kubernetes.io/instance: ${ cr.metadata.name.asString }
     app.kubernetes.io/managed-by: ${ constants.VM_OP_NAME }
+  annotations:
+    vmoperator.jdrupes.org/version: ${ managerVersion }
   ownerReferences:
   - apiVersion: ${ cr.apiVersion.asString }
     kind: ${ constants.VM_OP_KIND_VM }

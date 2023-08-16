@@ -38,6 +38,7 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_GROUP;
 import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
 import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
@@ -148,6 +149,9 @@ public class Reconciler extends Component {
             throws TemplateModelException {
         @SuppressWarnings("PMD.UseConcurrentHashMap")
         Map<String, Object> model = new HashMap<>();
+        model.put("managerVersion",
+            Optional.ofNullable(Reconciler.class.getPackage()
+                .getImplementationVersion()).orElse("(Unknown)"));
         model.put("cr", vmDef);
         model.put("constants",
             (TemplateHashModel) new DefaultObjectWrapperBuilder(
