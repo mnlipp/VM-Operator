@@ -89,11 +89,17 @@ as shown in this example:
               storage: 40Gi
 ```
 
-The disk will be available as "/dev/*name*-disk" in the VM. If
-.volumeClaimTemplate.metadata.name is not defined, then
-"/dev/*name*-disk" is used instead, with
-*n* being the index of the disk definition in the list of disks. 
+The disk will be available as "/dev/*name*-disk" in the VM,
+using .volumeClaimTemplate.metadata.name for *name*. If 
+no name is defined in the metadata, then "/dev/*name*-disk"
+is used instead, with *n* being the index of the disk
+definition in the list of disks. 
 
+The PVC is generated as part of a stateful set that controls
+the pod with the VM. As the controller for stateful sets appends the 
+stateful set's name to the contained PVCs, you'll eventually
+find the PVC as "*name*-disk-*vmName*" (or "disk-*n*-*vmName*" 
+in the Kubernetes resources.
 
 ## Further reading
 
