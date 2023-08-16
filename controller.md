@@ -81,7 +81,7 @@ as shown in this example:
     disks:
     - volumeClaimTemplate:
         metadata:
-          name: test-vm-system
+          name: system
         spec:
           storageClassName: rook-ceph-block
           resources:
@@ -89,10 +89,11 @@ as shown in this example:
               storage: 40Gi
 ```
 
-The disk will be available as "/dev/disk-*n*" in the VM, were 
-*n* is the index of the disk definition in the list of disks. 
-If .volumeClaimTemplate.metadata.name is defined, then "/dev/*name*-disk"
-is used instead.
+The disk will be available as "/dev/*name*-disk" in the VM. If
+.volumeClaimTemplate.metadata.name is not defined, then
+"/dev/*name*-disk" is used instead, with
+*n* being the index of the disk definition in the list of disks. 
+
 
 ## Further reading
 
