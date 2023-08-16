@@ -6,11 +6,11 @@ title: VM-Operator Controller
 # The Controller
 
 The controller component (which is part of the manager) monitors 
-custom resources of kind `VirtualMachine` and creates or modifies 
+custom resources of kind `VirtualMachine`. It creates or modifies 
 other resources in the cluster as required to get the VM defined
 by the CR up and running.
 
-Here is the definition of a VM from the 
+Here is the sample definition of a VM from the 
 ["local-path" example](https://github.com/mnlipp/VM-Operator/tree/main/example/local-path):
 
 ```yaml
