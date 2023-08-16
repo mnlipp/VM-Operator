@@ -8,7 +8,7 @@ title: VM-Operator Controller
 The controller component (which is part of the manager) monitors 
 custom resources of kind `VirtualMachine`. It creates or modifies 
 other resources in the cluster as required to get the VM defined
-by the CR up and running.
+by the CR up and running. 
 
 Here is the sample definition of a VM from the 
 ["local-path" example](https://github.com/mnlipp/VM-Operator/tree/main/example/local-path):
@@ -22,6 +22,7 @@ metadata:
 spec:
 
   vm:
+    state: Running
     maximumCpus: 4
     currentCpus: 2
     maximumRam: "8 GiB"
@@ -53,6 +54,9 @@ spec:
       spice:
         port: 5910
 ```
+
+The name from .metadata.name is used to generate a stateful set 
+with this name that controls the pod with the VM.
 
 ## Defining the basics
 
@@ -95,7 +99,7 @@ no name is defined in the metadata, then "/dev/*name*-disk"
 is used instead, with *n* being the index of the disk
 definition in the list of disks. 
 
-The PVC is generated as part of a stateful set that controls
+The PVC is generated as part of the stateful set that controls
 the pod with the VM. As the controller for stateful sets appends the 
 stateful set's name to the contained PVCs, you'll eventually
 find the PVC as "*name*-disk-*vmName*" (or "disk-*n*-*vmName*" 
