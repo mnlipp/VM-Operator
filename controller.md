@@ -55,8 +55,11 @@ spec:
         port: 5910
 ```
 
-The name from .metadata.name is used to generate a stateful set 
-with this name that controls the pod with the VM.
+The central resource created by the controller is a 
+[stateful set](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
+with the same name as the VM (metadata.name). Its number of replicas is
+set to 1 if `spec.vm.state` is "Running" (default is "Stopped" which sets replicas
+to 0).
 
 ## Defining the basics
 
@@ -94,16 +97,27 @@ as shown in this example:
 ```
 
 The disk will be available as "/dev/*name*-disk" in the VM,
-using .volumeClaimTemplate.metadata.name for *name*. If 
-no name is defined in the metadata, then "/dev/*name*-disk"
-is used instead, with *n* being the index of the disk
+using the string from `.volumeClaimTemplate.metadata.name` as *name*. 
+If no name is defined in the metadata, then "/dev/disk-*n*"
+is used instead, with *n* being the index of the disk 
 definition in the list of disks. 
 
-The PVC is generated as part of the stateful set that controls
-the pod with the VM. As the controller for stateful sets appends the 
-stateful set's name to the contained PVCs, you'll eventually
-find the PVC as "*name*-disk-*vmName*" (or "disk-*n*-*vmName*" 
-in the Kubernetes resources.
+Apart from appending "-disk" to the name (or generating the name) the
+`volumeClaimTemplate` is simply copied into the stateful set definition 
+for the VM (with some additional labels, see below). The controller 
+for stateful sets appends the started pod's name to the name of the 
+volume claim templates when it creates the PVCs. Therefore you'll 
+eventually find the PVCs as "*name*-disk-*vmName*-0"
+(or "disk-*n*-*vmName*-0"). 
+
+PVCs generated from stateful set definitions are considered "precious"
+and never removed automatically. This behavior fits perfectly for VMs.
+Usually, you do not want the disks to be removed automatically when
+you (maybe accidentally) remove the CR for the VM. To simplify the lookup
+for an eventual (manual) removal, all PVCs are labeled with 
+"app.kubernetes.io/name: vm-runner", "app.kubernetes.io/instance: *vmName*",
+and "app.kubernetes.io/managed-by: vm-operator".
+
 
 ## Further reading
 
