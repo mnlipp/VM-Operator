@@ -137,10 +137,10 @@
 <span class="source-line-no">124</span><span id="line-124">            apiVersion, event.crd().getName(), channel.client());</span>
 <span class="source-line-no">125</span><span id="line-125">        var defMeta = event.object().getMetadata();</span>
 <span class="source-line-no">126</span><span id="line-126"></span>
-<span class="source-line-no">127</span><span id="line-127">        // Update state</span>
+<span class="source-line-no">127</span><span id="line-127">        // Update the "buffered" definition, if it still exists.</span>
 <span class="source-line-no">128</span><span id="line-128">        if (event.type() != Type.DELETED) {</span>
-<span class="source-line-no">129</span><span id="line-129">            channel.setVmDefinition(</span>
-<span class="source-line-no">130</span><span id="line-130">                patchCr(K8s.get(vmCrApi, defMeta).get().getRaw().deepCopy()));</span>
+<span class="source-line-no">129</span><span id="line-129">            K8s.get(vmCrApi, defMeta).ifPresent(def -&gt; channel</span>
+<span class="source-line-no">130</span><span id="line-130">                .setVmDefinition(patchCr(def.getRaw().deepCopy())));</span>
 <span class="source-line-no">131</span><span id="line-131">        }</span>
 <span class="source-line-no">132</span><span id="line-132"></span>
 <span class="source-line-no">133</span><span id="line-133">        // Reconcile</span>
