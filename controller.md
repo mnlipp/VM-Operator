@@ -58,8 +58,8 @@ spec:
 
 How to define the number of CPUs and the size of the RAM of the VM
 should be obvious from the example. Note that changes of the current
-number of CPUs and the current RAM size will be propagated to running
-VMs if you change them.
+number of CPUs and the current RAM size will be propagated to
+running VMs.
 
 ## Defining disks
 
