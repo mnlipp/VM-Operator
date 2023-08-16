@@ -124,10 +124,10 @@ public class Reconciler extends Component {
             apiVersion, event.crd().getName(), channel.client());
         var defMeta = event.object().getMetadata();
 
-        // Update state
+        // Update the "buffered" definition, if it still exists.
         if (event.type() != Type.DELETED) {
-            channel.setVmDefinition(
-                patchCr(K8s.get(vmCrApi, defMeta).get().getRaw().deepCopy()));
+            K8s.get(vmCrApi, defMeta).ifPresent(def -> channel
+                .setVmDefinition(patchCr(def.getRaw().deepCopy())));
         }
 
         // Reconcile
