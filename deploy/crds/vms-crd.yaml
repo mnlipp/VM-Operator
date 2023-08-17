@@ -924,9 +924,9 @@ spec:
                     update:
                       type: boolean
                       default: true
-                additionalServiceMetadata:
+                loadBalancerService:
                   description: >-
-                    Data to be merged with the additionalServiceMetadata
+                    Data to be merged with the loadBalancerService
                     defined in the manager's configuration. Values 
                     specified here override values from the manager's 
                     configuration. If the value of a label or an annotation 

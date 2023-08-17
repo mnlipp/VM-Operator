@@ -17,10 +17,10 @@ metadata:
     controller: false
 
 spec:
+  type: LoadBalancer
   ports:
   - name: spice
     port: ${ cr.spec.vm.display.spice.port.asInt?c }
-  clusterIP: None
   selector:
-    app.kubernetes.io/name: ${ cr.metadata.name.asString }
+    app.kubernetes.io/name: ${ constants.APP_NAME }
     app.kubernetes.io/instance: ${ cr.metadata.name.asString }

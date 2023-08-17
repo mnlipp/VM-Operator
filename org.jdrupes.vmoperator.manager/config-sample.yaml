@@ -14,11 +14,13 @@
     # the resource properties.
     ramOvercommit: 1.5
 
-    # Additional metadata (labels and annotations) to be merged
-    # into the service. Must be provided as nested YAML
-    # additionalServiceMetadata: |
+    # If defined, causes a load balancer service to be created.
+    # May be a boolean or a string with nested yaml that
+    # defines additional labels or annotations to be merged
+    # into the service. 
+    # loadBalancerService: |
     #   labels: {}
     #   annotations: {}
 
-    # Only for development:
+    # Explicitly specify the namespace to be managed (only for development).
     # namespace: vmop-dev

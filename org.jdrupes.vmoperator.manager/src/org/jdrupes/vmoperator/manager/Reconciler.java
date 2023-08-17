@@ -60,7 +60,7 @@ public class Reconciler extends Component {
     private final Configuration fmConfig;
     private final CmReconciler cmReconciler;
     private final StsReconciler stsReconciler;
-    private final ServiceReconciler serviceReconciler;
+    private final LoadBalancerReconciler lbReconciler;
     @SuppressWarnings("PMD.UseConcurrentHashMap")
     private final Map<String, Object> config = new HashMap<>();
 
@@ -84,7 +84,7 @@ public class Reconciler extends Component {
 
         cmReconciler = new CmReconciler(fmConfig);
         stsReconciler = new StsReconciler(fmConfig);
-        serviceReconciler = new ServiceReconciler(fmConfig);
+        lbReconciler = new LoadBalancerReconciler(fmConfig);
     }
 
     /**
@@ -137,7 +137,7 @@ public class Reconciler extends Component {
         var configMap = cmReconciler.reconcile(event, model, channel);
         model.put("cm", configMap.getRaw());
         stsReconciler.reconcile(event, model, channel);
-        serviceReconciler.reconcile(event, model, channel);
+        lbReconciler.reconcile(event, model, channel);
     }
 
     private Map<String, Object> prepareModel(JsonObject vmDef)

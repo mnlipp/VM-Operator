@@ -9,7 +9,7 @@ spec:
     path: vmoperator/org.jdrupes.vmoperator.runner.qemu-arch
     pullPolicy: Always
 
-  additionalServiceMetadata:
+  loadBalancerService:
     labels:
       test2: null
       test3: added

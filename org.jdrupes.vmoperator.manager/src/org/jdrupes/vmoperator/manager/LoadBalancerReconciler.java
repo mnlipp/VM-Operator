@@ -29,7 +29,7 @@ import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import io.kubernetes.client.util.generic.dynamic.Dynamics;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Logger;
@@ -41,8 +41,9 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
  * Delegee for reconciling the service
  */
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
-/* default */ class ServiceReconciler {
+/* default */ class LoadBalancerReconciler {
 
+    private static final String LOAD_BALANCER_SERVICE = "loadBalancerService";
     private static final String METADATA
         = V1APIService.SERIALIZED_NAME_METADATA;
     private static final String LABELS = V1ObjectMeta.SERIALIZED_NAME_LABELS;
@@ -56,7 +57,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
      *
      * @param fmConfig the fm config
      */
-    public ServiceReconciler(Configuration fmConfig) {
+    public LoadBalancerReconciler(Configuration fmConfig) {
         this.fmConfig = fmConfig;
     }
 
@@ -73,41 +74,53 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
     public void reconcile(VmDefChanged event,
             Map<String, Object> model, VmChannel channel)
             throws IOException, TemplateException, ApiException {
-        // Get API
-        DynamicKubernetesApi svcApi = new DynamicKubernetesApi("", "v1",
-            "services", channel.client());
+        // Check if to be generated
+        @SuppressWarnings("unchecked")
+        var lbs = Optional.of(model)
+            .map(m -> (Map<String, Object>) m.get("config"))
+            .map(c -> c.get(LOAD_BALANCER_SERVICE)).orElse(Boolean.FALSE);
+        if (lbs instanceof Boolean isOn && !isOn) {
+            return;
+        }
+        if (!(lbs instanceof String)) {
+            logger.warning(() -> "\"" + LOAD_BALANCER_SERVICE
+                + "\" in configuration must be boolean or string but is "
+                + lbs.getClass() + ".");
+            return;
+        }
 
         // Combine template and data and parse result
-        var fmTemplate = fmConfig.getTemplate("runnerService.ftl.yaml");
+        var fmTemplate = fmConfig.getTemplate("runnerLoadBalancer.ftl.yaml");
         StringWriter out = new StringWriter();
         fmTemplate.process(model, out);
         // Avoid Yaml.load due to
         // https://github.com/kubernetes-client/java/issues/2741
         var svcDef = Dynamics.newFromYaml(
             new Yaml(new SafeConstructor(new LoaderOptions())), out.toString());
-        mergeMetadata(svcDef, model, channel);
+        mergeMetadata(svcDef, lbs, channel);
 
         // Apply
+        DynamicKubernetesApi svcApi = new DynamicKubernetesApi("", "v1",
+            "services", channel.client());
         K8s.apply(svcApi, svcDef, svcDef.getRaw().toString());
     }
 
+    @SuppressWarnings("unchecked")
     private void mergeMetadata(DynamicKubernetesObject svcDef,
-            Map<String, Object> model, VmChannel channel) {
+            Object lbsConfig, VmChannel channel) {
         // Get metadata from config
-        @SuppressWarnings("unchecked")
-        var asmData = Optional.of(model)
-            .map(m -> (Map<String, Object>) m.get("config"))
-            .map(c -> (String) c.get("additionalServiceMetadata"))
-            .map(y -> (Map<String, Object>) new Yaml(
-                new SafeConstructor(new LoaderOptions())).load(y))
-            .orElseGet(() -> new HashMap<String, Object>());
+        Map<String, Object> asmData = Collections.emptyMap();
+        if (lbsConfig instanceof String config) {
+            asmData = (Map<String, Object>) new Yaml(
+                new SafeConstructor(new LoaderOptions())).load(config);
+        }
         var json = channel.client().getJSON();
         JsonObject cfgMeta
             = json.deserialize(json.serialize(asmData), JsonObject.class);
 
         // Get metadata from VM definition
         var vmMeta = GsonPtr.to(channel.vmDefinition()).to("spec")
-            .get(JsonObject.class, "additionalServiceMetadata")
+            .get(JsonObject.class, LOAD_BALANCER_SERVICE)
             .map(JsonObject::deepCopy).orElseGet(() -> new JsonObject());
 
         // Merge Data from VM definition into config data
