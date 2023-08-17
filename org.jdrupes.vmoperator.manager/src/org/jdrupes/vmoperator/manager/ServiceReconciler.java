@@ -97,8 +97,10 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         @SuppressWarnings("unchecked")
         var asmData = Optional.of(model)
             .map(m -> (Map<String, Object>) m.get("config"))
-            .map(c -> (Map<String, Object>) c.get("additionalServiceMetadata"))
-            .orElseGet(() -> new HashMap<>());
+            .map(c -> (String) c.get("additionalServiceMetadata"))
+            .map(y -> (Map<String, Object>) new Yaml(
+                new SafeConstructor(new LoaderOptions())).load(y))
+            .orElseGet(() -> new HashMap<String, Object>());
         var json = channel.client().getJSON();
         JsonObject cfgMeta
             = json.deserialize(json.serialize(asmData), JsonObject.class);

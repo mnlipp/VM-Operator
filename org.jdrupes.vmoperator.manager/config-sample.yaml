@@ -15,10 +15,10 @@
     ramOvercommit: 1.5
 
     # Additional metadata (labels and annotations) to be merged
-    # into the service
-    # additionalServiceMetdata:
+    # into the service. Must be provided as nested YAML
+    # additionalServiceMetadata: |
     #   labels: {}
-    #   annotations: {} 
+    #   annotations: {}
 
     # Only for development:
     # namespace: vmop-dev
