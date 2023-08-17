@@ -9,9 +9,6 @@ spec:
     path: vmoperator/org.jdrupes.vmoperator.runner.qemu-arch
     pullPolicy: Always
 
-  runnerTemplate:
-    update: true
-    
   additionalServiceMetadata:
     labels:
       test2: null
