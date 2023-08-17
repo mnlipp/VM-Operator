@@ -5,7 +5,7 @@
     namespace: vmop-dev
     runnerData:
       storageClassName: null
-    additionalServiceMetadata:
+    loadBalancerService: |
       labels:
-        test1: remains
-        test2: deleted
+        test1: info
+        test2: toBeDeleted
