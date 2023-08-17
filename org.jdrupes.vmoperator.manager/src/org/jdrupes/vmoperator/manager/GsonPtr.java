@@ -52,7 +52,7 @@ public class GsonPtr {
     /**
      * Create a new instance pointing to the {@link JsonElement} 
      * selected by the given selectors. If a selector of type 
-     * {@link String} denoted a non-existant member of a
+     * {@link String} denotes a non-existant member of a
      * {@link JsonObject}, a new member (of type {@link JsonObject}
      * is added.
      *

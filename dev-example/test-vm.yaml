@@ -11,6 +11,11 @@ spec:
 
   runnerTemplate:
     update: true
+    
+  additionalServiceMetadata:
+    labels:
+      test2: null
+      test3: added
 
   vm:
     state: Running

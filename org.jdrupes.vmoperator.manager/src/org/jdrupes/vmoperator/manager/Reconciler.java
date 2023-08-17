@@ -96,9 +96,7 @@ public class Reconciler extends Component {
     public void onConfigurationUpdate(ConfigurationUpdate event) {
         event.structured(Components.manager(parent()).componentPath())
             .ifPresent(c -> {
-                if (c.containsKey("runnerData")) {
-                    config.put("runnerData", c.get("runnerData"));
-                }
+                config.putAll(c);
             });
     }
 

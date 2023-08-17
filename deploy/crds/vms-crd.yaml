@@ -923,6 +923,38 @@ spec:
                       type: string
                     update:
                       type: boolean
+                additionalServiceMetadata:
+                  description: >-
+                    Data to be merged with the additionalServiceMetadata
+                    defined in the manager's configuration. Values 
+                    specified here override values from the manager's 
+                    configuration. If the value of a label or an annotation 
+                    is null, the property with the corresponding key is 
+                    deleted from the properties defined in the manager's 
+                    configuration.
+                  type: object
+                  properties:
+                    labels:
+                      description: >-
+                        Map of string keys and values that can be
+                        used to organize and categorize (scope and select) objects.
+                        May match selectors of replication controllers and services.
+                        More info: http://kubernetes.io/docs/user-guide/labels
+                      type: object
+                      additionalProperties:
+                        type: string
+                        nullable: true
+                    annotations:
+                      description: >-
+                        Annotations is an unstructured key value
+                        map stored with a resource that may be set by external
+                        tools to store and retrieve arbitrary metadata. They
+                        are not queryable and should be preserved when modifying
+                        objects. More info: http://kubernetes.io/docs/user-guide/annotations
+                      type: object
+                      additionalProperties:
+                        type: string
+                        nullable: true
                 vm:
                   type: object
                   description: Defines the VM.

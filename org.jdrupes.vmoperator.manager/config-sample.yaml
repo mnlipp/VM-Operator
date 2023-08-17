@@ -5,12 +5,20 @@
     # Values used when creating the PVC for the runner's data
     runnerData:
       storageClassName: null
+
     # Amount by which the current cpu count is devided when generating
     # the resource properties.  
     cpuOvercommit: 2
+
     # Amount by which the current ram size is devided when generating
     # the resource properties.
     ramOvercommit: 1.5
-  
+
+    # Additional metadata (labels and annotations) to be merged
+    # into the service
+    # additionalServiceMetdata:
+    #   labels: {}
+    #   annotations: {} 
+
     # Only for development:
     # namespace: vmop-dev

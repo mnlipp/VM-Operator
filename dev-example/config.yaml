@@ -5,3 +5,7 @@
     namespace: vmop-dev
     runnerData:
       storageClassName: null
+    additionalServiceMetadata:
+      labels:
+        test1: remains
+        test2: deleted
