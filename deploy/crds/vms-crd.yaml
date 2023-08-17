@@ -923,6 +923,7 @@ spec:
                       type: string
                     update:
                       type: boolean
+                      default: true
                 additionalServiceMetadata:
                   description: >-
                     Data to be merged with the additionalServiceMetadata
