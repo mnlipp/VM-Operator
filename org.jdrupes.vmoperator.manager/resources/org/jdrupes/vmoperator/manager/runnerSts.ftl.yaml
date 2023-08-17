@@ -49,6 +49,14 @@ spec:
         <#if image.pullPolicy??>
         imagePullPolicy: ${ image.pullPolicy.asString }
         </#if>
+        <#if cr.spec.vm.display.spice??>
+        ports:
+          <#if cr.spec.vm.display.spice??>
+          - name: spice
+            containerPort: ${ cr.spec.vm.display.spice.port.asInt?c }
+            protocol: TCP
+          </#if>
+        </#if>
         volumeMounts:
         # Not needed because pod is priviledged:
         # - mountPath: /dev/kvm
