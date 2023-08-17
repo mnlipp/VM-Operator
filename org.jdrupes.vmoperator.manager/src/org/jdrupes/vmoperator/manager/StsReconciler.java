@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
 import java.util.logging.Logger;
-import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
@@ -68,22 +67,6 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         DynamicKubernetesApi stsApi = new DynamicKubernetesApi("apps", "v1",
             "statefulsets", channel.client());
         var metadata = event.object().getMetadata();
-
-        // Maybe delete
-        if (event.type() == Type.DELETED) {
-            // First set replicas to 0 ...
-            PatchOptions opts = new PatchOptions();
-            opts.setFieldManager("kubernetes-java-kubectl-apply");
-            stsApi.patch(metadata.getNamespace(), metadata.getName(),
-                V1Patch.PATCH_FORMAT_JSON_PATCH,
-                new V1Patch("[{\"op\": \"replace\", \"path\": "
-                    + "\"/spec/replicas\", \"value\": 0}]"),
-                opts).throwsApiException();
-            // ... then delete
-            stsApi.delete(metadata.getNamespace(), metadata.getName())
-                .throwsApiException();
-            return;
-        }
 
         // Combine template and data and parse result
         var fmTemplate = fmConfig.getTemplate("runnerSts.ftl.yaml");

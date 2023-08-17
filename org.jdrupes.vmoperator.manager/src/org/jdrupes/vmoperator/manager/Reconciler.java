@@ -119,30 +119,27 @@ public class Reconciler extends Component {
     @SuppressWarnings("PMD.ConfusingTernary")
     public void onVmDefChanged(VmDefChanged event, VmChannel channel)
             throws ApiException, TemplateException, IOException {
-        // Get complete VM (CR) definition
+        var defMeta = event.object().getMetadata();
+
+        // Ownership relationships takes care of deletions
+        if (event.type() == Type.DELETED) {
+            logger.fine(() -> "VM \"" + defMeta.getName() + "\" deleted");
+            return;
+        }
+
+        // Get full definition and associate with channel
         var apiVersion = K8s.version(event.object().getApiVersion());
         DynamicKubernetesApi vmCrApi = new DynamicKubernetesApi(VM_OP_GROUP,
             apiVersion, event.crd().getName(), channel.client());
-        var defMeta = event.object().getMetadata();
-
-        // Update the "buffered" definition, if it still exists.
-        if (event.type() != Type.DELETED) {
-            K8s.get(vmCrApi, defMeta).ifPresent(def -> channel
-                .setVmDefinition(patchCr(def.getRaw().deepCopy())));
-        }
+        K8s.get(vmCrApi, defMeta).ifPresent(def -> channel
+            .setVmDefinition(patchCr(def.getRaw().deepCopy())));
 
         // Reconcile
         Map<String, Object> model = prepareModel(channel.vmDefinition());
-        if (event.type() != Type.DELETED) {
-            var configMap = cmReconciler.reconcile(event, model, channel);
-            model.put("cm", configMap.getRaw());
-            stsReconciler.reconcile(event, model, channel);
-            serviceReconciler.reconcile(event, model, channel);
-        } else {
-            serviceReconciler.reconcile(event, model, channel);
-            stsReconciler.reconcile(event, model, channel);
-            cmReconciler.reconcile(event, model, channel);
-        }
+        var configMap = cmReconciler.reconcile(event, model, channel);
+        model.put("cm", configMap.getRaw());
+        stsReconciler.reconcile(event, model, channel);
+        serviceReconciler.reconcile(event, model, channel);
     }
 
     private Map<String, Object> prepareModel(JsonObject vmDef)

@@ -14,6 +14,7 @@ metadata:
     kind: ${ constants.VM_OP_KIND_VM }
     name: ${ cr.metadata.name.asString }
     uid: ${ cr.metadata.uid.asString }
+    blockOwnerDeletion: true
     controller: false
 
 spec:

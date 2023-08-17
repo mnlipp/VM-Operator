@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
 import java.util.logging.Logger;
-import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
@@ -63,18 +62,9 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
     public void reconcile(VmDefChanged event,
             Map<String, Object> model, VmChannel channel)
             throws IOException, TemplateException, ApiException {
-        // Get API and check if exists
+        // Get API
         DynamicKubernetesApi svcApi = new DynamicKubernetesApi("", "v1",
             "services", channel.client());
-        var existing = K8s.get(svcApi, event.object().getMetadata());
-
-        // If deleted, delete
-        if (event.type() == Type.DELETED) {
-            if (existing.isPresent()) {
-                K8s.delete(svcApi, existing.get());
-            }
-            return;
-        }
 
         // Combine template and data and parse result
         var fmTemplate = fmConfig.getTemplate("runnerService.ftl.yaml");
