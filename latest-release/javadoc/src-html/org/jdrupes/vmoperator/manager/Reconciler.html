@@ -73,7 +73,7 @@
 <span class="source-line-no">060</span><span id="line-60">    private final Configuration fmConfig;</span>
 <span class="source-line-no">061</span><span id="line-61">    private final CmReconciler cmReconciler;</span>
 <span class="source-line-no">062</span><span id="line-62">    private final StsReconciler stsReconciler;</span>
-<span class="source-line-no">063</span><span id="line-63">    private final ServiceReconciler serviceReconciler;</span>
+<span class="source-line-no">063</span><span id="line-63">    private final LoadBalancerReconciler lbReconciler;</span>
 <span class="source-line-no">064</span><span id="line-64">    @SuppressWarnings("PMD.UseConcurrentHashMap")</span>
 <span class="source-line-no">065</span><span id="line-65">    private final Map&lt;String, Object&gt; config = new HashMap&lt;&gt;();</span>
 <span class="source-line-no">066</span><span id="line-66"></span>
@@ -97,7 +97,7 @@
 <span class="source-line-no">084</span><span id="line-84"></span>
 <span class="source-line-no">085</span><span id="line-85">        cmReconciler = new CmReconciler(fmConfig);</span>
 <span class="source-line-no">086</span><span id="line-86">        stsReconciler = new StsReconciler(fmConfig);</span>
-<span class="source-line-no">087</span><span id="line-87">        serviceReconciler = new ServiceReconciler(fmConfig);</span>
+<span class="source-line-no">087</span><span id="line-87">        lbReconciler = new LoadBalancerReconciler(fmConfig);</span>
 <span class="source-line-no">088</span><span id="line-88">    }</span>
 <span class="source-line-no">089</span><span id="line-89"></span>
 <span class="source-line-no">090</span><span id="line-90">    /**</span>
@@ -150,7 +150,7 @@
 <span class="source-line-no">137</span><span id="line-137">        var configMap = cmReconciler.reconcile(event, model, channel);</span>
 <span class="source-line-no">138</span><span id="line-138">        model.put("cm", configMap.getRaw());</span>
 <span class="source-line-no">139</span><span id="line-139">        stsReconciler.reconcile(event, model, channel);</span>
-<span class="source-line-no">140</span><span id="line-140">        serviceReconciler.reconcile(event, model, channel);</span>
+<span class="source-line-no">140</span><span id="line-140">        lbReconciler.reconcile(event, model, channel);</span>
 <span class="source-line-no">141</span><span id="line-141">    }</span>
 <span class="source-line-no">142</span><span id="line-142"></span>
 <span class="source-line-no">143</span><span id="line-143">    private Map&lt;String, Object&gt; prepareModel(JsonObject vmDef)</span>
