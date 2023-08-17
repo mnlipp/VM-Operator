@@ -15,7 +15,7 @@ spec:
       test3: added
 
   vm:
-    state: Running
+    # state: Running
     bootMenu: yes
     maximumRam: "8 GiB"
     currentRam: "4 GiB"
