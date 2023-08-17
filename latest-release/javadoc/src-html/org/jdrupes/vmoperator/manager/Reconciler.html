@@ -109,118 +109,116 @@
 <span class="source-line-no">096</span><span id="line-96">    public void onConfigurationUpdate(ConfigurationUpdate event) {</span>
 <span class="source-line-no">097</span><span id="line-97">        event.structured(Components.manager(parent()).componentPath())</span>
 <span class="source-line-no">098</span><span id="line-98">            .ifPresent(c -&gt; {</span>
-<span class="source-line-no">099</span><span id="line-99">                if (c.containsKey("runnerData")) {</span>
-<span class="source-line-no">100</span><span id="line-100">                    config.put("runnerData", c.get("runnerData"));</span>
-<span class="source-line-no">101</span><span id="line-101">                }</span>
-<span class="source-line-no">102</span><span id="line-102">            });</span>
-<span class="source-line-no">103</span><span id="line-103">    }</span>
-<span class="source-line-no">104</span><span id="line-104"></span>
-<span class="source-line-no">105</span><span id="line-105">    /**</span>
-<span class="source-line-no">106</span><span id="line-106">     * Handles the change event.</span>
-<span class="source-line-no">107</span><span id="line-107">     *</span>
-<span class="source-line-no">108</span><span id="line-108">     * @param event the event</span>
-<span class="source-line-no">109</span><span id="line-109">     * @param channel the channel</span>
-<span class="source-line-no">110</span><span id="line-110">     * @throws ApiException the api exception</span>
-<span class="source-line-no">111</span><span id="line-111">     * @throws IOException </span>
-<span class="source-line-no">112</span><span id="line-112">     * @throws ParseException </span>
-<span class="source-line-no">113</span><span id="line-113">     * @throws MalformedTemplateNameException </span>
-<span class="source-line-no">114</span><span id="line-114">     * @throws TemplateNotFoundException </span>
-<span class="source-line-no">115</span><span id="line-115">     * @throws TemplateException </span>
-<span class="source-line-no">116</span><span id="line-116">     * @throws KubectlException </span>
-<span class="source-line-no">117</span><span id="line-117">     */</span>
-<span class="source-line-no">118</span><span id="line-118">    @Handler</span>
-<span class="source-line-no">119</span><span id="line-119">    @SuppressWarnings("PMD.ConfusingTernary")</span>
-<span class="source-line-no">120</span><span id="line-120">    public void onVmDefChanged(VmDefChanged event, VmChannel channel)</span>
-<span class="source-line-no">121</span><span id="line-121">            throws ApiException, TemplateException, IOException {</span>
-<span class="source-line-no">122</span><span id="line-122">        var defMeta = event.object().getMetadata();</span>
-<span class="source-line-no">123</span><span id="line-123"></span>
-<span class="source-line-no">124</span><span id="line-124">        // Ownership relationships takes care of deletions</span>
-<span class="source-line-no">125</span><span id="line-125">        if (event.type() == Type.DELETED) {</span>
-<span class="source-line-no">126</span><span id="line-126">            logger.fine(() -&gt; "VM \"" + defMeta.getName() + "\" deleted");</span>
-<span class="source-line-no">127</span><span id="line-127">            return;</span>
-<span class="source-line-no">128</span><span id="line-128">        }</span>
-<span class="source-line-no">129</span><span id="line-129"></span>
-<span class="source-line-no">130</span><span id="line-130">        // Get full definition and associate with channel</span>
-<span class="source-line-no">131</span><span id="line-131">        var apiVersion = K8s.version(event.object().getApiVersion());</span>
-<span class="source-line-no">132</span><span id="line-132">        DynamicKubernetesApi vmCrApi = new DynamicKubernetesApi(VM_OP_GROUP,</span>
-<span class="source-line-no">133</span><span id="line-133">            apiVersion, event.crd().getName(), channel.client());</span>
-<span class="source-line-no">134</span><span id="line-134">        K8s.get(vmCrApi, defMeta).ifPresent(def -&gt; channel</span>
-<span class="source-line-no">135</span><span id="line-135">            .setVmDefinition(patchCr(def.getRaw().deepCopy())));</span>
-<span class="source-line-no">136</span><span id="line-136"></span>
-<span class="source-line-no">137</span><span id="line-137">        // Reconcile</span>
-<span class="source-line-no">138</span><span id="line-138">        Map&lt;String, Object&gt; model = prepareModel(channel.vmDefinition());</span>
-<span class="source-line-no">139</span><span id="line-139">        var configMap = cmReconciler.reconcile(event, model, channel);</span>
-<span class="source-line-no">140</span><span id="line-140">        model.put("cm", configMap.getRaw());</span>
-<span class="source-line-no">141</span><span id="line-141">        stsReconciler.reconcile(event, model, channel);</span>
-<span class="source-line-no">142</span><span id="line-142">        serviceReconciler.reconcile(event, model, channel);</span>
-<span class="source-line-no">143</span><span id="line-143">    }</span>
-<span class="source-line-no">144</span><span id="line-144"></span>
-<span class="source-line-no">145</span><span id="line-145">    private Map&lt;String, Object&gt; prepareModel(JsonObject vmDef)</span>
-<span class="source-line-no">146</span><span id="line-146">            throws TemplateModelException {</span>
-<span class="source-line-no">147</span><span id="line-147">        @SuppressWarnings("PMD.UseConcurrentHashMap")</span>
-<span class="source-line-no">148</span><span id="line-148">        Map&lt;String, Object&gt; model = new HashMap&lt;&gt;();</span>
-<span class="source-line-no">149</span><span id="line-149">        model.put("managerVersion",</span>
-<span class="source-line-no">150</span><span id="line-150">            Optional.ofNullable(Reconciler.class.getPackage()</span>
-<span class="source-line-no">151</span><span id="line-151">                .getImplementationVersion()).orElse("(Unknown)"));</span>
-<span class="source-line-no">152</span><span id="line-152">        model.put("cr", vmDef);</span>
-<span class="source-line-no">153</span><span id="line-153">        model.put("constants",</span>
-<span class="source-line-no">154</span><span id="line-154">            (TemplateHashModel) new DefaultObjectWrapperBuilder(</span>
-<span class="source-line-no">155</span><span id="line-155">                Configuration.VERSION_2_3_32)</span>
-<span class="source-line-no">156</span><span id="line-156">                    .build().getStaticModels()</span>
-<span class="source-line-no">157</span><span id="line-157">                    .get(Constants.class.getName()));</span>
-<span class="source-line-no">158</span><span id="line-158">        model.put("config", config);</span>
-<span class="source-line-no">159</span><span id="line-159"></span>
-<span class="source-line-no">160</span><span id="line-160">        // Methods</span>
-<span class="source-line-no">161</span><span id="line-161">        model.put("parseMemory", new TemplateMethodModelEx() {</span>
-<span class="source-line-no">162</span><span id="line-162">            @Override</span>
-<span class="source-line-no">163</span><span id="line-163">            @SuppressWarnings("PMD.PreserveStackTrace")</span>
-<span class="source-line-no">164</span><span id="line-164">            public Object exec(@SuppressWarnings("rawtypes") List arguments)</span>
-<span class="source-line-no">165</span><span id="line-165">                    throws TemplateModelException {</span>
-<span class="source-line-no">166</span><span id="line-166">                var arg = arguments.get(0);</span>
-<span class="source-line-no">167</span><span id="line-167">                if (arg instanceof Number number) {</span>
-<span class="source-line-no">168</span><span id="line-168">                    return number;</span>
-<span class="source-line-no">169</span><span id="line-169">                }</span>
-<span class="source-line-no">170</span><span id="line-170">                try {</span>
-<span class="source-line-no">171</span><span id="line-171">                    return ParseUtils.parseMemory(arg.toString());</span>
-<span class="source-line-no">172</span><span id="line-172">                } catch (NumberFormatException e) {</span>
-<span class="source-line-no">173</span><span id="line-173">                    throw new TemplateModelException("Cannot parse memory "</span>
-<span class="source-line-no">174</span><span id="line-174">                        + "specified as \"" + arg + "\": " + e.getMessage());</span>
-<span class="source-line-no">175</span><span id="line-175">                }</span>
-<span class="source-line-no">176</span><span id="line-176">            }</span>
-<span class="source-line-no">177</span><span id="line-177">        });</span>
-<span class="source-line-no">178</span><span id="line-178">        return model;</span>
-<span class="source-line-no">179</span><span id="line-179">    }</span>
-<span class="source-line-no">180</span><span id="line-180"></span>
-<span class="source-line-no">181</span><span id="line-181">    private JsonObject patchCr(JsonObject vmDef) {</span>
-<span class="source-line-no">182</span><span id="line-182">        // Adjust cdromImage path</span>
-<span class="source-line-no">183</span><span id="line-183">        var disks</span>
-<span class="source-line-no">184</span><span id="line-184">            = GsonPtr.to(vmDef).to("spec", "vm", "disks").get(JsonArray.class);</span>
-<span class="source-line-no">185</span><span id="line-185">        for (var disk : disks) {</span>
-<span class="source-line-no">186</span><span id="line-186">            var cdrom = (JsonObject) ((JsonObject) disk).get("cdrom");</span>
-<span class="source-line-no">187</span><span id="line-187">            if (cdrom == null) {</span>
-<span class="source-line-no">188</span><span id="line-188">                continue;</span>
-<span class="source-line-no">189</span><span id="line-189">            }</span>
-<span class="source-line-no">190</span><span id="line-190">            String image = cdrom.get("image").getAsString();</span>
-<span class="source-line-no">191</span><span id="line-191">            if (image.isEmpty()) {</span>
-<span class="source-line-no">192</span><span id="line-192">                continue;</span>
-<span class="source-line-no">193</span><span id="line-193">            }</span>
-<span class="source-line-no">194</span><span id="line-194">            try {</span>
-<span class="source-line-no">195</span><span id="line-195">                @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")</span>
-<span class="source-line-no">196</span><span id="line-196">                var imageUri = new URI("file://" + Constants.IMAGE_REPO_PATH</span>
-<span class="source-line-no">197</span><span id="line-197">                    + "/").resolve(image);</span>
-<span class="source-line-no">198</span><span id="line-198">                if ("file".equals(imageUri.getScheme())) {</span>
-<span class="source-line-no">199</span><span id="line-199">                    cdrom.addProperty("image", imageUri.getPath());</span>
-<span class="source-line-no">200</span><span id="line-200">                } else {</span>
-<span class="source-line-no">201</span><span id="line-201">                    cdrom.addProperty("image", imageUri.toString());</span>
-<span class="source-line-no">202</span><span id="line-202">                }</span>
-<span class="source-line-no">203</span><span id="line-203">            } catch (URISyntaxException e) {</span>
-<span class="source-line-no">204</span><span id="line-204">                logger.warning(() -&gt; "Invalid CDROM image: " + image);</span>
-<span class="source-line-no">205</span><span id="line-205">            }</span>
-<span class="source-line-no">206</span><span id="line-206">        }</span>
-<span class="source-line-no">207</span><span id="line-207">        return vmDef;</span>
-<span class="source-line-no">208</span><span id="line-208">    }</span>
-<span class="source-line-no">209</span><span id="line-209"></span>
-<span class="source-line-no">210</span><span id="line-210">}</span>
+<span class="source-line-no">099</span><span id="line-99">                config.putAll(c);</span>
+<span class="source-line-no">100</span><span id="line-100">            });</span>
+<span class="source-line-no">101</span><span id="line-101">    }</span>
+<span class="source-line-no">102</span><span id="line-102"></span>
+<span class="source-line-no">103</span><span id="line-103">    /**</span>
+<span class="source-line-no">104</span><span id="line-104">     * Handles the change event.</span>
+<span class="source-line-no">105</span><span id="line-105">     *</span>
+<span class="source-line-no">106</span><span id="line-106">     * @param event the event</span>
+<span class="source-line-no">107</span><span id="line-107">     * @param channel the channel</span>
+<span class="source-line-no">108</span><span id="line-108">     * @throws ApiException the api exception</span>
+<span class="source-line-no">109</span><span id="line-109">     * @throws IOException </span>
+<span class="source-line-no">110</span><span id="line-110">     * @throws ParseException </span>
+<span class="source-line-no">111</span><span id="line-111">     * @throws MalformedTemplateNameException </span>
+<span class="source-line-no">112</span><span id="line-112">     * @throws TemplateNotFoundException </span>
+<span class="source-line-no">113</span><span id="line-113">     * @throws TemplateException </span>
+<span class="source-line-no">114</span><span id="line-114">     * @throws KubectlException </span>
+<span class="source-line-no">115</span><span id="line-115">     */</span>
+<span class="source-line-no">116</span><span id="line-116">    @Handler</span>
+<span class="source-line-no">117</span><span id="line-117">    @SuppressWarnings("PMD.ConfusingTernary")</span>
+<span class="source-line-no">118</span><span id="line-118">    public void onVmDefChanged(VmDefChanged event, VmChannel channel)</span>
+<span class="source-line-no">119</span><span id="line-119">            throws ApiException, TemplateException, IOException {</span>
+<span class="source-line-no">120</span><span id="line-120">        var defMeta = event.object().getMetadata();</span>
+<span class="source-line-no">121</span><span id="line-121"></span>
+<span class="source-line-no">122</span><span id="line-122">        // Ownership relationships takes care of deletions</span>
+<span class="source-line-no">123</span><span id="line-123">        if (event.type() == Type.DELETED) {</span>
+<span class="source-line-no">124</span><span id="line-124">            logger.fine(() -&gt; "VM \"" + defMeta.getName() + "\" deleted");</span>
+<span class="source-line-no">125</span><span id="line-125">            return;</span>
+<span class="source-line-no">126</span><span id="line-126">        }</span>
+<span class="source-line-no">127</span><span id="line-127"></span>
+<span class="source-line-no">128</span><span id="line-128">        // Get full definition and associate with channel</span>
+<span class="source-line-no">129</span><span id="line-129">        var apiVersion = K8s.version(event.object().getApiVersion());</span>
+<span class="source-line-no">130</span><span id="line-130">        DynamicKubernetesApi vmCrApi = new DynamicKubernetesApi(VM_OP_GROUP,</span>
+<span class="source-line-no">131</span><span id="line-131">            apiVersion, event.crd().getName(), channel.client());</span>
+<span class="source-line-no">132</span><span id="line-132">        K8s.get(vmCrApi, defMeta).ifPresent(def -&gt; channel</span>
+<span class="source-line-no">133</span><span id="line-133">            .setVmDefinition(patchCr(def.getRaw().deepCopy())));</span>
+<span class="source-line-no">134</span><span id="line-134"></span>
+<span class="source-line-no">135</span><span id="line-135">        // Reconcile</span>
+<span class="source-line-no">136</span><span id="line-136">        Map&lt;String, Object&gt; model = prepareModel(channel.vmDefinition());</span>
+<span class="source-line-no">137</span><span id="line-137">        var configMap = cmReconciler.reconcile(event, model, channel);</span>
+<span class="source-line-no">138</span><span id="line-138">        model.put("cm", configMap.getRaw());</span>
+<span class="source-line-no">139</span><span id="line-139">        stsReconciler.reconcile(event, model, channel);</span>
+<span class="source-line-no">140</span><span id="line-140">        serviceReconciler.reconcile(event, model, channel);</span>
+<span class="source-line-no">141</span><span id="line-141">    }</span>
+<span class="source-line-no">142</span><span id="line-142"></span>
+<span class="source-line-no">143</span><span id="line-143">    private Map&lt;String, Object&gt; prepareModel(JsonObject vmDef)</span>
+<span class="source-line-no">144</span><span id="line-144">            throws TemplateModelException {</span>
+<span class="source-line-no">145</span><span id="line-145">        @SuppressWarnings("PMD.UseConcurrentHashMap")</span>
+<span class="source-line-no">146</span><span id="line-146">        Map&lt;String, Object&gt; model = new HashMap&lt;&gt;();</span>
+<span class="source-line-no">147</span><span id="line-147">        model.put("managerVersion",</span>
+<span class="source-line-no">148</span><span id="line-148">            Optional.ofNullable(Reconciler.class.getPackage()</span>
+<span class="source-line-no">149</span><span id="line-149">                .getImplementationVersion()).orElse("(Unknown)"));</span>
+<span class="source-line-no">150</span><span id="line-150">        model.put("cr", vmDef);</span>
+<span class="source-line-no">151</span><span id="line-151">        model.put("constants",</span>
+<span class="source-line-no">152</span><span id="line-152">            (TemplateHashModel) new DefaultObjectWrapperBuilder(</span>
+<span class="source-line-no">153</span><span id="line-153">                Configuration.VERSION_2_3_32)</span>
+<span class="source-line-no">154</span><span id="line-154">                    .build().getStaticModels()</span>
+<span class="source-line-no">155</span><span id="line-155">                    .get(Constants.class.getName()));</span>
+<span class="source-line-no">156</span><span id="line-156">        model.put("config", config);</span>
+<span class="source-line-no">157</span><span id="line-157"></span>
+<span class="source-line-no">158</span><span id="line-158">        // Methods</span>
+<span class="source-line-no">159</span><span id="line-159">        model.put("parseMemory", new TemplateMethodModelEx() {</span>
+<span class="source-line-no">160</span><span id="line-160">            @Override</span>
+<span class="source-line-no">161</span><span id="line-161">            @SuppressWarnings("PMD.PreserveStackTrace")</span>
+<span class="source-line-no">162</span><span id="line-162">            public Object exec(@SuppressWarnings("rawtypes") List arguments)</span>
+<span class="source-line-no">163</span><span id="line-163">                    throws TemplateModelException {</span>
+<span class="source-line-no">164</span><span id="line-164">                var arg = arguments.get(0);</span>
+<span class="source-line-no">165</span><span id="line-165">                if (arg instanceof Number number) {</span>
+<span class="source-line-no">166</span><span id="line-166">                    return number;</span>
+<span class="source-line-no">167</span><span id="line-167">                }</span>
+<span class="source-line-no">168</span><span id="line-168">                try {</span>
+<span class="source-line-no">169</span><span id="line-169">                    return ParseUtils.parseMemory(arg.toString());</span>
+<span class="source-line-no">170</span><span id="line-170">                } catch (NumberFormatException e) {</span>
+<span class="source-line-no">171</span><span id="line-171">                    throw new TemplateModelException("Cannot parse memory "</span>
+<span class="source-line-no">172</span><span id="line-172">                        + "specified as \"" + arg + "\": " + e.getMessage());</span>
+<span class="source-line-no">173</span><span id="line-173">                }</span>
+<span class="source-line-no">174</span><span id="line-174">            }</span>
+<span class="source-line-no">175</span><span id="line-175">        });</span>
+<span class="source-line-no">176</span><span id="line-176">        return model;</span>
+<span class="source-line-no">177</span><span id="line-177">    }</span>
+<span class="source-line-no">178</span><span id="line-178"></span>
+<span class="source-line-no">179</span><span id="line-179">    private JsonObject patchCr(JsonObject vmDef) {</span>
+<span class="source-line-no">180</span><span id="line-180">        // Adjust cdromImage path</span>
+<span class="source-line-no">181</span><span id="line-181">        var disks</span>
+<span class="source-line-no">182</span><span id="line-182">            = GsonPtr.to(vmDef).to("spec", "vm", "disks").get(JsonArray.class);</span>
+<span class="source-line-no">183</span><span id="line-183">        for (var disk : disks) {</span>
+<span class="source-line-no">184</span><span id="line-184">            var cdrom = (JsonObject) ((JsonObject) disk).get("cdrom");</span>
+<span class="source-line-no">185</span><span id="line-185">            if (cdrom == null) {</span>
+<span class="source-line-no">186</span><span id="line-186">                continue;</span>
+<span class="source-line-no">187</span><span id="line-187">            }</span>
+<span class="source-line-no">188</span><span id="line-188">            String image = cdrom.get("image").getAsString();</span>
+<span class="source-line-no">189</span><span id="line-189">            if (image.isEmpty()) {</span>
+<span class="source-line-no">190</span><span id="line-190">                continue;</span>
+<span class="source-line-no">191</span><span id="line-191">            }</span>
+<span class="source-line-no">192</span><span id="line-192">            try {</span>
+<span class="source-line-no">193</span><span id="line-193">                @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")</span>
+<span class="source-line-no">194</span><span id="line-194">                var imageUri = new URI("file://" + Constants.IMAGE_REPO_PATH</span>
+<span class="source-line-no">195</span><span id="line-195">                    + "/").resolve(image);</span>
+<span class="source-line-no">196</span><span id="line-196">                if ("file".equals(imageUri.getScheme())) {</span>
+<span class="source-line-no">197</span><span id="line-197">                    cdrom.addProperty("image", imageUri.getPath());</span>
+<span class="source-line-no">198</span><span id="line-198">                } else {</span>
+<span class="source-line-no">199</span><span id="line-199">                    cdrom.addProperty("image", imageUri.toString());</span>
+<span class="source-line-no">200</span><span id="line-200">                }</span>
+<span class="source-line-no">201</span><span id="line-201">            } catch (URISyntaxException e) {</span>
+<span class="source-line-no">202</span><span id="line-202">                logger.warning(() -&gt; "Invalid CDROM image: " + image);</span>
+<span class="source-line-no">203</span><span id="line-203">            }</span>
+<span class="source-line-no">204</span><span id="line-204">        }</span>
+<span class="source-line-no">205</span><span id="line-205">        return vmDef;</span>
+<span class="source-line-no">206</span><span id="line-206">    }</span>
+<span class="source-line-no">207</span><span id="line-207"></span>
+<span class="source-line-no">208</span><span id="line-208">}</span>
 
 
 
