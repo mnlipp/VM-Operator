@@ -110,52 +110,54 @@
 <span class="source-line-no">097</span><span id="line-97">        @SuppressWarnings("unchecked")</span>
 <span class="source-line-no">098</span><span id="line-98">        var asmData = Optional.of(model)</span>
 <span class="source-line-no">099</span><span id="line-99">            .map(m -&gt; (Map&lt;String, Object&gt;) m.get("config"))</span>
-<span class="source-line-no">100</span><span id="line-100">            .map(c -&gt; (Map&lt;String, Object&gt;) c.get("additionalServiceMetadata"))</span>
-<span class="source-line-no">101</span><span id="line-101">            .orElseGet(() -&gt; new HashMap&lt;&gt;());</span>
-<span class="source-line-no">102</span><span id="line-102">        var json = channel.client().getJSON();</span>
-<span class="source-line-no">103</span><span id="line-103">        JsonObject cfgMeta</span>
-<span class="source-line-no">104</span><span id="line-104">            = json.deserialize(json.serialize(asmData), JsonObject.class);</span>
-<span class="source-line-no">105</span><span id="line-105"></span>
-<span class="source-line-no">106</span><span id="line-106">        // Get metadata from VM definition</span>
-<span class="source-line-no">107</span><span id="line-107">        var vmMeta = GsonPtr.to(channel.vmDefinition()).to("spec")</span>
-<span class="source-line-no">108</span><span id="line-108">            .get(JsonObject.class, "additionalServiceMetadata")</span>
-<span class="source-line-no">109</span><span id="line-109">            .map(JsonObject::deepCopy).orElseGet(() -&gt; new JsonObject());</span>
-<span class="source-line-no">110</span><span id="line-110"></span>
-<span class="source-line-no">111</span><span id="line-111">        // Merge Data from VM definition into config data</span>
-<span class="source-line-no">112</span><span id="line-112">        mergeReplace(GsonPtr.to(cfgMeta).to(LABELS).get(JsonObject.class),</span>
-<span class="source-line-no">113</span><span id="line-113">            GsonPtr.to(vmMeta).to(LABELS).get(JsonObject.class));</span>
-<span class="source-line-no">114</span><span id="line-114">        mergeReplace(</span>
-<span class="source-line-no">115</span><span id="line-115">            GsonPtr.to(cfgMeta).to(ANNOTATIONS).get(JsonObject.class),</span>
-<span class="source-line-no">116</span><span id="line-116">            GsonPtr.to(vmMeta).to(ANNOTATIONS).get(JsonObject.class));</span>
-<span class="source-line-no">117</span><span id="line-117"></span>
-<span class="source-line-no">118</span><span id="line-118">        // Merge additional data into service definition</span>
-<span class="source-line-no">119</span><span id="line-119">        var svcMeta = GsonPtr.to(svcDef.getRaw()).to(METADATA);</span>
-<span class="source-line-no">120</span><span id="line-120">        mergeIfAbsent(svcMeta.to(LABELS).get(JsonObject.class),</span>
-<span class="source-line-no">121</span><span id="line-121">            GsonPtr.to(cfgMeta).to(LABELS).get(JsonObject.class));</span>
-<span class="source-line-no">122</span><span id="line-122">        mergeIfAbsent(svcMeta.to(ANNOTATIONS).get(JsonObject.class),</span>
-<span class="source-line-no">123</span><span id="line-123">            GsonPtr.to(cfgMeta).to(ANNOTATIONS).get(JsonObject.class));</span>
-<span class="source-line-no">124</span><span id="line-124">    }</span>
-<span class="source-line-no">125</span><span id="line-125"></span>
-<span class="source-line-no">126</span><span id="line-126">    private void mergeReplace(JsonObject dest, JsonObject src) {</span>
-<span class="source-line-no">127</span><span id="line-127">        for (var e : src.entrySet()) {</span>
-<span class="source-line-no">128</span><span id="line-128">            if (e.getValue().isJsonNull()) {</span>
-<span class="source-line-no">129</span><span id="line-129">                dest.remove(e.getKey());</span>
-<span class="source-line-no">130</span><span id="line-130">                continue;</span>
-<span class="source-line-no">131</span><span id="line-131">            }</span>
-<span class="source-line-no">132</span><span id="line-132">            dest.add(e.getKey(), e.getValue());</span>
-<span class="source-line-no">133</span><span id="line-133">        }</span>
-<span class="source-line-no">134</span><span id="line-134">    }</span>
-<span class="source-line-no">135</span><span id="line-135"></span>
-<span class="source-line-no">136</span><span id="line-136">    private void mergeIfAbsent(JsonObject dest, JsonObject src) {</span>
-<span class="source-line-no">137</span><span id="line-137">        for (var e : src.entrySet()) {</span>
-<span class="source-line-no">138</span><span id="line-138">            if (dest.has(e.getKey())) {</span>
-<span class="source-line-no">139</span><span id="line-139">                continue;</span>
-<span class="source-line-no">140</span><span id="line-140">            }</span>
-<span class="source-line-no">141</span><span id="line-141">            dest.add(e.getKey(), e.getValue());</span>
-<span class="source-line-no">142</span><span id="line-142">        }</span>
-<span class="source-line-no">143</span><span id="line-143">    }</span>
-<span class="source-line-no">144</span><span id="line-144"></span>
-<span class="source-line-no">145</span><span id="line-145">}</span>
+<span class="source-line-no">100</span><span id="line-100">            .map(c -&gt; (String) c.get("additionalServiceMetadata"))</span>
+<span class="source-line-no">101</span><span id="line-101">            .map(y -&gt; (Map&lt;String, Object&gt;) new Yaml(</span>
+<span class="source-line-no">102</span><span id="line-102">                new SafeConstructor(new LoaderOptions())).load(y))</span>
+<span class="source-line-no">103</span><span id="line-103">            .orElseGet(() -&gt; new HashMap&lt;String, Object&gt;());</span>
+<span class="source-line-no">104</span><span id="line-104">        var json = channel.client().getJSON();</span>
+<span class="source-line-no">105</span><span id="line-105">        JsonObject cfgMeta</span>
+<span class="source-line-no">106</span><span id="line-106">            = json.deserialize(json.serialize(asmData), JsonObject.class);</span>
+<span class="source-line-no">107</span><span id="line-107"></span>
+<span class="source-line-no">108</span><span id="line-108">        // Get metadata from VM definition</span>
+<span class="source-line-no">109</span><span id="line-109">        var vmMeta = GsonPtr.to(channel.vmDefinition()).to("spec")</span>
+<span class="source-line-no">110</span><span id="line-110">            .get(JsonObject.class, "additionalServiceMetadata")</span>
+<span class="source-line-no">111</span><span id="line-111">            .map(JsonObject::deepCopy).orElseGet(() -&gt; new JsonObject());</span>
+<span class="source-line-no">112</span><span id="line-112"></span>
+<span class="source-line-no">113</span><span id="line-113">        // Merge Data from VM definition into config data</span>
+<span class="source-line-no">114</span><span id="line-114">        mergeReplace(GsonPtr.to(cfgMeta).to(LABELS).get(JsonObject.class),</span>
+<span class="source-line-no">115</span><span id="line-115">            GsonPtr.to(vmMeta).to(LABELS).get(JsonObject.class));</span>
+<span class="source-line-no">116</span><span id="line-116">        mergeReplace(</span>
+<span class="source-line-no">117</span><span id="line-117">            GsonPtr.to(cfgMeta).to(ANNOTATIONS).get(JsonObject.class),</span>
+<span class="source-line-no">118</span><span id="line-118">            GsonPtr.to(vmMeta).to(ANNOTATIONS).get(JsonObject.class));</span>
+<span class="source-line-no">119</span><span id="line-119"></span>
+<span class="source-line-no">120</span><span id="line-120">        // Merge additional data into service definition</span>
+<span class="source-line-no">121</span><span id="line-121">        var svcMeta = GsonPtr.to(svcDef.getRaw()).to(METADATA);</span>
+<span class="source-line-no">122</span><span id="line-122">        mergeIfAbsent(svcMeta.to(LABELS).get(JsonObject.class),</span>
+<span class="source-line-no">123</span><span id="line-123">            GsonPtr.to(cfgMeta).to(LABELS).get(JsonObject.class));</span>
+<span class="source-line-no">124</span><span id="line-124">        mergeIfAbsent(svcMeta.to(ANNOTATIONS).get(JsonObject.class),</span>
+<span class="source-line-no">125</span><span id="line-125">            GsonPtr.to(cfgMeta).to(ANNOTATIONS).get(JsonObject.class));</span>
+<span class="source-line-no">126</span><span id="line-126">    }</span>
+<span class="source-line-no">127</span><span id="line-127"></span>
+<span class="source-line-no">128</span><span id="line-128">    private void mergeReplace(JsonObject dest, JsonObject src) {</span>
+<span class="source-line-no">129</span><span id="line-129">        for (var e : src.entrySet()) {</span>
+<span class="source-line-no">130</span><span id="line-130">            if (e.getValue().isJsonNull()) {</span>
+<span class="source-line-no">131</span><span id="line-131">                dest.remove(e.getKey());</span>
+<span class="source-line-no">132</span><span id="line-132">                continue;</span>
+<span class="source-line-no">133</span><span id="line-133">            }</span>
+<span class="source-line-no">134</span><span id="line-134">            dest.add(e.getKey(), e.getValue());</span>
+<span class="source-line-no">135</span><span id="line-135">        }</span>
+<span class="source-line-no">136</span><span id="line-136">    }</span>
+<span class="source-line-no">137</span><span id="line-137"></span>
+<span class="source-line-no">138</span><span id="line-138">    private void mergeIfAbsent(JsonObject dest, JsonObject src) {</span>
+<span class="source-line-no">139</span><span id="line-139">        for (var e : src.entrySet()) {</span>
+<span class="source-line-no">140</span><span id="line-140">            if (dest.has(e.getKey())) {</span>
+<span class="source-line-no">141</span><span id="line-141">                continue;</span>
+<span class="source-line-no">142</span><span id="line-142">            }</span>
+<span class="source-line-no">143</span><span id="line-143">            dest.add(e.getKey(), e.getValue());</span>
+<span class="source-line-no">144</span><span id="line-144">        }</span>
+<span class="source-line-no">145</span><span id="line-145">    }</span>
+<span class="source-line-no">146</span><span id="line-146"></span>
+<span class="source-line-no">147</span><span id="line-147">}</span>
 
 
 
