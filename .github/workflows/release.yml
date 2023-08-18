@@ -37,4 +37,4 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
     - name: Push with Gradle
-      run: ./gradlew -Pdocker.registry=ghcr.io/${{ github.actor }} stage pushImages
+      run: ./gradlew -Prepo.access.token=${{ secrets.REPO_ACCESS_TOKEN }} -Pdocker.registry=ghcr.io/${{ github.actor }} stage pushImages
