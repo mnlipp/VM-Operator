@@ -105,8 +105,8 @@ gitPublish {
         from("${rootProject.buildDir}/javadoc") {
             into 'javadoc'
         }
-        if ({ !findProject(':org.jdrupes.vmoperator.runner.qemu').isSnapshot
-                && !findProject(':org.jdrupes.vmoperator.manager').isSnapshot }) {
+        if (!findProject(':org.jdrupes.vmoperator.runner.qemu').isSnapshot
+                && !findProject(':org.jdrupes.vmoperator.manager').isSnapshot) {
             from("${rootProject.buildDir}/javadoc") {
                 into 'latest-release/javadoc'
             }
