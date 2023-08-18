@@ -113,7 +113,7 @@ import org.jgrapes.util.events.ConfigurationUpdate;
  *       metallb.universe.tf/ip-allocated-from-pool: single-common
  *       metallb.universe.tf/allow-shared-ip: single-common
  *   ```
- *   This make all VM consoles available at IP address 192.168.168.1
+ *   This makes all VM consoles available at IP address 192.168.168.1
  *   with the port numbers from the VM definitions.
  */
 @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",
