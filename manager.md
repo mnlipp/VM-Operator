@@ -35,9 +35,12 @@ can be found in the
 directory. I recommend to use 
 [kustomize](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/) to create your own configuration. 
 
+## Initial Configuration
+
 Use one of the `kustomize.yaml` files from the
-[example](https://github.com/mnlipp/VM-Operator/tree/main/example) directory as starting point.
-The directory contains two examples. 
+[example](https://github.com/mnlipp/VM-Operator/tree/main/example) directory 
+as a starting point. The directory contains two examples. Here's the file
+from subdirectory `local-path`:
 
 ```yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -74,9 +77,10 @@ patches:
       config.yaml: |
         "/Manager":
           "/Controller":
-            runnerData:
-              # Default is to use the default storage class
-              storageClassName: local-path
+            "/Reconciler":
+              runnerDataPvc:
+                # Default is to use the default storage class
+                storageClassName: local-path
 ```
 
 The sample file adds a namespace (`vmop-demo`) to all resource 
@@ -87,15 +91,16 @@ and it must be bound before any pods can run.
 
 The second patch affects the small volume that is created for each
 runner and contains the VM's configuration data such as the EFI vars.
-By default the PVC for this volume is created with the default
-storage class configured. The patch effectively provides a new
-configuration file for the manager that makes the controller
-use local-path as storage class for this PVC. (The file 
+The manager's default configuration causes the PVC for this volume
+to be created with no storage class (which causes the default storage
+class to be used). The patch provides a new configuration file for 
+the manager that makes the reconciler use local-path as storage 
+class for this PVC. (The file 
 [config-sample.yaml](https://github.com/mnlipp/VM-Operator/blob/main/org.jdrupes.vmoperator.manager/config-sample.yaml)
 explains all available configuration options.)
 
-Note that you need none of the patches if it is okay to use your cluster's
-default storage class and this class supports ReadWriteMany as 
+Note that you need none of the patches if you are fine with using your 
+cluster's default storage class and this class supports ReadWriteMany as 
 access mode.
 
 Check that the pod with the manager is running:
