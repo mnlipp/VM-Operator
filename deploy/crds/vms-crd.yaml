@@ -56,7 +56,7 @@ spec:
                         anyOf:
                         - type: integer
                         - type: string
-                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                        pattern: ^\s*(\d+(\.\d+)?)\s*(B|kB|MB|GB|TB|PB|EB|KiB|MiB|GiB|TiB|PiB|EiB|Ki|Mi|Gi|Ti|Pi|Ei)?$
                         x-kubernetes-int-or-string: true
                       description: >-
                         Limits describes the maximum amount of compute
@@ -67,7 +67,7 @@ spec:
                         anyOf:
                         - type: integer
                         - type: string
-                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                        pattern: ^\s*(\d+(\.\d+)?)\s*(B|kB|MB|GB|TB|PB|EB|KiB|MiB|GiB|TiB|PiB|EiB|Ki|Mi|Gi|Ti|Pi|Ei)?$
                         x-kubernetes-int-or-string: true
                       description: >-
                         Requests describes the minimum amount of compute
