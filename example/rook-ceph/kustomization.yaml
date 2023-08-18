@@ -26,5 +26,6 @@ patches:
       config.yaml: |
         "/Manager":
           "/Controller":
-            runnerData:
-              storageClassName: rook-cephfs
+            "/Reconciler":
+              runnerData:
+                storageClassName: rook-cephfs

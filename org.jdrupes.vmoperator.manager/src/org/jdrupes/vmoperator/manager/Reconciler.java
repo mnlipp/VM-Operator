@@ -45,7 +45,6 @@ import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
 import org.jdrupes.vmoperator.util.ParseUtils;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
-import org.jgrapes.core.Components;
 import org.jgrapes.core.annotation.Handler;
 import org.jgrapes.util.events.ConfigurationUpdate;
 
@@ -58,8 +57,8 @@ public class Reconciler extends Component {
 
     @SuppressWarnings("PMD.SingularField")
     private final Configuration fmConfig;
-    private final CmReconciler cmReconciler;
-    private final StsReconciler stsReconciler;
+    private final ConfigMapReconciler cmReconciler;
+    private final StatefuleSetReconciler stsReconciler;
     private final LoadBalancerReconciler lbReconciler;
     @SuppressWarnings("PMD.UseConcurrentHashMap")
     private final Map<String, Object> config = new HashMap<>();
@@ -82,8 +81,8 @@ public class Reconciler extends Component {
         fmConfig.setLogTemplateExceptions(false);
         fmConfig.setClassForTemplateLoading(Reconciler.class, "");
 
-        cmReconciler = new CmReconciler(fmConfig);
-        stsReconciler = new StsReconciler(fmConfig);
+        cmReconciler = new ConfigMapReconciler(fmConfig);
+        stsReconciler = new StatefuleSetReconciler(fmConfig);
         lbReconciler = new LoadBalancerReconciler(fmConfig);
     }
 
@@ -94,10 +93,9 @@ public class Reconciler extends Component {
      */
     @Handler
     public void onConfigurationUpdate(ConfigurationUpdate event) {
-        event.structured(Components.manager(parent()).componentPath())
-            .ifPresent(c -> {
-                config.putAll(c);
-            });
+        event.structured(componentPath()).ifPresent(c -> {
+            config.putAll(c);
+        });
     }
 
     /**
@@ -153,7 +151,7 @@ public class Reconciler extends Component {
                 Configuration.VERSION_2_3_32)
                     .build().getStaticModels()
                     .get(Constants.class.getName()));
-        model.put("config", config);
+        model.put("reconciler", config);
 
         // Methods
         model.put("parseMemory", new TemplateMethodModelEx() {

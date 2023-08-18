@@ -40,7 +40,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
  * Delegee for reconciling the config map
  */
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
-/* default */ class CmReconciler {
+/* default */ class ConfigMapReconciler {
 
     protected final Logger logger = Logger.getLogger(getClass().getName());
     private final Configuration fmConfig;
@@ -50,7 +50,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
      *
      * @param fmConfig the fm config
      */
-    public CmReconciler(Configuration fmConfig) {
+    public ConfigMapReconciler(Configuration fmConfig) {
         this.fmConfig = fmConfig;
     }
 

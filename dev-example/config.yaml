@@ -3,9 +3,10 @@
 "/Manager":
   "/Controller":
     namespace: vmop-dev
-    runnerData:
-      storageClassName: null
-    loadBalancerService: |
-      labels:
-        test1: info
-        test2: toBeDeleted
+    "/Reconciler":
+      runnerData:
+        storageClassName: null
+      loadBalancerService: |
+        labels:
+          test1: info
+          test2: toBeDeleted

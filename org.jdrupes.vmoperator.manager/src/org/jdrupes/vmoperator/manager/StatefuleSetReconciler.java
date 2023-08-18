@@ -37,7 +37,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
  * Delegee for reconciling the stateful set (effectively the pod).
  */
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
-/* default */ class StsReconciler {
+/* default */ class StatefuleSetReconciler {
 
     protected final Logger logger = Logger.getLogger(getClass().getName());
     private final Configuration fmConfig;
@@ -47,7 +47,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
      *
      * @param fmConfig the fm config
      */
-    public StsReconciler(Configuration fmConfig) {
+    public StatefuleSetReconciler(Configuration fmConfig) {
         this.fmConfig = fmConfig;
     }
 

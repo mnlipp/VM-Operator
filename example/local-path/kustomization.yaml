@@ -32,6 +32,7 @@ patches:
       config.yaml: |
         "/Manager":
           "/Controller":
-            runnerData:
-              # Default is to use the default storage class
-              storageClassName: local-path
+            "/Reconciler"
+              runnerDataPvc:
+                # Default is to use the default storage class
+                storageClassName: local-path

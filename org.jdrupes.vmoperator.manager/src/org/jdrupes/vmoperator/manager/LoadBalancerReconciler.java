@@ -77,7 +77,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         // Check if to be generated
         @SuppressWarnings("unchecked")
         var lbs = Optional.of(model)
-            .map(m -> (Map<String, Object>) m.get("config"))
+            .map(m -> (Map<String, Object>) m.get("reconciler"))
             .map(c -> c.get(LOAD_BALANCER_SERVICE)).orElse(Boolean.FALSE);
         if (lbs instanceof Boolean isOn && !isOn) {
             return;
