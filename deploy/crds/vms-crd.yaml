@@ -48,7 +48,13 @@ spec:
                       type: string
                 resources:
                   description: >-
-                    Compute Resources required by this VM.
+                    Define the Compute Resources required by this VM.
+                    This overrides the automnatically generated defaults.
+                    Note that the format has been defined differently from
+                    the usage in Kubernetes. "m" is not supported because
+                    of its known ambiguity (and "0.4" is shorter than "400m"
+                    anyway). Single letter memory sizes are ambiguous as
+                    well (expect for "B").
                   type: object
                   properties:
                     limits:
