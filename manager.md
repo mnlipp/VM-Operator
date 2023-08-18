@@ -122,8 +122,8 @@ on startup.
 The configuration file for the Manager follows the conventions of
 the [JGrapes](https://mnlipp.github.io/jgrapes/) component framework.
 The keys that start with a slash select the component within the 
-application's component hierarchy. The mapping associated with a
-component's name configures the component's properties.
+application's component hierarchy. The mapping associated with the
+selected component configures this component's properties.
 
 The available configuration options for the components can be found
 in their respective JavaDocs (e.g. 
