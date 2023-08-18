@@ -42,7 +42,30 @@ import org.jgrapes.util.YamlConfigurationStore;
 import org.jgrapes.util.events.WatchFile;
 
 /**
- * The application class.
+ * The application class. In framework term, this is the root component.
+ * Two of its child components, the {@link Controller} and the WebGui
+ * implement user-visible functions. The others are used internally.
+ * 
+ * ![Manager components](manager-components.svg)
+ * 
+ * @startuml manager-components.svg
+ * skinparam component {
+ *   BackGroundColor #FEFECE
+ *   BorderColor #A80036
+ *   BorderThickness 1.25
+ *   BackgroundColor<<internal>> #F1F1F1
+ *   BorderColor<<internal>> #181818
+ *   BorderThickness<<internal>> 1
+ * }
+ * 
+ * [Manager]
+ * [Manager] *--> [Controller]
+ * [Manager] *--> [WebGui]
+ * [NioDispatcher] <<internal>>
+ * [Manager] *--> [NioDispatcher] <<internal>>
+ * [FileSystemWatcher] <<internal>>
+ * [Manager] *--> [FileSystemWatcher] <<internal>>
+ * @enduml
  */
 public class Manager extends Component {
 

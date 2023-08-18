@@ -49,7 +49,72 @@ import org.jgrapes.core.annotation.Handler;
 import org.jgrapes.util.events.ConfigurationUpdate;
 
 /**
- * Adapts Kubenetes resources to changes in VM definitions (CRs). 
+ * Adapts Kubenetes resources for instances of the Runner 
+ * application (the VMs) to changes in VM definitions (the CRs). 
+ * 
+ * In particular, the reconciler generates and updates:  
+ * 
+ * * A [`PVC`](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)
+ *   for storage used by all VMs as a common repository for CDROM images.
+ * 
+ * * A [`ConfigMap`](https://kubernetes.io/docs/concepts/configuration/configmap/)
+ *   that defines the configuration file for the runner.
+ *    
+ * * A [`StatefulSet`](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
+ *   that creates 
+ *   * the [`Pod`](https://kubernetes.io/docs/concepts/workloads/pods/) 
+ *     with the Runner instance, 
+ *   * a PVC for 1 MiB of persistent storage used by the Runner 
+ *     (referred to as the "runnerDataPvc") and
+ *   * the PVCs for the VM's disks.
+ *    
+ * * (Optional) A load balancer
+ *   [`Service`](https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/)
+ *   that allows the user to access a VM's console without knowing which
+ *   node it runs on.
+ * 
+ * The reconciler is part of the {@link Controller} component. It's 
+ * configuration properties are therefore defined in
+ * ```yaml
+ * "/Manager":
+ *   "/Controller":
+ *     "/Reconciler":
+ *       ...
+ * ```
+ *   
+ * The reconciler supports the following configuration properties:
+ * 
+ * * `runnerDataPvc.storageClassName`: The storage class name
+ *   to be used for the "runnerDataPvc" (the small volume used
+ *   by the runner for information such as the EFI variables). By
+ *   default, no `storageClassName` is generated, which causes
+ *   Kubernetes to use storage from the default storage class.
+ *   Define this if you want to use a specific storage class.
+ *
+ * * `cpuOvercommit`: The amount by which the current cpu count
+ *   from the VM definition is divided when generating the 
+ *   [`resources`](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#resources)
+ *   properties for the VM (defaults to 2).
+ * 
+ * * `ramOvercommit`: The amount by which the current ram size
+ *   from the VM definition is divided when generating the
+ *   [`resources`](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#resources)
+ *   properties for the VM (defaults to 1.25).
+ *   
+ * * `loadBalancerService`: If defined, causes a load balancer service 
+ *   to be created. This property may be a boolean or a string with nested
+ *   YAML that defines additional labels or annotations to be merged
+ *   into the service defintion. Here's an example for using
+ *   [MetalLb](https://metallb.universe.tf/) as "internal load balancer":
+ *   ```yaml 
+ *   loadBalancerService: |
+ *     annotations:
+ *       metallb.universe.tf/loadBalancerIPs: 192.168.168.1
+ *       metallb.universe.tf/ip-allocated-from-pool: single-common
+ *       metallb.universe.tf/allow-shared-ip: single-common
+ *   ```
+ *   This make all VM consoles available at IP address 192.168.168.1
+ *   with the port numbers from the VM definitions.
  */
 @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",
     "PMD.AvoidDuplicateLiterals" })
@@ -87,7 +152,7 @@ public class Reconciler extends Component {
     }
 
     /**
-     * Configure the component.
+     * Configures the component.
      *
      * @param event the event
      */
