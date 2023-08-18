@@ -95,9 +95,8 @@ The manager's default configuration causes the PVC for this volume
 to be created with no storage class (which causes the default storage
 class to be used). The patch provides a new configuration file for 
 the manager that makes the reconciler use local-path as storage 
-class for this PVC. (The file 
-[config-sample.yaml](https://github.com/mnlipp/VM-Operator/blob/main/org.jdrupes.vmoperator.manager/config-sample.yaml)
-explains all available configuration options.)
+class for this PVC. Details about the manager configuration can be 
+found in the next section.
 
 Note that you need none of the patches if you are fine with using your 
 cluster's default storage class and this class supports ReadWriteMany as 
@@ -112,7 +111,24 @@ kubectl -n vmop-demo get pods -l app.kubernetes.io/name=vm-operator
 Proceed to the description of [the controller](controller.html)
 for creating your first VM.
 
-## Running during development
+## Configuration Details
+
+The [config map](https://github.com/mnlipp/VM-Operator/blob/main/deploy/vmop-config-map.yaml) 
+for the manager provides it with a configuration file (`config.yaml`) and 
+a file with logging properties (`logging.properties`).
+
+The configuration file for the Manager follows the conventions of
+the [JGrapes](https://mnlipp.github.io/jgrapes/) component framework.
+The keys that start with a slash select the component within the 
+component hierarchy. The mapping associated with the component's name
+configures the component's properties.
+
+The available configuration options for the components can be found
+in their respective JavaDocs (e.g. 
+[here](latest-release/javadoc/org/jdrupes/vmoperator/manager/Reconciler.html)
+for the Reconciler).
+
+## Development Configuration
 
 The [dev-example](https://github.com/mnlipp/VM-Operator/tree/main/dev-example)
 directory contains a `kustomize.yaml` that uses the development namespace 
