@@ -114,14 +114,16 @@ for creating your first VM.
 ## Configuration Details
 
 The [config map](https://github.com/mnlipp/VM-Operator/blob/main/deploy/vmop-config-map.yaml) 
-for the manager provides it with a configuration file (`config.yaml`) and 
-a file with logging properties (`logging.properties`).
+for the manager provides a configuration file (`config.yaml`) and 
+a file with logging properties (`logging.properties`). Both files are mounted
+into the container that runs the manager and are evaluated by the manager
+on startup.
 
 The configuration file for the Manager follows the conventions of
 the [JGrapes](https://mnlipp.github.io/jgrapes/) component framework.
 The keys that start with a slash select the component within the 
-component hierarchy. The mapping associated with the component's name
-configures the component's properties.
+application's component hierarchy. The mapping associated with a
+component's name configures the component's properties.
 
 The available configuration options for the components can be found
 in their respective JavaDocs (e.g. 
