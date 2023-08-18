@@ -90,7 +90,7 @@
 <span class="source-line-no">077</span><span id="line-77">        // Check if to be generated</span>
 <span class="source-line-no">078</span><span id="line-78">        @SuppressWarnings("unchecked")</span>
 <span class="source-line-no">079</span><span id="line-79">        var lbs = Optional.of(model)</span>
-<span class="source-line-no">080</span><span id="line-80">            .map(m -&gt; (Map&lt;String, Object&gt;) m.get("config"))</span>
+<span class="source-line-no">080</span><span id="line-80">            .map(m -&gt; (Map&lt;String, Object&gt;) m.get("reconciler"))</span>
 <span class="source-line-no">081</span><span id="line-81">            .map(c -&gt; c.get(LOAD_BALANCER_SERVICE)).orElse(Boolean.FALSE);</span>
 <span class="source-line-no">082</span><span id="line-82">        if (lbs instanceof Boolean isOn &amp;&amp; !isOn) {</span>
 <span class="source-line-no">083</span><span id="line-83">            return;</span>
