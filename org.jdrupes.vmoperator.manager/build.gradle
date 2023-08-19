@@ -21,6 +21,8 @@ dependencies {
     
     runtimeOnly 'com.electronwill.night-config:yaml:3.6.6'    
     runtimeOnly 'org.slf4j:slf4j-jdk14:[2.0.7,3)'
+    
+    testImplementation 'io.fabric8:kubernetes-client:6.8.1'
 }
 
 application {
@@ -73,5 +75,20 @@ task pushLatestImage(type: Exec) {
 task pushImages {
     dependsOn pushImage
     dependsOn pushLatestImage
+}
+
+test {
+    enabled = project.hasProperty("k8s.testCluster")
+
+    dependsOn project.tasks["pushImages"]
+
+    useJUnitPlatform()
+
+    testLogging {
+        showStandardStreams = true
+    }
+    
+    systemProperty "k8s.testCluster", project.hasProperty("k8s.testCluster")
+        ? project.getProperty("k8s.testCluster") : null
 }
 

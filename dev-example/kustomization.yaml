@@ -20,6 +20,21 @@ patches:
           storage: 10Gi
       storageClassName: local-path
 
+- patch: |-
+    kind: ConfigMap
+    apiVersion: v1
+    metadata:
+      name: vm-operator
+    data:
+      # Keep in sync with config.yaml
+      config.yaml: |
+        "/Manager":
+          "/Controller":
+            namespace: vmop-dev
+            "/Reconciler":
+              runnerData:
+                storageClassName: null
+
 - target:
     group: apps
     version: v1

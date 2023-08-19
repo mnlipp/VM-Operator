@@ -1,12 +1,8 @@
-# The values in comments are the defaults.
-
+# Used for running manager outside Kubernetes.
+# Keep in sync with kustomize.yaml 
 "/Manager":
   "/Controller":
     namespace: vmop-dev
     "/Reconciler":
       runnerData:
         storageClassName: null
-      loadBalancerService: |
-        labels:
-          test1: info
-          test2: toBeDeleted
