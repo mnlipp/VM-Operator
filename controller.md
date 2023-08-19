@@ -25,8 +25,8 @@ spec:
     state: Running
     maximumCpus: 4
     currentCpus: 2
-    maximumRam: "8 GiB"
-    currentRam: "4 GiB"
+    maximumRam: 8Gi
+    currentRam: 4Gi
   
     networks:
     - user: {}
