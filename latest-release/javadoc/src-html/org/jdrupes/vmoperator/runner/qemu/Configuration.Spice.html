@@ -41,9 +41,9 @@
 <span class="source-line-no">028</span><span id="line-28">import java.util.UUID;</span>
 <span class="source-line-no">029</span><span id="line-29">import java.util.logging.Level;</span>
 <span class="source-line-no">030</span><span id="line-30">import java.util.logging.Logger;</span>
-<span class="source-line-no">031</span><span id="line-31">import org.jdrupes.vmoperator.util.Dto;</span>
-<span class="source-line-no">032</span><span id="line-32">import org.jdrupes.vmoperator.util.FsdUtils;</span>
-<span class="source-line-no">033</span><span id="line-33">import org.jdrupes.vmoperator.util.ParseUtils;</span>
+<span class="source-line-no">031</span><span id="line-31">import org.jdrupes.vmoperator.util.Convertions;</span>
+<span class="source-line-no">032</span><span id="line-32">import org.jdrupes.vmoperator.util.Dto;</span>
+<span class="source-line-no">033</span><span id="line-33">import org.jdrupes.vmoperator.util.FsdUtils;</span>
 <span class="source-line-no">034</span><span id="line-34"></span>
 <span class="source-line-no">035</span><span id="line-35">/**</span>
 <span class="source-line-no">036</span><span id="line-36"> * The configuration information from the configuration file.</span>
@@ -157,7 +157,7 @@
 <span class="source-line-no">144</span><span id="line-144">         * @param value the new maximum ram</span>
 <span class="source-line-no">145</span><span id="line-145">         */</span>
 <span class="source-line-no">146</span><span id="line-146">        public void setMaximumRam(String value) {</span>
-<span class="source-line-no">147</span><span id="line-147">            maximumRam = ParseUtils.parseMemory(value);</span>
+<span class="source-line-no">147</span><span id="line-147">            maximumRam = Convertions.parseMemory(value);</span>
 <span class="source-line-no">148</span><span id="line-148">        }</span>
 <span class="source-line-no">149</span><span id="line-149"></span>
 <span class="source-line-no">150</span><span id="line-150">        /**</span>
@@ -166,7 +166,7 @@
 <span class="source-line-no">153</span><span id="line-153">         * @param value the new current ram</span>
 <span class="source-line-no">154</span><span id="line-154">         */</span>
 <span class="source-line-no">155</span><span id="line-155">        public void setCurrentRam(String value) {</span>
-<span class="source-line-no">156</span><span id="line-156">            currentRam = ParseUtils.parseMemory(value);</span>
+<span class="source-line-no">156</span><span id="line-156">            currentRam = Convertions.parseMemory(value);</span>
 <span class="source-line-no">157</span><span id="line-157">        }</span>
 <span class="source-line-no">158</span><span id="line-158">    }</span>
 <span class="source-line-no">159</span><span id="line-159"></span>
