@@ -107,8 +107,8 @@ public class Convertions {
         for (var mapping : unitMappings) {
             if (size.compareTo(mapping.getValue()) >= 0
                 && size.mod(mapping.getValue()).equals(BigInteger.ZERO)) {
-                return size.divide(mapping.getValue()).toString()
-                    + " " + mapping.getKey();
+                return (size.divide(mapping.getValue()).toString()
+                    + " " + mapping.getKey()).trim();
             }
         }
         return size.toString();
