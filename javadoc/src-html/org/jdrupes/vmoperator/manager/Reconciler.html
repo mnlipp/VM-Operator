@@ -43,19 +43,19 @@
 <span class="source-line-no">030</span><span id="line-30">import freemarker.template.TemplateMethodModelEx;</span>
 <span class="source-line-no">031</span><span id="line-31">import freemarker.template.TemplateModelException;</span>
 <span class="source-line-no">032</span><span id="line-32">import freemarker.template.TemplateNotFoundException;</span>
-<span class="source-line-no">033</span><span id="line-33">import io.kubernetes.client.openapi.ApiException;</span>
-<span class="source-line-no">034</span><span id="line-34">import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;</span>
-<span class="source-line-no">035</span><span id="line-35">import java.io.IOException;</span>
-<span class="source-line-no">036</span><span id="line-36">import java.net.URI;</span>
-<span class="source-line-no">037</span><span id="line-37">import java.net.URISyntaxException;</span>
-<span class="source-line-no">038</span><span id="line-38">import java.util.HashMap;</span>
-<span class="source-line-no">039</span><span id="line-39">import java.util.List;</span>
-<span class="source-line-no">040</span><span id="line-40">import java.util.Map;</span>
-<span class="source-line-no">041</span><span id="line-41">import java.util.Optional;</span>
-<span class="source-line-no">042</span><span id="line-42">import static org.jdrupes.vmoperator.manager.Constants.VM_OP_GROUP;</span>
-<span class="source-line-no">043</span><span id="line-43">import org.jdrupes.vmoperator.manager.VmDefChanged.Type;</span>
-<span class="source-line-no">044</span><span id="line-44">import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;</span>
-<span class="source-line-no">045</span><span id="line-45">import org.jdrupes.vmoperator.util.ParseUtils;</span>
+<span class="source-line-no">033</span><span id="line-33">import io.kubernetes.client.custom.Quantity;</span>
+<span class="source-line-no">034</span><span id="line-34">import io.kubernetes.client.openapi.ApiException;</span>
+<span class="source-line-no">035</span><span id="line-35">import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;</span>
+<span class="source-line-no">036</span><span id="line-36">import java.io.IOException;</span>
+<span class="source-line-no">037</span><span id="line-37">import java.net.URI;</span>
+<span class="source-line-no">038</span><span id="line-38">import java.net.URISyntaxException;</span>
+<span class="source-line-no">039</span><span id="line-39">import java.util.HashMap;</span>
+<span class="source-line-no">040</span><span id="line-40">import java.util.List;</span>
+<span class="source-line-no">041</span><span id="line-41">import java.util.Map;</span>
+<span class="source-line-no">042</span><span id="line-42">import java.util.Optional;</span>
+<span class="source-line-no">043</span><span id="line-43">import static org.jdrupes.vmoperator.manager.Constants.VM_OP_GROUP;</span>
+<span class="source-line-no">044</span><span id="line-44">import org.jdrupes.vmoperator.manager.VmDefChanged.Type;</span>
+<span class="source-line-no">045</span><span id="line-45">import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;</span>
 <span class="source-line-no">046</span><span id="line-46">import org.jgrapes.core.Channel;</span>
 <span class="source-line-no">047</span><span id="line-47">import org.jgrapes.core.Component;</span>
 <span class="source-line-no">048</span><span id="line-48">import org.jgrapes.core.annotation.Handler;</span>
@@ -232,7 +232,7 @@
 <span class="source-line-no">219</span><span id="line-219">        model.put("reconciler", config);</span>
 <span class="source-line-no">220</span><span id="line-220"></span>
 <span class="source-line-no">221</span><span id="line-221">        // Methods</span>
-<span class="source-line-no">222</span><span id="line-222">        model.put("parseMemory", new TemplateMethodModelEx() {</span>
+<span class="source-line-no">222</span><span id="line-222">        model.put("parseQuantity", new TemplateMethodModelEx() {</span>
 <span class="source-line-no">223</span><span id="line-223">            @Override</span>
 <span class="source-line-no">224</span><span id="line-224">            @SuppressWarnings("PMD.PreserveStackTrace")</span>
 <span class="source-line-no">225</span><span id="line-225">            public Object exec(@SuppressWarnings("rawtypes") List arguments)</span>
@@ -242,7 +242,7 @@
 <span class="source-line-no">229</span><span id="line-229">                    return number;</span>
 <span class="source-line-no">230</span><span id="line-230">                }</span>
 <span class="source-line-no">231</span><span id="line-231">                try {</span>
-<span class="source-line-no">232</span><span id="line-232">                    return ParseUtils.parseMemory(arg.toString());</span>
+<span class="source-line-no">232</span><span id="line-232">                    return Quantity.fromString(arg.toString()).getNumber();</span>
 <span class="source-line-no">233</span><span id="line-233">                } catch (NumberFormatException e) {</span>
 <span class="source-line-no">234</span><span id="line-234">                    throw new TemplateModelException("Cannot parse memory "</span>
 <span class="source-line-no">235</span><span id="line-235">                        + "specified as \"" + arg + "\": " + e.getMessage());</span>
