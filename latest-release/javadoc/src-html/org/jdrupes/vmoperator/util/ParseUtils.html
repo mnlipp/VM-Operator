@@ -39,7 +39,7 @@
 <span class="source-line-no">026</span><span id="line-26">import java.util.regex.Pattern;</span>
 <span class="source-line-no">027</span><span id="line-27"></span>
 <span class="source-line-no">028</span><span id="line-28">/**</span>
-<span class="source-line-no">029</span><span id="line-29"> * Provides methods for parsing.</span>
+<span class="source-line-no">029</span><span id="line-29"> * Provides methods for parsing "official" memory sizes..</span>
 <span class="source-line-no">030</span><span id="line-30"> */</span>
 <span class="source-line-no">031</span><span id="line-31">@SuppressWarnings("PMD.UseUtilityClass")</span>
 <span class="source-line-no">032</span><span id="line-32">public class ParseUtils {</span>
@@ -66,46 +66,45 @@
 <span class="source-line-no">053</span><span id="line-53">        scale = BigInteger.valueOf(1024);</span>
 <span class="source-line-no">054</span><span id="line-54">        for (var unit : List.of("KiB", "MiB", "GiB", "TiB", "PiB", "EiB")) {</span>
 <span class="source-line-no">055</span><span id="line-55">            unitMap.put(unit, factor);</span>
-<span class="source-line-no">056</span><span id="line-56">            unitMap.put(unit.substring(0, 2), factor);</span>
-<span class="source-line-no">057</span><span id="line-57">            factor = factor.multiply(scale);</span>
-<span class="source-line-no">058</span><span id="line-58">        }</span>
-<span class="source-line-no">059</span><span id="line-59">    }</span>
-<span class="source-line-no">060</span><span id="line-60"></span>
-<span class="source-line-no">061</span><span id="line-61">    /**</span>
-<span class="source-line-no">062</span><span id="line-62">     * Parses a memory size specification.</span>
-<span class="source-line-no">063</span><span id="line-63">     *</span>
-<span class="source-line-no">064</span><span id="line-64">     * @param amount the amount</span>
-<span class="source-line-no">065</span><span id="line-65">     * @return the big integer</span>
-<span class="source-line-no">066</span><span id="line-66">     */</span>
-<span class="source-line-no">067</span><span id="line-67">    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")</span>
-<span class="source-line-no">068</span><span id="line-68">    public static BigInteger parseMemory(Object amount) {</span>
-<span class="source-line-no">069</span><span id="line-69">        if (amount == null) {</span>
-<span class="source-line-no">070</span><span id="line-70">            return (BigInteger) amount;</span>
-<span class="source-line-no">071</span><span id="line-71">        }</span>
-<span class="source-line-no">072</span><span id="line-72">        if (amount instanceof BigInteger number) {</span>
-<span class="source-line-no">073</span><span id="line-73">            return number;</span>
-<span class="source-line-no">074</span><span id="line-74">        }</span>
-<span class="source-line-no">075</span><span id="line-75">        if (amount instanceof Number number) {</span>
-<span class="source-line-no">076</span><span id="line-76">            return BigInteger.valueOf(number.longValue());</span>
-<span class="source-line-no">077</span><span id="line-77">        }</span>
-<span class="source-line-no">078</span><span id="line-78">        var matcher = memorySize.matcher(amount.toString());</span>
-<span class="source-line-no">079</span><span id="line-79">        if (!matcher.matches()) {</span>
-<span class="source-line-no">080</span><span id="line-80">            throw new NumberFormatException(amount.toString());</span>
-<span class="source-line-no">081</span><span id="line-81">        }</span>
-<span class="source-line-no">082</span><span id="line-82">        var unit = BigInteger.ONE;</span>
-<span class="source-line-no">083</span><span id="line-83">        if (matcher.group(3) != null) {</span>
-<span class="source-line-no">084</span><span id="line-84">            unit = unitMap.get(matcher.group(3));</span>
-<span class="source-line-no">085</span><span id="line-85">            if (unit == null) {</span>
-<span class="source-line-no">086</span><span id="line-86">                throw new NumberFormatException("Illegal unit \""</span>
-<span class="source-line-no">087</span><span id="line-87">                    + matcher.group(3) + "\" in \"" + amount.toString() + "\"");</span>
-<span class="source-line-no">088</span><span id="line-88">            }</span>
-<span class="source-line-no">089</span><span id="line-89">        }</span>
-<span class="source-line-no">090</span><span id="line-90">        var number = matcher.group(1);</span>
-<span class="source-line-no">091</span><span id="line-91">        return new BigDecimal(number).multiply(new BigDecimal(unit))</span>
-<span class="source-line-no">092</span><span id="line-92">            .toBigInteger();</span>
-<span class="source-line-no">093</span><span id="line-93">    }</span>
-<span class="source-line-no">094</span><span id="line-94"></span>
-<span class="source-line-no">095</span><span id="line-95">}</span>
+<span class="source-line-no">056</span><span id="line-56">            factor = factor.multiply(scale);</span>
+<span class="source-line-no">057</span><span id="line-57">        }</span>
+<span class="source-line-no">058</span><span id="line-58">    }</span>
+<span class="source-line-no">059</span><span id="line-59"></span>
+<span class="source-line-no">060</span><span id="line-60">    /**</span>
+<span class="source-line-no">061</span><span id="line-61">     * Parses a memory size specification.</span>
+<span class="source-line-no">062</span><span id="line-62">     *</span>
+<span class="source-line-no">063</span><span id="line-63">     * @param amount the amount</span>
+<span class="source-line-no">064</span><span id="line-64">     * @return the big integer</span>
+<span class="source-line-no">065</span><span id="line-65">     */</span>
+<span class="source-line-no">066</span><span id="line-66">    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")</span>
+<span class="source-line-no">067</span><span id="line-67">    public static BigInteger parseMemory(Object amount) {</span>
+<span class="source-line-no">068</span><span id="line-68">        if (amount == null) {</span>
+<span class="source-line-no">069</span><span id="line-69">            return (BigInteger) amount;</span>
+<span class="source-line-no">070</span><span id="line-70">        }</span>
+<span class="source-line-no">071</span><span id="line-71">        if (amount instanceof BigInteger number) {</span>
+<span class="source-line-no">072</span><span id="line-72">            return number;</span>
+<span class="source-line-no">073</span><span id="line-73">        }</span>
+<span class="source-line-no">074</span><span id="line-74">        if (amount instanceof Number number) {</span>
+<span class="source-line-no">075</span><span id="line-75">            return BigInteger.valueOf(number.longValue());</span>
+<span class="source-line-no">076</span><span id="line-76">        }</span>
+<span class="source-line-no">077</span><span id="line-77">        var matcher = memorySize.matcher(amount.toString());</span>
+<span class="source-line-no">078</span><span id="line-78">        if (!matcher.matches()) {</span>
+<span class="source-line-no">079</span><span id="line-79">            throw new NumberFormatException(amount.toString());</span>
+<span class="source-line-no">080</span><span id="line-80">        }</span>
+<span class="source-line-no">081</span><span id="line-81">        var unit = BigInteger.ONE;</span>
+<span class="source-line-no">082</span><span id="line-82">        if (matcher.group(3) != null) {</span>
+<span class="source-line-no">083</span><span id="line-83">            unit = unitMap.get(matcher.group(3));</span>
+<span class="source-line-no">084</span><span id="line-84">            if (unit == null) {</span>
+<span class="source-line-no">085</span><span id="line-85">                throw new NumberFormatException("Illegal unit \""</span>
+<span class="source-line-no">086</span><span id="line-86">                    + matcher.group(3) + "\" in \"" + amount.toString() + "\"");</span>
+<span class="source-line-no">087</span><span id="line-87">            }</span>
+<span class="source-line-no">088</span><span id="line-88">        }</span>
+<span class="source-line-no">089</span><span id="line-89">        var number = matcher.group(1);</span>
+<span class="source-line-no">090</span><span id="line-90">        return new BigDecimal(number).multiply(new BigDecimal(unit))</span>
+<span class="source-line-no">091</span><span id="line-91">            .toBigInteger();</span>
+<span class="source-line-no">092</span><span id="line-92">    }</span>
+<span class="source-line-no">093</span><span id="line-93"></span>
+<span class="source-line-no">094</span><span id="line-94">}</span>
 
 
 
