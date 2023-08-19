@@ -30,6 +30,7 @@ import freemarker.template.TemplateHashModel;
 import freemarker.template.TemplateMethodModelEx;
 import freemarker.template.TemplateModelException;
 import freemarker.template.TemplateNotFoundException;
+import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
 import java.io.IOException;
@@ -42,7 +43,6 @@ import java.util.Optional;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_GROUP;
 import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
 import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
-import org.jdrupes.vmoperator.util.ParseUtils;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.annotation.Handler;
@@ -219,7 +219,7 @@ public class Reconciler extends Component {
         model.put("reconciler", config);
 
         // Methods
-        model.put("parseMemory", new TemplateMethodModelEx() {
+        model.put("parseQuantity", new TemplateMethodModelEx() {
             @Override
             @SuppressWarnings("PMD.PreserveStackTrace")
             public Object exec(@SuppressWarnings("rawtypes") List arguments)
@@ -229,7 +229,7 @@ public class Reconciler extends Component {
                     return number;
                 }
                 try {
-                    return ParseUtils.parseMemory(arg.toString());
+                    return Quantity.fromString(arg.toString()).getNumber();
                 } catch (NumberFormatException e) {
                     throw new TemplateModelException("Cannot parse memory "
                         + "specified as \"" + arg + "\": " + e.getMessage());

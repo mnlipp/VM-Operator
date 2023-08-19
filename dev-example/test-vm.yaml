@@ -17,8 +17,8 @@ spec:
   vm:
     # state: Running
     bootMenu: yes
-    maximumRam: "8 GiB"
-    currentRam: "4 GiB"
+    maximumRam: 8Gi
+    currentRam: 4Gi
     maximumCpus: 4
     currentCpus: 4
   

@@ -99,14 +99,14 @@ spec:
             <#if reconciler.cpuOvercommit??>
             <#assign factor = reconciler.cpuOvercommit * 1.0 />
             </#if>
-            cpu: ${ (cr.spec.vm.currentCpus.asInt / factor)?floor?c }
+            cpu: ${ (parseQuantity(cr.spec.vm.currentCpus.asString) / factor)?floor?c }
             </#if>
             <#if cr.spec.vm.currentRam?? >
             <#assign factor = 1.25 />
             <#if reconciler.ramOvercommit??>
             <#assign factor = reconciler.ramOvercommit * 1.0 />
             </#if>
-            memory: ${ (parseMemory(cr.spec.vm.currentRam.asString) / factor)?floor?c }
+            memory: ${ (parseQuantity(cr.spec.vm.currentRam.asString) / factor)?floor?c }
             </#if>
         </#if>
         </#if>
