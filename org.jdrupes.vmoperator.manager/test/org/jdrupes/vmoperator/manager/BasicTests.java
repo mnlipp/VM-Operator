@@ -51,6 +51,7 @@ class BasicTests {
                 .isPresent()) {
                 return;
             }
+            Thread.sleep(1000);
         }
         fail("vm-operator not deployed.");
     }
@@ -64,7 +65,7 @@ class BasicTests {
     }
 
     @Test
-    void test() throws IOException {
+    void test() throws IOException, InterruptedException {
         // Load from Yaml
         var vm = client.genericKubernetesResources(vmsContext)
             .load(Files
@@ -72,10 +73,36 @@ class BasicTests {
         // Create Custom Resource
         vm.create();
 
+        // Wait for created resources
+        assertTrue(waitForConfigMap());
+        assertTrue(waitForStatefulSet());
+
         // Cleanup
         var resourcesInNamespace = client.genericKubernetesResources(vmsContext)
             .inNamespace("vmop-dev");
         resourcesInNamespace.withName("unittest-vm").delete();
+    }
+
+    private boolean waitForConfigMap() throws InterruptedException {
+        for (int i = 0; i < 10; i++) {
+            if (client.configMaps().inNamespace("vmop-dev")
+                .withName("vm-operator").get() != null) {
+                return true;
+            }
+            Thread.sleep(1000);
+        }
+        return false;
+    }
+
+    private boolean waitForStatefulSet() throws InterruptedException {
+        for (int i = 0; i < 10; i++) {
+            if (client.apps().statefulSets().inNamespace("vmop-dev")
+                .withName("unittest-vm").get() != null) {
+                return true;
+            }
+            Thread.sleep(1000);
+        }
+        return false;
     }
 
 }
