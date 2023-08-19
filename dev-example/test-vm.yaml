@@ -9,6 +9,11 @@ spec:
     path: vmoperator/org.jdrupes.vmoperator.runner.qemu-arch
     pullPolicy: Always
 
+  resources:
+    requests:
+      cpu: 1
+      memory: 2Gi
+    
   loadBalancerService:
     labels:
       test2: null
