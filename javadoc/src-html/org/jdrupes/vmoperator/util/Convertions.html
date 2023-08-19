@@ -120,8 +120,8 @@
 <span class="source-line-no">107</span><span id="line-107">        for (var mapping : unitMappings) {</span>
 <span class="source-line-no">108</span><span id="line-108">            if (size.compareTo(mapping.getValue()) &gt;= 0</span>
 <span class="source-line-no">109</span><span id="line-109">                &amp;&amp; size.mod(mapping.getValue()).equals(BigInteger.ZERO)) {</span>
-<span class="source-line-no">110</span><span id="line-110">                return size.divide(mapping.getValue()).toString()</span>
-<span class="source-line-no">111</span><span id="line-111">                    + " " + mapping.getKey();</span>
+<span class="source-line-no">110</span><span id="line-110">                return (size.divide(mapping.getValue()).toString()</span>
+<span class="source-line-no">111</span><span id="line-111">                    + " " + mapping.getKey()).trim();</span>
 <span class="source-line-no">112</span><span id="line-112">            }</span>
 <span class="source-line-no">113</span><span id="line-113">        }</span>
 <span class="source-line-no">114</span><span id="line-114">        return size.toString();</span>
