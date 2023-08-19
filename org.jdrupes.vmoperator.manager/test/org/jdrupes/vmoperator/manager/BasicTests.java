@@ -5,9 +5,13 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.yaml.snakeyaml.LoaderOptions;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
@@ -77,6 +81,16 @@ class BasicTests {
         assertTrue(waitForConfigMap());
         assertTrue(waitForStatefulSet());
 
+        // Check config map
+        var config = client.configMaps().inNamespace("vmop-dev")
+            .withName("unittest-vm").get();
+        var yaml = new Yaml(new SafeConstructor(new LoaderOptions()))
+            .load((String) config.getData().get("config.yaml"));
+        @SuppressWarnings("unchecked")
+        var currentRam = ((Map<String, Map<String, Map<String, String>>>) yaml)
+            .get("/Runner").get("vm").get("maximumRam");
+        assertEquals("4 GiB", currentRam);
+
         // Cleanup
         var resourcesInNamespace = client.genericKubernetesResources(vmsContext)
             .inNamespace("vmop-dev");
@@ -86,7 +100,7 @@ class BasicTests {
     private boolean waitForConfigMap() throws InterruptedException {
         for (int i = 0; i < 10; i++) {
             if (client.configMaps().inNamespace("vmop-dev")
-                .withName("vm-operator").get() != null) {
+                .withName("unittest-vm").get() != null) {
                 return true;
             }
             Thread.sleep(1000);
