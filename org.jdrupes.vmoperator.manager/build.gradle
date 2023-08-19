@@ -80,7 +80,9 @@ task pushImages {
 test {
     enabled = project.hasProperty("k8s.testCluster")
 
-    dependsOn project.tasks["pushImages"]
+    if (enabled) {
+        dependsOn project.tasks["pushImages"]
+    }
 
     useJUnitPlatform()
 
