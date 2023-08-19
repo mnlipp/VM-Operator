@@ -24,6 +24,7 @@ import freemarker.core.ParseException;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapperBuilder;
 import freemarker.template.MalformedTemplateNameException;
+import freemarker.template.SimpleNumber;
 import freemarker.template.TemplateException;
 import freemarker.template.TemplateExceptionHandler;
 import freemarker.template.TemplateHashModel;
@@ -34,6 +35,8 @@ import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
@@ -42,6 +45,7 @@ import java.util.Map;
 import java.util.Optional;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_GROUP;
 import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
+import org.jdrupes.vmoperator.util.Convertions;
 import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
@@ -203,6 +207,7 @@ public class Reconciler extends Component {
         lbReconciler.reconcile(event, model, channel);
     }
 
+    @SuppressWarnings("PMD.CognitiveComplexity")
     private Map<String, Object> prepareModel(JsonObject vmDef)
             throws TemplateModelException {
         @SuppressWarnings("PMD.UseConcurrentHashMap")
@@ -234,6 +239,34 @@ public class Reconciler extends Component {
                     throw new TemplateModelException("Cannot parse memory "
                         + "specified as \"" + arg + "\": " + e.getMessage());
                 }
+            }
+        });
+        model.put("formatMemory", new TemplateMethodModelEx() {
+            @Override
+            @SuppressWarnings("PMD.PreserveStackTrace")
+            public Object exec(@SuppressWarnings("rawtypes") List arguments)
+                    throws TemplateModelException {
+                var arg = arguments.get(0);
+                if (arg instanceof SimpleNumber number) {
+                    arg = number.getAsNumber();
+                }
+                BigInteger bigInt;
+                if (arg instanceof BigInteger value) {
+                    bigInt = value;
+                } else if (arg instanceof BigDecimal dec) {
+                    try {
+                        bigInt = dec.toBigIntegerExact();
+                    } catch (ArithmeticException e) {
+                        return arg;
+                    }
+                } else if (arg instanceof Integer value) {
+                    bigInt = BigInteger.valueOf(value);
+                } else if (arg instanceof Long value) {
+                    bigInt = BigInteger.valueOf(value);
+                } else {
+                    return arg;
+                }
+                return Convertions.formatMemory(bigInt);
             }
         });
         return model;

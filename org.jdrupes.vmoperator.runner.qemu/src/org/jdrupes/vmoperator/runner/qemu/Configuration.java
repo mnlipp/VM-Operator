@@ -30,7 +30,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jdrupes.vmoperator.util.Dto;
 import org.jdrupes.vmoperator.util.FsdUtils;
-import org.jdrupes.vmoperator.util.ParseUtils;
+import org.jdrupes.vmoperator.util.Convertions;
 
 /**
  * The configuration information from the configuration file.
@@ -144,7 +144,7 @@ public class Configuration implements Dto {
          * @param value the new maximum ram
          */
         public void setMaximumRam(String value) {
-            maximumRam = ParseUtils.parseMemory(value);
+            maximumRam = Convertions.parseMemory(value);
         }
 
         /**
@@ -153,7 +153,7 @@ public class Configuration implements Dto {
          * @param value the new current ram
          */
         public void setCurrentRam(String value) {
-            currentRam = ParseUtils.parseMemory(value);
+            currentRam = Convertions.parseMemory(value);
         }
     }
 

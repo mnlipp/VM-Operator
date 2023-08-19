@@ -29,11 +29,14 @@ import java.util.regex.Pattern;
  * Provides methods for parsing "official" memory sizes..
  */
 @SuppressWarnings("PMD.UseUtilityClass")
-public class ParseUtils {
+public class Convertions {
 
     @SuppressWarnings({ "PMD.UseConcurrentHashMap",
         "PMD.FieldNamingConventions", "PMD.VariableNamingConventions" })
     private static final Map<String, BigInteger> unitMap = new HashMap<>();
+    @SuppressWarnings({ "PMD.FieldNamingConventions",
+        "PMD.VariableNamingConventions" })
+    private static final List<Map.Entry<String, BigInteger>> unitMappings;
     @SuppressWarnings({ "PMD.FieldNamingConventions",
         "PMD.VariableNamingConventions" })
     private static final Pattern memorySize
@@ -55,6 +58,9 @@ public class ParseUtils {
             unitMap.put(unit, factor);
             factor = factor.multiply(scale);
         }
+        unitMappings = unitMap.entrySet().stream()
+            .sorted((a, b) -> -1 * a.getValue().compareTo(b.getValue()))
+            .toList();
     }
 
     /**
@@ -91,4 +97,20 @@ public class ParseUtils {
             .toBigInteger();
     }
 
+    /**
+     * Format memory size for humans.
+     *
+     * @param size the size
+     * @return the string
+     */
+    public static String formatMemory(BigInteger size) {
+        for (var mapping : unitMappings) {
+            if (size.compareTo(mapping.getValue()) >= 0
+                && size.mod(mapping.getValue()).equals(BigInteger.ZERO)) {
+                return size.divide(mapping.getValue()).toString()
+                    + " " + mapping.getKey();
+            }
+        }
+        return size.toString();
+    }
 }

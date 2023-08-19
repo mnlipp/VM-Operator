@@ -85,7 +85,7 @@ data:
         # cause the corresponding property to be omitted from the "-smp" option.
         # If currentCpus is greater than maximumCpus, the latter is adjusted.
         <#if cr.spec.vm.maximumCpus?? >
-        maximumCpus: ${ cr.spec.vm.maximumCpus.asInt?c }
+        maximumCpus: ${ parseQuantity(cr.spec.vm.maximumCpus.asString)?c }
         </#if>
         <#if cr.spec.vm.cpuTopology?? >
         cpuSockets: ${ cr.spec.vm.cpuTopology.cpuSockets.asInt?c }
@@ -94,14 +94,14 @@ data:
         threadsPerCore: ${ cr.spec.vm.cpuTopology.threadsPerCore.asInt?c }
         </#if>
         <#if cr.spec.vm.currentCpus?? >
-        currentCpus: ${ cr.spec.vm.currentCpus.asInt?c }
+        currentCpus: ${ parseQuantity(cr.spec.vm.currentCpus.asString)?c }
         </#if>
         
         # RAM settings
         # Maximum defaults to 1G
-        maximumRam: "${ cr.spec.vm.maximumRam.asString }"
+        maximumRam: "${ formatMemory(parseQuantity(cr.spec.vm.maximumRam.asString)) }"
         <#if cr.spec.vm.currentRam?? >
-        currentRam: "${ cr.spec.vm.currentRam.asString }"
+        currentRam: "${ formatMemory(parseQuantity(cr.spec.vm.currentRam.asString)) }"
         </#if>
         
         # RTC settings.
