@@ -311,6 +311,9 @@ public class Runner extends Component {
                 .ofNullable(config.template).orElse(DEFAULT_TEMPLATE));
             Files.deleteIfExists(templatePath);
             Files.copy(sourcePath, templatePath);
+            logger.fine(() -> "Using template " + sourcePath);
+        } else {
+            logger.fine(() -> "Using saved template.");
         }
 
         // Configure data model
