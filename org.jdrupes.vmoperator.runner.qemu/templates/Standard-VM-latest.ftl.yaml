@@ -52,12 +52,14 @@
     - [ "-global", "ICH9-LPC.disable_s3=1" ]
     - [ "-global", "ICH9-LPC.disable_s4=1" ]
     <#if firmwareRom??>
-    # * Provide ROM/EEPROM devices (instead of built-in BIOS)
-    - [ "-blockdev", "node-name=fw-rom-file,driver=file,cache.direct=on,\
+    # * Provide ROM/EEPROM devices (instead of built-in BIOS).
+    #   Don't use cache.direct=on for these as this can results in
+    #   incredibly bad performance when booting.
+    - [ "-blockdev", "node-name=fw-rom-file,driver=file,\
         filename=${ firmwareRom },auto-read-only=true,discard=unmap" ]
     - [ "-blockdev", "node-name=fw-rom-device,driver=raw,\
         read-only=true,file=fw-rom-file" ]
-    - [ "-blockdev", "node-name=fw-eeprom-file,driver=file,cache.direct=on,\
+    - [ "-blockdev", "node-name=fw-eeprom-file,driver=file,\
         filename=${ firmwareVars },auto-read-only=true,discard=unmap" ]
     - [ "-blockdev", "node-name=fw-eeprom-device,driver=raw,\
         read-only=false,file=fw-eeprom-file" ]
