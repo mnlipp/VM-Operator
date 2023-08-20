@@ -924,6 +924,7 @@ spec:
                   description: >-
                     Runner template configuration.
                   type: object
+                  default: {}
                   properties:
                     source:
                       type: string
