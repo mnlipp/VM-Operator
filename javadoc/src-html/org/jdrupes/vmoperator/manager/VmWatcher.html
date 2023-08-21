@@ -212,94 +212,99 @@
 <span class="source-line-no">199</span><span id="line-199">        return result;</span>
 <span class="source-line-no">200</span><span id="line-200">    }</span>
 <span class="source-line-no">201</span><span id="line-201"></span>
-<span class="source-line-no">202</span><span id="line-202">    @SuppressWarnings("PMD.CognitiveComplexity")</span>
-<span class="source-line-no">203</span><span id="line-203">    private void watchVmDefs(V1APIResource crd, String version) {</span>
-<span class="source-line-no">204</span><span id="line-204">        @SuppressWarnings({ "PMD.AvoidInstantiatingObjectsInLoops",</span>
-<span class="source-line-no">205</span><span id="line-205">            "PMD.AvoidLiteralsInIfCondition", "PMD.AvoidCatchingThrowable" })</span>
-<span class="source-line-no">206</span><span id="line-206">        var watcher = new Thread(() -&gt; {</span>
-<span class="source-line-no">207</span><span id="line-207">            try {</span>
-<span class="source-line-no">208</span><span id="line-208">                // Watch sometimes terminates without apparent reason.</span>
-<span class="source-line-no">209</span><span id="line-209">                while (true) {</span>
-<span class="source-line-no">210</span><span id="line-210">                    Instant started = Instant.now();</span>
-<span class="source-line-no">211</span><span id="line-211">                    var client = Config.defaultClient();</span>
-<span class="source-line-no">212</span><span id="line-212">                    var coa = new CustomObjectsApi(client);</span>
-<span class="source-line-no">213</span><span id="line-213">                    var call = coa.listNamespacedCustomObjectCall(VM_OP_GROUP,</span>
-<span class="source-line-no">214</span><span id="line-214">                        version, namespaceToWatch, crd.getName(), null, false,</span>
-<span class="source-line-no">215</span><span id="line-215">                        null, null, null, null, null, null, null, true, null);</span>
-<span class="source-line-no">216</span><span id="line-216">                    try (Watch&lt;V1Namespace&gt; watch</span>
-<span class="source-line-no">217</span><span id="line-217">                        = Watch.createWatch(client, call,</span>
-<span class="source-line-no">218</span><span id="line-218">                            new TypeToken&lt;Watch.Response&lt;V1Namespace&gt;&gt;() {</span>
-<span class="source-line-no">219</span><span id="line-219">                            }.getType())) {</span>
-<span class="source-line-no">220</span><span id="line-220">                        for (Watch.Response&lt;V1Namespace&gt; item : watch) {</span>
-<span class="source-line-no">221</span><span id="line-221">                            handleVmDefinitionChange(crd, item);</span>
-<span class="source-line-no">222</span><span id="line-222">                        }</span>
-<span class="source-line-no">223</span><span id="line-223">                    } catch (Throwable e) {</span>
-<span class="source-line-no">224</span><span id="line-224">                        logger.log(Level.FINE, e, () -&gt; "Probem watching "</span>
-<span class="source-line-no">225</span><span id="line-225">                            + "(retrying): " + e.getMessage());</span>
-<span class="source-line-no">226</span><span id="line-226">                        var runningFor = Duration</span>
-<span class="source-line-no">227</span><span id="line-227">                            .between(started, Instant.now()).getSeconds();</span>
-<span class="source-line-no">228</span><span id="line-228">                        if (runningFor &lt; 5) {</span>
-<span class="source-line-no">229</span><span id="line-229">                            logger.log(Level.FINE, e, () -&gt; "Waiting... ");</span>
-<span class="source-line-no">230</span><span id="line-230">                            try {</span>
-<span class="source-line-no">231</span><span id="line-231">                                Thread.sleep(5000 - runningFor * 1000);</span>
-<span class="source-line-no">232</span><span id="line-232">                            } catch (InterruptedException e1) {</span>
-<span class="source-line-no">233</span><span id="line-233">                                continue;</span>
-<span class="source-line-no">234</span><span id="line-234">                            }</span>
-<span class="source-line-no">235</span><span id="line-235">                            logger.log(Level.FINE, e, () -&gt; "Restarting");</span>
-<span class="source-line-no">236</span><span id="line-236">                        }</span>
-<span class="source-line-no">237</span><span id="line-237">                    }</span>
-<span class="source-line-no">238</span><span id="line-238">                }</span>
-<span class="source-line-no">239</span><span id="line-239">            } catch (IOException | ApiException e) {</span>
-<span class="source-line-no">240</span><span id="line-240">                logger.log(Level.SEVERE, e, () -&gt; "Probem watching: "</span>
-<span class="source-line-no">241</span><span id="line-241">                    + e.getMessage());</span>
-<span class="source-line-no">242</span><span id="line-242">            }</span>
-<span class="source-line-no">243</span><span id="line-243">            fire(new Stop());</span>
-<span class="source-line-no">244</span><span id="line-244">        });</span>
-<span class="source-line-no">245</span><span id="line-245">        watcher.setDaemon(true);</span>
-<span class="source-line-no">246</span><span id="line-246">        watcher.start();</span>
-<span class="source-line-no">247</span><span id="line-247">    }</span>
-<span class="source-line-no">248</span><span id="line-248"></span>
-<span class="source-line-no">249</span><span id="line-249">    private void handleVmDefinitionChange(V1APIResource vmsCrd,</span>
-<span class="source-line-no">250</span><span id="line-250">            Watch.Response&lt;V1Namespace&gt; item) {</span>
-<span class="source-line-no">251</span><span id="line-251">        V1ObjectMeta metadata = item.object.getMetadata();</span>
-<span class="source-line-no">252</span><span id="line-252">        VmChannel channel = channels.computeIfAbsent(metadata.getName(),</span>
-<span class="source-line-no">253</span><span id="line-253">            k -&gt; {</span>
-<span class="source-line-no">254</span><span id="line-254">                try {</span>
-<span class="source-line-no">255</span><span id="line-255">                    return new VmChannel(channel(), newEventPipeline(),</span>
-<span class="source-line-no">256</span><span id="line-256">                        Config.defaultClient());</span>
-<span class="source-line-no">257</span><span id="line-257">                } catch (IOException e) {</span>
-<span class="source-line-no">258</span><span id="line-258">                    logger.log(Level.SEVERE, e, () -&gt; "Failed to create client"</span>
-<span class="source-line-no">259</span><span id="line-259">                        + " for handling changes: " + e.getMessage());</span>
-<span class="source-line-no">260</span><span id="line-260">                    return null;</span>
-<span class="source-line-no">261</span><span id="line-261">                }</span>
-<span class="source-line-no">262</span><span id="line-262">            });</span>
-<span class="source-line-no">263</span><span id="line-263">        if (channel == null) {</span>
-<span class="source-line-no">264</span><span id="line-264">            return;</span>
-<span class="source-line-no">265</span><span id="line-265">        }</span>
-<span class="source-line-no">266</span><span id="line-266"></span>
-<span class="source-line-no">267</span><span id="line-267">        // Filter duplicates</span>
-<span class="source-line-no">268</span><span id="line-268">        if (!"DELETED".equals(item.type) &amp;&amp; !channel</span>
-<span class="source-line-no">269</span><span id="line-269">            .setGeneration(item.object.getMetadata().getGeneration())) {</span>
-<span class="source-line-no">270</span><span id="line-270">            return;</span>
-<span class="source-line-no">271</span><span id="line-271">        }</span>
-<span class="source-line-no">272</span><span id="line-272">        channel.pipeline().fire(new VmDefChanged(VmDefChanged.Type</span>
-<span class="source-line-no">273</span><span id="line-273">            .valueOf(item.type), vmsCrd, item.object), channel);</span>
-<span class="source-line-no">274</span><span id="line-274">    }</span>
-<span class="source-line-no">275</span><span id="line-275"></span>
-<span class="source-line-no">276</span><span id="line-276">    /**</span>
-<span class="source-line-no">277</span><span id="line-277">     * Remove VM channel when VM is deleted.</span>
-<span class="source-line-no">278</span><span id="line-278">     *</span>
-<span class="source-line-no">279</span><span id="line-279">     * @param event the event</span>
-<span class="source-line-no">280</span><span id="line-280">     * @param channel the channel</span>
-<span class="source-line-no">281</span><span id="line-281">     */</span>
-<span class="source-line-no">282</span><span id="line-282">    @Handler(priority = -10_000)</span>
-<span class="source-line-no">283</span><span id="line-283">    public void onVmDefChanged(VmDefChanged event, VmChannel channel) {</span>
-<span class="source-line-no">284</span><span id="line-284">        if (event.type() == Type.DELETED) {</span>
-<span class="source-line-no">285</span><span id="line-285">            channels.remove(event.object().getMetadata().getName());</span>
-<span class="source-line-no">286</span><span id="line-286">        }</span>
-<span class="source-line-no">287</span><span id="line-287">    }</span>
-<span class="source-line-no">288</span><span id="line-288"></span>
-<span class="source-line-no">289</span><span id="line-289">}</span>
+<span class="source-line-no">202</span><span id="line-202">    private void watchVmDefs(V1APIResource crd, String version) {</span>
+<span class="source-line-no">203</span><span id="line-203">        @SuppressWarnings({ "PMD.AvoidInstantiatingObjectsInLoops",</span>
+<span class="source-line-no">204</span><span id="line-204">            "PMD.AvoidCatchingThrowable", "PMD.AvoidCatchingGenericException" })</span>
+<span class="source-line-no">205</span><span id="line-205">        var watcher = new Thread(() -&gt; {</span>
+<span class="source-line-no">206</span><span id="line-206">            try {</span>
+<span class="source-line-no">207</span><span id="line-207">                // Watch sometimes terminates without apparent reason.</span>
+<span class="source-line-no">208</span><span id="line-208">                while (true) {</span>
+<span class="source-line-no">209</span><span id="line-209">                    Instant startedAt = Instant.now();</span>
+<span class="source-line-no">210</span><span id="line-210">                    var client = Config.defaultClient();</span>
+<span class="source-line-no">211</span><span id="line-211">                    var coa = new CustomObjectsApi(client);</span>
+<span class="source-line-no">212</span><span id="line-212">                    var call = coa.listNamespacedCustomObjectCall(VM_OP_GROUP,</span>
+<span class="source-line-no">213</span><span id="line-213">                        version, namespaceToWatch, crd.getName(), null, false,</span>
+<span class="source-line-no">214</span><span id="line-214">                        null, null, null, null, null, null, null, true, null);</span>
+<span class="source-line-no">215</span><span id="line-215">                    try (Watch&lt;V1Namespace&gt; watch</span>
+<span class="source-line-no">216</span><span id="line-216">                        = Watch.createWatch(client, call,</span>
+<span class="source-line-no">217</span><span id="line-217">                            new TypeToken&lt;Watch.Response&lt;V1Namespace&gt;&gt;() {</span>
+<span class="source-line-no">218</span><span id="line-218">                            }.getType())) {</span>
+<span class="source-line-no">219</span><span id="line-219">                        for (Watch.Response&lt;V1Namespace&gt; item : watch) {</span>
+<span class="source-line-no">220</span><span id="line-220">                            handleVmDefinitionChange(crd, item);</span>
+<span class="source-line-no">221</span><span id="line-221">                        }</span>
+<span class="source-line-no">222</span><span id="line-222">                    } catch (IOException | ApiException | RuntimeException e) {</span>
+<span class="source-line-no">223</span><span id="line-223">                        logger.log(Level.FINE, e, () -&gt; "Problem watching \""</span>
+<span class="source-line-no">224</span><span id="line-224">                            + crd.getName() + "\" (will retry): "</span>
+<span class="source-line-no">225</span><span id="line-225">                            + e.getMessage());</span>
+<span class="source-line-no">226</span><span id="line-226">                        delayRestart(startedAt);</span>
+<span class="source-line-no">227</span><span id="line-227">                    }</span>
+<span class="source-line-no">228</span><span id="line-228">                }</span>
+<span class="source-line-no">229</span><span id="line-229">            } catch (Throwable e) {</span>
+<span class="source-line-no">230</span><span id="line-230">                logger.log(Level.SEVERE, e, () -&gt; "Probem watching: "</span>
+<span class="source-line-no">231</span><span id="line-231">                    + e.getMessage());</span>
+<span class="source-line-no">232</span><span id="line-232">            }</span>
+<span class="source-line-no">233</span><span id="line-233">            fire(new Stop());</span>
+<span class="source-line-no">234</span><span id="line-234">        });</span>
+<span class="source-line-no">235</span><span id="line-235">        watcher.setDaemon(true);</span>
+<span class="source-line-no">236</span><span id="line-236">        watcher.start();</span>
+<span class="source-line-no">237</span><span id="line-237">    }</span>
+<span class="source-line-no">238</span><span id="line-238"></span>
+<span class="source-line-no">239</span><span id="line-239">    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")</span>
+<span class="source-line-no">240</span><span id="line-240">    private void delayRestart(Instant started) {</span>
+<span class="source-line-no">241</span><span id="line-241">        var runningFor = Duration</span>
+<span class="source-line-no">242</span><span id="line-242">            .between(started, Instant.now()).toMillis();</span>
+<span class="source-line-no">243</span><span id="line-243">        if (runningFor &lt; 5000) {</span>
+<span class="source-line-no">244</span><span id="line-244">            logger.log(Level.FINE, () -&gt; "Waiting... ");</span>
+<span class="source-line-no">245</span><span id="line-245">            try {</span>
+<span class="source-line-no">246</span><span id="line-246">                Thread.sleep(5000 - runningFor);</span>
+<span class="source-line-no">247</span><span id="line-247">            } catch (InterruptedException e1) { // NOPMD</span>
+<span class="source-line-no">248</span><span id="line-248">                // Retry</span>
+<span class="source-line-no">249</span><span id="line-249">            }</span>
+<span class="source-line-no">250</span><span id="line-250">            logger.log(Level.FINE, () -&gt; "Retrying");</span>
+<span class="source-line-no">251</span><span id="line-251">        }</span>
+<span class="source-line-no">252</span><span id="line-252">    }</span>
+<span class="source-line-no">253</span><span id="line-253"></span>
+<span class="source-line-no">254</span><span id="line-254">    private void handleVmDefinitionChange(V1APIResource vmsCrd,</span>
+<span class="source-line-no">255</span><span id="line-255">            Watch.Response&lt;V1Namespace&gt; item) {</span>
+<span class="source-line-no">256</span><span id="line-256">        V1ObjectMeta metadata = item.object.getMetadata();</span>
+<span class="source-line-no">257</span><span id="line-257">        VmChannel channel = channels.computeIfAbsent(metadata.getName(),</span>
+<span class="source-line-no">258</span><span id="line-258">            k -&gt; {</span>
+<span class="source-line-no">259</span><span id="line-259">                try {</span>
+<span class="source-line-no">260</span><span id="line-260">                    return new VmChannel(channel(), newEventPipeline(),</span>
+<span class="source-line-no">261</span><span id="line-261">                        Config.defaultClient());</span>
+<span class="source-line-no">262</span><span id="line-262">                } catch (IOException e) {</span>
+<span class="source-line-no">263</span><span id="line-263">                    logger.log(Level.SEVERE, e, () -&gt; "Failed to create client"</span>
+<span class="source-line-no">264</span><span id="line-264">                        + " for handling changes: " + e.getMessage());</span>
+<span class="source-line-no">265</span><span id="line-265">                    return null;</span>
+<span class="source-line-no">266</span><span id="line-266">                }</span>
+<span class="source-line-no">267</span><span id="line-267">            });</span>
+<span class="source-line-no">268</span><span id="line-268">        if (channel == null) {</span>
+<span class="source-line-no">269</span><span id="line-269">            return;</span>
+<span class="source-line-no">270</span><span id="line-270">        }</span>
+<span class="source-line-no">271</span><span id="line-271"></span>
+<span class="source-line-no">272</span><span id="line-272">        // Filter duplicates</span>
+<span class="source-line-no">273</span><span id="line-273">        if (!"DELETED".equals(item.type) &amp;&amp; !channel</span>
+<span class="source-line-no">274</span><span id="line-274">            .setGeneration(item.object.getMetadata().getGeneration())) {</span>
+<span class="source-line-no">275</span><span id="line-275">            return;</span>
+<span class="source-line-no">276</span><span id="line-276">        }</span>
+<span class="source-line-no">277</span><span id="line-277">        channel.pipeline().fire(new VmDefChanged(VmDefChanged.Type</span>
+<span class="source-line-no">278</span><span id="line-278">            .valueOf(item.type), vmsCrd, item.object), channel);</span>
+<span class="source-line-no">279</span><span id="line-279">    }</span>
+<span class="source-line-no">280</span><span id="line-280"></span>
+<span class="source-line-no">281</span><span id="line-281">    /**</span>
+<span class="source-line-no">282</span><span id="line-282">     * Remove VM channel when VM is deleted.</span>
+<span class="source-line-no">283</span><span id="line-283">     *</span>
+<span class="source-line-no">284</span><span id="line-284">     * @param event the event</span>
+<span class="source-line-no">285</span><span id="line-285">     * @param channel the channel</span>
+<span class="source-line-no">286</span><span id="line-286">     */</span>
+<span class="source-line-no">287</span><span id="line-287">    @Handler(priority = -10_000)</span>
+<span class="source-line-no">288</span><span id="line-288">    public void onVmDefChanged(VmDefChanged event, VmChannel channel) {</span>
+<span class="source-line-no">289</span><span id="line-289">        if (event.type() == Type.DELETED) {</span>
+<span class="source-line-no">290</span><span id="line-290">            channels.remove(event.object().getMetadata().getName());</span>
+<span class="source-line-no">291</span><span id="line-291">        }</span>
+<span class="source-line-no">292</span><span id="line-292">    }</span>
+<span class="source-line-no">293</span><span id="line-293"></span>
+<span class="source-line-no">294</span><span id="line-294">}</span>
 
 
 
