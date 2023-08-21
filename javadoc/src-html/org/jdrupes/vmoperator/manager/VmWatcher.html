@@ -48,242 +48,258 @@
 <span class="source-line-no">035</span><span id="line-35">import java.io.IOException;</span>
 <span class="source-line-no">036</span><span id="line-36">import java.nio.file.Files;</span>
 <span class="source-line-no">037</span><span id="line-37">import java.nio.file.Path;</span>
-<span class="source-line-no">038</span><span id="line-38">import java.util.HashSet;</span>
-<span class="source-line-no">039</span><span id="line-39">import java.util.LinkedList;</span>
-<span class="source-line-no">040</span><span id="line-40">import java.util.List;</span>
-<span class="source-line-no">041</span><span id="line-41">import java.util.Map;</span>
-<span class="source-line-no">042</span><span id="line-42">import java.util.Set;</span>
-<span class="source-line-no">043</span><span id="line-43">import java.util.concurrent.ConcurrentHashMap;</span>
-<span class="source-line-no">044</span><span id="line-44">import java.util.logging.Level;</span>
-<span class="source-line-no">045</span><span id="line-45">import static org.jdrupes.vmoperator.manager.Constants.VM_OP_GROUP;</span>
-<span class="source-line-no">046</span><span id="line-46">import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM;</span>
-<span class="source-line-no">047</span><span id="line-47">import org.jdrupes.vmoperator.manager.VmDefChanged.Type;</span>
-<span class="source-line-no">048</span><span id="line-48">import org.jgrapes.core.Channel;</span>
-<span class="source-line-no">049</span><span id="line-49">import org.jgrapes.core.Component;</span>
-<span class="source-line-no">050</span><span id="line-50">import org.jgrapes.core.Components;</span>
-<span class="source-line-no">051</span><span id="line-51">import org.jgrapes.core.annotation.Handler;</span>
-<span class="source-line-no">052</span><span id="line-52">import org.jgrapes.core.events.Start;</span>
-<span class="source-line-no">053</span><span id="line-53">import org.jgrapes.core.events.Stop;</span>
-<span class="source-line-no">054</span><span id="line-54">import org.jgrapes.util.events.ConfigurationUpdate;</span>
-<span class="source-line-no">055</span><span id="line-55"></span>
-<span class="source-line-no">056</span><span id="line-56">/**</span>
-<span class="source-line-no">057</span><span id="line-57"> * Watches for changes of VM definitions.</span>
-<span class="source-line-no">058</span><span id="line-58"> */</span>
-<span class="source-line-no">059</span><span id="line-59">@SuppressWarnings("PMD.DataflowAnomalyAnalysis")</span>
-<span class="source-line-no">060</span><span id="line-60">public class VmWatcher extends Component {</span>
-<span class="source-line-no">061</span><span id="line-61"></span>
-<span class="source-line-no">062</span><span id="line-62">    private String namespaceToWatch;</span>
-<span class="source-line-no">063</span><span id="line-63">    private final Map&lt;String, VmChannel&gt; channels = new ConcurrentHashMap&lt;&gt;();</span>
-<span class="source-line-no">064</span><span id="line-64"></span>
-<span class="source-line-no">065</span><span id="line-65">    /**</span>
-<span class="source-line-no">066</span><span id="line-66">     * Instantiates a new VM definition watcher.</span>
-<span class="source-line-no">067</span><span id="line-67">     *</span>
-<span class="source-line-no">068</span><span id="line-68">     * @param componentChannel the component channel</span>
-<span class="source-line-no">069</span><span id="line-69">     */</span>
-<span class="source-line-no">070</span><span id="line-70">    public VmWatcher(Channel componentChannel) {</span>
-<span class="source-line-no">071</span><span id="line-71">        super(componentChannel);</span>
-<span class="source-line-no">072</span><span id="line-72">    }</span>
-<span class="source-line-no">073</span><span id="line-73"></span>
-<span class="source-line-no">074</span><span id="line-74">    /**</span>
-<span class="source-line-no">075</span><span id="line-75">     * Configure the component.</span>
-<span class="source-line-no">076</span><span id="line-76">     *</span>
-<span class="source-line-no">077</span><span id="line-77">     * @param event the event</span>
-<span class="source-line-no">078</span><span id="line-78">     */</span>
-<span class="source-line-no">079</span><span id="line-79">    @Handler</span>
-<span class="source-line-no">080</span><span id="line-80">    public void onConfigurationUpdate(ConfigurationUpdate event) {</span>
-<span class="source-line-no">081</span><span id="line-81">        event.structured(Components.manager(parent()).componentPath())</span>
-<span class="source-line-no">082</span><span id="line-82">            .ifPresent(c -&gt; {</span>
-<span class="source-line-no">083</span><span id="line-83">                if (c.containsKey("namespace")) {</span>
-<span class="source-line-no">084</span><span id="line-84">                    namespaceToWatch = (String) c.get("namespace");</span>
-<span class="source-line-no">085</span><span id="line-85">                }</span>
-<span class="source-line-no">086</span><span id="line-86">            });</span>
-<span class="source-line-no">087</span><span id="line-87">    }</span>
-<span class="source-line-no">088</span><span id="line-88"></span>
-<span class="source-line-no">089</span><span id="line-89">    /**</span>
-<span class="source-line-no">090</span><span id="line-90">     * Handle the start event.</span>
-<span class="source-line-no">091</span><span id="line-91">     *</span>
-<span class="source-line-no">092</span><span id="line-92">     * @param event the event</span>
-<span class="source-line-no">093</span><span id="line-93">     * @throws IOException </span>
-<span class="source-line-no">094</span><span id="line-94">     * @throws ApiException </span>
-<span class="source-line-no">095</span><span id="line-95">     */</span>
-<span class="source-line-no">096</span><span id="line-96">    @Handler(priority = 10)</span>
-<span class="source-line-no">097</span><span id="line-97">    public void onStart(Start event) throws IOException, ApiException {</span>
-<span class="source-line-no">098</span><span id="line-98">        // Get namespace</span>
-<span class="source-line-no">099</span><span id="line-99">        if (namespaceToWatch == null) {</span>
-<span class="source-line-no">100</span><span id="line-100">            var path = Path</span>
-<span class="source-line-no">101</span><span id="line-101">                .of("/var/run/secrets/kubernetes.io/serviceaccount/namespace");</span>
-<span class="source-line-no">102</span><span id="line-102">            if (Files.isReadable(path)) {</span>
-<span class="source-line-no">103</span><span id="line-103">                namespaceToWatch = Files.lines(path).findFirst().orElse(null);</span>
-<span class="source-line-no">104</span><span id="line-104">            }</span>
-<span class="source-line-no">105</span><span id="line-105">        }</span>
-<span class="source-line-no">106</span><span id="line-106">        if (namespaceToWatch == null) {</span>
-<span class="source-line-no">107</span><span id="line-107">            logger.severe(() -&gt; "Namespace to watch not configured and"</span>
-<span class="source-line-no">108</span><span id="line-108">                + " no file in kubernetes directory.");</span>
-<span class="source-line-no">109</span><span id="line-109">            event.cancel(true);</span>
-<span class="source-line-no">110</span><span id="line-110">            fire(new Stop());</span>
-<span class="source-line-no">111</span><span id="line-111">            return;</span>
-<span class="source-line-no">112</span><span id="line-112">        }</span>
-<span class="source-line-no">113</span><span id="line-113">        logger</span>
-<span class="source-line-no">114</span><span id="line-114">            .fine(() -&gt; "Controlling namespace \"" + namespaceToWatch + "\".");</span>
-<span class="source-line-no">115</span><span id="line-115"></span>
-<span class="source-line-no">116</span><span id="line-116">        // Get all our API versions</span>
-<span class="source-line-no">117</span><span id="line-117">        var client = Config.defaultClient();</span>
-<span class="source-line-no">118</span><span id="line-118">        var apis = new ApisApi(client).getAPIVersions();</span>
-<span class="source-line-no">119</span><span id="line-119">        var vmOpApiVersions = apis.getGroups().stream()</span>
-<span class="source-line-no">120</span><span id="line-120">            .filter(g -&gt; g.getName().equals(VM_OP_GROUP)).findFirst()</span>
-<span class="source-line-no">121</span><span id="line-121">            .map(V1APIGroup::getVersions).stream().flatMap(l -&gt; l.stream())</span>
-<span class="source-line-no">122</span><span id="line-122">            .map(V1GroupVersionForDiscovery::getVersion).toList();</span>
-<span class="source-line-no">123</span><span id="line-123"></span>
-<span class="source-line-no">124</span><span id="line-124">        // Remove left overs</span>
-<span class="source-line-no">125</span><span id="line-125">        var coa = new CustomObjectsApi(client);</span>
-<span class="source-line-no">126</span><span id="line-126">        purge(client, coa, vmOpApiVersions);</span>
-<span class="source-line-no">127</span><span id="line-127"></span>
-<span class="source-line-no">128</span><span id="line-128">        // Start a watcher thread for each existing CRD version.</span>
-<span class="source-line-no">129</span><span id="line-129">        // The watcher will send us an "ADDED" for each existing VM.</span>
-<span class="source-line-no">130</span><span id="line-130">        for (var version : vmOpApiVersions) {</span>
-<span class="source-line-no">131</span><span id="line-131">            coa.getAPIResources(VM_OP_GROUP, version)</span>
-<span class="source-line-no">132</span><span id="line-132">                .getResources().stream()</span>
-<span class="source-line-no">133</span><span id="line-133">                .filter(r -&gt; Constants.VM_OP_KIND_VM.equals(r.getKind()))</span>
-<span class="source-line-no">134</span><span id="line-134">                .findFirst()</span>
-<span class="source-line-no">135</span><span id="line-135">                .ifPresent(crd -&gt; watchVmDefs(crd, version));</span>
-<span class="source-line-no">136</span><span id="line-136">        }</span>
-<span class="source-line-no">137</span><span id="line-137">    }</span>
-<span class="source-line-no">138</span><span id="line-138"></span>
-<span class="source-line-no">139</span><span id="line-139">    @SuppressWarnings({ "PMD.AvoidInstantiatingObjectsInLoops",</span>
-<span class="source-line-no">140</span><span id="line-140">        "PMD.CognitiveComplexity" })</span>
-<span class="source-line-no">141</span><span id="line-141">    private void purge(ApiClient client, CustomObjectsApi coa,</span>
-<span class="source-line-no">142</span><span id="line-142">            List&lt;String&gt; vmOpApiVersions) throws ApiException {</span>
-<span class="source-line-no">143</span><span id="line-143">        // Get existing CRs (VMs)</span>
-<span class="source-line-no">144</span><span id="line-144">        Set&lt;String&gt; known = new HashSet&lt;&gt;();</span>
-<span class="source-line-no">145</span><span id="line-145">        for (var version : vmOpApiVersions) {</span>
-<span class="source-line-no">146</span><span id="line-146">            // Get all known CR instances.</span>
-<span class="source-line-no">147</span><span id="line-147">            coa.getAPIResources(VM_OP_GROUP, version)</span>
-<span class="source-line-no">148</span><span id="line-148">                .getResources().stream()</span>
-<span class="source-line-no">149</span><span id="line-149">                .filter(r -&gt; Constants.VM_OP_KIND_VM.equals(r.getKind()))</span>
-<span class="source-line-no">150</span><span id="line-150">                .findFirst()</span>
-<span class="source-line-no">151</span><span id="line-151">                .ifPresent(crd -&gt; known.addAll(getKnown(client, crd, version)));</span>
-<span class="source-line-no">152</span><span id="line-152">        }</span>
-<span class="source-line-no">153</span><span id="line-153"></span>
-<span class="source-line-no">154</span><span id="line-154">        ListOptions opts = new ListOptions();</span>
-<span class="source-line-no">155</span><span id="line-155">        opts.setLabelSelector(</span>
-<span class="source-line-no">156</span><span id="line-156">            "app.kubernetes.io/managed-by=" + Constants.VM_OP_NAME + ","</span>
-<span class="source-line-no">157</span><span id="line-157">                + "app.kubernetes.io/name=" + Constants.APP_NAME);</span>
-<span class="source-line-no">158</span><span id="line-158">        for (String resource : List.of("apps/v1/statefulsets",</span>
-<span class="source-line-no">159</span><span id="line-159">            "v1/configmaps", "v1/secrets")) {</span>
-<span class="source-line-no">160</span><span id="line-160">            var resParts = new LinkedList&lt;&gt;(List.of(resource.split("/")));</span>
-<span class="source-line-no">161</span><span id="line-161">            var group = resParts.size() == 3 ? resParts.poll() : "";</span>
-<span class="source-line-no">162</span><span id="line-162">            var version = resParts.poll();</span>
-<span class="source-line-no">163</span><span id="line-163">            var plural = resParts.poll();</span>
-<span class="source-line-no">164</span><span id="line-164">            // Get resources, selected by label</span>
-<span class="source-line-no">165</span><span id="line-165">            @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")</span>
-<span class="source-line-no">166</span><span id="line-166">            var api = new DynamicKubernetesApi(group, version, plural, client);</span>
-<span class="source-line-no">167</span><span id="line-167">            var listObj = api.list(namespaceToWatch, opts).getObject();</span>
-<span class="source-line-no">168</span><span id="line-168">            if (listObj == null) {</span>
-<span class="source-line-no">169</span><span id="line-169">                continue;</span>
-<span class="source-line-no">170</span><span id="line-170">            }</span>
-<span class="source-line-no">171</span><span id="line-171">            for (var obj : listObj.getItems()) {</span>
-<span class="source-line-no">172</span><span id="line-172">                String instance = obj.getMetadata().getLabels()</span>
-<span class="source-line-no">173</span><span id="line-173">                    .get("app.kubernetes.io/instance");</span>
-<span class="source-line-no">174</span><span id="line-174">                if (!known.contains(instance)) {</span>
-<span class="source-line-no">175</span><span id="line-175">                    var resName = obj.getMetadata().getName();</span>
-<span class="source-line-no">176</span><span id="line-176">                    var result = api.delete(namespaceToWatch, resName);</span>
-<span class="source-line-no">177</span><span id="line-177">                    if (!result.isSuccess()) {</span>
-<span class="source-line-no">178</span><span id="line-178">                        logger.warning(() -&gt; "Cannot cleanup resource \""</span>
-<span class="source-line-no">179</span><span id="line-179">                            + resName + "\": " + result.toString());</span>
-<span class="source-line-no">180</span><span id="line-180">                    }</span>
-<span class="source-line-no">181</span><span id="line-181">                }</span>
-<span class="source-line-no">182</span><span id="line-182">            }</span>
-<span class="source-line-no">183</span><span id="line-183">        }</span>
-<span class="source-line-no">184</span><span id="line-184">    }</span>
-<span class="source-line-no">185</span><span id="line-185"></span>
-<span class="source-line-no">186</span><span id="line-186">    private Set&lt;String&gt; getKnown(ApiClient client, V1APIResource crd,</span>
-<span class="source-line-no">187</span><span id="line-187">            String version) {</span>
-<span class="source-line-no">188</span><span id="line-188">        Set&lt;String&gt; result = new HashSet&lt;&gt;();</span>
-<span class="source-line-no">189</span><span id="line-189">        var api = new DynamicKubernetesApi(VM_OP_GROUP, version,</span>
-<span class="source-line-no">190</span><span id="line-190">            crd.getName(), client);</span>
-<span class="source-line-no">191</span><span id="line-191">        for (var item : api.list(namespaceToWatch).getObject().getItems()) {</span>
-<span class="source-line-no">192</span><span id="line-192">            if (!VM_OP_KIND_VM.equals(item.getKind())) {</span>
-<span class="source-line-no">193</span><span id="line-193">                continue;</span>
-<span class="source-line-no">194</span><span id="line-194">            }</span>
-<span class="source-line-no">195</span><span id="line-195">            result.add(item.getMetadata().getName());</span>
-<span class="source-line-no">196</span><span id="line-196">        }</span>
-<span class="source-line-no">197</span><span id="line-197">        return result;</span>
-<span class="source-line-no">198</span><span id="line-198">    }</span>
-<span class="source-line-no">199</span><span id="line-199"></span>
-<span class="source-line-no">200</span><span id="line-200">    private void watchVmDefs(V1APIResource crd, String version) {</span>
-<span class="source-line-no">201</span><span id="line-201">        @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")</span>
-<span class="source-line-no">202</span><span id="line-202">        var watcher = new Thread(() -&gt; {</span>
-<span class="source-line-no">203</span><span id="line-203">            try {</span>
-<span class="source-line-no">204</span><span id="line-204">                // Watch sometimes terminates without apparent reason.</span>
-<span class="source-line-no">205</span><span id="line-205">                while (true) {</span>
-<span class="source-line-no">206</span><span id="line-206">                    var client = Config.defaultClient();</span>
-<span class="source-line-no">207</span><span id="line-207">                    var coa = new CustomObjectsApi(client);</span>
-<span class="source-line-no">208</span><span id="line-208">                    var call = coa.listNamespacedCustomObjectCall(VM_OP_GROUP,</span>
-<span class="source-line-no">209</span><span id="line-209">                        version, namespaceToWatch, crd.getName(), null, false,</span>
-<span class="source-line-no">210</span><span id="line-210">                        null, null, null, null, null, null, null, true, null);</span>
-<span class="source-line-no">211</span><span id="line-211">                    try (Watch&lt;V1Namespace&gt; watch</span>
-<span class="source-line-no">212</span><span id="line-212">                        = Watch.createWatch(client, call,</span>
-<span class="source-line-no">213</span><span id="line-213">                            new TypeToken&lt;Watch.Response&lt;V1Namespace&gt;&gt;() {</span>
-<span class="source-line-no">214</span><span id="line-214">                            }.getType())) {</span>
-<span class="source-line-no">215</span><span id="line-215">                        for (Watch.Response&lt;V1Namespace&gt; item : watch) {</span>
-<span class="source-line-no">216</span><span id="line-216">                            handleVmDefinitionChange(crd, item);</span>
-<span class="source-line-no">217</span><span id="line-217">                        }</span>
-<span class="source-line-no">218</span><span id="line-218">                    } catch (IllegalStateException e) {</span>
-<span class="source-line-no">219</span><span id="line-219">                        logger.log(Level.FINE, e, () -&gt; "Probem watching "</span>
-<span class="source-line-no">220</span><span id="line-220">                            + "(retrying): " + e.getMessage());</span>
-<span class="source-line-no">221</span><span id="line-221">                    }</span>
-<span class="source-line-no">222</span><span id="line-222">                }</span>
-<span class="source-line-no">223</span><span id="line-223">            } catch (IOException | ApiException e) {</span>
-<span class="source-line-no">224</span><span id="line-224">                logger.log(Level.SEVERE, e, () -&gt; "Probem watching: "</span>
-<span class="source-line-no">225</span><span id="line-225">                    + e.getMessage());</span>
-<span class="source-line-no">226</span><span id="line-226">            }</span>
-<span class="source-line-no">227</span><span id="line-227">            fire(new Stop());</span>
-<span class="source-line-no">228</span><span id="line-228">        });</span>
-<span class="source-line-no">229</span><span id="line-229">        watcher.setDaemon(true);</span>
-<span class="source-line-no">230</span><span id="line-230">        watcher.start();</span>
-<span class="source-line-no">231</span><span id="line-231">    }</span>
-<span class="source-line-no">232</span><span id="line-232"></span>
-<span class="source-line-no">233</span><span id="line-233">    private void handleVmDefinitionChange(V1APIResource vmsCrd,</span>
-<span class="source-line-no">234</span><span id="line-234">            Watch.Response&lt;V1Namespace&gt; item) {</span>
-<span class="source-line-no">235</span><span id="line-235">        V1ObjectMeta metadata = item.object.getMetadata();</span>
-<span class="source-line-no">236</span><span id="line-236">        VmChannel channel = channels.computeIfAbsent(metadata.getName(),</span>
-<span class="source-line-no">237</span><span id="line-237">            k -&gt; {</span>
-<span class="source-line-no">238</span><span id="line-238">                try {</span>
-<span class="source-line-no">239</span><span id="line-239">                    return new VmChannel(channel(), newEventPipeline(),</span>
-<span class="source-line-no">240</span><span id="line-240">                        Config.defaultClient());</span>
-<span class="source-line-no">241</span><span id="line-241">                } catch (IOException e) {</span>
-<span class="source-line-no">242</span><span id="line-242">                    logger.log(Level.SEVERE, e, () -&gt; "Failed to create client"</span>
-<span class="source-line-no">243</span><span id="line-243">                        + " for handling changes: " + e.getMessage());</span>
-<span class="source-line-no">244</span><span id="line-244">                    return null;</span>
-<span class="source-line-no">245</span><span id="line-245">                }</span>
-<span class="source-line-no">246</span><span id="line-246">            });</span>
-<span class="source-line-no">247</span><span id="line-247">        if (channel == null) {</span>
-<span class="source-line-no">248</span><span id="line-248">            return;</span>
-<span class="source-line-no">249</span><span id="line-249">        }</span>
-<span class="source-line-no">250</span><span id="line-250"></span>
-<span class="source-line-no">251</span><span id="line-251">        // Filter duplicates</span>
-<span class="source-line-no">252</span><span id="line-252">        if (!"DELETED".equals(item.type) &amp;&amp; !channel</span>
-<span class="source-line-no">253</span><span id="line-253">            .setGeneration(item.object.getMetadata().getGeneration())) {</span>
-<span class="source-line-no">254</span><span id="line-254">            return;</span>
-<span class="source-line-no">255</span><span id="line-255">        }</span>
-<span class="source-line-no">256</span><span id="line-256">        channel.pipeline().fire(new VmDefChanged(VmDefChanged.Type</span>
-<span class="source-line-no">257</span><span id="line-257">            .valueOf(item.type), vmsCrd, item.object), channel);</span>
-<span class="source-line-no">258</span><span id="line-258">    }</span>
-<span class="source-line-no">259</span><span id="line-259"></span>
-<span class="source-line-no">260</span><span id="line-260">    /**</span>
-<span class="source-line-no">261</span><span id="line-261">     * Remove VM channel when VM is deleted.</span>
-<span class="source-line-no">262</span><span id="line-262">     *</span>
-<span class="source-line-no">263</span><span id="line-263">     * @param event the event</span>
-<span class="source-line-no">264</span><span id="line-264">     * @param channel the channel</span>
-<span class="source-line-no">265</span><span id="line-265">     */</span>
-<span class="source-line-no">266</span><span id="line-266">    @Handler(priority = -10_000)</span>
-<span class="source-line-no">267</span><span id="line-267">    public void onVmDefChanged(VmDefChanged event, VmChannel channel) {</span>
-<span class="source-line-no">268</span><span id="line-268">        if (event.type() == Type.DELETED) {</span>
-<span class="source-line-no">269</span><span id="line-269">            channels.remove(event.object().getMetadata().getName());</span>
-<span class="source-line-no">270</span><span id="line-270">        }</span>
-<span class="source-line-no">271</span><span id="line-271">    }</span>
-<span class="source-line-no">272</span><span id="line-272"></span>
-<span class="source-line-no">273</span><span id="line-273">}</span>
+<span class="source-line-no">038</span><span id="line-38">import java.time.Duration;</span>
+<span class="source-line-no">039</span><span id="line-39">import java.time.Instant;</span>
+<span class="source-line-no">040</span><span id="line-40">import java.util.HashSet;</span>
+<span class="source-line-no">041</span><span id="line-41">import java.util.LinkedList;</span>
+<span class="source-line-no">042</span><span id="line-42">import java.util.List;</span>
+<span class="source-line-no">043</span><span id="line-43">import java.util.Map;</span>
+<span class="source-line-no">044</span><span id="line-44">import java.util.Set;</span>
+<span class="source-line-no">045</span><span id="line-45">import java.util.concurrent.ConcurrentHashMap;</span>
+<span class="source-line-no">046</span><span id="line-46">import java.util.logging.Level;</span>
+<span class="source-line-no">047</span><span id="line-47">import static org.jdrupes.vmoperator.manager.Constants.VM_OP_GROUP;</span>
+<span class="source-line-no">048</span><span id="line-48">import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM;</span>
+<span class="source-line-no">049</span><span id="line-49">import org.jdrupes.vmoperator.manager.VmDefChanged.Type;</span>
+<span class="source-line-no">050</span><span id="line-50">import org.jgrapes.core.Channel;</span>
+<span class="source-line-no">051</span><span id="line-51">import org.jgrapes.core.Component;</span>
+<span class="source-line-no">052</span><span id="line-52">import org.jgrapes.core.Components;</span>
+<span class="source-line-no">053</span><span id="line-53">import org.jgrapes.core.annotation.Handler;</span>
+<span class="source-line-no">054</span><span id="line-54">import org.jgrapes.core.events.Start;</span>
+<span class="source-line-no">055</span><span id="line-55">import org.jgrapes.core.events.Stop;</span>
+<span class="source-line-no">056</span><span id="line-56">import org.jgrapes.util.events.ConfigurationUpdate;</span>
+<span class="source-line-no">057</span><span id="line-57"></span>
+<span class="source-line-no">058</span><span id="line-58">/**</span>
+<span class="source-line-no">059</span><span id="line-59"> * Watches for changes of VM definitions.</span>
+<span class="source-line-no">060</span><span id="line-60"> */</span>
+<span class="source-line-no">061</span><span id="line-61">@SuppressWarnings("PMD.DataflowAnomalyAnalysis")</span>
+<span class="source-line-no">062</span><span id="line-62">public class VmWatcher extends Component {</span>
+<span class="source-line-no">063</span><span id="line-63"></span>
+<span class="source-line-no">064</span><span id="line-64">    private String namespaceToWatch;</span>
+<span class="source-line-no">065</span><span id="line-65">    private final Map&lt;String, VmChannel&gt; channels = new ConcurrentHashMap&lt;&gt;();</span>
+<span class="source-line-no">066</span><span id="line-66"></span>
+<span class="source-line-no">067</span><span id="line-67">    /**</span>
+<span class="source-line-no">068</span><span id="line-68">     * Instantiates a new VM definition watcher.</span>
+<span class="source-line-no">069</span><span id="line-69">     *</span>
+<span class="source-line-no">070</span><span id="line-70">     * @param componentChannel the component channel</span>
+<span class="source-line-no">071</span><span id="line-71">     */</span>
+<span class="source-line-no">072</span><span id="line-72">    public VmWatcher(Channel componentChannel) {</span>
+<span class="source-line-no">073</span><span id="line-73">        super(componentChannel);</span>
+<span class="source-line-no">074</span><span id="line-74">    }</span>
+<span class="source-line-no">075</span><span id="line-75"></span>
+<span class="source-line-no">076</span><span id="line-76">    /**</span>
+<span class="source-line-no">077</span><span id="line-77">     * Configure the component.</span>
+<span class="source-line-no">078</span><span id="line-78">     *</span>
+<span class="source-line-no">079</span><span id="line-79">     * @param event the event</span>
+<span class="source-line-no">080</span><span id="line-80">     */</span>
+<span class="source-line-no">081</span><span id="line-81">    @Handler</span>
+<span class="source-line-no">082</span><span id="line-82">    public void onConfigurationUpdate(ConfigurationUpdate event) {</span>
+<span class="source-line-no">083</span><span id="line-83">        event.structured(Components.manager(parent()).componentPath())</span>
+<span class="source-line-no">084</span><span id="line-84">            .ifPresent(c -&gt; {</span>
+<span class="source-line-no">085</span><span id="line-85">                if (c.containsKey("namespace")) {</span>
+<span class="source-line-no">086</span><span id="line-86">                    namespaceToWatch = (String) c.get("namespace");</span>
+<span class="source-line-no">087</span><span id="line-87">                }</span>
+<span class="source-line-no">088</span><span id="line-88">            });</span>
+<span class="source-line-no">089</span><span id="line-89">    }</span>
+<span class="source-line-no">090</span><span id="line-90"></span>
+<span class="source-line-no">091</span><span id="line-91">    /**</span>
+<span class="source-line-no">092</span><span id="line-92">     * Handle the start event.</span>
+<span class="source-line-no">093</span><span id="line-93">     *</span>
+<span class="source-line-no">094</span><span id="line-94">     * @param event the event</span>
+<span class="source-line-no">095</span><span id="line-95">     * @throws IOException </span>
+<span class="source-line-no">096</span><span id="line-96">     * @throws ApiException </span>
+<span class="source-line-no">097</span><span id="line-97">     */</span>
+<span class="source-line-no">098</span><span id="line-98">    @Handler(priority = 10)</span>
+<span class="source-line-no">099</span><span id="line-99">    public void onStart(Start event) throws IOException, ApiException {</span>
+<span class="source-line-no">100</span><span id="line-100">        // Get namespace</span>
+<span class="source-line-no">101</span><span id="line-101">        if (namespaceToWatch == null) {</span>
+<span class="source-line-no">102</span><span id="line-102">            var path = Path</span>
+<span class="source-line-no">103</span><span id="line-103">                .of("/var/run/secrets/kubernetes.io/serviceaccount/namespace");</span>
+<span class="source-line-no">104</span><span id="line-104">            if (Files.isReadable(path)) {</span>
+<span class="source-line-no">105</span><span id="line-105">                namespaceToWatch = Files.lines(path).findFirst().orElse(null);</span>
+<span class="source-line-no">106</span><span id="line-106">            }</span>
+<span class="source-line-no">107</span><span id="line-107">        }</span>
+<span class="source-line-no">108</span><span id="line-108">        if (namespaceToWatch == null) {</span>
+<span class="source-line-no">109</span><span id="line-109">            logger.severe(() -&gt; "Namespace to watch not configured and"</span>
+<span class="source-line-no">110</span><span id="line-110">                + " no file in kubernetes directory.");</span>
+<span class="source-line-no">111</span><span id="line-111">            event.cancel(true);</span>
+<span class="source-line-no">112</span><span id="line-112">            fire(new Stop());</span>
+<span class="source-line-no">113</span><span id="line-113">            return;</span>
+<span class="source-line-no">114</span><span id="line-114">        }</span>
+<span class="source-line-no">115</span><span id="line-115">        logger</span>
+<span class="source-line-no">116</span><span id="line-116">            .fine(() -&gt; "Controlling namespace \"" + namespaceToWatch + "\".");</span>
+<span class="source-line-no">117</span><span id="line-117"></span>
+<span class="source-line-no">118</span><span id="line-118">        // Get all our API versions</span>
+<span class="source-line-no">119</span><span id="line-119">        var client = Config.defaultClient();</span>
+<span class="source-line-no">120</span><span id="line-120">        var apis = new ApisApi(client).getAPIVersions();</span>
+<span class="source-line-no">121</span><span id="line-121">        var vmOpApiVersions = apis.getGroups().stream()</span>
+<span class="source-line-no">122</span><span id="line-122">            .filter(g -&gt; g.getName().equals(VM_OP_GROUP)).findFirst()</span>
+<span class="source-line-no">123</span><span id="line-123">            .map(V1APIGroup::getVersions).stream().flatMap(l -&gt; l.stream())</span>
+<span class="source-line-no">124</span><span id="line-124">            .map(V1GroupVersionForDiscovery::getVersion).toList();</span>
+<span class="source-line-no">125</span><span id="line-125"></span>
+<span class="source-line-no">126</span><span id="line-126">        // Remove left overs</span>
+<span class="source-line-no">127</span><span id="line-127">        var coa = new CustomObjectsApi(client);</span>
+<span class="source-line-no">128</span><span id="line-128">        purge(client, coa, vmOpApiVersions);</span>
+<span class="source-line-no">129</span><span id="line-129"></span>
+<span class="source-line-no">130</span><span id="line-130">        // Start a watcher thread for each existing CRD version.</span>
+<span class="source-line-no">131</span><span id="line-131">        // The watcher will send us an "ADDED" for each existing VM.</span>
+<span class="source-line-no">132</span><span id="line-132">        for (var version : vmOpApiVersions) {</span>
+<span class="source-line-no">133</span><span id="line-133">            coa.getAPIResources(VM_OP_GROUP, version)</span>
+<span class="source-line-no">134</span><span id="line-134">                .getResources().stream()</span>
+<span class="source-line-no">135</span><span id="line-135">                .filter(r -&gt; Constants.VM_OP_KIND_VM.equals(r.getKind()))</span>
+<span class="source-line-no">136</span><span id="line-136">                .findFirst()</span>
+<span class="source-line-no">137</span><span id="line-137">                .ifPresent(crd -&gt; watchVmDefs(crd, version));</span>
+<span class="source-line-no">138</span><span id="line-138">        }</span>
+<span class="source-line-no">139</span><span id="line-139">    }</span>
+<span class="source-line-no">140</span><span id="line-140"></span>
+<span class="source-line-no">141</span><span id="line-141">    @SuppressWarnings({ "PMD.AvoidInstantiatingObjectsInLoops",</span>
+<span class="source-line-no">142</span><span id="line-142">        "PMD.CognitiveComplexity" })</span>
+<span class="source-line-no">143</span><span id="line-143">    private void purge(ApiClient client, CustomObjectsApi coa,</span>
+<span class="source-line-no">144</span><span id="line-144">            List&lt;String&gt; vmOpApiVersions) throws ApiException {</span>
+<span class="source-line-no">145</span><span id="line-145">        // Get existing CRs (VMs)</span>
+<span class="source-line-no">146</span><span id="line-146">        Set&lt;String&gt; known = new HashSet&lt;&gt;();</span>
+<span class="source-line-no">147</span><span id="line-147">        for (var version : vmOpApiVersions) {</span>
+<span class="source-line-no">148</span><span id="line-148">            // Get all known CR instances.</span>
+<span class="source-line-no">149</span><span id="line-149">            coa.getAPIResources(VM_OP_GROUP, version)</span>
+<span class="source-line-no">150</span><span id="line-150">                .getResources().stream()</span>
+<span class="source-line-no">151</span><span id="line-151">                .filter(r -&gt; Constants.VM_OP_KIND_VM.equals(r.getKind()))</span>
+<span class="source-line-no">152</span><span id="line-152">                .findFirst()</span>
+<span class="source-line-no">153</span><span id="line-153">                .ifPresent(crd -&gt; known.addAll(getKnown(client, crd, version)));</span>
+<span class="source-line-no">154</span><span id="line-154">        }</span>
+<span class="source-line-no">155</span><span id="line-155"></span>
+<span class="source-line-no">156</span><span id="line-156">        ListOptions opts = new ListOptions();</span>
+<span class="source-line-no">157</span><span id="line-157">        opts.setLabelSelector(</span>
+<span class="source-line-no">158</span><span id="line-158">            "app.kubernetes.io/managed-by=" + Constants.VM_OP_NAME + ","</span>
+<span class="source-line-no">159</span><span id="line-159">                + "app.kubernetes.io/name=" + Constants.APP_NAME);</span>
+<span class="source-line-no">160</span><span id="line-160">        for (String resource : List.of("apps/v1/statefulsets",</span>
+<span class="source-line-no">161</span><span id="line-161">            "v1/configmaps", "v1/secrets")) {</span>
+<span class="source-line-no">162</span><span id="line-162">            var resParts = new LinkedList&lt;&gt;(List.of(resource.split("/")));</span>
+<span class="source-line-no">163</span><span id="line-163">            var group = resParts.size() == 3 ? resParts.poll() : "";</span>
+<span class="source-line-no">164</span><span id="line-164">            var version = resParts.poll();</span>
+<span class="source-line-no">165</span><span id="line-165">            var plural = resParts.poll();</span>
+<span class="source-line-no">166</span><span id="line-166">            // Get resources, selected by label</span>
+<span class="source-line-no">167</span><span id="line-167">            @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")</span>
+<span class="source-line-no">168</span><span id="line-168">            var api = new DynamicKubernetesApi(group, version, plural, client);</span>
+<span class="source-line-no">169</span><span id="line-169">            var listObj = api.list(namespaceToWatch, opts).getObject();</span>
+<span class="source-line-no">170</span><span id="line-170">            if (listObj == null) {</span>
+<span class="source-line-no">171</span><span id="line-171">                continue;</span>
+<span class="source-line-no">172</span><span id="line-172">            }</span>
+<span class="source-line-no">173</span><span id="line-173">            for (var obj : listObj.getItems()) {</span>
+<span class="source-line-no">174</span><span id="line-174">                String instance = obj.getMetadata().getLabels()</span>
+<span class="source-line-no">175</span><span id="line-175">                    .get("app.kubernetes.io/instance");</span>
+<span class="source-line-no">176</span><span id="line-176">                if (!known.contains(instance)) {</span>
+<span class="source-line-no">177</span><span id="line-177">                    var resName = obj.getMetadata().getName();</span>
+<span class="source-line-no">178</span><span id="line-178">                    var result = api.delete(namespaceToWatch, resName);</span>
+<span class="source-line-no">179</span><span id="line-179">                    if (!result.isSuccess()) {</span>
+<span class="source-line-no">180</span><span id="line-180">                        logger.warning(() -&gt; "Cannot cleanup resource \""</span>
+<span class="source-line-no">181</span><span id="line-181">                            + resName + "\": " + result.toString());</span>
+<span class="source-line-no">182</span><span id="line-182">                    }</span>
+<span class="source-line-no">183</span><span id="line-183">                }</span>
+<span class="source-line-no">184</span><span id="line-184">            }</span>
+<span class="source-line-no">185</span><span id="line-185">        }</span>
+<span class="source-line-no">186</span><span id="line-186">    }</span>
+<span class="source-line-no">187</span><span id="line-187"></span>
+<span class="source-line-no">188</span><span id="line-188">    private Set&lt;String&gt; getKnown(ApiClient client, V1APIResource crd,</span>
+<span class="source-line-no">189</span><span id="line-189">            String version) {</span>
+<span class="source-line-no">190</span><span id="line-190">        Set&lt;String&gt; result = new HashSet&lt;&gt;();</span>
+<span class="source-line-no">191</span><span id="line-191">        var api = new DynamicKubernetesApi(VM_OP_GROUP, version,</span>
+<span class="source-line-no">192</span><span id="line-192">            crd.getName(), client);</span>
+<span class="source-line-no">193</span><span id="line-193">        for (var item : api.list(namespaceToWatch).getObject().getItems()) {</span>
+<span class="source-line-no">194</span><span id="line-194">            if (!VM_OP_KIND_VM.equals(item.getKind())) {</span>
+<span class="source-line-no">195</span><span id="line-195">                continue;</span>
+<span class="source-line-no">196</span><span id="line-196">            }</span>
+<span class="source-line-no">197</span><span id="line-197">            result.add(item.getMetadata().getName());</span>
+<span class="source-line-no">198</span><span id="line-198">        }</span>
+<span class="source-line-no">199</span><span id="line-199">        return result;</span>
+<span class="source-line-no">200</span><span id="line-200">    }</span>
+<span class="source-line-no">201</span><span id="line-201"></span>
+<span class="source-line-no">202</span><span id="line-202">    @SuppressWarnings("PMD.CognitiveComplexity")</span>
+<span class="source-line-no">203</span><span id="line-203">    private void watchVmDefs(V1APIResource crd, String version) {</span>
+<span class="source-line-no">204</span><span id="line-204">        @SuppressWarnings({ "PMD.AvoidInstantiatingObjectsInLoops",</span>
+<span class="source-line-no">205</span><span id="line-205">            "PMD.AvoidLiteralsInIfCondition", "PMD.AvoidCatchingThrowable" })</span>
+<span class="source-line-no">206</span><span id="line-206">        var watcher = new Thread(() -&gt; {</span>
+<span class="source-line-no">207</span><span id="line-207">            try {</span>
+<span class="source-line-no">208</span><span id="line-208">                // Watch sometimes terminates without apparent reason.</span>
+<span class="source-line-no">209</span><span id="line-209">                while (true) {</span>
+<span class="source-line-no">210</span><span id="line-210">                    Instant started = Instant.now();</span>
+<span class="source-line-no">211</span><span id="line-211">                    var client = Config.defaultClient();</span>
+<span class="source-line-no">212</span><span id="line-212">                    var coa = new CustomObjectsApi(client);</span>
+<span class="source-line-no">213</span><span id="line-213">                    var call = coa.listNamespacedCustomObjectCall(VM_OP_GROUP,</span>
+<span class="source-line-no">214</span><span id="line-214">                        version, namespaceToWatch, crd.getName(), null, false,</span>
+<span class="source-line-no">215</span><span id="line-215">                        null, null, null, null, null, null, null, true, null);</span>
+<span class="source-line-no">216</span><span id="line-216">                    try (Watch&lt;V1Namespace&gt; watch</span>
+<span class="source-line-no">217</span><span id="line-217">                        = Watch.createWatch(client, call,</span>
+<span class="source-line-no">218</span><span id="line-218">                            new TypeToken&lt;Watch.Response&lt;V1Namespace&gt;&gt;() {</span>
+<span class="source-line-no">219</span><span id="line-219">                            }.getType())) {</span>
+<span class="source-line-no">220</span><span id="line-220">                        for (Watch.Response&lt;V1Namespace&gt; item : watch) {</span>
+<span class="source-line-no">221</span><span id="line-221">                            handleVmDefinitionChange(crd, item);</span>
+<span class="source-line-no">222</span><span id="line-222">                        }</span>
+<span class="source-line-no">223</span><span id="line-223">                    } catch (Throwable e) {</span>
+<span class="source-line-no">224</span><span id="line-224">                        logger.log(Level.FINE, e, () -&gt; "Probem watching "</span>
+<span class="source-line-no">225</span><span id="line-225">                            + "(retrying): " + e.getMessage());</span>
+<span class="source-line-no">226</span><span id="line-226">                        var runningFor = Duration</span>
+<span class="source-line-no">227</span><span id="line-227">                            .between(started, Instant.now()).getSeconds();</span>
+<span class="source-line-no">228</span><span id="line-228">                        if (runningFor &lt; 5) {</span>
+<span class="source-line-no">229</span><span id="line-229">                            logger.log(Level.FINE, e, () -&gt; "Waiting... ");</span>
+<span class="source-line-no">230</span><span id="line-230">                            try {</span>
+<span class="source-line-no">231</span><span id="line-231">                                Thread.sleep(5000 - runningFor * 1000);</span>
+<span class="source-line-no">232</span><span id="line-232">                            } catch (InterruptedException e1) {</span>
+<span class="source-line-no">233</span><span id="line-233">                                continue;</span>
+<span class="source-line-no">234</span><span id="line-234">                            }</span>
+<span class="source-line-no">235</span><span id="line-235">                            logger.log(Level.FINE, e, () -&gt; "Restarting");</span>
+<span class="source-line-no">236</span><span id="line-236">                        }</span>
+<span class="source-line-no">237</span><span id="line-237">                    }</span>
+<span class="source-line-no">238</span><span id="line-238">                }</span>
+<span class="source-line-no">239</span><span id="line-239">            } catch (IOException | ApiException e) {</span>
+<span class="source-line-no">240</span><span id="line-240">                logger.log(Level.SEVERE, e, () -&gt; "Probem watching: "</span>
+<span class="source-line-no">241</span><span id="line-241">                    + e.getMessage());</span>
+<span class="source-line-no">242</span><span id="line-242">            }</span>
+<span class="source-line-no">243</span><span id="line-243">            fire(new Stop());</span>
+<span class="source-line-no">244</span><span id="line-244">        });</span>
+<span class="source-line-no">245</span><span id="line-245">        watcher.setDaemon(true);</span>
+<span class="source-line-no">246</span><span id="line-246">        watcher.start();</span>
+<span class="source-line-no">247</span><span id="line-247">    }</span>
+<span class="source-line-no">248</span><span id="line-248"></span>
+<span class="source-line-no">249</span><span id="line-249">    private void handleVmDefinitionChange(V1APIResource vmsCrd,</span>
+<span class="source-line-no">250</span><span id="line-250">            Watch.Response&lt;V1Namespace&gt; item) {</span>
+<span class="source-line-no">251</span><span id="line-251">        V1ObjectMeta metadata = item.object.getMetadata();</span>
+<span class="source-line-no">252</span><span id="line-252">        VmChannel channel = channels.computeIfAbsent(metadata.getName(),</span>
+<span class="source-line-no">253</span><span id="line-253">            k -&gt; {</span>
+<span class="source-line-no">254</span><span id="line-254">                try {</span>
+<span class="source-line-no">255</span><span id="line-255">                    return new VmChannel(channel(), newEventPipeline(),</span>
+<span class="source-line-no">256</span><span id="line-256">                        Config.defaultClient());</span>
+<span class="source-line-no">257</span><span id="line-257">                } catch (IOException e) {</span>
+<span class="source-line-no">258</span><span id="line-258">                    logger.log(Level.SEVERE, e, () -&gt; "Failed to create client"</span>
+<span class="source-line-no">259</span><span id="line-259">                        + " for handling changes: " + e.getMessage());</span>
+<span class="source-line-no">260</span><span id="line-260">                    return null;</span>
+<span class="source-line-no">261</span><span id="line-261">                }</span>
+<span class="source-line-no">262</span><span id="line-262">            });</span>
+<span class="source-line-no">263</span><span id="line-263">        if (channel == null) {</span>
+<span class="source-line-no">264</span><span id="line-264">            return;</span>
+<span class="source-line-no">265</span><span id="line-265">        }</span>
+<span class="source-line-no">266</span><span id="line-266"></span>
+<span class="source-line-no">267</span><span id="line-267">        // Filter duplicates</span>
+<span class="source-line-no">268</span><span id="line-268">        if (!"DELETED".equals(item.type) &amp;&amp; !channel</span>
+<span class="source-line-no">269</span><span id="line-269">            .setGeneration(item.object.getMetadata().getGeneration())) {</span>
+<span class="source-line-no">270</span><span id="line-270">            return;</span>
+<span class="source-line-no">271</span><span id="line-271">        }</span>
+<span class="source-line-no">272</span><span id="line-272">        channel.pipeline().fire(new VmDefChanged(VmDefChanged.Type</span>
+<span class="source-line-no">273</span><span id="line-273">            .valueOf(item.type), vmsCrd, item.object), channel);</span>
+<span class="source-line-no">274</span><span id="line-274">    }</span>
+<span class="source-line-no">275</span><span id="line-275"></span>
+<span class="source-line-no">276</span><span id="line-276">    /**</span>
+<span class="source-line-no">277</span><span id="line-277">     * Remove VM channel when VM is deleted.</span>
+<span class="source-line-no">278</span><span id="line-278">     *</span>
+<span class="source-line-no">279</span><span id="line-279">     * @param event the event</span>
+<span class="source-line-no">280</span><span id="line-280">     * @param channel the channel</span>
+<span class="source-line-no">281</span><span id="line-281">     */</span>
+<span class="source-line-no">282</span><span id="line-282">    @Handler(priority = -10_000)</span>
+<span class="source-line-no">283</span><span id="line-283">    public void onVmDefChanged(VmDefChanged event, VmChannel channel) {</span>
+<span class="source-line-no">284</span><span id="line-284">        if (event.type() == Type.DELETED) {</span>
+<span class="source-line-no">285</span><span id="line-285">            channels.remove(event.object().getMetadata().getName());</span>
+<span class="source-line-no">286</span><span id="line-286">        }</span>
+<span class="source-line-no">287</span><span id="line-287">    }</span>
+<span class="source-line-no">288</span><span id="line-288"></span>
+<span class="source-line-no">289</span><span id="line-289">}</span>
 
 
 
