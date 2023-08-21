@@ -72,16 +72,21 @@ task pushLatestImage(type: Exec) {
             + "/${project.name}:latest"
 }
 
-task pushImages {
+task pushForTest {
     dependsOn pushImage
     dependsOn pushLatestImage
+}
+
+task pushImages {
+    dependsOn test
+    dependsOn pushForTest
 }
 
 test {
     enabled = project.hasProperty("k8s.testCluster")
 
     if (enabled) {
-        dependsOn project.tasks["pushImages"]
+        dependsOn project.tasks["pushForTest"]
     }
 
     useJUnitPlatform()
