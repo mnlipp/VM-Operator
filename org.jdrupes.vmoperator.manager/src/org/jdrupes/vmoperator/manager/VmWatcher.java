@@ -199,15 +199,14 @@ public class VmWatcher extends Component {
         return result;
     }
 
-    @SuppressWarnings("PMD.CognitiveComplexity")
     private void watchVmDefs(V1APIResource crd, String version) {
         @SuppressWarnings({ "PMD.AvoidInstantiatingObjectsInLoops",
-            "PMD.AvoidLiteralsInIfCondition", "PMD.AvoidCatchingThrowable" })
+            "PMD.AvoidCatchingThrowable", "PMD.AvoidCatchingGenericException" })
         var watcher = new Thread(() -> {
             try {
                 // Watch sometimes terminates without apparent reason.
                 while (true) {
-                    Instant started = Instant.now();
+                    Instant startedAt = Instant.now();
                     var client = Config.defaultClient();
                     var coa = new CustomObjectsApi(client);
                     var call = coa.listNamespacedCustomObjectCall(VM_OP_GROUP,
@@ -220,23 +219,14 @@ public class VmWatcher extends Component {
                         for (Watch.Response<V1Namespace> item : watch) {
                             handleVmDefinitionChange(crd, item);
                         }
-                    } catch (Throwable e) {
-                        logger.log(Level.FINE, e, () -> "Probem watching "
-                            + "(retrying): " + e.getMessage());
-                        var runningFor = Duration
-                            .between(started, Instant.now()).getSeconds();
-                        if (runningFor < 5) {
-                            logger.log(Level.FINE, e, () -> "Waiting... ");
-                            try {
-                                Thread.sleep(5000 - runningFor * 1000);
-                            } catch (InterruptedException e1) {
-                                continue;
-                            }
-                            logger.log(Level.FINE, e, () -> "Restarting");
-                        }
+                    } catch (IOException | ApiException | RuntimeException e) {
+                        logger.log(Level.FINE, e, () -> "Problem watching \""
+                            + crd.getName() + "\" (will retry): "
+                            + e.getMessage());
+                        delayRestart(startedAt);
                     }
                 }
-            } catch (IOException | ApiException e) {
+            } catch (Throwable e) {
                 logger.log(Level.SEVERE, e, () -> "Probem watching: "
                     + e.getMessage());
             }
@@ -244,6 +234,21 @@ public class VmWatcher extends Component {
         });
         watcher.setDaemon(true);
         watcher.start();
+    }
+
+    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
+    private void delayRestart(Instant started) {
+        var runningFor = Duration
+            .between(started, Instant.now()).toMillis();
+        if (runningFor < 5000) {
+            logger.log(Level.FINE, () -> "Waiting... ");
+            try {
+                Thread.sleep(5000 - runningFor);
+            } catch (InterruptedException e1) { // NOPMD
+                // Retry
+            }
+            logger.log(Level.FINE, () -> "Retrying");
+        }
     }
 
     private void handleVmDefinitionChange(V1APIResource vmsCrd,
