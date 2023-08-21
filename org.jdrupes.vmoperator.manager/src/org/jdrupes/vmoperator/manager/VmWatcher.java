@@ -244,6 +244,15 @@ public class VmWatcher extends Component {
                     return null;
                 }
             });
+        if (channel == null) {
+            return;
+        }
+
+        // Filter duplicates
+        if (!"DELETED".equals(item.type) && !channel
+            .setGeneration(item.object.getMetadata().getGeneration())) {
+            return;
+        }
         channel.pipeline().fire(new VmDefChanged(VmDefChanged.Type
             .valueOf(item.type), vmsCrd, item.object), channel);
     }

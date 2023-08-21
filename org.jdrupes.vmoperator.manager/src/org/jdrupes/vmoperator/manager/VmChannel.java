@@ -27,11 +27,13 @@ import org.jgrapes.core.Subchannel.DefaultSubchannel;
 /**
  * A subchannel used to send the events related to a specific VM.
  */
+@SuppressWarnings("PMD.DataClass")
 public class VmChannel extends DefaultSubchannel {
 
     private final EventPipeline pipeline;
     private final ApiClient client;
     private JsonObject vmDefinition;
+    private long generation = -1;
 
     /**
      * Instantiates a new watch channel.
@@ -66,6 +68,31 @@ public class VmChannel extends DefaultSubchannel {
      */
     public JsonObject vmDefinition() {
         return vmDefinition;
+    }
+
+    /**
+     * Gets the last processed generation. Returns -1 if no
+     * definition has been processed yet.
+     *
+     * @return the generation
+     */
+    public long generation() {
+        return generation;
+    }
+
+    /**
+     * Sets the last processed generation.
+     *
+     * @param generation the generation to set
+     * @return true if value has changed
+     */
+    @SuppressWarnings("PMD.LinguisticNaming")
+    public boolean setGeneration(long generation) {
+        if (this.generation == generation) {
+            return false;
+        }
+        this.generation = generation;
+        return true;
     }
 
     /**
