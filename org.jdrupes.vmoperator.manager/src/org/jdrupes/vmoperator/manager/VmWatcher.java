@@ -35,6 +35,8 @@ import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -197,12 +199,15 @@ public class VmWatcher extends Component {
         return result;
     }
 
+    @SuppressWarnings("PMD.CognitiveComplexity")
     private void watchVmDefs(V1APIResource crd, String version) {
-        @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+        @SuppressWarnings({ "PMD.AvoidInstantiatingObjectsInLoops",
+            "PMD.AvoidLiteralsInIfCondition", "PMD.AvoidCatchingThrowable" })
         var watcher = new Thread(() -> {
             try {
                 // Watch sometimes terminates without apparent reason.
                 while (true) {
+                    Instant started = Instant.now();
                     var client = Config.defaultClient();
                     var coa = new CustomObjectsApi(client);
                     var call = coa.listNamespacedCustomObjectCall(VM_OP_GROUP,
@@ -215,9 +220,20 @@ public class VmWatcher extends Component {
                         for (Watch.Response<V1Namespace> item : watch) {
                             handleVmDefinitionChange(crd, item);
                         }
-                    } catch (IllegalStateException e) {
+                    } catch (Throwable e) {
                         logger.log(Level.FINE, e, () -> "Probem watching "
                             + "(retrying): " + e.getMessage());
+                        var runningFor = Duration
+                            .between(started, Instant.now()).getSeconds();
+                        if (runningFor < 5) {
+                            logger.log(Level.FINE, e, () -> "Waiting... ");
+                            try {
+                                Thread.sleep(5000 - runningFor * 1000);
+                            } catch (InterruptedException e1) {
+                                continue;
+                            }
+                            logger.log(Level.FINE, e, () -> "Restarting");
+                        }
                     }
                 }
             } catch (IOException | ApiException e) {
