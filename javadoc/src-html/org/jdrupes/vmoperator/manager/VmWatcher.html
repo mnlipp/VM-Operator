@@ -257,24 +257,33 @@
 <span class="source-line-no">244</span><span id="line-244">                    return null;</span>
 <span class="source-line-no">245</span><span id="line-245">                }</span>
 <span class="source-line-no">246</span><span id="line-246">            });</span>
-<span class="source-line-no">247</span><span id="line-247">        channel.pipeline().fire(new VmDefChanged(VmDefChanged.Type</span>
-<span class="source-line-no">248</span><span id="line-248">            .valueOf(item.type), vmsCrd, item.object), channel);</span>
-<span class="source-line-no">249</span><span id="line-249">    }</span>
+<span class="source-line-no">247</span><span id="line-247">        if (channel == null) {</span>
+<span class="source-line-no">248</span><span id="line-248">            return;</span>
+<span class="source-line-no">249</span><span id="line-249">        }</span>
 <span class="source-line-no">250</span><span id="line-250"></span>
-<span class="source-line-no">251</span><span id="line-251">    /**</span>
-<span class="source-line-no">252</span><span id="line-252">     * Remove VM channel when VM is deleted.</span>
-<span class="source-line-no">253</span><span id="line-253">     *</span>
-<span class="source-line-no">254</span><span id="line-254">     * @param event the event</span>
-<span class="source-line-no">255</span><span id="line-255">     * @param channel the channel</span>
-<span class="source-line-no">256</span><span id="line-256">     */</span>
-<span class="source-line-no">257</span><span id="line-257">    @Handler(priority = -10_000)</span>
-<span class="source-line-no">258</span><span id="line-258">    public void onVmDefChanged(VmDefChanged event, VmChannel channel) {</span>
-<span class="source-line-no">259</span><span id="line-259">        if (event.type() == Type.DELETED) {</span>
-<span class="source-line-no">260</span><span id="line-260">            channels.remove(event.object().getMetadata().getName());</span>
-<span class="source-line-no">261</span><span id="line-261">        }</span>
-<span class="source-line-no">262</span><span id="line-262">    }</span>
-<span class="source-line-no">263</span><span id="line-263"></span>
-<span class="source-line-no">264</span><span id="line-264">}</span>
+<span class="source-line-no">251</span><span id="line-251">        // Filter duplicates</span>
+<span class="source-line-no">252</span><span id="line-252">        if (!"DELETED".equals(item.type) &amp;&amp; !channel</span>
+<span class="source-line-no">253</span><span id="line-253">            .setGeneration(item.object.getMetadata().getGeneration())) {</span>
+<span class="source-line-no">254</span><span id="line-254">            return;</span>
+<span class="source-line-no">255</span><span id="line-255">        }</span>
+<span class="source-line-no">256</span><span id="line-256">        channel.pipeline().fire(new VmDefChanged(VmDefChanged.Type</span>
+<span class="source-line-no">257</span><span id="line-257">            .valueOf(item.type), vmsCrd, item.object), channel);</span>
+<span class="source-line-no">258</span><span id="line-258">    }</span>
+<span class="source-line-no">259</span><span id="line-259"></span>
+<span class="source-line-no">260</span><span id="line-260">    /**</span>
+<span class="source-line-no">261</span><span id="line-261">     * Remove VM channel when VM is deleted.</span>
+<span class="source-line-no">262</span><span id="line-262">     *</span>
+<span class="source-line-no">263</span><span id="line-263">     * @param event the event</span>
+<span class="source-line-no">264</span><span id="line-264">     * @param channel the channel</span>
+<span class="source-line-no">265</span><span id="line-265">     */</span>
+<span class="source-line-no">266</span><span id="line-266">    @Handler(priority = -10_000)</span>
+<span class="source-line-no">267</span><span id="line-267">    public void onVmDefChanged(VmDefChanged event, VmChannel channel) {</span>
+<span class="source-line-no">268</span><span id="line-268">        if (event.type() == Type.DELETED) {</span>
+<span class="source-line-no">269</span><span id="line-269">            channels.remove(event.object().getMetadata().getName());</span>
+<span class="source-line-no">270</span><span id="line-270">        }</span>
+<span class="source-line-no">271</span><span id="line-271">    }</span>
+<span class="source-line-no">272</span><span id="line-272"></span>
+<span class="source-line-no">273</span><span id="line-273">}</span>
 
 
 
