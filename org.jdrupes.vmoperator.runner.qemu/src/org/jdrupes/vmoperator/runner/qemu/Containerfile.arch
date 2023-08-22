@@ -3,7 +3,7 @@ FROM archlinux/archlinux
 RUN systemd-firstboot --setup-machine-id
 
 RUN pacman -Suy --noconfirm \
-    && pacman -S --noconfirm which qemu-base virtiofsd \
+    && pacman -S --noconfirm which qemu-full virtiofsd \
         edk2-ovmf swtpm iproute2 bridge-utils jre17-openjdk-headless \
     && pacman -Scc --noconfirm
 
