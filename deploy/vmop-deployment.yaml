@@ -47,7 +47,6 @@ spec:
       nodeSelector:
         kubernetes.io/os: linux
       serviceAccountName: vm-operator
-      serviceAccount: vm-operator
       securityContext:
         runAsUser: 65534
         runAsNonRoot: true
