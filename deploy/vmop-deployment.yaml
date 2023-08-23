@@ -36,7 +36,7 @@ spec:
           resources:
             requests:
               cpu: 100m
-              memory: 32Mi
+              memory: 128Mi
       volumes:
       - name: config
         configMap:
