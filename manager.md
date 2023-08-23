@@ -21,6 +21,10 @@ and must be created first.
 kubectl apply -f https://github.com/mnlipp/VM-Operator/raw/main/deploy/crds/vms-crd.yaml
 ```
 
+The example above uses the CRD from the main branch. This is okay if
+you apply it once. If you want to preserve the link for automatic
+upgrades, you should use a link that points to one of the release branches.
+
 The next step is to create a namespace for the manager and the VMs, e.g. 
 `vmop-demo`.
 

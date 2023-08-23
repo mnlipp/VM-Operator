@@ -130,8 +130,7 @@ Arch Linux (`ghcr.io/mnlipp/org.jdrupes.vmoperator.runner.qemu-arch`) and a
 second one based on Alpine (`ghcr.io/mnlipp/org.jdrupes.vmoperator.runner.qemu-alpine`).
 
 Starting with release 1.0, all versions of runner images and managers 
-are compatible that have the same major release number. To avoid problems
-you should therefore pin your deployments to specific versions of both.
+that have the same major release number are guaranteed to be compatible.
 
 ## Further reading
 
