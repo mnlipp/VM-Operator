@@ -36,14 +36,14 @@ task buildArchImage(type: Exec) {
     dependsOn installDist
     inputs.files 'src/org/jdrupes/vmoperator/runner/qemu/Containerfile.arch'
     
-    commandLine 'podman', 'build', '-t', "${project.name}:${project.version}",\
+    commandLine 'podman', 'build', '-t', "${project.name}-arch:${project.version}",\
         '-f', 'src/org/jdrupes/vmoperator/runner/qemu/Containerfile.arch', '.'
 }
 
 task tagLatestArchImage(type: Exec) {
     dependsOn buildArchImage
     
-    commandLine 'podman', 'tag', "${project.name}:${project.version}",\
+    commandLine 'podman', 'tag', "${project.name}-arch:${project.version}",\
         "${project.name}:latest"
 }
 
@@ -56,7 +56,7 @@ task pushArchImage(type: Exec) {
     dependsOn buildArchImage
 
     commandLine 'podman', 'push', '--tls-verify=false', \
-        "localhost/${project.name}:${project.version}", \
+        "localhost/${project.name}-arch:${project.version}", \
         "${project.rootProject.properties['docker.registry']}" \
             + "/${project.name}-arch:${project.version}"
 }
@@ -65,13 +65,53 @@ task pushArchLatestImage(type: Exec) {
     dependsOn buildLatestArchImage
 
     commandLine 'podman', 'push', '--tls-verify=false', \
-        "localhost/${project.name}:${project.version}", \
+        "localhost/${project.name}-arch:${project.version}", \
         "${project.rootProject.properties['docker.registry']}" \
             + "/${project.name}-arch:latest"
+}
+
+task buildAlpineImage(type: Exec) {
+    dependsOn installDist
+    inputs.files 'src/org/jdrupes/vmoperator/runner/qemu/Containerfile.alpine'
+    
+    commandLine 'podman', 'build', '-t', "${project.name}-alpine:${project.version}",\
+        '-f', 'src/org/jdrupes/vmoperator/runner/qemu/Containerfile.alpine', '.'
+}
+
+task tagLatestAlpineImage(type: Exec) {
+    dependsOn buildAlpineImage
+    
+    commandLine 'podman', 'tag', "${project.name}-alpine:${project.version}",\
+        "${project.name}-alpine:latest"
+}
+
+task buildLatestAlpineImage {
+    dependsOn buildAlpineImage
+    dependsOn tagLatestAlpineImage
+}
+
+task pushAlpineImage(type: Exec) {
+    dependsOn buildAlpineImage
+
+    commandLine 'podman', 'push', '--tls-verify=false', \
+        "localhost/${project.name}-alpine:${project.version}", \
+        "${project.rootProject.properties['docker.registry']}" \
+            + "/${project.name}-alpine:${project.version}"
+}
+
+task pushAlpineLatestImage(type: Exec) {
+    dependsOn buildLatestAlpineImage
+
+    commandLine 'podman', 'push', '--tls-verify=false', \
+        "localhost/${project.name}-alpine:${project.version}", \
+        "${project.rootProject.properties['docker.registry']}" \
+            + "/${project.name}-alpine:latest"
 }
 
 task pushImages {
     dependsOn pushArchImage
     dependsOn pushArchLatestImage
+    dependsOn pushAlpineImage
+    dependsOn pushAlpineLatestImage
 }
 

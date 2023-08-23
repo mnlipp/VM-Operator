@@ -1,0 +1,12 @@
+FROM docker.io/alpine
+
+RUN apk update
+
+RUN apk add qemu-system-x86_64 qemu-modules ovmf swtpm openjdk17
+
+RUN mkdir -p /etc/qemu && echo "allow all" > /etc/qemu/bridge.conf
+
+COPY build/install/vm-runner.qemu /opt/vmrunner
+COPY templates/* /opt/vmrunner/templates/
+
+CMD ["/opt/vmrunner/bin/vm-runner.qemu"]

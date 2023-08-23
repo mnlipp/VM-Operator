@@ -26,7 +26,7 @@ spec:
                   - required:
                     - repository
                     - path
-                  default: { source: "ghcr.io/mnlipp/org.jdrupes.vmoperator.runner.qemu-arch:latest" }
+                  default: { source: "ghcr.io/mnlipp/org.jdrupes.vmoperator.runner.qemu-alpine:latest" }
                   properties:
                     source:
                       description: >-
