@@ -19,6 +19,7 @@
 package org.jdrupes.vmoperator.runner.qemu.events;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.util.Optional;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpAddCpu;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCommand;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpDelCpu;
@@ -89,6 +90,7 @@ public class MonitorResult extends Event<Void> {
      *
      * @return the json node
      */
+    @SuppressWarnings("PMD.AvoidDuplicateLiterals")
     public JsonNode values() {
         if (response.has("return")) {
             return response.get("return");
@@ -97,6 +99,43 @@ public class MonitorResult extends Event<Void> {
             return response.get("error");
         }
         return null;
+    }
+
+    /**
+     * Returns the error class if this result is an error.
+     *
+     * @return the optional
+     */
+    public Optional<String> errorClass() {
+        if (!response.has("error")) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(response.get("error").get("class").asText());
+    }
+
+    /**
+     * Returns the error description if this result is an error.
+     *
+     * @return the optional
+     */
+    public Optional<String> errorDescription() {
+        if (!response.has("error")) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(response.get("error").get("desc").asText());
+    }
+
+    /**
+     * Combines error class and error description to a string
+     * "class: desc". Returns an empty string is this result is not an error.
+     *
+     * @return the string
+     */
+    public String errorMessage() {
+        if (successful()) {
+            return "";
+        }
+        return errorClass().get() + ": " + errorDescription().get();
     }
 
     @Override

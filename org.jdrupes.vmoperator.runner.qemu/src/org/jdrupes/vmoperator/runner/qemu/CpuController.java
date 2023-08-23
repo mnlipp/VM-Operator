@@ -85,6 +85,11 @@ public class CpuController extends Component {
      */
     @Handler
     public void onHotpluggableCpuStatus(HotpluggableCpuStatus result) {
+        if (!result.successful()) {
+            logger.warning(() -> "Failed to get hotpluggable CPU status "
+                + "(won't adjust number of CPUs.): " + result.errorMessage());
+        }
+
         // Sort
         List<ObjectNode> used = new ArrayList<>();
         List<ObjectNode> unused = new ArrayList<>();
