@@ -6,7 +6,7 @@ metadata:
 spec:
   image:
     repository: docker-registry.lan.mnl.de
-    path: vmoperator/org.jdrupes.vmoperator.runner.qemu-arch
+    path: vmoperator/org.jdrupes.vmoperator.runner.qemu-alpine
     pullPolicy: Always
 
   resources:
@@ -17,6 +17,7 @@ spec:
   vm:
     # state: Running
     bootMenu: yes
+    useTpm: true
     maximumRam: 8Gi
     currentRam: 4Gi
     maximumCpus: 4
