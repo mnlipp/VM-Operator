@@ -133,11 +133,11 @@ public class Manager extends Component {
     public static void main(String[] args) {
         try {
             var logger = Logger.getLogger(Manager.class.getName());
-            logger.fine(() -> "Running on " + System.getProperty("java.vm.name")
-                + " (" + System.getProperty("java.vm.version") + ")"
-                + " from " + System.getProperty("java.vm.vendor"));
             logger.fine(() -> "Version: "
                 + Manager.class.getPackage().getImplementationVersion());
+            logger.fine(() -> "running on " + System.getProperty("java.vm.name")
+                + " (" + System.getProperty("java.vm.version") + ")"
+                + " from " + System.getProperty("java.vm.vendor"));
 
             // Parse the command line arguments
             CommandLineParser parser = new DefaultParser();

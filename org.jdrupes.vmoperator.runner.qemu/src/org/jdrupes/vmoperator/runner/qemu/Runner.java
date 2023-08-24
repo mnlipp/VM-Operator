@@ -577,11 +577,11 @@ public class Runner extends Component {
         // The Runner is the root component
         try {
             var logger = Logger.getLogger(Runner.class.getName());
-            logger.fine(() -> "Running on " + System.getProperty("java.vm.name")
-                + " (" + System.getProperty("java.vm.version") + ")"
-                + " from " + System.getProperty("java.vm.vendor"));
             logger.fine(() -> "Version: "
                 + Runner.class.getPackage().getImplementationVersion());
+            logger.fine(() -> "running on " + System.getProperty("java.vm.name")
+                + " (" + System.getProperty("java.vm.version") + ")"
+                + " from " + System.getProperty("java.vm.vendor"));
             CommandLineParser parser = new DefaultParser();
             // parse the command line arguments
             final Options options = new Options();
