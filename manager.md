@@ -51,6 +51,8 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
+# Again, I recommend to use the deploy directory from a
+# release branch for anything but test environments.
 - https://github.com/mnlipp/VM-Operator/deploy
 
 namespace: vmop-demo
