@@ -122,8 +122,8 @@ and "app.kubernetes.io/managed-by: vm-operator".
 
 The image used for the runner can be configured with 
 [`spec.image`](https://github.com/mnlipp/VM-Operator/blob/7e094e720b7b59a5e50f4a9a4ad29a6000ec76e6/deploy/crds/vms-crd.yaml#L19).
-This is an object with either a single property `source` or a detailed
-configuration using `repository`, `path` etc.
+This is a mapping with either a single key `source` or a detailed
+configuration using the keys `repository`, `path` etc.
 
 Currently two runner images are maintained. One that is based on 
 Arch Linux (`ghcr.io/mnlipp/org.jdrupes.vmoperator.runner.qemu-arch`) and a 
