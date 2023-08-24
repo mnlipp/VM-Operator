@@ -1,6 +1,4 @@
-FROM ghcr.io/graalvm/jdk-community:17
-
-RUN microdnf install findutils && microdnf clean all
+FROM docker.io/eclipse-temurin:17-jre-alpine
 
 COPY build/install/vm-manager /opt/vmmanager
 
