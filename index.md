@@ -15,7 +15,7 @@ for starting and managing the Qemu process. This application is called
 
 While you can deploy a runner manually (or with the help of some 
 helm templates), the preferred way is to deploy "[the manager](manager.md)"
-component which acts as a Kubernetes operator for runners 
+application which acts as a Kubernetes operator for runners 
 and thus the VMs.
 
 If you just want to try out things, you can skip the remainder of this
