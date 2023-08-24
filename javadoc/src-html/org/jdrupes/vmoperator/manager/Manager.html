@@ -145,39 +145,43 @@
 <span class="source-line-no">132</span><span id="line-132">    @SuppressWarnings("PMD.SignatureDeclareThrowsException")</span>
 <span class="source-line-no">133</span><span id="line-133">    public static void main(String[] args) {</span>
 <span class="source-line-no">134</span><span id="line-134">        try {</span>
-<span class="source-line-no">135</span><span id="line-135">            Logger.getLogger(Manager.class.getName()).fine(() -&gt; "Version: "</span>
-<span class="source-line-no">136</span><span id="line-136">                + Manager.class.getPackage().getImplementationVersion());</span>
-<span class="source-line-no">137</span><span id="line-137"></span>
-<span class="source-line-no">138</span><span id="line-138">            // Parse the command line arguments</span>
-<span class="source-line-no">139</span><span id="line-139">            CommandLineParser parser = new DefaultParser();</span>
-<span class="source-line-no">140</span><span id="line-140">            final Options options = new Options();</span>
-<span class="source-line-no">141</span><span id="line-141">            options.addOption(new Option("c", "config", true, "The configura"</span>
-<span class="source-line-no">142</span><span id="line-142">                + "tion file (defaults to /etc/opt/vmoperator/config.yaml)."));</span>
-<span class="source-line-no">143</span><span id="line-143">            CommandLine cmd = parser.parse(options, args);</span>
-<span class="source-line-no">144</span><span id="line-144"></span>
-<span class="source-line-no">145</span><span id="line-145">            // The Manager is the root component</span>
-<span class="source-line-no">146</span><span id="line-146">            app = new Manager(cmd);</span>
-<span class="source-line-no">147</span><span id="line-147"></span>
-<span class="source-line-no">148</span><span id="line-148">            // Prepare Stop</span>
-<span class="source-line-no">149</span><span id="line-149">            Runtime.getRuntime().addShutdownHook(new Thread(() -&gt; {</span>
-<span class="source-line-no">150</span><span id="line-150">                try {</span>
-<span class="source-line-no">151</span><span id="line-151">                    app.fire(new Stop());</span>
-<span class="source-line-no">152</span><span id="line-152">                    Components.awaitExhaustion();</span>
-<span class="source-line-no">153</span><span id="line-153">                } catch (InterruptedException e) {</span>
-<span class="source-line-no">154</span><span id="line-154">                    // Cannot do anything about this.</span>
-<span class="source-line-no">155</span><span id="line-155">                }</span>
-<span class="source-line-no">156</span><span id="line-156">            }));</span>
-<span class="source-line-no">157</span><span id="line-157"></span>
-<span class="source-line-no">158</span><span id="line-158">            // Start the application</span>
-<span class="source-line-no">159</span><span id="line-159">            Components.start(app);</span>
-<span class="source-line-no">160</span><span id="line-160">        } catch (IOException | InterruptedException</span>
-<span class="source-line-no">161</span><span id="line-161">                | org.apache.commons.cli.ParseException e) {</span>
-<span class="source-line-no">162</span><span id="line-162">            Logger.getLogger(Manager.class.getName()).log(Level.SEVERE, e,</span>
-<span class="source-line-no">163</span><span id="line-163">                () -&gt; "Failed to start manager: " + e.getMessage());</span>
-<span class="source-line-no">164</span><span id="line-164">        }</span>
-<span class="source-line-no">165</span><span id="line-165">    }</span>
-<span class="source-line-no">166</span><span id="line-166"></span>
-<span class="source-line-no">167</span><span id="line-167">}</span>
+<span class="source-line-no">135</span><span id="line-135">            var logger = Logger.getLogger(Manager.class.getName());</span>
+<span class="source-line-no">136</span><span id="line-136">            logger.fine(() -&gt; "Running on " + System.getProperty("java.vm.name")</span>
+<span class="source-line-no">137</span><span id="line-137">                + " (" + System.getProperty("java.vm.version") + ")"</span>
+<span class="source-line-no">138</span><span id="line-138">                + " from " + System.getProperty("java.vm.vendor"));</span>
+<span class="source-line-no">139</span><span id="line-139">            logger.fine(() -&gt; "Version: "</span>
+<span class="source-line-no">140</span><span id="line-140">                + Manager.class.getPackage().getImplementationVersion());</span>
+<span class="source-line-no">141</span><span id="line-141"></span>
+<span class="source-line-no">142</span><span id="line-142">            // Parse the command line arguments</span>
+<span class="source-line-no">143</span><span id="line-143">            CommandLineParser parser = new DefaultParser();</span>
+<span class="source-line-no">144</span><span id="line-144">            final Options options = new Options();</span>
+<span class="source-line-no">145</span><span id="line-145">            options.addOption(new Option("c", "config", true, "The configura"</span>
+<span class="source-line-no">146</span><span id="line-146">                + "tion file (defaults to /etc/opt/vmoperator/config.yaml)."));</span>
+<span class="source-line-no">147</span><span id="line-147">            CommandLine cmd = parser.parse(options, args);</span>
+<span class="source-line-no">148</span><span id="line-148"></span>
+<span class="source-line-no">149</span><span id="line-149">            // The Manager is the root component</span>
+<span class="source-line-no">150</span><span id="line-150">            app = new Manager(cmd);</span>
+<span class="source-line-no">151</span><span id="line-151"></span>
+<span class="source-line-no">152</span><span id="line-152">            // Prepare Stop</span>
+<span class="source-line-no">153</span><span id="line-153">            Runtime.getRuntime().addShutdownHook(new Thread(() -&gt; {</span>
+<span class="source-line-no">154</span><span id="line-154">                try {</span>
+<span class="source-line-no">155</span><span id="line-155">                    app.fire(new Stop());</span>
+<span class="source-line-no">156</span><span id="line-156">                    Components.awaitExhaustion();</span>
+<span class="source-line-no">157</span><span id="line-157">                } catch (InterruptedException e) {</span>
+<span class="source-line-no">158</span><span id="line-158">                    // Cannot do anything about this.</span>
+<span class="source-line-no">159</span><span id="line-159">                }</span>
+<span class="source-line-no">160</span><span id="line-160">            }));</span>
+<span class="source-line-no">161</span><span id="line-161"></span>
+<span class="source-line-no">162</span><span id="line-162">            // Start the application</span>
+<span class="source-line-no">163</span><span id="line-163">            Components.start(app);</span>
+<span class="source-line-no">164</span><span id="line-164">        } catch (IOException | InterruptedException</span>
+<span class="source-line-no">165</span><span id="line-165">                | org.apache.commons.cli.ParseException e) {</span>
+<span class="source-line-no">166</span><span id="line-166">            Logger.getLogger(Manager.class.getName()).log(Level.SEVERE, e,</span>
+<span class="source-line-no">167</span><span id="line-167">                () -&gt; "Failed to start manager: " + e.getMessage());</span>
+<span class="source-line-no">168</span><span id="line-168">        }</span>
+<span class="source-line-no">169</span><span id="line-169">    }</span>
+<span class="source-line-no">170</span><span id="line-170"></span>
+<span class="source-line-no">171</span><span id="line-171">}</span>
 
 
 
