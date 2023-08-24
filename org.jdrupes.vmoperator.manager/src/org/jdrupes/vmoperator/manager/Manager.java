@@ -132,7 +132,11 @@ public class Manager extends Component {
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     public static void main(String[] args) {
         try {
-            Logger.getLogger(Manager.class.getName()).fine(() -> "Version: "
+            var logger = Logger.getLogger(Manager.class.getName());
+            logger.fine(() -> "Running on " + System.getProperty("java.vm.name")
+                + " (" + System.getProperty("java.vm.version") + ")"
+                + " from " + System.getProperty("java.vm.vendor"));
+            logger.fine(() -> "Version: "
                 + Manager.class.getPackage().getImplementationVersion());
 
             // Parse the command line arguments
