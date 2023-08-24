@@ -146,11 +146,11 @@
 <span class="source-line-no">133</span><span id="line-133">    public static void main(String[] args) {</span>
 <span class="source-line-no">134</span><span id="line-134">        try {</span>
 <span class="source-line-no">135</span><span id="line-135">            var logger = Logger.getLogger(Manager.class.getName());</span>
-<span class="source-line-no">136</span><span id="line-136">            logger.fine(() -&gt; "Running on " + System.getProperty("java.vm.name")</span>
-<span class="source-line-no">137</span><span id="line-137">                + " (" + System.getProperty("java.vm.version") + ")"</span>
-<span class="source-line-no">138</span><span id="line-138">                + " from " + System.getProperty("java.vm.vendor"));</span>
-<span class="source-line-no">139</span><span id="line-139">            logger.fine(() -&gt; "Version: "</span>
-<span class="source-line-no">140</span><span id="line-140">                + Manager.class.getPackage().getImplementationVersion());</span>
+<span class="source-line-no">136</span><span id="line-136">            logger.fine(() -&gt; "Version: "</span>
+<span class="source-line-no">137</span><span id="line-137">                + Manager.class.getPackage().getImplementationVersion());</span>
+<span class="source-line-no">138</span><span id="line-138">            logger.fine(() -&gt; "running on " + System.getProperty("java.vm.name")</span>
+<span class="source-line-no">139</span><span id="line-139">                + " (" + System.getProperty("java.vm.version") + ")"</span>
+<span class="source-line-no">140</span><span id="line-140">                + " from " + System.getProperty("java.vm.vendor"));</span>
 <span class="source-line-no">141</span><span id="line-141"></span>
 <span class="source-line-no">142</span><span id="line-142">            // Parse the command line arguments</span>
 <span class="source-line-no">143</span><span id="line-143">            CommandLineParser parser = new DefaultParser();</span>
