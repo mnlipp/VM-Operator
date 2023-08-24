@@ -25,7 +25,7 @@ dependencies {
 application {
     applicationName = 'vm-runner.qemu'
     // Keep sync'd with deploy/vmop-deployment.yaml
-    applicationDefaultJvmArgs = ['-Xmx32m',
+    applicationDefaultJvmArgs = ['-Xmx32m', '-XX:+UseParallelGC',
         '-Djava.util.logging.manager=org.jdrupes.vmoperator.util.LongLoggingManager'
         ]
     // Define the main class for the application.
