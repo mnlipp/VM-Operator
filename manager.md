@@ -105,7 +105,7 @@ class for this PVC. Details about the manager configuration can be
 found in the next section.
 
 Note that you need none of the patches if you are fine with using your 
-cluster's default storage class and this class supports ReadWriteMany as 
+cluster's default storage class and this class supports ReadOnlyMany as 
 access mode.
 
 Check that the pod with the manager is running:
