@@ -119,12 +119,12 @@
 <span class="source-line-no">106</span><span id="line-106"> *   properties for the VM (defaults to 1.25).</span>
 <span class="source-line-no">107</span><span id="line-107"> *   </span>
 <span class="source-line-no">108</span><span id="line-108"> * * `loadBalancerService`: If defined, causes a load balancer service </span>
-<span class="source-line-no">109</span><span id="line-109"> *   to be created. This property may be a boolean or a string with nested</span>
+<span class="source-line-no">109</span><span id="line-109"> *   to be created. This property may be a boolean or</span>
 <span class="source-line-no">110</span><span id="line-110"> *   YAML that defines additional labels or annotations to be merged</span>
 <span class="source-line-no">111</span><span id="line-111"> *   into the service defintion. Here's an example for using</span>
 <span class="source-line-no">112</span><span id="line-112"> *   [MetalLb](https://metallb.universe.tf/) as "internal load balancer":</span>
 <span class="source-line-no">113</span><span id="line-113"> *   ```yaml </span>
-<span class="source-line-no">114</span><span id="line-114"> *   loadBalancerService: |</span>
+<span class="source-line-no">114</span><span id="line-114"> *   loadBalancerService:</span>
 <span class="source-line-no">115</span><span id="line-115"> *     annotations:</span>
 <span class="source-line-no">116</span><span id="line-116"> *       metallb.universe.tf/loadBalancerIPs: 192.168.168.1</span>
 <span class="source-line-no">117</span><span id="line-117"> *       metallb.universe.tf/ip-allocated-from-pool: single-common</span>
