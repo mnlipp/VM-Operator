@@ -12,17 +12,17 @@ dependencies {
     implementation 'org.jgrapes:org.jgrapes.core:[1.19.0,2)'
     implementation 'org.jgrapes:org.jgrapes.io:[2.7.0,3)'
     implementation 'org.jgrapes:org.jgrapes.http:[3.1.0,4)'
-    implementation 'org.jgrapes:org.jgrapes.util:[1.29.0,2)'
+    implementation 'org.jgrapes:org.jgrapes.util:[1.31.0,2)'
     implementation project(':org.jdrupes.vmoperator.util')
     
     implementation 'commons-cli:commons-cli:1.5.0'
     implementation 'org.freemarker:freemarker:[2.3.32,2.4)'
     implementation 'io.kubernetes:client-java:[18.0.0,19)'
     
-    runtimeOnly 'com.electronwill.night-config:yaml:3.6.6'    
+    runtimeOnly 'com.electronwill.night-config:yaml:[3.6.7,3.7)'    
     runtimeOnly 'org.slf4j:slf4j-jdk14:[2.0.7,3)'
     
-    testImplementation 'io.fabric8:kubernetes-client:6.8.1'
+    testImplementation 'io.fabric8:kubernetes-client:[6.8.1,6.9)'
 }
 
 application {
