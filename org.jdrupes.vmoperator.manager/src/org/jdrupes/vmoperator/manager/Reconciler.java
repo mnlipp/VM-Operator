@@ -106,12 +106,12 @@ import org.jgrapes.util.events.ConfigurationUpdate;
  *   properties for the VM (defaults to 1.25).
  *   
  * * `loadBalancerService`: If defined, causes a load balancer service 
- *   to be created. This property may be a boolean or a string with nested
+ *   to be created. This property may be a boolean or
  *   YAML that defines additional labels or annotations to be merged
  *   into the service defintion. Here's an example for using
  *   [MetalLb](https://metallb.universe.tf/) as "internal load balancer":
  *   ```yaml 
- *   loadBalancerService: |
+ *   loadBalancerService:
  *     annotations:
  *       metallb.universe.tf/loadBalancerIPs: 192.168.168.1
  *       metallb.universe.tf/ip-allocated-from-pool: single-common

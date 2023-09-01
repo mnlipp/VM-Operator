@@ -75,16 +75,16 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
             Map<String, Object> model, VmChannel channel)
             throws IOException, TemplateException, ApiException {
         // Check if to be generated
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings({ "unchecked", "PMD.AvoidDuplicateLiterals" })
         var lbs = Optional.of(model)
             .map(m -> (Map<String, Object>) m.get("reconciler"))
             .map(c -> c.get(LOAD_BALANCER_SERVICE)).orElse(Boolean.FALSE);
         if (lbs instanceof Boolean isOn && !isOn) {
             return;
         }
-        if (!(lbs instanceof String)) {
+        if (!(lbs instanceof Map)) {
             logger.warning(() -> "\"" + LOAD_BALANCER_SERVICE
-                + "\" in configuration must be boolean or string but is "
+                + "\" in configuration must be boolean or mapping but is "
                 + lbs.getClass() + ".");
             return;
         }
@@ -110,9 +110,8 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
             Object lbsConfig, VmChannel channel) {
         // Get metadata from config
         Map<String, Object> asmData = Collections.emptyMap();
-        if (lbsConfig instanceof String config) {
-            asmData = (Map<String, Object>) new Yaml(
-                new SafeConstructor(new LoaderOptions())).load(config);
+        if (lbsConfig instanceof Map config) {
+            asmData = (Map<String, Object>) config;
         }
         var json = channel.client().getJSON();
         JsonObject cfgMeta
