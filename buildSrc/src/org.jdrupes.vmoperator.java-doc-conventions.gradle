@@ -28,7 +28,7 @@ task javadocResources(type: Copy) {
     }
 }
 
-task java11doc (type: JavaExec) {
+task apidocs (type: JavaExec) {
     // Does not work on JitPack, no /usr/bin/dot
     enabled = JavaVersion.current() == JavaVersion.VERSION_17
 
@@ -121,5 +121,5 @@ gradle.projectsEvaluated {
         .collect { tc -> tc.findByName("build") }.flatten()
     tasks.gitPublishReset.mustRunAfter subprojects.tasks
         .collect { tc -> tc.findByName("test") }.flatten()
-    tasks.gitPublishCopy.dependsOn java11doc
+    tasks.gitPublishCopy.dependsOn apidocs
 }
