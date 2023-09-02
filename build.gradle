@@ -12,7 +12,9 @@ plugins {
     id 'eclipse'
 }
 
-project.group = 'org.jdrupes.vmoperator'
+allprojects {
+    project.group = 'org.jdrupes.vmoperator'
+}
 
 task stage {
     description = 'To be executed by CI, build and update JavaDoc.'
