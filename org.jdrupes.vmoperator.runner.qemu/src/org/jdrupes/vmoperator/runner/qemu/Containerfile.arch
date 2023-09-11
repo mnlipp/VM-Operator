@@ -1,6 +1,6 @@
 FROM archlinux/archlinux
 
-RUN systemd-firstboot --setup-machine-id
+RUN systemd-firstboot
 
 RUN pacman -Suy --noconfirm \
     && pacman -S --noconfirm which qemu-full virtiofsd \
