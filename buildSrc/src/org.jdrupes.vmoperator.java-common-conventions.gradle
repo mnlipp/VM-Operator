@@ -63,7 +63,12 @@ scmVersion {
     tag {
         def shortened = project.name.startsWith(project.group + ".") ?
             project.name.substring(project.group.length() + 1) : project.name
-        prefix = shortened.replace('.', '-') + "-"
+        var p = shortened.replace('.', '-') + "-"
+        if (grgit.branch.current.name != "main"
+            && !grgit.branch.current.name.startsWith("release")) {
+            p = p + grgit.branch.current.name.replace('/', '-') + "-"
+        }
+        prefix = p
     }
 }
 version = scmVersion.version
