@@ -223,6 +223,8 @@ public class StatusUpdater extends Component {
             if (event.state() == State.STARTING) {
                 status.addProperty("ram", GsonPtr.to(from.getRaw())
                     .getAsString("spec", "vm", "maximumRam").orElse("0"));
+            } else if (event.state() == State.STOPPED) {
+                status.addProperty("ram", "0");
             }
             return status;
         });
