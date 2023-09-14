@@ -1,0 +1,244 @@
+/*
+ * VM-Operator
+ * Copyright (C) 2023 Michael N. Lipp
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package org.jdrupes.vmoperator.runner.qemu;
+
+import com.google.gson.JsonObject;
+import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.apis.ApiextensionsV1Api;
+import io.kubernetes.client.openapi.models.V1CustomResourceDefinitionVersion;
+import io.kubernetes.client.util.Config;
+import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
+import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.logging.Level;
+import org.jdrupes.vmoperator.runner.qemu.events.RunnerConfigurationUpdate;
+import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;
+import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;
+import static org.jdrupes.vmoperator.util.Constants.VM_OP_CRD_NAME;
+import static org.jdrupes.vmoperator.util.Constants.VM_OP_GROUP;
+import org.jgrapes.core.Channel;
+import org.jgrapes.core.Component;
+import org.jgrapes.core.annotation.Handler;
+import org.jgrapes.core.events.Start;
+import org.jgrapes.util.events.ConfigurationUpdate;
+import org.jgrapes.util.events.InitialConfiguration;
+
+/**
+ * Updates the CR status.
+ */
+public class StatusUpdater extends Component {
+
+    private static final Set<State> RUNNING_STATES
+        = Set.of(State.RUNNING, State.TERMINATING);
+
+    private String namespace;
+    private String vmName;
+    private DynamicKubernetesApi vmCrApi;
+    private long observedGeneration;
+
+    /**
+     * Instantiates a new status updater.
+     *
+     * @param componentChannel the component channel
+     */
+    public StatusUpdater(Channel componentChannel) {
+        super(componentChannel);
+    }
+
+    /**
+     * On configuration update.
+     *
+     * @param event the event
+     */
+    @Handler
+    @SuppressWarnings("unchecked")
+    public void onConfigurationUpdate(ConfigurationUpdate event) {
+        event.structured("/Runner").ifPresent(c -> {
+            if (event instanceof InitialConfiguration) {
+                namespace = (String) c.get("namespace");
+                updateNamespace();
+                vmName = Optional.ofNullable((Map<String, String>) c.get("vm"))
+                    .map(vm -> vm.get("name")).orElse(null);
+            }
+        });
+    }
+
+    private void updateNamespace() {
+        if (namespace == null) {
+            var path = Path
+                .of("/var/run/secrets/kubernetes.io/serviceaccount/namespace");
+            if (Files.isReadable(path)) {
+                try {
+                    namespace = Files.lines(path).findFirst().orElse(null);
+                } catch (IOException e) {
+                    logger.log(Level.WARNING, e,
+                        () -> "Cannot read namespace.");
+                }
+            }
+        }
+        if (namespace == null) {
+            logger.warning(() -> "Namespace is unknown, some functions"
+                + " won't be available.");
+        }
+    }
+
+    /**
+     * Handle the start event.
+     *
+     * @param event the event
+     */
+    @Handler
+    @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",
+        "PMD.AvoidInstantiatingObjectsInLoops" })
+    public void onStart(Start event) {
+        try {
+            var client = Config.defaultClient();
+            var extsApi = new ApiextensionsV1Api(client);
+            var crds = extsApi.listCustomResourceDefinition(null, null, null,
+                "metadata.name=" + VM_OP_CRD_NAME, null, null, null,
+                null, null, null);
+            if (crds.getItems().isEmpty()) {
+                logger.warning(() -> "CRD is unknown, status will not"
+                    + " be updated.");
+                return;
+            }
+            var crd = crds.getItems().get(0);
+            if (crd.getSpec().getVersions().stream()
+                .filter(v -> v.getSubresources() == null).findAny()
+                .isPresent()) {
+                logger.warning(() -> "You are using an old version of the CRD,"
+                    + " status will not be updated.");
+                return;
+            }
+            var crdPlural = crd.getSpec().getNames().getPlural();
+            var vmOpApiVersions = crd.getSpec().getVersions().stream()
+                .map(V1CustomResourceDefinitionVersion::getName).toList();
+            for (var apiVer : vmOpApiVersions) {
+                var api = new DynamicKubernetesApi(VM_OP_GROUP, apiVer,
+                    crdPlural, client);
+                var res = api.get(namespace, vmName);
+                if (res.isSuccess()) {
+                    vmCrApi = api;
+                    observedGeneration
+                        = res.getObject().getMetadata().getGeneration();
+                    break;
+                }
+            }
+            if (vmCrApi == null) {
+                logger.warning(() -> "VM's CR is unknown, status will not"
+                    + " be updated.");
+            }
+        } catch (IOException | ApiException e) {
+            logger.log(Level.WARNING, e, () -> "Cannot access kubernetes: "
+                + e.getMessage());
+        }
+    }
+
+    @SuppressWarnings("PMD.AvoidDuplicateLiterals")
+    private JsonObject currentStatus(DynamicKubernetesObject vmCr) {
+        return vmCr.getRaw().getAsJsonObject("status").deepCopy();
+    }
+
+    /**
+     * On runner state changed.
+     *
+     * @param event the event
+    8     * @throws ApiException the api exception
+     */
+    @Handler
+    public void onRunnerStateChanged(RunnerStateChange event)
+            throws ApiException {
+        if (vmCrApi == null) {
+            return;
+        }
+        var vmCr = vmCrApi.get(namespace, vmName)
+            .throwsApiException().getObject();
+        vmCrApi.updateStatus(vmCr, from -> {
+            JsonObject status = currentStatus(from);
+            status.getAsJsonArray("conditions").asList().stream()
+                .map(cond -> (JsonObject) cond)
+                .forEach(cond -> {
+                    if ("Running".equals(cond.get("type").getAsString())) {
+                        updateRunningCondition(event, from, cond);
+                    }
+                });
+            return status;
+        });
+    }
+
+    private void updateRunningCondition(RunnerStateChange event,
+            DynamicKubernetesObject from, JsonObject cond) {
+        boolean reportedRunning
+            = "True".equals(cond.get("status").getAsString());
+        if (RUNNING_STATES.contains(event.state())
+            && !reportedRunning) {
+            cond.addProperty("status", "True");
+            cond.addProperty("lastTransitionTime",
+                Instant.now().toString());
+        }
+        if (!RUNNING_STATES.contains(event.state())
+            && reportedRunning) {
+            cond.addProperty("status", "False");
+            cond.addProperty("lastTransitionTime",
+                Instant.now().toString());
+        }
+        cond.addProperty("reason", event.reason());
+        cond.addProperty("message", event.message());
+        cond.addProperty("observedGeneration",
+            from.getMetadata().getGeneration());
+    }
+
+    /**
+     * On runner configuration update.
+     *
+     * @param event the event
+     * @throws ApiException 
+     */
+    @Handler
+    public void onRunnerConfigurationUpdate(RunnerConfigurationUpdate event)
+            throws ApiException {
+        if (vmCrApi == null) {
+            return;
+        }
+        // A change of the runner configuration is typically caused
+        // by a new version of the CR. So we observe the new CR.
+        var vmCr = vmCrApi.get(namespace, vmName).throwsApiException()
+            .getObject();
+        if (vmCr.getMetadata().getGeneration() == observedGeneration) {
+            return;
+        }
+        vmCrApi.updateStatus(vmCr, from -> {
+            JsonObject status = currentStatus(from);
+            status.getAsJsonArray("conditions").asList().stream()
+                .map(cond -> (JsonObject) cond)
+                .filter(
+                    cond -> "Running".equals(cond.get("type").getAsString()))
+                .forEach(cond -> cond.addProperty("observedGeneration",
+                    from.getMetadata().getGeneration()));
+            return status;
+        });
+    }
+
+}

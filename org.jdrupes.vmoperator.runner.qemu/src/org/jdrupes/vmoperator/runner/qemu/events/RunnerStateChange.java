@@ -19,6 +19,7 @@
 package org.jdrupes.vmoperator.runner.qemu.events;
 
 import org.jgrapes.core.Channel;
+import org.jgrapes.core.Components;
 import org.jgrapes.core.Event;
 
 /**
@@ -30,19 +31,24 @@ public class RunnerStateChange extends Event<Void> {
      * The state.
      */
     public enum State {
-        INITIALIZING, STARTING, RUNNING, TERMINATING
+        INITIALIZING, STARTING, RUNNING, TERMINATING, STOPPED
     }
 
     private final State state;
+    private final String reason;
+    private final String message;
 
     /**
      * Instantiates a new runner state change.
      *
      * @param channels the channels
      */
-    public RunnerStateChange(State state, Channel... channels) {
+    public RunnerStateChange(State state, String reason, String message,
+            Channel... channels) {
         super(channels);
         this.state = state;
+        this.reason = reason;
+        this.message = message;
     }
 
     /**
@@ -53,4 +59,36 @@ public class RunnerStateChange extends Event<Void> {
     public State state() {
         return state;
     }
+
+    /**
+     * Gets the reason.
+     *
+     * @return the reason
+     */
+    public String reason() {
+        return reason;
+    }
+
+    /**
+     * Gets the message.
+     *
+     * @return the message
+     */
+    public String message() {
+        return message;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append(Components.objectName(this))
+            .append(" [").append(state).append(": ").append(reason);
+        if (channels() != null) {
+            builder.append(", channels=");
+            builder.append(Channel.toString(channels()));
+        }
+        builder.append(']');
+        return builder.toString();
+    }
+
 }

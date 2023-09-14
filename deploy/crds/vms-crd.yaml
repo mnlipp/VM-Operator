@@ -9,6 +9,8 @@ spec:
     - name: v1
       served: true
       storage: true
+      subresources:
+        status: {}
       schema:
         openAPIV3Schema:
           type: object
@@ -1372,10 +1374,28 @@ spec:
               - vm              
             status:
               type: object
-              properties:            
+              default: {}
+              properties:
+                cpus:
+                  description: >-
+                    Number of CPUs currently in use.
+                  type: integer
+                  default: 0
+                ram:
+                  description: >-
+                    Amount of memory in use.
+                  type: string
+                  default: "0"
                 conditions:
                   description: >-
                     List of component conditions observed
+                  default:
+                  - type: Running
+                    status: "False"
+                    observedGeneration: 1
+                    lastTransitionTime: "1970-01-01T00:00:00Z"
+                    reason: Creation
+                    message: "Creation of CR"
                   type: array
                   items:
                     type: object
@@ -1383,6 +1403,12 @@ spec:
                       Information about the condition of a component. See
                       https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
                       and https://github.com/kubernetes/apimachinery/blob/release-1.23/pkg/apis/meta/v1/types.go#L1432-L1492
+                    required:
+                    - type
+                    - status
+                    - lastTransitionTime
+                    - reason
+                    - message
                     properties: 
                       type:
                         type: string
@@ -1428,12 +1454,6 @@ spec:
                           Message is a human readable message indicating 
                           details about the transition. This may be an empty string.
                         default: ""
-                    required:
-                    - type
-                    - status
-                    - lastTransitionTime
-                    - reason
-                    - message
   # either Namespaced or Cluster
   scope: Namespaced
   names:
