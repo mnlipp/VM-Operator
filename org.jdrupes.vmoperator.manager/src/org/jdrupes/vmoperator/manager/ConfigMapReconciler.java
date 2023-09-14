@@ -33,7 +33,7 @@ import java.io.StringWriter;
 import java.util.Map;
 import java.util.logging.Logger;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
-import static org.jdrupes.vmoperator.util.Constants.VM_OP_NAME;
+import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
 import org.jdrupes.vmoperator.util.K8s;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;

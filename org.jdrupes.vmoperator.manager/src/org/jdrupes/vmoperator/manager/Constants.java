@@ -21,7 +21,7 @@ package org.jdrupes.vmoperator.manager;
 /**
  * Some constants.
  */
-public class Constants {
+public class Constants extends org.jdrupes.vmoperator.util.Constants {
 
     /** The Constant APP_NAME. */
     public static final String APP_NAME = "vm-runner";
