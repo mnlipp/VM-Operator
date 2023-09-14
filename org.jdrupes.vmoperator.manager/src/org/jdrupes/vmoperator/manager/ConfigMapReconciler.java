@@ -32,6 +32,9 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
 import java.util.logging.Logger;
+import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
+import static org.jdrupes.vmoperator.util.Constants.VM_OP_NAME;
+import org.jdrupes.vmoperator.util.K8s;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
@@ -98,8 +101,8 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
             DynamicKubernetesObject newCm) {
         ListOptions listOpts = new ListOptions();
         listOpts.setLabelSelector(
-            "app.kubernetes.io/managed-by=" + Constants.VM_OP_NAME + ","
-                + "app.kubernetes.io/name=" + Constants.APP_NAME);
+            "app.kubernetes.io/managed-by=" + VM_OP_NAME + ","
+                + "app.kubernetes.io/name=" + APP_NAME);
         // Get pod, selected by label
         var podApi = new DynamicKubernetesApi("", "v1", "pods", client);
         var pods = podApi

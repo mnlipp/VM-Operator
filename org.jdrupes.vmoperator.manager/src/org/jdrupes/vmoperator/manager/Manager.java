@@ -30,7 +30,7 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
+import static org.jdrupes.vmoperator.util.Constants.VM_OP_NAME;
 import org.jdrupes.vmoperator.util.FsdUtils;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.Components;

@@ -44,9 +44,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
-import static org.jdrupes.vmoperator.manager.Constants.VM_OP_GROUP;
-import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM;
+import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
 import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
+import static org.jdrupes.vmoperator.util.Constants.VM_OP_GROUP;
+import static org.jdrupes.vmoperator.util.Constants.VM_OP_KIND_VM;
+import static org.jdrupes.vmoperator.util.Constants.VM_OP_NAME;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.Components;
@@ -132,7 +134,7 @@ public class VmWatcher extends Component {
         for (var version : vmOpApiVersions) {
             coa.getAPIResources(VM_OP_GROUP, version)
                 .getResources().stream()
-                .filter(r -> Constants.VM_OP_KIND_VM.equals(r.getKind()))
+                .filter(r -> VM_OP_KIND_VM.equals(r.getKind()))
                 .findFirst()
                 .ifPresent(crd -> watchVmDefs(crd, version));
         }
@@ -148,15 +150,15 @@ public class VmWatcher extends Component {
             // Get all known CR instances.
             coa.getAPIResources(VM_OP_GROUP, version)
                 .getResources().stream()
-                .filter(r -> Constants.VM_OP_KIND_VM.equals(r.getKind()))
+                .filter(r -> VM_OP_KIND_VM.equals(r.getKind()))
                 .findFirst()
                 .ifPresent(crd -> known.addAll(getKnown(client, crd, version)));
         }
 
         ListOptions opts = new ListOptions();
         opts.setLabelSelector(
-            "app.kubernetes.io/managed-by=" + Constants.VM_OP_NAME + ","
-                + "app.kubernetes.io/name=" + Constants.APP_NAME);
+            "app.kubernetes.io/managed-by=" + VM_OP_NAME + ","
+                + "app.kubernetes.io/name=" + APP_NAME);
         for (String resource : List.of("apps/v1/statefulsets",
             "v1/configmaps", "v1/secrets")) {
             var resParts = new LinkedList<>(List.of(resource.split("/")));

@@ -10,4 +10,5 @@ plugins {
 
 dependencies {
     implementation 'org.freemarker:freemarker:[2.3.32,2.4)'
+    implementation 'io.kubernetes:client-java:[18.0.0,19)'
 }
