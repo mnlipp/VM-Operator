@@ -19,6 +19,8 @@
 package org.jdrupes.vmoperator.runner.qemu;
 
 import com.google.gson.JsonObject;
+import io.kubernetes.client.custom.Quantity;
+import io.kubernetes.client.custom.Quantity.Format;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.ApiextensionsV1Api;
 import io.kubernetes.client.openapi.models.V1CustomResourceDefinitionVersion;
@@ -26,6 +28,7 @@ import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -33,11 +36,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
+import org.jdrupes.vmoperator.runner.qemu.events.BalloonChangeEvent;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerConfigurationUpdate;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;
 import static org.jdrupes.vmoperator.util.Constants.VM_OP_CRD_NAME;
 import static org.jdrupes.vmoperator.util.Constants.VM_OP_GROUP;
+import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.annotation.Handler;
@@ -162,55 +167,6 @@ public class StatusUpdater extends Component {
     }
 
     /**
-     * On runner state changed.
-     *
-     * @param event the event
-    8     * @throws ApiException the api exception
-     */
-    @Handler
-    public void onRunnerStateChanged(RunnerStateChange event)
-            throws ApiException {
-        if (vmCrApi == null) {
-            return;
-        }
-        var vmCr = vmCrApi.get(namespace, vmName)
-            .throwsApiException().getObject();
-        vmCrApi.updateStatus(vmCr, from -> {
-            JsonObject status = currentStatus(from);
-            status.getAsJsonArray("conditions").asList().stream()
-                .map(cond -> (JsonObject) cond)
-                .forEach(cond -> {
-                    if ("Running".equals(cond.get("type").getAsString())) {
-                        updateRunningCondition(event, from, cond);
-                    }
-                });
-            return status;
-        });
-    }
-
-    private void updateRunningCondition(RunnerStateChange event,
-            DynamicKubernetesObject from, JsonObject cond) {
-        boolean reportedRunning
-            = "True".equals(cond.get("status").getAsString());
-        if (RUNNING_STATES.contains(event.state())
-            && !reportedRunning) {
-            cond.addProperty("status", "True");
-            cond.addProperty("lastTransitionTime",
-                Instant.now().toString());
-        }
-        if (!RUNNING_STATES.contains(event.state())
-            && reportedRunning) {
-            cond.addProperty("status", "False");
-            cond.addProperty("lastTransitionTime",
-                Instant.now().toString());
-        }
-        cond.addProperty("reason", event.reason());
-        cond.addProperty("message", event.message());
-        cond.addProperty("observedGeneration",
-            from.getMetadata().getGeneration());
-    }
-
-    /**
      * On runner configuration update.
      *
      * @param event the event
@@ -241,4 +197,78 @@ public class StatusUpdater extends Component {
         });
     }
 
+    /**
+     * On runner state changed.
+     *
+     * @param event the event
+     * @throws ApiException the api exception
+     */
+    @Handler
+    public void onRunnerStateChanged(RunnerStateChange event)
+            throws ApiException {
+        if (vmCrApi == null) {
+            return;
+        }
+        var vmCr = vmCrApi.get(namespace, vmName)
+            .throwsApiException().getObject();
+        vmCrApi.updateStatus(vmCr, from -> {
+            JsonObject status = currentStatus(from);
+            status.getAsJsonArray("conditions").asList().stream()
+                .map(cond -> (JsonObject) cond)
+                .forEach(cond -> {
+                    if ("Running".equals(cond.get("type").getAsString())) {
+                        updateRunningCondition(event, from, cond);
+                    }
+                });
+            if (event.state() == State.STARTING) {
+                status.addProperty("ram", GsonPtr.to(from.getRaw())
+                    .getAsString("spec", "vm", "maximumRam").orElse("0"));
+            }
+            return status;
+        });
+    }
+
+    private void updateRunningCondition(RunnerStateChange event,
+            DynamicKubernetesObject from, JsonObject cond) {
+        boolean reportedRunning
+            = "True".equals(cond.get("status").getAsString());
+        if (RUNNING_STATES.contains(event.state())
+            && !reportedRunning) {
+            cond.addProperty("status", "True");
+            cond.addProperty("lastTransitionTime",
+                Instant.now().toString());
+        }
+        if (!RUNNING_STATES.contains(event.state())
+            && reportedRunning) {
+            cond.addProperty("status", "False");
+            cond.addProperty("lastTransitionTime",
+                Instant.now().toString());
+        }
+        cond.addProperty("reason", event.reason());
+        cond.addProperty("message", event.message());
+        cond.addProperty("observedGeneration",
+            from.getMetadata().getGeneration());
+    }
+
+    /**
+     * On ballon change.
+     *
+     * @param event the event
+     * @throws ApiException 
+     */
+    @Handler
+    public void onBallonChange(BalloonChangeEvent event) throws ApiException {
+        if (vmCrApi == null) {
+            return;
+        }
+        var vmCr
+            = vmCrApi.get(namespace, vmName).throwsApiException().getObject();
+        vmCrApi.updateStatus(vmCr, from -> {
+            JsonObject status = currentStatus(from);
+            status.addProperty("ram",
+                new Quantity(new BigDecimal(event.size()), Format.BINARY_SI)
+                    .toSuffixedString());
+            return status;
+        });
+    }
 }

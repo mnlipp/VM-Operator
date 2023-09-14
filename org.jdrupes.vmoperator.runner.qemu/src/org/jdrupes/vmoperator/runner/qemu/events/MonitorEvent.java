@@ -32,7 +32,7 @@ public class MonitorEvent extends Event<Void> {
      * The kind of monitor event.
      */
     public enum Kind {
-        READY, POWERDOWN, DEVICE_TRAY_MOVED
+        READY, POWERDOWN, DEVICE_TRAY_MOVED, BALLOON_CHANGE
     }
 
     private final Kind kind;
@@ -55,6 +55,9 @@ public class MonitorEvent extends Event<Void> {
             case DEVICE_TRAY_MOVED:
                 return Optional
                     .of(new TrayMovedEvent(kind, response.get("data")));
+            case BALLOON_CHANGE:
+                return Optional
+                    .of(new BalloonChangeEvent(kind, response.get("data")));
             default:
                 return Optional
                     .of(new MonitorEvent(kind, response.get("data")));
