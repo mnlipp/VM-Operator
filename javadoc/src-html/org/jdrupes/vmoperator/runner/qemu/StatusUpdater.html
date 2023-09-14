@@ -32,229 +32,259 @@
 <span class="source-line-no">019</span><span id="line-19">package org.jdrupes.vmoperator.runner.qemu;</span>
 <span class="source-line-no">020</span><span id="line-20"></span>
 <span class="source-line-no">021</span><span id="line-21">import com.google.gson.JsonObject;</span>
-<span class="source-line-no">022</span><span id="line-22">import io.kubernetes.client.openapi.ApiException;</span>
-<span class="source-line-no">023</span><span id="line-23">import io.kubernetes.client.openapi.apis.ApiextensionsV1Api;</span>
-<span class="source-line-no">024</span><span id="line-24">import io.kubernetes.client.openapi.models.V1CustomResourceDefinitionVersion;</span>
-<span class="source-line-no">025</span><span id="line-25">import io.kubernetes.client.util.Config;</span>
-<span class="source-line-no">026</span><span id="line-26">import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;</span>
-<span class="source-line-no">027</span><span id="line-27">import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;</span>
-<span class="source-line-no">028</span><span id="line-28">import java.io.IOException;</span>
-<span class="source-line-no">029</span><span id="line-29">import java.nio.file.Files;</span>
-<span class="source-line-no">030</span><span id="line-30">import java.nio.file.Path;</span>
-<span class="source-line-no">031</span><span id="line-31">import java.time.Instant;</span>
-<span class="source-line-no">032</span><span id="line-32">import java.util.Map;</span>
-<span class="source-line-no">033</span><span id="line-33">import java.util.Optional;</span>
-<span class="source-line-no">034</span><span id="line-34">import java.util.Set;</span>
-<span class="source-line-no">035</span><span id="line-35">import java.util.logging.Level;</span>
-<span class="source-line-no">036</span><span id="line-36">import org.jdrupes.vmoperator.runner.qemu.events.RunnerConfigurationUpdate;</span>
-<span class="source-line-no">037</span><span id="line-37">import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;</span>
-<span class="source-line-no">038</span><span id="line-38">import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;</span>
-<span class="source-line-no">039</span><span id="line-39">import static org.jdrupes.vmoperator.util.Constants.VM_OP_CRD_NAME;</span>
-<span class="source-line-no">040</span><span id="line-40">import static org.jdrupes.vmoperator.util.Constants.VM_OP_GROUP;</span>
-<span class="source-line-no">041</span><span id="line-41">import org.jgrapes.core.Channel;</span>
-<span class="source-line-no">042</span><span id="line-42">import org.jgrapes.core.Component;</span>
-<span class="source-line-no">043</span><span id="line-43">import org.jgrapes.core.annotation.Handler;</span>
-<span class="source-line-no">044</span><span id="line-44">import org.jgrapes.core.events.Start;</span>
-<span class="source-line-no">045</span><span id="line-45">import org.jgrapes.util.events.ConfigurationUpdate;</span>
-<span class="source-line-no">046</span><span id="line-46">import org.jgrapes.util.events.InitialConfiguration;</span>
-<span class="source-line-no">047</span><span id="line-47"></span>
-<span class="source-line-no">048</span><span id="line-48">/**</span>
-<span class="source-line-no">049</span><span id="line-49"> * Updates the CR status.</span>
-<span class="source-line-no">050</span><span id="line-50"> */</span>
-<span class="source-line-no">051</span><span id="line-51">public class StatusUpdater extends Component {</span>
+<span class="source-line-no">022</span><span id="line-22">import io.kubernetes.client.custom.Quantity;</span>
+<span class="source-line-no">023</span><span id="line-23">import io.kubernetes.client.custom.Quantity.Format;</span>
+<span class="source-line-no">024</span><span id="line-24">import io.kubernetes.client.openapi.ApiException;</span>
+<span class="source-line-no">025</span><span id="line-25">import io.kubernetes.client.openapi.apis.ApiextensionsV1Api;</span>
+<span class="source-line-no">026</span><span id="line-26">import io.kubernetes.client.openapi.models.V1CustomResourceDefinitionVersion;</span>
+<span class="source-line-no">027</span><span id="line-27">import io.kubernetes.client.util.Config;</span>
+<span class="source-line-no">028</span><span id="line-28">import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;</span>
+<span class="source-line-no">029</span><span id="line-29">import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;</span>
+<span class="source-line-no">030</span><span id="line-30">import java.io.IOException;</span>
+<span class="source-line-no">031</span><span id="line-31">import java.math.BigDecimal;</span>
+<span class="source-line-no">032</span><span id="line-32">import java.nio.file.Files;</span>
+<span class="source-line-no">033</span><span id="line-33">import java.nio.file.Path;</span>
+<span class="source-line-no">034</span><span id="line-34">import java.time.Instant;</span>
+<span class="source-line-no">035</span><span id="line-35">import java.util.Map;</span>
+<span class="source-line-no">036</span><span id="line-36">import java.util.Optional;</span>
+<span class="source-line-no">037</span><span id="line-37">import java.util.Set;</span>
+<span class="source-line-no">038</span><span id="line-38">import java.util.logging.Level;</span>
+<span class="source-line-no">039</span><span id="line-39">import org.jdrupes.vmoperator.runner.qemu.events.BalloonChangeEvent;</span>
+<span class="source-line-no">040</span><span id="line-40">import org.jdrupes.vmoperator.runner.qemu.events.RunnerConfigurationUpdate;</span>
+<span class="source-line-no">041</span><span id="line-41">import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;</span>
+<span class="source-line-no">042</span><span id="line-42">import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;</span>
+<span class="source-line-no">043</span><span id="line-43">import static org.jdrupes.vmoperator.util.Constants.VM_OP_CRD_NAME;</span>
+<span class="source-line-no">044</span><span id="line-44">import static org.jdrupes.vmoperator.util.Constants.VM_OP_GROUP;</span>
+<span class="source-line-no">045</span><span id="line-45">import org.jdrupes.vmoperator.util.GsonPtr;</span>
+<span class="source-line-no">046</span><span id="line-46">import org.jgrapes.core.Channel;</span>
+<span class="source-line-no">047</span><span id="line-47">import org.jgrapes.core.Component;</span>
+<span class="source-line-no">048</span><span id="line-48">import org.jgrapes.core.annotation.Handler;</span>
+<span class="source-line-no">049</span><span id="line-49">import org.jgrapes.core.events.Start;</span>
+<span class="source-line-no">050</span><span id="line-50">import org.jgrapes.util.events.ConfigurationUpdate;</span>
+<span class="source-line-no">051</span><span id="line-51">import org.jgrapes.util.events.InitialConfiguration;</span>
 <span class="source-line-no">052</span><span id="line-52"></span>
-<span class="source-line-no">053</span><span id="line-53">    private static final Set&lt;State&gt; RUNNING_STATES</span>
-<span class="source-line-no">054</span><span id="line-54">        = Set.of(State.RUNNING, State.TERMINATING);</span>
-<span class="source-line-no">055</span><span id="line-55"></span>
-<span class="source-line-no">056</span><span id="line-56">    private String namespace;</span>
-<span class="source-line-no">057</span><span id="line-57">    private String vmName;</span>
-<span class="source-line-no">058</span><span id="line-58">    private DynamicKubernetesApi vmCrApi;</span>
-<span class="source-line-no">059</span><span id="line-59">    private long observedGeneration;</span>
+<span class="source-line-no">053</span><span id="line-53">/**</span>
+<span class="source-line-no">054</span><span id="line-54"> * Updates the CR status.</span>
+<span class="source-line-no">055</span><span id="line-55"> */</span>
+<span class="source-line-no">056</span><span id="line-56">public class StatusUpdater extends Component {</span>
+<span class="source-line-no">057</span><span id="line-57"></span>
+<span class="source-line-no">058</span><span id="line-58">    private static final Set&lt;State&gt; RUNNING_STATES</span>
+<span class="source-line-no">059</span><span id="line-59">        = Set.of(State.RUNNING, State.TERMINATING);</span>
 <span class="source-line-no">060</span><span id="line-60"></span>
-<span class="source-line-no">061</span><span id="line-61">    /**</span>
-<span class="source-line-no">062</span><span id="line-62">     * Instantiates a new status updater.</span>
-<span class="source-line-no">063</span><span id="line-63">     *</span>
-<span class="source-line-no">064</span><span id="line-64">     * @param componentChannel the component channel</span>
-<span class="source-line-no">065</span><span id="line-65">     */</span>
-<span class="source-line-no">066</span><span id="line-66">    public StatusUpdater(Channel componentChannel) {</span>
-<span class="source-line-no">067</span><span id="line-67">        super(componentChannel);</span>
-<span class="source-line-no">068</span><span id="line-68">    }</span>
-<span class="source-line-no">069</span><span id="line-69"></span>
-<span class="source-line-no">070</span><span id="line-70">    /**</span>
-<span class="source-line-no">071</span><span id="line-71">     * On configuration update.</span>
-<span class="source-line-no">072</span><span id="line-72">     *</span>
-<span class="source-line-no">073</span><span id="line-73">     * @param event the event</span>
-<span class="source-line-no">074</span><span id="line-74">     */</span>
-<span class="source-line-no">075</span><span id="line-75">    @Handler</span>
-<span class="source-line-no">076</span><span id="line-76">    @SuppressWarnings("unchecked")</span>
-<span class="source-line-no">077</span><span id="line-77">    public void onConfigurationUpdate(ConfigurationUpdate event) {</span>
-<span class="source-line-no">078</span><span id="line-78">        event.structured("/Runner").ifPresent(c -&gt; {</span>
-<span class="source-line-no">079</span><span id="line-79">            if (event instanceof InitialConfiguration) {</span>
-<span class="source-line-no">080</span><span id="line-80">                namespace = (String) c.get("namespace");</span>
-<span class="source-line-no">081</span><span id="line-81">                updateNamespace();</span>
-<span class="source-line-no">082</span><span id="line-82">                vmName = Optional.ofNullable((Map&lt;String, String&gt;) c.get("vm"))</span>
-<span class="source-line-no">083</span><span id="line-83">                    .map(vm -&gt; vm.get("name")).orElse(null);</span>
-<span class="source-line-no">084</span><span id="line-84">            }</span>
-<span class="source-line-no">085</span><span id="line-85">        });</span>
-<span class="source-line-no">086</span><span id="line-86">    }</span>
-<span class="source-line-no">087</span><span id="line-87"></span>
-<span class="source-line-no">088</span><span id="line-88">    private void updateNamespace() {</span>
-<span class="source-line-no">089</span><span id="line-89">        if (namespace == null) {</span>
-<span class="source-line-no">090</span><span id="line-90">            var path = Path</span>
-<span class="source-line-no">091</span><span id="line-91">                .of("/var/run/secrets/kubernetes.io/serviceaccount/namespace");</span>
-<span class="source-line-no">092</span><span id="line-92">            if (Files.isReadable(path)) {</span>
-<span class="source-line-no">093</span><span id="line-93">                try {</span>
-<span class="source-line-no">094</span><span id="line-94">                    namespace = Files.lines(path).findFirst().orElse(null);</span>
-<span class="source-line-no">095</span><span id="line-95">                } catch (IOException e) {</span>
-<span class="source-line-no">096</span><span id="line-96">                    logger.log(Level.WARNING, e,</span>
-<span class="source-line-no">097</span><span id="line-97">                        () -&gt; "Cannot read namespace.");</span>
-<span class="source-line-no">098</span><span id="line-98">                }</span>
-<span class="source-line-no">099</span><span id="line-99">            }</span>
-<span class="source-line-no">100</span><span id="line-100">        }</span>
-<span class="source-line-no">101</span><span id="line-101">        if (namespace == null) {</span>
-<span class="source-line-no">102</span><span id="line-102">            logger.warning(() -&gt; "Namespace is unknown, some functions"</span>
-<span class="source-line-no">103</span><span id="line-103">                + " won't be available.");</span>
-<span class="source-line-no">104</span><span id="line-104">        }</span>
-<span class="source-line-no">105</span><span id="line-105">    }</span>
-<span class="source-line-no">106</span><span id="line-106"></span>
-<span class="source-line-no">107</span><span id="line-107">    /**</span>
-<span class="source-line-no">108</span><span id="line-108">     * Handle the start event.</span>
-<span class="source-line-no">109</span><span id="line-109">     *</span>
-<span class="source-line-no">110</span><span id="line-110">     * @param event the event</span>
-<span class="source-line-no">111</span><span id="line-111">     */</span>
-<span class="source-line-no">112</span><span id="line-112">    @Handler</span>
-<span class="source-line-no">113</span><span id="line-113">    @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",</span>
-<span class="source-line-no">114</span><span id="line-114">        "PMD.AvoidInstantiatingObjectsInLoops" })</span>
-<span class="source-line-no">115</span><span id="line-115">    public void onStart(Start event) {</span>
-<span class="source-line-no">116</span><span id="line-116">        try {</span>
-<span class="source-line-no">117</span><span id="line-117">            var client = Config.defaultClient();</span>
-<span class="source-line-no">118</span><span id="line-118">            var extsApi = new ApiextensionsV1Api(client);</span>
-<span class="source-line-no">119</span><span id="line-119">            var crds = extsApi.listCustomResourceDefinition(null, null, null,</span>
-<span class="source-line-no">120</span><span id="line-120">                "metadata.name=" + VM_OP_CRD_NAME, null, null, null,</span>
-<span class="source-line-no">121</span><span id="line-121">                null, null, null);</span>
-<span class="source-line-no">122</span><span id="line-122">            if (crds.getItems().isEmpty()) {</span>
-<span class="source-line-no">123</span><span id="line-123">                logger.warning(() -&gt; "CRD is unknown, status will not"</span>
-<span class="source-line-no">124</span><span id="line-124">                    + " be updated.");</span>
-<span class="source-line-no">125</span><span id="line-125">                return;</span>
-<span class="source-line-no">126</span><span id="line-126">            }</span>
-<span class="source-line-no">127</span><span id="line-127">            var crd = crds.getItems().get(0);</span>
-<span class="source-line-no">128</span><span id="line-128">            if (crd.getSpec().getVersions().stream()</span>
-<span class="source-line-no">129</span><span id="line-129">                .filter(v -&gt; v.getSubresources() == null).findAny()</span>
-<span class="source-line-no">130</span><span id="line-130">                .isPresent()) {</span>
-<span class="source-line-no">131</span><span id="line-131">                logger.warning(() -&gt; "You are using an old version of the CRD,"</span>
-<span class="source-line-no">132</span><span id="line-132">                    + " status will not be updated.");</span>
-<span class="source-line-no">133</span><span id="line-133">                return;</span>
-<span class="source-line-no">134</span><span id="line-134">            }</span>
-<span class="source-line-no">135</span><span id="line-135">            var crdPlural = crd.getSpec().getNames().getPlural();</span>
-<span class="source-line-no">136</span><span id="line-136">            var vmOpApiVersions = crd.getSpec().getVersions().stream()</span>
-<span class="source-line-no">137</span><span id="line-137">                .map(V1CustomResourceDefinitionVersion::getName).toList();</span>
-<span class="source-line-no">138</span><span id="line-138">            for (var apiVer : vmOpApiVersions) {</span>
-<span class="source-line-no">139</span><span id="line-139">                var api = new DynamicKubernetesApi(VM_OP_GROUP, apiVer,</span>
-<span class="source-line-no">140</span><span id="line-140">                    crdPlural, client);</span>
-<span class="source-line-no">141</span><span id="line-141">                var res = api.get(namespace, vmName);</span>
-<span class="source-line-no">142</span><span id="line-142">                if (res.isSuccess()) {</span>
-<span class="source-line-no">143</span><span id="line-143">                    vmCrApi = api;</span>
-<span class="source-line-no">144</span><span id="line-144">                    observedGeneration</span>
-<span class="source-line-no">145</span><span id="line-145">                        = res.getObject().getMetadata().getGeneration();</span>
-<span class="source-line-no">146</span><span id="line-146">                    break;</span>
-<span class="source-line-no">147</span><span id="line-147">                }</span>
-<span class="source-line-no">148</span><span id="line-148">            }</span>
-<span class="source-line-no">149</span><span id="line-149">            if (vmCrApi == null) {</span>
-<span class="source-line-no">150</span><span id="line-150">                logger.warning(() -&gt; "VM's CR is unknown, status will not"</span>
-<span class="source-line-no">151</span><span id="line-151">                    + " be updated.");</span>
-<span class="source-line-no">152</span><span id="line-152">            }</span>
-<span class="source-line-no">153</span><span id="line-153">        } catch (IOException | ApiException e) {</span>
-<span class="source-line-no">154</span><span id="line-154">            logger.log(Level.WARNING, e, () -&gt; "Cannot access kubernetes: "</span>
-<span class="source-line-no">155</span><span id="line-155">                + e.getMessage());</span>
-<span class="source-line-no">156</span><span id="line-156">        }</span>
-<span class="source-line-no">157</span><span id="line-157">    }</span>
-<span class="source-line-no">158</span><span id="line-158"></span>
-<span class="source-line-no">159</span><span id="line-159">    @SuppressWarnings("PMD.AvoidDuplicateLiterals")</span>
-<span class="source-line-no">160</span><span id="line-160">    private JsonObject currentStatus(DynamicKubernetesObject vmCr) {</span>
-<span class="source-line-no">161</span><span id="line-161">        return vmCr.getRaw().getAsJsonObject("status").deepCopy();</span>
+<span class="source-line-no">061</span><span id="line-61">    private String namespace;</span>
+<span class="source-line-no">062</span><span id="line-62">    private String vmName;</span>
+<span class="source-line-no">063</span><span id="line-63">    private DynamicKubernetesApi vmCrApi;</span>
+<span class="source-line-no">064</span><span id="line-64">    private long observedGeneration;</span>
+<span class="source-line-no">065</span><span id="line-65"></span>
+<span class="source-line-no">066</span><span id="line-66">    /**</span>
+<span class="source-line-no">067</span><span id="line-67">     * Instantiates a new status updater.</span>
+<span class="source-line-no">068</span><span id="line-68">     *</span>
+<span class="source-line-no">069</span><span id="line-69">     * @param componentChannel the component channel</span>
+<span class="source-line-no">070</span><span id="line-70">     */</span>
+<span class="source-line-no">071</span><span id="line-71">    public StatusUpdater(Channel componentChannel) {</span>
+<span class="source-line-no">072</span><span id="line-72">        super(componentChannel);</span>
+<span class="source-line-no">073</span><span id="line-73">    }</span>
+<span class="source-line-no">074</span><span id="line-74"></span>
+<span class="source-line-no">075</span><span id="line-75">    /**</span>
+<span class="source-line-no">076</span><span id="line-76">     * On configuration update.</span>
+<span class="source-line-no">077</span><span id="line-77">     *</span>
+<span class="source-line-no">078</span><span id="line-78">     * @param event the event</span>
+<span class="source-line-no">079</span><span id="line-79">     */</span>
+<span class="source-line-no">080</span><span id="line-80">    @Handler</span>
+<span class="source-line-no">081</span><span id="line-81">    @SuppressWarnings("unchecked")</span>
+<span class="source-line-no">082</span><span id="line-82">    public void onConfigurationUpdate(ConfigurationUpdate event) {</span>
+<span class="source-line-no">083</span><span id="line-83">        event.structured("/Runner").ifPresent(c -&gt; {</span>
+<span class="source-line-no">084</span><span id="line-84">            if (event instanceof InitialConfiguration) {</span>
+<span class="source-line-no">085</span><span id="line-85">                namespace = (String) c.get("namespace");</span>
+<span class="source-line-no">086</span><span id="line-86">                updateNamespace();</span>
+<span class="source-line-no">087</span><span id="line-87">                vmName = Optional.ofNullable((Map&lt;String, String&gt;) c.get("vm"))</span>
+<span class="source-line-no">088</span><span id="line-88">                    .map(vm -&gt; vm.get("name")).orElse(null);</span>
+<span class="source-line-no">089</span><span id="line-89">            }</span>
+<span class="source-line-no">090</span><span id="line-90">        });</span>
+<span class="source-line-no">091</span><span id="line-91">    }</span>
+<span class="source-line-no">092</span><span id="line-92"></span>
+<span class="source-line-no">093</span><span id="line-93">    private void updateNamespace() {</span>
+<span class="source-line-no">094</span><span id="line-94">        if (namespace == null) {</span>
+<span class="source-line-no">095</span><span id="line-95">            var path = Path</span>
+<span class="source-line-no">096</span><span id="line-96">                .of("/var/run/secrets/kubernetes.io/serviceaccount/namespace");</span>
+<span class="source-line-no">097</span><span id="line-97">            if (Files.isReadable(path)) {</span>
+<span class="source-line-no">098</span><span id="line-98">                try {</span>
+<span class="source-line-no">099</span><span id="line-99">                    namespace = Files.lines(path).findFirst().orElse(null);</span>
+<span class="source-line-no">100</span><span id="line-100">                } catch (IOException e) {</span>
+<span class="source-line-no">101</span><span id="line-101">                    logger.log(Level.WARNING, e,</span>
+<span class="source-line-no">102</span><span id="line-102">                        () -&gt; "Cannot read namespace.");</span>
+<span class="source-line-no">103</span><span id="line-103">                }</span>
+<span class="source-line-no">104</span><span id="line-104">            }</span>
+<span class="source-line-no">105</span><span id="line-105">        }</span>
+<span class="source-line-no">106</span><span id="line-106">        if (namespace == null) {</span>
+<span class="source-line-no">107</span><span id="line-107">            logger.warning(() -&gt; "Namespace is unknown, some functions"</span>
+<span class="source-line-no">108</span><span id="line-108">                + " won't be available.");</span>
+<span class="source-line-no">109</span><span id="line-109">        }</span>
+<span class="source-line-no">110</span><span id="line-110">    }</span>
+<span class="source-line-no">111</span><span id="line-111"></span>
+<span class="source-line-no">112</span><span id="line-112">    /**</span>
+<span class="source-line-no">113</span><span id="line-113">     * Handle the start event.</span>
+<span class="source-line-no">114</span><span id="line-114">     *</span>
+<span class="source-line-no">115</span><span id="line-115">     * @param event the event</span>
+<span class="source-line-no">116</span><span id="line-116">     */</span>
+<span class="source-line-no">117</span><span id="line-117">    @Handler</span>
+<span class="source-line-no">118</span><span id="line-118">    @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",</span>
+<span class="source-line-no">119</span><span id="line-119">        "PMD.AvoidInstantiatingObjectsInLoops" })</span>
+<span class="source-line-no">120</span><span id="line-120">    public void onStart(Start event) {</span>
+<span class="source-line-no">121</span><span id="line-121">        try {</span>
+<span class="source-line-no">122</span><span id="line-122">            var client = Config.defaultClient();</span>
+<span class="source-line-no">123</span><span id="line-123">            var extsApi = new ApiextensionsV1Api(client);</span>
+<span class="source-line-no">124</span><span id="line-124">            var crds = extsApi.listCustomResourceDefinition(null, null, null,</span>
+<span class="source-line-no">125</span><span id="line-125">                "metadata.name=" + VM_OP_CRD_NAME, null, null, null,</span>
+<span class="source-line-no">126</span><span id="line-126">                null, null, null);</span>
+<span class="source-line-no">127</span><span id="line-127">            if (crds.getItems().isEmpty()) {</span>
+<span class="source-line-no">128</span><span id="line-128">                logger.warning(() -&gt; "CRD is unknown, status will not"</span>
+<span class="source-line-no">129</span><span id="line-129">                    + " be updated.");</span>
+<span class="source-line-no">130</span><span id="line-130">                return;</span>
+<span class="source-line-no">131</span><span id="line-131">            }</span>
+<span class="source-line-no">132</span><span id="line-132">            var crd = crds.getItems().get(0);</span>
+<span class="source-line-no">133</span><span id="line-133">            if (crd.getSpec().getVersions().stream()</span>
+<span class="source-line-no">134</span><span id="line-134">                .filter(v -&gt; v.getSubresources() == null).findAny()</span>
+<span class="source-line-no">135</span><span id="line-135">                .isPresent()) {</span>
+<span class="source-line-no">136</span><span id="line-136">                logger.warning(() -&gt; "You are using an old version of the CRD,"</span>
+<span class="source-line-no">137</span><span id="line-137">                    + " status will not be updated.");</span>
+<span class="source-line-no">138</span><span id="line-138">                return;</span>
+<span class="source-line-no">139</span><span id="line-139">            }</span>
+<span class="source-line-no">140</span><span id="line-140">            var crdPlural = crd.getSpec().getNames().getPlural();</span>
+<span class="source-line-no">141</span><span id="line-141">            var vmOpApiVersions = crd.getSpec().getVersions().stream()</span>
+<span class="source-line-no">142</span><span id="line-142">                .map(V1CustomResourceDefinitionVersion::getName).toList();</span>
+<span class="source-line-no">143</span><span id="line-143">            for (var apiVer : vmOpApiVersions) {</span>
+<span class="source-line-no">144</span><span id="line-144">                var api = new DynamicKubernetesApi(VM_OP_GROUP, apiVer,</span>
+<span class="source-line-no">145</span><span id="line-145">                    crdPlural, client);</span>
+<span class="source-line-no">146</span><span id="line-146">                var res = api.get(namespace, vmName);</span>
+<span class="source-line-no">147</span><span id="line-147">                if (res.isSuccess()) {</span>
+<span class="source-line-no">148</span><span id="line-148">                    vmCrApi = api;</span>
+<span class="source-line-no">149</span><span id="line-149">                    observedGeneration</span>
+<span class="source-line-no">150</span><span id="line-150">                        = res.getObject().getMetadata().getGeneration();</span>
+<span class="source-line-no">151</span><span id="line-151">                    break;</span>
+<span class="source-line-no">152</span><span id="line-152">                }</span>
+<span class="source-line-no">153</span><span id="line-153">            }</span>
+<span class="source-line-no">154</span><span id="line-154">            if (vmCrApi == null) {</span>
+<span class="source-line-no">155</span><span id="line-155">                logger.warning(() -&gt; "VM's CR is unknown, status will not"</span>
+<span class="source-line-no">156</span><span id="line-156">                    + " be updated.");</span>
+<span class="source-line-no">157</span><span id="line-157">            }</span>
+<span class="source-line-no">158</span><span id="line-158">        } catch (IOException | ApiException e) {</span>
+<span class="source-line-no">159</span><span id="line-159">            logger.log(Level.WARNING, e, () -&gt; "Cannot access kubernetes: "</span>
+<span class="source-line-no">160</span><span id="line-160">                + e.getMessage());</span>
+<span class="source-line-no">161</span><span id="line-161">        }</span>
 <span class="source-line-no">162</span><span id="line-162">    }</span>
 <span class="source-line-no">163</span><span id="line-163"></span>
-<span class="source-line-no">164</span><span id="line-164">    /**</span>
-<span class="source-line-no">165</span><span id="line-165">     * On runner state changed.</span>
-<span class="source-line-no">166</span><span id="line-166">     *</span>
-<span class="source-line-no">167</span><span id="line-167">     * @param event the event</span>
-<span class="source-line-no">168</span><span id="line-168">    8     * @throws ApiException the api exception</span>
-<span class="source-line-no">169</span><span id="line-169">     */</span>
-<span class="source-line-no">170</span><span id="line-170">    @Handler</span>
-<span class="source-line-no">171</span><span id="line-171">    public void onRunnerStateChanged(RunnerStateChange event)</span>
-<span class="source-line-no">172</span><span id="line-172">            throws ApiException {</span>
-<span class="source-line-no">173</span><span id="line-173">        if (vmCrApi == null) {</span>
-<span class="source-line-no">174</span><span id="line-174">            return;</span>
-<span class="source-line-no">175</span><span id="line-175">        }</span>
-<span class="source-line-no">176</span><span id="line-176">        var vmCr = vmCrApi.get(namespace, vmName)</span>
-<span class="source-line-no">177</span><span id="line-177">            .throwsApiException().getObject();</span>
-<span class="source-line-no">178</span><span id="line-178">        vmCrApi.updateStatus(vmCr, from -&gt; {</span>
-<span class="source-line-no">179</span><span id="line-179">            JsonObject status = currentStatus(from);</span>
-<span class="source-line-no">180</span><span id="line-180">            status.getAsJsonArray("conditions").asList().stream()</span>
-<span class="source-line-no">181</span><span id="line-181">                .map(cond -&gt; (JsonObject) cond)</span>
-<span class="source-line-no">182</span><span id="line-182">                .forEach(cond -&gt; {</span>
-<span class="source-line-no">183</span><span id="line-183">                    if ("Running".equals(cond.get("type").getAsString())) {</span>
-<span class="source-line-no">184</span><span id="line-184">                        updateRunningCondition(event, from, cond);</span>
-<span class="source-line-no">185</span><span id="line-185">                    }</span>
-<span class="source-line-no">186</span><span id="line-186">                });</span>
-<span class="source-line-no">187</span><span id="line-187">            return status;</span>
-<span class="source-line-no">188</span><span id="line-188">        });</span>
-<span class="source-line-no">189</span><span id="line-189">    }</span>
-<span class="source-line-no">190</span><span id="line-190"></span>
-<span class="source-line-no">191</span><span id="line-191">    private void updateRunningCondition(RunnerStateChange event,</span>
-<span class="source-line-no">192</span><span id="line-192">            DynamicKubernetesObject from, JsonObject cond) {</span>
-<span class="source-line-no">193</span><span id="line-193">        boolean reportedRunning</span>
-<span class="source-line-no">194</span><span id="line-194">            = "True".equals(cond.get("status").getAsString());</span>
-<span class="source-line-no">195</span><span id="line-195">        if (RUNNING_STATES.contains(event.state())</span>
-<span class="source-line-no">196</span><span id="line-196">            &amp;&amp; !reportedRunning) {</span>
-<span class="source-line-no">197</span><span id="line-197">            cond.addProperty("status", "True");</span>
-<span class="source-line-no">198</span><span id="line-198">            cond.addProperty("lastTransitionTime",</span>
-<span class="source-line-no">199</span><span id="line-199">                Instant.now().toString());</span>
-<span class="source-line-no">200</span><span id="line-200">        }</span>
-<span class="source-line-no">201</span><span id="line-201">        if (!RUNNING_STATES.contains(event.state())</span>
-<span class="source-line-no">202</span><span id="line-202">            &amp;&amp; reportedRunning) {</span>
-<span class="source-line-no">203</span><span id="line-203">            cond.addProperty("status", "False");</span>
-<span class="source-line-no">204</span><span id="line-204">            cond.addProperty("lastTransitionTime",</span>
-<span class="source-line-no">205</span><span id="line-205">                Instant.now().toString());</span>
-<span class="source-line-no">206</span><span id="line-206">        }</span>
-<span class="source-line-no">207</span><span id="line-207">        cond.addProperty("reason", event.reason());</span>
-<span class="source-line-no">208</span><span id="line-208">        cond.addProperty("message", event.message());</span>
-<span class="source-line-no">209</span><span id="line-209">        cond.addProperty("observedGeneration",</span>
-<span class="source-line-no">210</span><span id="line-210">            from.getMetadata().getGeneration());</span>
-<span class="source-line-no">211</span><span id="line-211">    }</span>
-<span class="source-line-no">212</span><span id="line-212"></span>
-<span class="source-line-no">213</span><span id="line-213">    /**</span>
-<span class="source-line-no">214</span><span id="line-214">     * On runner configuration update.</span>
-<span class="source-line-no">215</span><span id="line-215">     *</span>
-<span class="source-line-no">216</span><span id="line-216">     * @param event the event</span>
-<span class="source-line-no">217</span><span id="line-217">     * @throws ApiException </span>
-<span class="source-line-no">218</span><span id="line-218">     */</span>
-<span class="source-line-no">219</span><span id="line-219">    @Handler</span>
-<span class="source-line-no">220</span><span id="line-220">    public void onRunnerConfigurationUpdate(RunnerConfigurationUpdate event)</span>
-<span class="source-line-no">221</span><span id="line-221">            throws ApiException {</span>
-<span class="source-line-no">222</span><span id="line-222">        if (vmCrApi == null) {</span>
-<span class="source-line-no">223</span><span id="line-223">            return;</span>
-<span class="source-line-no">224</span><span id="line-224">        }</span>
-<span class="source-line-no">225</span><span id="line-225">        // A change of the runner configuration is typically caused</span>
-<span class="source-line-no">226</span><span id="line-226">        // by a new version of the CR. So we observe the new CR.</span>
-<span class="source-line-no">227</span><span id="line-227">        var vmCr = vmCrApi.get(namespace, vmName).throwsApiException()</span>
-<span class="source-line-no">228</span><span id="line-228">            .getObject();</span>
-<span class="source-line-no">229</span><span id="line-229">        if (vmCr.getMetadata().getGeneration() == observedGeneration) {</span>
-<span class="source-line-no">230</span><span id="line-230">            return;</span>
-<span class="source-line-no">231</span><span id="line-231">        }</span>
-<span class="source-line-no">232</span><span id="line-232">        vmCrApi.updateStatus(vmCr, from -&gt; {</span>
-<span class="source-line-no">233</span><span id="line-233">            JsonObject status = currentStatus(from);</span>
-<span class="source-line-no">234</span><span id="line-234">            status.getAsJsonArray("conditions").asList().stream()</span>
-<span class="source-line-no">235</span><span id="line-235">                .map(cond -&gt; (JsonObject) cond)</span>
-<span class="source-line-no">236</span><span id="line-236">                .filter(</span>
-<span class="source-line-no">237</span><span id="line-237">                    cond -&gt; "Running".equals(cond.get("type").getAsString()))</span>
-<span class="source-line-no">238</span><span id="line-238">                .forEach(cond -&gt; cond.addProperty("observedGeneration",</span>
-<span class="source-line-no">239</span><span id="line-239">                    from.getMetadata().getGeneration()));</span>
-<span class="source-line-no">240</span><span id="line-240">            return status;</span>
-<span class="source-line-no">241</span><span id="line-241">        });</span>
-<span class="source-line-no">242</span><span id="line-242">    }</span>
-<span class="source-line-no">243</span><span id="line-243"></span>
-<span class="source-line-no">244</span><span id="line-244">}</span>
+<span class="source-line-no">164</span><span id="line-164">    @SuppressWarnings("PMD.AvoidDuplicateLiterals")</span>
+<span class="source-line-no">165</span><span id="line-165">    private JsonObject currentStatus(DynamicKubernetesObject vmCr) {</span>
+<span class="source-line-no">166</span><span id="line-166">        return vmCr.getRaw().getAsJsonObject("status").deepCopy();</span>
+<span class="source-line-no">167</span><span id="line-167">    }</span>
+<span class="source-line-no">168</span><span id="line-168"></span>
+<span class="source-line-no">169</span><span id="line-169">    /**</span>
+<span class="source-line-no">170</span><span id="line-170">     * On runner configuration update.</span>
+<span class="source-line-no">171</span><span id="line-171">     *</span>
+<span class="source-line-no">172</span><span id="line-172">     * @param event the event</span>
+<span class="source-line-no">173</span><span id="line-173">     * @throws ApiException </span>
+<span class="source-line-no">174</span><span id="line-174">     */</span>
+<span class="source-line-no">175</span><span id="line-175">    @Handler</span>
+<span class="source-line-no">176</span><span id="line-176">    public void onRunnerConfigurationUpdate(RunnerConfigurationUpdate event)</span>
+<span class="source-line-no">177</span><span id="line-177">            throws ApiException {</span>
+<span class="source-line-no">178</span><span id="line-178">        if (vmCrApi == null) {</span>
+<span class="source-line-no">179</span><span id="line-179">            return;</span>
+<span class="source-line-no">180</span><span id="line-180">        }</span>
+<span class="source-line-no">181</span><span id="line-181">        // A change of the runner configuration is typically caused</span>
+<span class="source-line-no">182</span><span id="line-182">        // by a new version of the CR. So we observe the new CR.</span>
+<span class="source-line-no">183</span><span id="line-183">        var vmCr = vmCrApi.get(namespace, vmName).throwsApiException()</span>
+<span class="source-line-no">184</span><span id="line-184">            .getObject();</span>
+<span class="source-line-no">185</span><span id="line-185">        if (vmCr.getMetadata().getGeneration() == observedGeneration) {</span>
+<span class="source-line-no">186</span><span id="line-186">            return;</span>
+<span class="source-line-no">187</span><span id="line-187">        }</span>
+<span class="source-line-no">188</span><span id="line-188">        vmCrApi.updateStatus(vmCr, from -&gt; {</span>
+<span class="source-line-no">189</span><span id="line-189">            JsonObject status = currentStatus(from);</span>
+<span class="source-line-no">190</span><span id="line-190">            status.getAsJsonArray("conditions").asList().stream()</span>
+<span class="source-line-no">191</span><span id="line-191">                .map(cond -&gt; (JsonObject) cond)</span>
+<span class="source-line-no">192</span><span id="line-192">                .filter(</span>
+<span class="source-line-no">193</span><span id="line-193">                    cond -&gt; "Running".equals(cond.get("type").getAsString()))</span>
+<span class="source-line-no">194</span><span id="line-194">                .forEach(cond -&gt; cond.addProperty("observedGeneration",</span>
+<span class="source-line-no">195</span><span id="line-195">                    from.getMetadata().getGeneration()));</span>
+<span class="source-line-no">196</span><span id="line-196">            return status;</span>
+<span class="source-line-no">197</span><span id="line-197">        });</span>
+<span class="source-line-no">198</span><span id="line-198">    }</span>
+<span class="source-line-no">199</span><span id="line-199"></span>
+<span class="source-line-no">200</span><span id="line-200">    /**</span>
+<span class="source-line-no">201</span><span id="line-201">     * On runner state changed.</span>
+<span class="source-line-no">202</span><span id="line-202">     *</span>
+<span class="source-line-no">203</span><span id="line-203">     * @param event the event</span>
+<span class="source-line-no">204</span><span id="line-204">     * @throws ApiException the api exception</span>
+<span class="source-line-no">205</span><span id="line-205">     */</span>
+<span class="source-line-no">206</span><span id="line-206">    @Handler</span>
+<span class="source-line-no">207</span><span id="line-207">    public void onRunnerStateChanged(RunnerStateChange event)</span>
+<span class="source-line-no">208</span><span id="line-208">            throws ApiException {</span>
+<span class="source-line-no">209</span><span id="line-209">        if (vmCrApi == null) {</span>
+<span class="source-line-no">210</span><span id="line-210">            return;</span>
+<span class="source-line-no">211</span><span id="line-211">        }</span>
+<span class="source-line-no">212</span><span id="line-212">        var vmCr = vmCrApi.get(namespace, vmName)</span>
+<span class="source-line-no">213</span><span id="line-213">            .throwsApiException().getObject();</span>
+<span class="source-line-no">214</span><span id="line-214">        vmCrApi.updateStatus(vmCr, from -&gt; {</span>
+<span class="source-line-no">215</span><span id="line-215">            JsonObject status = currentStatus(from);</span>
+<span class="source-line-no">216</span><span id="line-216">            status.getAsJsonArray("conditions").asList().stream()</span>
+<span class="source-line-no">217</span><span id="line-217">                .map(cond -&gt; (JsonObject) cond)</span>
+<span class="source-line-no">218</span><span id="line-218">                .forEach(cond -&gt; {</span>
+<span class="source-line-no">219</span><span id="line-219">                    if ("Running".equals(cond.get("type").getAsString())) {</span>
+<span class="source-line-no">220</span><span id="line-220">                        updateRunningCondition(event, from, cond);</span>
+<span class="source-line-no">221</span><span id="line-221">                    }</span>
+<span class="source-line-no">222</span><span id="line-222">                });</span>
+<span class="source-line-no">223</span><span id="line-223">            if (event.state() == State.STARTING) {</span>
+<span class="source-line-no">224</span><span id="line-224">                status.addProperty("ram", GsonPtr.to(from.getRaw())</span>
+<span class="source-line-no">225</span><span id="line-225">                    .getAsString("spec", "vm", "maximumRam").orElse("0"));</span>
+<span class="source-line-no">226</span><span id="line-226">            }</span>
+<span class="source-line-no">227</span><span id="line-227">            return status;</span>
+<span class="source-line-no">228</span><span id="line-228">        });</span>
+<span class="source-line-no">229</span><span id="line-229">    }</span>
+<span class="source-line-no">230</span><span id="line-230"></span>
+<span class="source-line-no">231</span><span id="line-231">    private void updateRunningCondition(RunnerStateChange event,</span>
+<span class="source-line-no">232</span><span id="line-232">            DynamicKubernetesObject from, JsonObject cond) {</span>
+<span class="source-line-no">233</span><span id="line-233">        boolean reportedRunning</span>
+<span class="source-line-no">234</span><span id="line-234">            = "True".equals(cond.get("status").getAsString());</span>
+<span class="source-line-no">235</span><span id="line-235">        if (RUNNING_STATES.contains(event.state())</span>
+<span class="source-line-no">236</span><span id="line-236">            &amp;&amp; !reportedRunning) {</span>
+<span class="source-line-no">237</span><span id="line-237">            cond.addProperty("status", "True");</span>
+<span class="source-line-no">238</span><span id="line-238">            cond.addProperty("lastTransitionTime",</span>
+<span class="source-line-no">239</span><span id="line-239">                Instant.now().toString());</span>
+<span class="source-line-no">240</span><span id="line-240">        }</span>
+<span class="source-line-no">241</span><span id="line-241">        if (!RUNNING_STATES.contains(event.state())</span>
+<span class="source-line-no">242</span><span id="line-242">            &amp;&amp; reportedRunning) {</span>
+<span class="source-line-no">243</span><span id="line-243">            cond.addProperty("status", "False");</span>
+<span class="source-line-no">244</span><span id="line-244">            cond.addProperty("lastTransitionTime",</span>
+<span class="source-line-no">245</span><span id="line-245">                Instant.now().toString());</span>
+<span class="source-line-no">246</span><span id="line-246">        }</span>
+<span class="source-line-no">247</span><span id="line-247">        cond.addProperty("reason", event.reason());</span>
+<span class="source-line-no">248</span><span id="line-248">        cond.addProperty("message", event.message());</span>
+<span class="source-line-no">249</span><span id="line-249">        cond.addProperty("observedGeneration",</span>
+<span class="source-line-no">250</span><span id="line-250">            from.getMetadata().getGeneration());</span>
+<span class="source-line-no">251</span><span id="line-251">    }</span>
+<span class="source-line-no">252</span><span id="line-252"></span>
+<span class="source-line-no">253</span><span id="line-253">    /**</span>
+<span class="source-line-no">254</span><span id="line-254">     * On ballon change.</span>
+<span class="source-line-no">255</span><span id="line-255">     *</span>
+<span class="source-line-no">256</span><span id="line-256">     * @param event the event</span>
+<span class="source-line-no">257</span><span id="line-257">     * @throws ApiException </span>
+<span class="source-line-no">258</span><span id="line-258">     */</span>
+<span class="source-line-no">259</span><span id="line-259">    @Handler</span>
+<span class="source-line-no">260</span><span id="line-260">    public void onBallonChange(BalloonChangeEvent event) throws ApiException {</span>
+<span class="source-line-no">261</span><span id="line-261">        if (vmCrApi == null) {</span>
+<span class="source-line-no">262</span><span id="line-262">            return;</span>
+<span class="source-line-no">263</span><span id="line-263">        }</span>
+<span class="source-line-no">264</span><span id="line-264">        var vmCr</span>
+<span class="source-line-no">265</span><span id="line-265">            = vmCrApi.get(namespace, vmName).throwsApiException().getObject();</span>
+<span class="source-line-no">266</span><span id="line-266">        vmCrApi.updateStatus(vmCr, from -&gt; {</span>
+<span class="source-line-no">267</span><span id="line-267">            JsonObject status = currentStatus(from);</span>
+<span class="source-line-no">268</span><span id="line-268">            status.addProperty("ram",</span>
+<span class="source-line-no">269</span><span id="line-269">                new Quantity(new BigDecimal(event.size()), Format.BINARY_SI)</span>
+<span class="source-line-no">270</span><span id="line-270">                    .toSuffixedString());</span>
+<span class="source-line-no">271</span><span id="line-271">            return status;</span>
+<span class="source-line-no">272</span><span id="line-272">        });</span>
+<span class="source-line-no">273</span><span id="line-273">    }</span>
+<span class="source-line-no">274</span><span id="line-274">}</span>
 
 
 
