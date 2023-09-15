@@ -19,8 +19,8 @@
 package org.jdrupes.vmoperator.runner.qemu;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -81,34 +81,28 @@ public class CpuController extends Component {
     /**
      * On monitor result.
      *
-     * @param result the result
+     * @param event the result
      */
     @Handler
-    public void onHotpluggableCpuStatus(HotpluggableCpuStatus result) {
-        if (!result.successful()) {
+    public void onHotpluggableCpuStatus(HotpluggableCpuStatus event) {
+        if (!event.successful()) {
             logger.warning(() -> "Failed to get hotpluggable CPU status "
-                + "(won't adjust number of CPUs.): " + result.errorMessage());
+                + "(won't adjust number of CPUs.): " + event.errorMessage());
         }
-
-        // Sort
-        List<ObjectNode> used = new ArrayList<>();
-        List<ObjectNode> unused = new ArrayList<>();
-        for (var itr = result.values().iterator(); itr.hasNext();) {
-            ObjectNode cpu = (ObjectNode) itr.next();
-            if (cpu.has("qom-path")) {
-                used.add(cpu);
-            } else {
-                unused.add(cpu);
-            }
-        }
-        currentCpus = used.size();
         if (desiredCpus == null) {
             return;
         }
         // Process
-        int diff = used.size() - desiredCpus;
-        diff = addCpus(used, unused, diff);
-        deleteCpus(used, diff);
+        currentCpus = event.usedCpus().size();
+        int diff = currentCpus - desiredCpus;
+        if (diff == 0) {
+            return;
+        }
+        diff = addCpus(event.usedCpus(), event.unusedCpus(), diff);
+        removeCpus(event.usedCpus(), diff);
+
+        // Report result
+        fire(new MonitorCommand(new QmpQueryHotpluggableCpus()));
     }
 
     @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
@@ -123,22 +117,24 @@ public class CpuController extends Component {
             }
         }
         int nextId = 1;
-        while (diff < 0 && !unused.isEmpty()) {
+        List<ObjectNode> remaining = new LinkedList<>(unused);
+        while (diff < 0 && !remaining.isEmpty()) {
             String id;
             do {
                 id = "cpu-" + nextId++;
             } while (usedIds.contains(id));
-            fire(new MonitorCommand(new QmpAddCpu(unused.get(0), id)));
-            unused.remove(0);
+            fire(new MonitorCommand(new QmpAddCpu(remaining.get(0), id)));
+            remaining.remove(0);
             diff += 1;
         }
         return diff;
     }
 
     @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
-    private int deleteCpus(List<ObjectNode> used, int diff) {
-        while (diff > 0 && !used.isEmpty()) {
-            ObjectNode cpu = used.remove(0);
+    private int removeCpus(List<ObjectNode> used, int diff) {
+        List<ObjectNode> removable = new LinkedList<>(used);
+        while (diff > 0 && !removable.isEmpty()) {
+            ObjectNode cpu = removable.remove(0);
             String qomPath = cpu.get("qom-path").asText();
             if (!qomPath.startsWith("/machine/peripheral/cpu-")) {
                 continue;

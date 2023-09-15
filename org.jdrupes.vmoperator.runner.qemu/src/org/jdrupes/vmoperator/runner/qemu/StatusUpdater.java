@@ -37,6 +37,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
 import org.jdrupes.vmoperator.runner.qemu.events.BalloonChangeEvent;
+import org.jdrupes.vmoperator.runner.qemu.events.HotpluggableCpuStatus;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerConfigurationUpdate;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;
@@ -223,8 +224,10 @@ public class StatusUpdater extends Component {
             if (event.state() == State.STARTING) {
                 status.addProperty("ram", GsonPtr.to(from.getRaw())
                     .getAsString("spec", "vm", "maximumRam").orElse("0"));
+                status.addProperty("cpus", 1);
             } else if (event.state() == State.STOPPED) {
                 status.addProperty("ram", "0");
+                status.addProperty("cpus", 0);
             }
             return status;
         });
@@ -270,6 +273,26 @@ public class StatusUpdater extends Component {
             status.addProperty("ram",
                 new Quantity(new BigDecimal(event.size()), Format.BINARY_SI)
                     .toSuffixedString());
+            return status;
+        });
+    }
+
+    /**
+     * On ballon change.
+     *
+     * @param event the event
+     * @throws ApiException 
+     */
+    @Handler
+    public void onCpuChange(HotpluggableCpuStatus event) throws ApiException {
+        if (vmCrApi == null) {
+            return;
+        }
+        var vmCr
+            = vmCrApi.get(namespace, vmName).throwsApiException().getObject();
+        vmCrApi.updateStatus(vmCr, from -> {
+            JsonObject status = currentStatus(from);
+            status.addProperty("cpus", event.usedCpus().size());
             return status;
         });
     }
