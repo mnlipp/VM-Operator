@@ -9,6 +9,9 @@ plugins {
     // are build scripts in 'src/main' that automatically become available 
     // as plugins in the main build.
     id 'groovy-gradle-plugin'
+
+    // Apply eclipse plugin
+    id 'eclipse'
 }
 
 repositories {
@@ -30,10 +33,35 @@ sourceSets {
     }
 }
 
-/*
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+eclipse {
+
+    project {
+        file {
+            // closure executed after .project content is loaded from existing file
+            // and before gradle build information is merged
+            beforeMerged { project ->
+                project.natures.clear()
+                project.buildCommands.clear()
+            }
+
+            project.natures += 'org.eclipse.buildship.core.gradleprojectnature'
+            project.buildCommand 'org.eclipse.buildship.core.gradleprojectbuilder'
+        }
+    }
+    
+    classpath {
+        downloadJavadoc = true
+        downloadSources = true
+    }
+
+    jdt {
+        file {
+            withProperties { properties ->
+                def formatterPrefs = new Properties()
+                rootProject.file("gradle/org.eclipse.jdt.core.formatter.prefs")
+                    .withInputStream { formatterPrefs.load(it) }
+                properties.putAll(formatterPrefs)
+            }
+        }
     }
 }
-*/

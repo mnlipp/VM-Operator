@@ -47,6 +47,8 @@ import static org.jdrupes.vmoperator.manager.Constants.VM_OP_GROUP;
 import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
 import org.jdrupes.vmoperator.util.Convertions;
 import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
+import org.jdrupes.vmoperator.util.GsonPtr;
+import org.jdrupes.vmoperator.util.K8s;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.annotation.Handler;

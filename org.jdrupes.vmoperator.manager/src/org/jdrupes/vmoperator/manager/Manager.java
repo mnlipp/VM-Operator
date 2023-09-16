@@ -32,9 +32,11 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
 import org.jdrupes.vmoperator.util.FsdUtils;
+import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.Components;
 import org.jgrapes.core.annotation.Handler;
+import org.jgrapes.core.events.HandlingError;
 import org.jgrapes.core.events.Stop;
 import org.jgrapes.io.NioDispatcher;
 import org.jgrapes.util.FileSystemWatcher;
@@ -93,6 +95,20 @@ public class Manager extends Component {
         }
         attach(new YamlConfigurationStore(channel(), config, false));
         fire(new WatchFile(config.toPath()));
+    }
+
+    /**
+     * Log the exception when a handling error is reported.
+     *
+     * @param event the event
+     */
+    @Handler(channels = Channel.class, priority = -10_000)
+    @SuppressWarnings("PMD.GuardLogStatement")
+    public void onHandlingError(HandlingError event) {
+        logger.log(Level.WARNING, event.throwable(),
+            () -> "Problem invoking handler with " + event.event() + ": "
+                + event.message());
+        event.stop();
     }
 
     /**

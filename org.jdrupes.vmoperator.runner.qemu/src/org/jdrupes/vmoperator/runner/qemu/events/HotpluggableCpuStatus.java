@@ -19,12 +19,19 @@
 package org.jdrupes.vmoperator.runner.qemu.events;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCommand;
 
 /**
  * A {@link MonitorResult} that reports the hot pluggable CPU status.
  */
 public class HotpluggableCpuStatus extends MonitorResult {
+
+    private List<ObjectNode> usedCpus = new ArrayList<>();
+    private List<ObjectNode> unusedCpus = new ArrayList<>();
 
     /**
      * Instantiates a new hotpluggable cpu result.
@@ -34,6 +41,39 @@ public class HotpluggableCpuStatus extends MonitorResult {
      */
     public HotpluggableCpuStatus(QmpCommand command, JsonNode response) {
         super(command, response);
+        if (!successful()) {
+            return;
+        }
+
+        // Sort
+        for (var itr = values().iterator(); itr.hasNext();) {
+            ObjectNode cpu = (ObjectNode) itr.next();
+            if (cpu.has("qom-path")) {
+                usedCpus.add(cpu);
+            } else {
+                unusedCpus.add(cpu);
+            }
+        }
+        usedCpus = Collections.unmodifiableList(usedCpus);
+        unusedCpus = Collections.unmodifiableList(unusedCpus);
+    }
+
+    /**
+     * Gets the used cpus.
+     *
+     * @return the usedCpus
+     */
+    public List<ObjectNode> usedCpus() {
+        return usedCpus;
+    }
+
+    /**
+     * Gets the unused cpus.
+     *
+     * @return the unusedCpus
+     */
+    public List<ObjectNode> unusedCpus() {
+        return unusedCpus;
     }
 
 }

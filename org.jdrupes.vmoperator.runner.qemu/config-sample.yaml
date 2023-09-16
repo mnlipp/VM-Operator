@@ -22,6 +22,11 @@
   # the first time. Subsequent starts use the copy unless this option is set.
   # "updateTemplate": false
 
+  # The namespace that this runner runs in. Usually obtained from
+  # /var/run/secrets/kubernetes.io/serviceaccount/namespace. Should only
+  # be set when starting the runner during development e.g. from the IDE.
+  # "namespace": ...
+
   # Define the VM (required)
   "vm":
     # The VM's name (required)

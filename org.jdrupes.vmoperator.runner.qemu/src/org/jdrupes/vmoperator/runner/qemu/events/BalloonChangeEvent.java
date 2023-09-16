@@ -16,23 +16,32 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.jdrupes.vmoperator.manager;
+package org.jdrupes.vmoperator.runner.qemu.events;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import java.math.BigInteger;
 
 /**
- * Some constants.
+ * Signals a change of the balloon.
  */
-public class Constants extends org.jdrupes.vmoperator.util.Constants {
+public class BalloonChangeEvent extends MonitorEvent {
 
-    /** The Constant APP_NAME. */
-    public static final String APP_NAME = "vm-runner";
+    /**
+     * Instantiates a new tray moved.
+     *
+     * @param kind the kind
+     * @param data the data
+     */
+    public BalloonChangeEvent(Kind kind, JsonNode data) {
+        super(kind, data);
+    }
 
-    /** The Constant STATE_RUNNING. */
-    public static final String STATE_RUNNING = "Running";
-
-    /** The Constant STATE_STOPPED. */
-    public static final String STATE_STOPPED = "Stopped";
-
-    /** The Constant IMAGE_REPO_PATH. */
-    public static final String IMAGE_REPO_PATH
-        = "/var/local/vmop-image-repository";
+    /**
+     * Returns the actual value.
+     *
+     * @return the actual value
+     */
+    public BigInteger size() {
+        return new BigInteger(data().get("actual").asText());
+    }
 }

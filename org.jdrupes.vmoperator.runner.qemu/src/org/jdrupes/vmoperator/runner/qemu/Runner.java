@@ -58,14 +58,17 @@ import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;
 import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
 import org.jdrupes.vmoperator.util.FsdUtils;
+import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.Components;
 import org.jgrapes.core.EventPipeline;
 import org.jgrapes.core.TypedIdKey;
 import org.jgrapes.core.annotation.Handler;
+import org.jgrapes.core.events.HandlingError;
 import org.jgrapes.core.events.Start;
 import org.jgrapes.core.events.Started;
 import org.jgrapes.core.events.Stop;
+import org.jgrapes.core.internal.EventProcessor;
 import org.jgrapes.io.NioDispatcher;
 import org.jgrapes.io.events.Input;
 import org.jgrapes.io.events.ProcessExited;
@@ -89,6 +92,13 @@ import org.jgrapes.util.events.WatchFile;
  * main function is best described by the following state diagram.
  * 
  * ![Runner state diagram](RunnerStates.svg)
+ * 
+ * The {@link Runner} associates an {@link EventProcessor} with the
+ * {@link Start} event. This "runner event processor" must be used
+ * for all events related to the application level function. Components
+ * that handle events from other sources (and thus event processors)
+ * must fire any resulting events on the runner event processor in order
+ * to maintain synchronization.
  * 
  * @startuml RunnerStates.svg
  * [*] --> Initializing
@@ -149,8 +159,13 @@ import org.jgrapes.util.events.WatchFile;
  * error --> terminate
  * StartingProcess --> terminate: ProcessExited
  * 
+ * state Stopped {
+ *     state stopped <<entryPoint>>
  * 
- * terminated --> [*]
+ *     stopped --> [*]
+ * }
+ * 
+ * terminated --> stopped
  *
  * @enduml
  * 
@@ -211,6 +226,7 @@ public class Runner extends Component {
         attach(new ProcessManager(channel()));
         attach(new SocketConnector(channel()));
         attach(qemuMonitor = new QemuMonitor(channel()));
+        attach(new StatusUpdater(channel()));
 
         // Configuration store with file in /etc/opt (default)
         File config = new File(cmdLine.getOptionValue('c',
@@ -222,6 +238,20 @@ public class Runner extends Component {
         }
         attach(new YamlConfigurationStore(channel(), config, false));
         fire(new WatchFile(config.toPath()));
+    }
+
+    /**
+     * Log the exception when a handling error is reported.
+     *
+     * @param event the event
+     */
+    @Handler(channels = Channel.class, priority = -10_000)
+    @SuppressWarnings("PMD.GuardLogStatement")
+    public void onHandlingError(HandlingError event) {
+        logger.log(Level.WARNING, event.throwable(),
+            () -> "Problem invoking handler with " + event.event() + ": "
+                + event.message());
+        event.stop();
     }
 
     /**
@@ -352,6 +382,11 @@ public class Runner extends Component {
             return;
         }
 
+        // Make sure to use thread specific client
+        // https://github.com/kubernetes-client/java/issues/100
+        io.kubernetes.client.openapi.Configuration.setDefaultApiClient(null);
+
+        // Prepare specific event pipeline to avoid concurrency.
         rep = newEventPipeline();
         event.setAssociated(EventPipeline.class, rep);
         try {
@@ -387,7 +422,8 @@ public class Runner extends Component {
     @Handler
     public void onStarted(Started event) {
         state = State.STARTING;
-        fire(new RunnerStateChange(state));
+        rep.fire(new RunnerStateChange(state, "RunnerStarted",
+            "Runner has been started"));
         // Start first process
         if (config.vm.useTpm && swtpmDefinition != null) {
             startProcess(swtpmDefinition);
@@ -476,7 +512,7 @@ public class Runner extends Component {
      */
     @Handler
     public void onMonitorReady(MonitorReady event) {
-        fire(new RunnerConfigurationUpdate(config, state));
+        rep.fire(new RunnerConfigurationUpdate(config, state));
     }
 
     /**
@@ -489,7 +525,8 @@ public class Runner extends Component {
         if (state == State.STARTING) {
             fire(new MonitorCommand(new QmpCont()));
             state = State.RUNNING;
-            fire(new RunnerStateChange(state));
+            rep.fire(new RunnerStateChange(state, "VmStarted",
+                "Qemu has been configured and is continuing"));
         }
     }
 
@@ -524,9 +561,22 @@ public class Runner extends Component {
      * @param event the event
      */
     @Handler(priority = 10_000)
-    public void onStop(Stop event) {
+    public void onStopFirst(Stop event) {
         state = State.TERMINATING;
-        fire(new RunnerStateChange(state));
+        rep.fire(new RunnerStateChange(state, "VmTerminating",
+            "The VM is being shut down"));
+    }
+
+    /**
+     * On stop.
+     *
+     * @param event the event
+     */
+    @Handler(priority = -10_000)
+    public void onStopLast(Stop event) {
+        state = State.STOPPED;
+        rep.fire(new RunnerStateChange(state, "VmStopped",
+            "The VM has been shut down"));
     }
 
     private void shutdown() {
