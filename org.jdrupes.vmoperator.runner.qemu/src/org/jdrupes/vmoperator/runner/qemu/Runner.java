@@ -52,7 +52,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCont;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
-import org.jdrupes.vmoperator.runner.qemu.events.MonitorReady;
+import org.jdrupes.vmoperator.runner.qemu.events.QmpConfigured;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerConfigurationUpdate;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;
@@ -111,7 +111,8 @@ import org.jgrapes.util.events.WatchFile;
  *     state "Start swtpm" as swtpm
  *     state "Start qemu" as qemu
  *     state "Open monitor" as monitor
- *     state "Configure" as configure
+ *     state "Configure QMP" as waitForConfigured
+ *     state "Configure QEMU" as configure
  *     state success <<exitPoint>>
  *     state error <<exitPoint>>
  *      
@@ -125,8 +126,11 @@ import org.jgrapes.util.events.WatchFile;
  *     qemu --> monitor : FileChanged[monitor socket created] 
  * 
  *     monitor: entry/fire OpenSocketConnection
- *     monitor --> configure: ClientConnected[for monitor]
+ *     monitor --> waitForConfigured: ClientConnected[for monitor]
  *     monitor -> error: ConnectError[for monitor]
+ *
+ *     waitForConfigured: entry/fire QmpCapabilities
+ *     waitForConfigured --> configure: QmpConfigured
  *     
  *     configure: entry/fire RunnerConfigurationUpdate
  *     configure --> success: RunnerConfigurationUpdate (last handler)/fire cont command
@@ -511,7 +515,7 @@ public class Runner extends Component {
      * @param event the event
      */
     @Handler
-    public void onMonitorReady(MonitorReady event) {
+    public void onQmpConfigured(QmpConfigured event) {
         rep.fire(new RunnerConfigurationUpdate(config, state));
     }
 
