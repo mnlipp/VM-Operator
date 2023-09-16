@@ -21,9 +21,11 @@ package org.jdrupes.vmoperator.manager;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
 import java.io.IOException;
+import java.util.logging.Level;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.annotation.Handler;
+import org.jgrapes.core.events.HandlingError;
 import org.jgrapes.core.events.Start;
 
 /**
@@ -72,6 +74,20 @@ public class Controller extends Component {
         // Prepare component tree
         attach(new VmWatcher(channel()));
         attach(new Reconciler(channel()));
+    }
+
+    /**
+     * Special handling of {@link ApiException} thrown by handlers.
+     *
+     * @param event the event
+     */
+    @Handler(channels = Channel.class)
+    public void onHandlingError(HandlingError event) {
+        if (event.throwable() instanceof ApiException exc) {
+            logger.log(Level.WARNING, exc,
+                () -> "Problem accessing kubernetes: " + exc.getResponseBody());
+            event.stop();
+        }
     }
 
     /**
