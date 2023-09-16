@@ -21,6 +21,7 @@ package org.jdrupes.vmoperator.runner.qemu.events;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Optional;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpAddCpu;
+import org.jdrupes.vmoperator.runner.qemu.commands.QmpCapabilities;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCommand;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpDelCpu;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpQueryHotpluggableCpus;
@@ -44,6 +45,9 @@ public class MonitorResult extends Event<Void> {
      * @return the monitor result
      */
     public static MonitorResult from(QmpCommand command, JsonNode response) {
+        if (command instanceof QmpCapabilities) {
+            return new QmpConfigured(command, response);
+        }
         if (command instanceof QmpQueryHotpluggableCpus) {
             return new HotpluggableCpuStatus(command, response);
         }
