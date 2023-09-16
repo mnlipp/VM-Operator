@@ -58,11 +58,13 @@ import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;
 import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
 import org.jdrupes.vmoperator.util.FsdUtils;
+import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.Components;
 import org.jgrapes.core.EventPipeline;
 import org.jgrapes.core.TypedIdKey;
 import org.jgrapes.core.annotation.Handler;
+import org.jgrapes.core.events.HandlingError;
 import org.jgrapes.core.events.Start;
 import org.jgrapes.core.events.Started;
 import org.jgrapes.core.events.Stop;
@@ -236,6 +238,20 @@ public class Runner extends Component {
         }
         attach(new YamlConfigurationStore(channel(), config, false));
         fire(new WatchFile(config.toPath()));
+    }
+
+    /**
+     * Log the exception when a handling error is reported.
+     *
+     * @param event the event
+     */
+    @Handler(channels = Channel.class, priority = -10_000)
+    @SuppressWarnings("PMD.GuardLogStatement")
+    public void onHandlingError(HandlingError event) {
+        logger.log(Level.WARNING, event.throwable(),
+            () -> "Problem invoking handler with " + event.event() + ": "
+                + event.message());
+        event.stop();
     }
 
     /**
