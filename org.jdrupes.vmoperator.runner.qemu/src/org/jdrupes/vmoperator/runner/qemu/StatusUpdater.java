@@ -22,8 +22,10 @@ import com.google.gson.JsonObject;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.custom.Quantity.Format;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.apis.ApiextensionsV1Api;
-import io.kubernetes.client.openapi.models.V1CustomResourceDefinitionVersion;
+import io.kubernetes.client.openapi.apis.ApisApi;
+import io.kubernetes.client.openapi.apis.CustomObjectsApi;
+import io.kubernetes.client.openapi.models.V1APIGroup;
+import io.kubernetes.client.openapi.models.V1GroupVersionForDiscovery;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
@@ -41,12 +43,13 @@ import org.jdrupes.vmoperator.runner.qemu.events.HotpluggableCpuStatus;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerConfigurationUpdate;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;
-import static org.jdrupes.vmoperator.util.Constants.VM_OP_CRD_NAME;
 import static org.jdrupes.vmoperator.util.Constants.VM_OP_GROUP;
+import static org.jdrupes.vmoperator.util.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.annotation.Handler;
+import org.jgrapes.core.events.HandlingError;
 import org.jgrapes.core.events.Start;
 import org.jgrapes.util.events.ConfigurationUpdate;
 import org.jgrapes.util.events.InitialConfiguration;
@@ -71,6 +74,20 @@ public class StatusUpdater extends Component {
      */
     public StatusUpdater(Channel componentChannel) {
         super(componentChannel);
+    }
+
+    /**
+     * On handling error.
+     *
+     * @param event the event
+     */
+    @Handler(channels = Channel.class)
+    public void onHandlingError(HandlingError event) {
+        if (event.throwable() instanceof ApiException exc) {
+            logger.log(Level.WARNING, exc,
+                () -> "Problem accessing kubernetes: " + exc.getResponseBody());
+            event.stop();
+        }
     }
 
     /**
@@ -114,51 +131,40 @@ public class StatusUpdater extends Component {
      * Handle the start event.
      *
      * @param event the event
+     * @throws IOException 
+     * @throws ApiException 
      */
     @Handler
     @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",
-        "PMD.AvoidInstantiatingObjectsInLoops" })
-    public void onStart(Start event) {
-        try {
-            var client = Config.defaultClient();
-            var extsApi = new ApiextensionsV1Api(client);
-            var crds = extsApi.listCustomResourceDefinition(null, null, null,
-                "metadata.name=" + VM_OP_CRD_NAME, null, null, null,
-                null, null, null);
-            if (crds.getItems().isEmpty()) {
-                logger.warning(() -> "CRD is unknown, status will not"
-                    + " be updated.");
-                return;
+        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.AvoidDuplicateLiterals" })
+    public void onStart(Start event) throws IOException, ApiException {
+        var client = Config.defaultClient();
+        var apis = new ApisApi(client).getAPIVersions();
+        var crdVersions = apis.getGroups().stream()
+            .filter(g -> g.getName().equals(VM_OP_GROUP)).findFirst()
+            .map(V1APIGroup::getVersions).stream().flatMap(l -> l.stream())
+            .map(V1GroupVersionForDiscovery::getVersion).toList();
+        var coa = new CustomObjectsApi(client);
+        for (var crdVersion : crdVersions) {
+            var crdApiRes = coa.getAPIResources(VM_OP_GROUP,
+                crdVersion).getResources().stream()
+                .filter(r -> VM_OP_KIND_VM.equals(r.getKind())).findFirst();
+            if (crdApiRes.isEmpty()) {
+                continue;
             }
-            var crd = crds.getItems().get(0);
-            if (crd.getSpec().getVersions().stream()
-                .filter(v -> v.getSubresources() == null).findAny()
-                .isPresent()) {
-                logger.warning(() -> "You are using an old version of the CRD,"
-                    + " status will not be updated.");
-                return;
+            var crApi = new DynamicKubernetesApi(VM_OP_GROUP,
+                crdVersion, crdApiRes.get().getName(), client);
+            var vmCr = crApi.get(namespace, vmName).throwsApiException();
+            if (vmCr.isSuccess()) {
+                vmCrApi = crApi;
+                observedGeneration
+                    = vmCr.getObject().getMetadata().getGeneration();
+                break;
             }
-            var crdPlural = crd.getSpec().getNames().getPlural();
-            var vmOpApiVersions = crd.getSpec().getVersions().stream()
-                .map(V1CustomResourceDefinitionVersion::getName).toList();
-            for (var apiVer : vmOpApiVersions) {
-                var api = new DynamicKubernetesApi(VM_OP_GROUP, apiVer,
-                    crdPlural, client);
-                var res = api.get(namespace, vmName);
-                if (res.isSuccess()) {
-                    vmCrApi = api;
-                    observedGeneration
-                        = res.getObject().getMetadata().getGeneration();
-                    break;
-                }
-            }
-            if (vmCrApi == null) {
-                logger.warning(() -> "VM's CR is unknown, status will not"
-                    + " be updated.");
-            }
-        } catch (IOException | ApiException e) {
-            logger.log(Level.WARNING, e, () -> "Cannot access kubernetes: "
-                + e.getMessage());
+        }
+        if (vmCrApi == null) {
+            logger.warning(() -> "Cannot find VM's CR, status will not"
+                + " be updated.");
         }
     }
 
@@ -189,9 +195,8 @@ public class StatusUpdater extends Component {
         vmCrApi.updateStatus(vmCr, from -> {
             JsonObject status = currentStatus(from);
             status.getAsJsonArray("conditions").asList().stream()
-                .map(cond -> (JsonObject) cond)
-                .filter(
-                    cond -> "Running".equals(cond.get("type").getAsString()))
+                .map(cond -> (JsonObject) cond).filter(cond -> "Running"
+                    .equals(cond.get("type").getAsString()))
                 .forEach(cond -> cond.addProperty("observedGeneration",
                     from.getMetadata().getGeneration()));
             return status;
@@ -202,7 +207,7 @@ public class StatusUpdater extends Component {
      * On runner state changed.
      *
      * @param event the event
-     * @throws ApiException the api exception
+     * @throws ApiException 
      */
     @Handler
     public void onRunnerStateChanged(RunnerStateChange event)
@@ -210,8 +215,8 @@ public class StatusUpdater extends Component {
         if (vmCrApi == null) {
             return;
         }
-        var vmCr = vmCrApi.get(namespace, vmName)
-            .throwsApiException().getObject();
+        var vmCr = vmCrApi.get(namespace, vmName).throwsApiException()
+            .getObject();
         vmCrApi.updateStatus(vmCr, from -> {
             JsonObject status = currentStatus(from);
             status.getAsJsonArray("conditions").asList().stream()
@@ -230,7 +235,7 @@ public class StatusUpdater extends Component {
                 status.addProperty("cpus", 0);
             }
             return status;
-        });
+        }).throwsApiException();
     }
 
     private void updateRunningCondition(RunnerStateChange event,
@@ -266,15 +271,15 @@ public class StatusUpdater extends Component {
         if (vmCrApi == null) {
             return;
         }
-        var vmCr
-            = vmCrApi.get(namespace, vmName).throwsApiException().getObject();
+        var vmCr = vmCrApi.get(namespace, vmName).throwsApiException()
+            .getObject();
         vmCrApi.updateStatus(vmCr, from -> {
             JsonObject status = currentStatus(from);
             status.addProperty("ram",
                 new Quantity(new BigDecimal(event.size()), Format.BINARY_SI)
                     .toSuffixedString());
             return status;
-        });
+        }).throwsApiException();
     }
 
     /**
@@ -288,12 +293,12 @@ public class StatusUpdater extends Component {
         if (vmCrApi == null) {
             return;
         }
-        var vmCr
-            = vmCrApi.get(namespace, vmName).throwsApiException().getObject();
+        var vmCr = vmCrApi.get(namespace, vmName).throwsApiException()
+            .getObject();
         vmCrApi.updateStatus(vmCr, from -> {
             JsonObject status = currentStatus(from);
             status.addProperty("cpus", event.usedCpus().size());
             return status;
-        });
+        }).throwsApiException();
     }
 }

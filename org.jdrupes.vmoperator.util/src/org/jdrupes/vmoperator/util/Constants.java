@@ -29,9 +29,6 @@ public class Constants {
     /** The Constant VM_OP_GROUP. */
     public static final String VM_OP_GROUP = "vmoperator.jdrupes.org";
 
-    /** The Constant VM_OP_CRD_NAME. */
-    public static final String VM_OP_CRD_NAME = "vms." + VM_OP_GROUP;
-
     /** The Constant VM_OP_KIND_VM. */
     public static final String VM_OP_KIND_VM = "VirtualMachine";
 }
