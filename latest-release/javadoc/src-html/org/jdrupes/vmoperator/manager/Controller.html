@@ -34,74 +34,90 @@
 <span class="source-line-no">021</span><span id="line-21">import io.kubernetes.client.openapi.ApiException;</span>
 <span class="source-line-no">022</span><span id="line-22">import io.kubernetes.client.openapi.Configuration;</span>
 <span class="source-line-no">023</span><span id="line-23">import java.io.IOException;</span>
-<span class="source-line-no">024</span><span id="line-24">import org.jgrapes.core.Channel;</span>
-<span class="source-line-no">025</span><span id="line-25">import org.jgrapes.core.Component;</span>
-<span class="source-line-no">026</span><span id="line-26">import org.jgrapes.core.annotation.Handler;</span>
-<span class="source-line-no">027</span><span id="line-27">import org.jgrapes.core.events.Start;</span>
-<span class="source-line-no">028</span><span id="line-28"></span>
-<span class="source-line-no">029</span><span id="line-29">/**</span>
-<span class="source-line-no">030</span><span id="line-30"> * Implements a controller as defined in the</span>
-<span class="source-line-no">031</span><span id="line-31"> * [Operator Whitepaper](https://github.com/cncf/tag-app-delivery/blob/eece8f7307f2970f46f100f51932db106db46968/operator-wg/whitepaper/Operator-WhitePaper_v1-0.md#operator-components-in-kubernetes).</span>
-<span class="source-line-no">032</span><span id="line-32"> * </span>
-<span class="source-line-no">033</span><span id="line-33"> * The implementation splits the controller in two components. The</span>
-<span class="source-line-no">034</span><span id="line-34"> * {@link VmWatcher} and the {@link Reconciler}. The former watches</span>
-<span class="source-line-no">035</span><span id="line-35"> * the VM definitions (CRs) and generates {@link VmDefChanged} events</span>
-<span class="source-line-no">036</span><span id="line-36"> * when they change. The latter handles the changes and reconciles the</span>
-<span class="source-line-no">037</span><span id="line-37"> * resources in the cluster.</span>
-<span class="source-line-no">038</span><span id="line-38"> * </span>
-<span class="source-line-no">039</span><span id="line-39"> * The controller itself supports a single configuration property:</span>
-<span class="source-line-no">040</span><span id="line-40"> * ```yaml</span>
-<span class="source-line-no">041</span><span id="line-41"> * "/Manager":</span>
-<span class="source-line-no">042</span><span id="line-42"> *   "/Controller":</span>
-<span class="source-line-no">043</span><span id="line-43"> *     namespace: vmop-dev</span>
-<span class="source-line-no">044</span><span id="line-44"> * ```</span>
-<span class="source-line-no">045</span><span id="line-45"> * This may only be set when running the Manager (and thus the Controller)</span>
-<span class="source-line-no">046</span><span id="line-46"> * outside a container during development.  </span>
-<span class="source-line-no">047</span><span id="line-47"> * </span>
-<span class="source-line-no">048</span><span id="line-48"> * ![Controller components](controller-components.svg)</span>
+<span class="source-line-no">024</span><span id="line-24">import java.util.logging.Level;</span>
+<span class="source-line-no">025</span><span id="line-25">import org.jgrapes.core.Channel;</span>
+<span class="source-line-no">026</span><span id="line-26">import org.jgrapes.core.Component;</span>
+<span class="source-line-no">027</span><span id="line-27">import org.jgrapes.core.annotation.Handler;</span>
+<span class="source-line-no">028</span><span id="line-28">import org.jgrapes.core.events.HandlingError;</span>
+<span class="source-line-no">029</span><span id="line-29">import org.jgrapes.core.events.Start;</span>
+<span class="source-line-no">030</span><span id="line-30"></span>
+<span class="source-line-no">031</span><span id="line-31">/**</span>
+<span class="source-line-no">032</span><span id="line-32"> * Implements a controller as defined in the</span>
+<span class="source-line-no">033</span><span id="line-33"> * [Operator Whitepaper](https://github.com/cncf/tag-app-delivery/blob/eece8f7307f2970f46f100f51932db106db46968/operator-wg/whitepaper/Operator-WhitePaper_v1-0.md#operator-components-in-kubernetes).</span>
+<span class="source-line-no">034</span><span id="line-34"> * </span>
+<span class="source-line-no">035</span><span id="line-35"> * The implementation splits the controller in two components. The</span>
+<span class="source-line-no">036</span><span id="line-36"> * {@link VmWatcher} and the {@link Reconciler}. The former watches</span>
+<span class="source-line-no">037</span><span id="line-37"> * the VM definitions (CRs) and generates {@link VmDefChanged} events</span>
+<span class="source-line-no">038</span><span id="line-38"> * when they change. The latter handles the changes and reconciles the</span>
+<span class="source-line-no">039</span><span id="line-39"> * resources in the cluster.</span>
+<span class="source-line-no">040</span><span id="line-40"> * </span>
+<span class="source-line-no">041</span><span id="line-41"> * The controller itself supports a single configuration property:</span>
+<span class="source-line-no">042</span><span id="line-42"> * ```yaml</span>
+<span class="source-line-no">043</span><span id="line-43"> * "/Manager":</span>
+<span class="source-line-no">044</span><span id="line-44"> *   "/Controller":</span>
+<span class="source-line-no">045</span><span id="line-45"> *     namespace: vmop-dev</span>
+<span class="source-line-no">046</span><span id="line-46"> * ```</span>
+<span class="source-line-no">047</span><span id="line-47"> * This may only be set when running the Manager (and thus the Controller)</span>
+<span class="source-line-no">048</span><span id="line-48"> * outside a container during development.  </span>
 <span class="source-line-no">049</span><span id="line-49"> * </span>
-<span class="source-line-no">050</span><span id="line-50"> * @startuml controller-components.svg</span>
-<span class="source-line-no">051</span><span id="line-51"> * skinparam component {</span>
-<span class="source-line-no">052</span><span id="line-52"> *   BackGroundColor #FEFECE</span>
-<span class="source-line-no">053</span><span id="line-53"> *   BorderColor #A80036</span>
-<span class="source-line-no">054</span><span id="line-54"> *   BorderThickness 1.25</span>
-<span class="source-line-no">055</span><span id="line-55"> *   BackgroundColor&lt;&lt;internal&gt;&gt; #F1F1F1</span>
-<span class="source-line-no">056</span><span id="line-56"> *   BorderColor&lt;&lt;internal&gt;&gt; #181818</span>
-<span class="source-line-no">057</span><span id="line-57"> *   BorderThickness&lt;&lt;internal&gt;&gt; 1</span>
-<span class="source-line-no">058</span><span id="line-58"> * }</span>
-<span class="source-line-no">059</span><span id="line-59"> * </span>
-<span class="source-line-no">060</span><span id="line-60"> * [Controller]</span>
-<span class="source-line-no">061</span><span id="line-61"> * [Controller] *--&gt; [VmWatcher]</span>
-<span class="source-line-no">062</span><span id="line-62"> * [Controller] *--&gt; [Reconciler]</span>
-<span class="source-line-no">063</span><span id="line-63"> * @enduml</span>
-<span class="source-line-no">064</span><span id="line-64"> */</span>
-<span class="source-line-no">065</span><span id="line-65">public class Controller extends Component {</span>
-<span class="source-line-no">066</span><span id="line-66"></span>
-<span class="source-line-no">067</span><span id="line-67">    /**</span>
-<span class="source-line-no">068</span><span id="line-68">     * Creates a new instance.</span>
-<span class="source-line-no">069</span><span id="line-69">     */</span>
-<span class="source-line-no">070</span><span id="line-70">    public Controller(Channel componentChannel) {</span>
-<span class="source-line-no">071</span><span id="line-71">        super(componentChannel);</span>
-<span class="source-line-no">072</span><span id="line-72">        // Prepare component tree</span>
-<span class="source-line-no">073</span><span id="line-73">        attach(new VmWatcher(channel()));</span>
-<span class="source-line-no">074</span><span id="line-74">        attach(new Reconciler(channel()));</span>
-<span class="source-line-no">075</span><span id="line-75">    }</span>
-<span class="source-line-no">076</span><span id="line-76"></span>
-<span class="source-line-no">077</span><span id="line-77">    /**</span>
-<span class="source-line-no">078</span><span id="line-78">     * Handle the start event. Has higher priority because it configures</span>
-<span class="source-line-no">079</span><span id="line-79">     * the default Kubernetes client.</span>
-<span class="source-line-no">080</span><span id="line-80">     *</span>
-<span class="source-line-no">081</span><span id="line-81">     * @param event the event</span>
-<span class="source-line-no">082</span><span id="line-82">     * @throws IOException </span>
-<span class="source-line-no">083</span><span id="line-83">     * @throws ApiException </span>
-<span class="source-line-no">084</span><span id="line-84">     */</span>
-<span class="source-line-no">085</span><span id="line-85">    @Handler(priority = 100)</span>
-<span class="source-line-no">086</span><span id="line-86">    public void onStart(Start event) throws IOException, ApiException {</span>
-<span class="source-line-no">087</span><span id="line-87">        // Make sure to use thread specific client</span>
-<span class="source-line-no">088</span><span id="line-88">        // https://github.com/kubernetes-client/java/issues/100</span>
-<span class="source-line-no">089</span><span id="line-89">        Configuration.setDefaultApiClient(null);</span>
-<span class="source-line-no">090</span><span id="line-90">    }</span>
-<span class="source-line-no">091</span><span id="line-91">}</span>
+<span class="source-line-no">050</span><span id="line-50"> * ![Controller components](controller-components.svg)</span>
+<span class="source-line-no">051</span><span id="line-51"> * </span>
+<span class="source-line-no">052</span><span id="line-52"> * @startuml controller-components.svg</span>
+<span class="source-line-no">053</span><span id="line-53"> * skinparam component {</span>
+<span class="source-line-no">054</span><span id="line-54"> *   BackGroundColor #FEFECE</span>
+<span class="source-line-no">055</span><span id="line-55"> *   BorderColor #A80036</span>
+<span class="source-line-no">056</span><span id="line-56"> *   BorderThickness 1.25</span>
+<span class="source-line-no">057</span><span id="line-57"> *   BackgroundColor&lt;&lt;internal&gt;&gt; #F1F1F1</span>
+<span class="source-line-no">058</span><span id="line-58"> *   BorderColor&lt;&lt;internal&gt;&gt; #181818</span>
+<span class="source-line-no">059</span><span id="line-59"> *   BorderThickness&lt;&lt;internal&gt;&gt; 1</span>
+<span class="source-line-no">060</span><span id="line-60"> * }</span>
+<span class="source-line-no">061</span><span id="line-61"> * </span>
+<span class="source-line-no">062</span><span id="line-62"> * [Controller]</span>
+<span class="source-line-no">063</span><span id="line-63"> * [Controller] *--&gt; [VmWatcher]</span>
+<span class="source-line-no">064</span><span id="line-64"> * [Controller] *--&gt; [Reconciler]</span>
+<span class="source-line-no">065</span><span id="line-65"> * @enduml</span>
+<span class="source-line-no">066</span><span id="line-66"> */</span>
+<span class="source-line-no">067</span><span id="line-67">public class Controller extends Component {</span>
+<span class="source-line-no">068</span><span id="line-68"></span>
+<span class="source-line-no">069</span><span id="line-69">    /**</span>
+<span class="source-line-no">070</span><span id="line-70">     * Creates a new instance.</span>
+<span class="source-line-no">071</span><span id="line-71">     */</span>
+<span class="source-line-no">072</span><span id="line-72">    public Controller(Channel componentChannel) {</span>
+<span class="source-line-no">073</span><span id="line-73">        super(componentChannel);</span>
+<span class="source-line-no">074</span><span id="line-74">        // Prepare component tree</span>
+<span class="source-line-no">075</span><span id="line-75">        attach(new VmWatcher(channel()));</span>
+<span class="source-line-no">076</span><span id="line-76">        attach(new Reconciler(channel()));</span>
+<span class="source-line-no">077</span><span id="line-77">    }</span>
+<span class="source-line-no">078</span><span id="line-78"></span>
+<span class="source-line-no">079</span><span id="line-79">    /**</span>
+<span class="source-line-no">080</span><span id="line-80">     * Special handling of {@link ApiException} thrown by handlers.</span>
+<span class="source-line-no">081</span><span id="line-81">     *</span>
+<span class="source-line-no">082</span><span id="line-82">     * @param event the event</span>
+<span class="source-line-no">083</span><span id="line-83">     */</span>
+<span class="source-line-no">084</span><span id="line-84">    @Handler(channels = Channel.class)</span>
+<span class="source-line-no">085</span><span id="line-85">    public void onHandlingError(HandlingError event) {</span>
+<span class="source-line-no">086</span><span id="line-86">        if (event.throwable() instanceof ApiException exc) {</span>
+<span class="source-line-no">087</span><span id="line-87">            logger.log(Level.WARNING, exc,</span>
+<span class="source-line-no">088</span><span id="line-88">                () -&gt; "Problem accessing kubernetes: " + exc.getResponseBody());</span>
+<span class="source-line-no">089</span><span id="line-89">            event.stop();</span>
+<span class="source-line-no">090</span><span id="line-90">        }</span>
+<span class="source-line-no">091</span><span id="line-91">    }</span>
+<span class="source-line-no">092</span><span id="line-92"></span>
+<span class="source-line-no">093</span><span id="line-93">    /**</span>
+<span class="source-line-no">094</span><span id="line-94">     * Handle the start event. Has higher priority because it configures</span>
+<span class="source-line-no">095</span><span id="line-95">     * the default Kubernetes client.</span>
+<span class="source-line-no">096</span><span id="line-96">     *</span>
+<span class="source-line-no">097</span><span id="line-97">     * @param event the event</span>
+<span class="source-line-no">098</span><span id="line-98">     * @throws IOException </span>
+<span class="source-line-no">099</span><span id="line-99">     * @throws ApiException </span>
+<span class="source-line-no">100</span><span id="line-100">     */</span>
+<span class="source-line-no">101</span><span id="line-101">    @Handler(priority = 100)</span>
+<span class="source-line-no">102</span><span id="line-102">    public void onStart(Start event) throws IOException, ApiException {</span>
+<span class="source-line-no">103</span><span id="line-103">        // Make sure to use thread specific client</span>
+<span class="source-line-no">104</span><span id="line-104">        // https://github.com/kubernetes-client/java/issues/100</span>
+<span class="source-line-no">105</span><span id="line-105">        Configuration.setDefaultApiClient(null);</span>
+<span class="source-line-no">106</span><span id="line-106">    }</span>
+<span class="source-line-no">107</span><span id="line-107">}</span>
 
 
 
