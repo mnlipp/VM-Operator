@@ -140,6 +140,7 @@ spec:
       <#if cr.spec.affinity??>
       affinity: ${ cr.spec.affinity.toString() }
       </#if>
+      serviceAccountName: vm-runner
   volumeClaimTemplates:
   - metadata:
       namespace: ${ cr.metadata.namespace.asString }
