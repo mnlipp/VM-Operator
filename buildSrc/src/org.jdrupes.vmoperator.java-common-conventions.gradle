@@ -8,14 +8,14 @@ plugins {
     // Apply the java Plugin to add support for Java.
     id 'java'
     
-    // Git based versioning
-    id 'pl.allegro.tech.build.axion-release'
-    
     // Apply eclipse plugin
     id 'eclipse'
     
     // Access to git information
     id 'org.ajoberstar.grgit'
+    
+    // Apply the common versioning conventions.
+    id 'org.jdrupes.vmoperator.versioning-conventions'
 }
 
 repositories {
