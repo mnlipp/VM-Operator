@@ -1,8 +1,13 @@
 plugins {
-    // Apply the common convention plugin for shared build configuration between library and application projects.
-    id 'org.jdrupes.vmoperator.java-common-conventions'
-
+    // Apply the common versioning conventions.
+    id 'org.jdrupes.vmoperator.versioning-conventions'
+    
     id 'org.ajoberstar.git-publish'
+}
+
+repositories {
+    // Use Maven Central for resolving dependencies.
+    mavenCentral()
 }
 
 var docDestinationDir = file("${rootProject.buildDir}/javadoc")

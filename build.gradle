@@ -5,8 +5,8 @@ buildscript {
 }
 
 plugins {
-    id 'org.ajoberstar.grgit' version '5.2.0'
-    id 'org.ajoberstar.git-publish' version '4.2.0'
+    id 'org.ajoberstar.grgit' version '5.2.0' apply false
+    id 'org.ajoberstar.git-publish' version '4.2.0' apply false
     id 'pl.allegro.tech.build.axion-release' version '1.15.0' apply false
     id 'org.jdrupes.vmoperator.java-doc-conventions'
     id 'eclipse'
