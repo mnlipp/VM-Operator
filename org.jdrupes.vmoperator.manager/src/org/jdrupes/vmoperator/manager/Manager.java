@@ -21,7 +21,13 @@ package org.jdrupes.vmoperator.manager;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
@@ -35,13 +41,30 @@ import org.jdrupes.vmoperator.util.FsdUtils;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.Components;
+import org.jgrapes.core.NamedChannel;
 import org.jgrapes.core.annotation.Handler;
 import org.jgrapes.core.events.HandlingError;
 import org.jgrapes.core.events.Stop;
+import org.jgrapes.http.HttpServer;
+import org.jgrapes.http.InMemorySessionManager;
+import org.jgrapes.http.LanguageSelector;
+import org.jgrapes.http.events.Request;
 import org.jgrapes.io.NioDispatcher;
+import org.jgrapes.io.util.PermitsPool;
+import org.jgrapes.net.SocketServer;
+import org.jgrapes.util.ComponentCollector;
 import org.jgrapes.util.FileSystemWatcher;
 import org.jgrapes.util.YamlConfigurationStore;
 import org.jgrapes.util.events.WatchFile;
+import org.jgrapes.webconsole.base.BrowserLocalBackedKVStore;
+import org.jgrapes.webconsole.base.ConletComponentFactory;
+import org.jgrapes.webconsole.base.ConsoleWeblet;
+import org.jgrapes.webconsole.base.KVStoreBasedConsolePolicy;
+import org.jgrapes.webconsole.base.PageResourceProviderFactory;
+import org.jgrapes.webconsole.base.WebConsole;
+import org.jgrapes.webconsole.rbac.RoleConfigurator;
+import org.jgrapes.webconsole.rbac.RoleConletFilter;
+import org.jgrapes.webconsole.vuejs.VueJsConsoleWeblet;
 
 /**
  * The application class. In framework term, this is the root component.
@@ -79,6 +102,7 @@ public class Manager extends Component {
      *
      * @throws IOException Signals that an I/O exception has occurred.
      */
+    @SuppressWarnings("PMD.TooFewBranchesForASwitchStatement")
     public Manager(CommandLine cmdLine) throws IOException {
         // Prepare component tree
         attach(new NioDispatcher());
@@ -86,15 +110,69 @@ public class Manager extends Component {
         attach(new Controller(channel()));
 
         // Configuration store with file in /etc/opt (default)
-        File config = new File(cmdLine.getOptionValue('c',
+        File cfgFile = new File(cmdLine.getOptionValue('c',
             "/etc/opt/" + VM_OP_NAME.replace("-", "") + "/config.yaml"));
         // Don't rely on night config to produce a good exception
         // for this simple case
-        if (!Files.isReadable(config.toPath())) {
-            throw new IOException("Cannot read configuration file " + config);
+        if (!Files.isReadable(cfgFile.toPath())) {
+            throw new IOException("Cannot read configuration file " + cfgFile);
         }
-        attach(new YamlConfigurationStore(channel(), config, false));
-        fire(new WatchFile(config.toPath()));
+        attach(new YamlConfigurationStore(channel(), cfgFile, false));
+        fire(new WatchFile(cfgFile.toPath()));
+
+        // Prepare GUI
+        Channel tcpChannel = new NamedChannel("TCP");
+        attach(new SocketServer(tcpChannel)
+            .setConnectionLimiter(new PermitsPool(300))
+            .setMinimalPurgeableTime(1000)
+            .setServerAddress(new InetSocketAddress(8080)));
+
+        // Create an HTTP server as converter between transport and application
+        // layer.
+        Channel httpChannel = new NamedChannel("HTTP");
+        HttpServer httpServer = attach(new HttpServer(httpChannel,
+            tcpChannel, Request.In.Get.class, Request.In.Post.class));
+
+        // Build HTTP application layer
+        httpServer.attach(new InMemorySessionManager(httpChannel));
+        httpServer.attach(new LanguageSelector(httpChannel));
+        ConsoleWeblet consoleWeblet;
+        try {
+            consoleWeblet = attach(new VueJsConsoleWeblet(httpChannel,
+                Channel.SELF, new URI("/")))
+                    .prependClassTemplateLoader(getClass())
+                    .prependResourceBundleProvider(getClass())
+                    .prependConsoleResourceProvider(getClass());
+        } catch (URISyntaxException e) {
+            // Cannot happen
+            return;
+        }
+        WebConsole console = consoleWeblet.console();
+        console.attach(new BrowserLocalBackedKVStore(
+            console.channel(), consoleWeblet.prefix().getPath()));
+        console.attach(new KVStoreBasedConsolePolicy(console.channel()));
+        console.attach(new RoleConfigurator(console.channel()));
+        console.attach(new RoleConletFilter(console.channel()));
+        // Add all available page resource providers
+        console.attach(new ComponentCollector<>(
+            PageResourceProviderFactory.class, console.channel(), type -> {
+                switch (type) {
+                case "org.jgrapes.webconsole.provider.gridstack.GridstackProvider":
+                    return Arrays.asList(
+                        Map.of("requireTouchPunch", true,
+                            "configuration", "CoreWithJQUiPlugin"));
+                default:
+                    return Arrays.asList(Collections.emptyMap());
+                }
+            }));
+        // Add all available conlets
+        console.attach(new ComponentCollector<>(
+            ConletComponentFactory.class, console.channel(), type -> {
+                switch (type) {
+                default:
+                    return Arrays.asList(Collections.emptyMap());
+                }
+            }));
     }
 
     /**
