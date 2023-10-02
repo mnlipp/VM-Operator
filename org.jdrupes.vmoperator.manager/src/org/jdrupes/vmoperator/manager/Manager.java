@@ -122,8 +122,8 @@ public class Manager extends Component {
         fire(new WatchFile(cfgFile.toPath()));
 
         // Prepare GUI
-        Channel tcpChannel = new NamedChannel("TCP");
-        attach(new SocketServer(tcpChannel)
+        Channel httpTransport = new NamedChannel("httpTransport");
+        attach(new SocketServer(httpTransport)
             .setConnectionLimiter(new PermitsPool(300))
             .setMinimalPurgeableTime(1000)
             .setServerAddress(new InetSocketAddress(8080)));
@@ -132,22 +132,23 @@ public class Manager extends Component {
         // layer.
         Channel httpChannel = new NamedChannel("HTTP");
         HttpServer httpServer = attach(new HttpServer(httpChannel,
-            tcpChannel, Request.In.Get.class, Request.In.Post.class));
+            httpTransport, Request.In.Get.class, Request.In.Post.class));
 
         // Build HTTP application layer
         httpServer.attach(new InMemorySessionManager(httpChannel));
         httpServer.attach(new LanguageSelector(httpChannel));
-        ConsoleWeblet consoleWeblet;
+        URI rootUri;
         try {
-            consoleWeblet = attach(new VueJsConsoleWeblet(httpChannel,
-                Channel.SELF, new URI("/")))
-                    .prependClassTemplateLoader(getClass())
-                    .prependResourceBundleProvider(getClass())
-                    .prependConsoleResourceProvider(getClass());
+            rootUri = new URI("/");
         } catch (URISyntaxException e) {
             // Cannot happen
             return;
         }
+        ConsoleWeblet consoleWeblet = httpServer
+            .attach(new VueJsConsoleWeblet(httpChannel, Channel.SELF, rootUri))
+            .prependClassTemplateLoader(getClass())
+            .prependResourceBundleProvider(getClass())
+            .prependConsoleResourceProvider(getClass());
         WebConsole console = consoleWeblet.console();
         console.attach(new BrowserLocalBackedKVStore(
             console.channel(), consoleWeblet.prefix().getPath()));

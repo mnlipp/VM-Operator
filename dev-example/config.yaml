@@ -7,28 +7,29 @@
     "/Reconciler":
       runnerData:
         storageClassName: null
-  # This configures the GUI
-  "/VueJsConsoleWeblet":
-    "/WebConsole":
-      "/LoginConlet":
-        users:
-          admin:
-            fullName: Administrator
-            password: "$2b$05$NiBd74ZGdplLC63ePZf1f.UtjMKkbQ23cQoO2OKOFalDBHWAOy21."
-          test:
-            fullName: Test Account
-            password: "$2b$05$hZaI/jToXf/d3BctZdT38Or7H7h6Pn2W3WiB49p5AyhDHFkkYCvo2"
-      "/RoleConfigurator":
-        rolesByUser:
-          admin:
-          - admin
-          "*":
-          - user
-        replace: false
-      "/RoleConletFilter":
-        conletTypesByRole:
-          user:
-          - "!org.jgrapes.webconlet.sysinfo.SysInfoConlet"
-          - "*"
-          admin:
-          - "*"
+  "/HttpServer":
+    # This configures the GUI
+    "/VueJsConsoleWeblet":
+      "/WebConsole":
+        "/LoginConlet":
+          users:
+            admin:
+              fullName: Administrator
+              password: "$2b$05$NiBd74ZGdplLC63ePZf1f.UtjMKkbQ23cQoO2OKOFalDBHWAOy21."
+            test:
+              fullName: Test Account
+              password: "$2b$05$hZaI/jToXf/d3BctZdT38Or7H7h6Pn2W3WiB49p5AyhDHFkkYCvo2"
+        "/RoleConfigurator":
+          rolesByUser:
+            admin:
+            - admin
+            "*":
+            - user
+          replace: false
+        "/RoleConletFilter":
+          conletTypesByRole:
+            user:
+            - "!org.jgrapes.webconlet.sysinfo.SysInfoConlet"
+            - "*"
+            admin:
+            - "*"
