@@ -56,6 +56,7 @@ import org.jgrapes.util.ComponentCollector;
 import org.jgrapes.util.FileSystemWatcher;
 import org.jgrapes.util.YamlConfigurationStore;
 import org.jgrapes.util.events.WatchFile;
+import org.jgrapes.webconlet.locallogin.LoginConlet;
 import org.jgrapes.webconsole.base.BrowserLocalBackedKVStore;
 import org.jgrapes.webconsole.base.ConletComponentFactory;
 import org.jgrapes.webconsole.base.ConsoleWeblet;
@@ -153,6 +154,7 @@ public class Manager extends Component {
         console.attach(new KVStoreBasedConsolePolicy(console.channel()));
         console.attach(new RoleConfigurator(console.channel()));
         console.attach(new RoleConletFilter(console.channel()));
+        console.attach(new LoginConlet(console.channel()));
         // Add all available page resource providers
         console.attach(new ComponentCollector<>(
             PageResourceProviderFactory.class, console.channel(), type -> {
@@ -168,8 +170,10 @@ public class Manager extends Component {
         // Add all available conlets
         console.attach(new ComponentCollector<>(
             ConletComponentFactory.class, console.channel(), type -> {
-                switch (type) {
-                default:
+                if (LoginConlet.class.getName().equals(type)) {
+                    // Explicitly added, see above
+                    return Collections.emptyList();
+                } else {
                     return Arrays.asList(Collections.emptyMap());
                 }
             }));
