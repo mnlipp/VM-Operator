@@ -27,7 +27,6 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
@@ -158,16 +157,7 @@ public class Manager extends Component {
         console.attach(new LoginConlet(console.channel()));
         // Add all available page resource providers
         console.attach(new ComponentCollector<>(
-            PageResourceProviderFactory.class, console.channel(), type -> {
-                switch (type) {
-                case "org.jgrapes.webconsole.provider.gridstack.GridstackProvider":
-                    return Arrays.asList(
-                        Map.of("requireTouchPunch", true,
-                            "configuration", "CoreWithJQUiPlugin"));
-                default:
-                    return Arrays.asList(Collections.emptyMap());
-                }
-            }));
+            PageResourceProviderFactory.class, console.channel()));
         // Add all available conlets
         console.attach(new ComponentCollector<>(
             ConletComponentFactory.class, console.channel(), type -> {
