@@ -111,7 +111,9 @@ public class Manager extends Component {
 
         // Configuration store with file in /etc/opt (default)
         File cfgFile = new File(cmdLine.getOptionValue('c',
-            "/etc/opt/" + VM_OP_NAME.replace("-", "") + "/config.yaml"));
+            "/etc/opt/" + VM_OP_NAME.replace("-", "") + "/config.yaml"))
+                .getCanonicalFile();
+        logger.config(() -> "Using configuration from: " + cfgFile.getPath());
         // Don't rely on night config to produce a good exception
         // for this simple case
         if (!Files.isReadable(cfgFile.toPath())) {
@@ -125,7 +127,8 @@ public class Manager extends Component {
         attach(new SocketServer(httpTransport)
             .setConnectionLimiter(new PermitsPool(300))
             .setMinimalPurgeableTime(1000)
-            .setServerAddress(new InetSocketAddress(8080)));
+            .setServerAddress(new InetSocketAddress(8080))
+            .setName("HttpSocketServer"));
 
         // Create an HTTP server as converter between transport and application
         // layer.
@@ -148,6 +151,7 @@ public class Manager extends Component {
             .prependClassTemplateLoader(getClass())
             .prependResourceBundleProvider(getClass())
             .prependConsoleResourceProvider(getClass());
+        consoleWeblet.setName("ConsoleWeblet");
         WebConsole console = consoleWeblet.console();
         console.attach(new BrowserLocalBackedKVStore(
             console.channel(), consoleWeblet.prefix().getPath()));
@@ -221,10 +225,12 @@ public class Manager extends Component {
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     public static void main(String[] args) {
         try {
+            // Instance logger is not available yet.
             var logger = Logger.getLogger(Manager.class.getName());
-            logger.fine(() -> "Version: "
+            logger.config(() -> "Version: "
                 + Manager.class.getPackage().getImplementationVersion());
-            logger.fine(() -> "running on " + System.getProperty("java.vm.name")
+            logger.config(() -> "running on "
+                + System.getProperty("java.vm.name")
                 + " (" + System.getProperty("java.vm.version") + ")"
                 + " from " + System.getProperty("java.vm.vendor"));
 
@@ -238,7 +244,7 @@ public class Manager extends Component {
             // The Manager is the root component
             app = new Manager(cmd);
 
-            // Prepare Stop
+            // Prepare generation of Stop event
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 try {
                     app.fire(new Stop());

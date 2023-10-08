@@ -7,9 +7,11 @@
     "/Reconciler":
       runnerData:
         storageClassName: null
+  "/HttpSocketServer":
+    port: 8888
   "/HttpServer":
     # This configures the GUI
-    "/VueJsConsoleWeblet":
+    "/ConsoleWeblet":
       "/WebConsole":
         "/LoginConlet":
           users:
