@@ -43,7 +43,7 @@ task tagLatestArchImage(type: Exec) {
     dependsOn buildArchImage
     
     commandLine 'podman', 'tag', "${project.name}-arch:${project.version}",\
-        "${project.name}:latest"
+        "${project.name}-arch:latest"
 }
 
 task buildLatestArchImage {

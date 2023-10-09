@@ -87,7 +87,7 @@
     - [ "-cpu", "${ vm.cpuModel }" ]
     <#if vm.maximumCpus gt 1>
     - [ "-smp", "1,maxcpus=${ vm.maximumCpus }\
-        <#if vm.cpuSockets gt 0>,sockets=${ vm.cpuSockets }</#if>\
+        <#if vm.sockets gt 0>,sockets=${ vm.sockets }</#if>\
         <#if vm.diesPerSocket gt 0>,cores=${ vm.diesPerSocket }</#if>\
         <#if vm.coresPerDie gt 0>,cores=${ vm.coresPerDie }</#if>\
         <#if vm.threadsPerCore gt 0>,cores=${ vm.threadsPerCore }</#if>" ]

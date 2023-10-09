@@ -106,7 +106,7 @@ public class Configuration implements Dto {
         public int currentCpus = 1;
 
         /** The cpu sockets. */
-        public int cpuSockets;
+        public int sockets;
 
         /** The dies per socket. */
         public int diesPerSocket;

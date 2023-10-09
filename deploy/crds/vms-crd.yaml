@@ -1032,10 +1032,10 @@ spec:
                         diesPerSocket:
                           type: integer
                           default: 0
-                        coresPerSocket:
+                        coresPerDie:
                           type: integer
                           default: 0
-                        threadsPerSocket:
+                        threadsPerCore:
                           type: integer
                           default: 0
                     currentCpus:
