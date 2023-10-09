@@ -88,9 +88,9 @@ data:
         maximumCpus: ${ parseQuantity(cr.spec.vm.maximumCpus.asString)?c }
         </#if>
         <#if cr.spec.vm.cpuTopology?? >
-        cpuSockets: ${ cr.spec.vm.cpuTopology.cpuSockets.asInt?c }
+        sockets: ${ cr.spec.vm.cpuTopology.sockets.asInt?c }
         diesPerSocket: ${ cr.spec.vm.cpuTopology.diesPerSocket.asInt?c }
-        coresPerSocket: ${ cr.spec.vm.cpuTopology.coresPerSocket.asInt?c }
+        coresPerDie: ${ cr.spec.vm.cpuTopology.coresPerDie.asInt?c }
         threadsPerCore: ${ cr.spec.vm.cpuTopology.threadsPerCore.asInt?c }
         </#if>
         <#if cr.spec.vm.currentCpus?? >
