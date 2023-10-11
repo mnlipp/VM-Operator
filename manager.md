@@ -120,10 +120,10 @@ for creating your first VM.
 ## Configuration Details
 
 The [config map](https://github.com/mnlipp/VM-Operator/blob/main/deploy/vmop-config-map.yaml) 
-for the manager provides a configuration file (`config.yaml`) and 
+for the manager may provide a configuration file (`config.yaml`) and 
 a file with logging properties (`logging.properties`). Both files are mounted
 into the container that runs the manager and are evaluated by the manager
-on startup.
+on startup. If no files are provided, the manager uses built-in defaults.
 
 The configuration file for the Manager follows the conventions of
 the [JGrapes](https://mnlipp.github.io/jgrapes/) component framework.
