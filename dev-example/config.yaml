@@ -7,9 +7,9 @@
     "/Reconciler":
       runnerData:
         storageClassName: null
-  "/HttpSocketServer":
+  "/GuiSocketServer":
     port: 8888
-  "/HttpServer":
+  "/GuiHttpServer":
     # This configures the GUI
     "/ConsoleWeblet":
       "/WebConsole":

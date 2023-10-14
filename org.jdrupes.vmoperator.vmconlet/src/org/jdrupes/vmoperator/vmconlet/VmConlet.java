@@ -22,18 +22,25 @@ import freemarker.core.ParseException;
 import freemarker.template.MalformedTemplateNameException;
 import freemarker.template.Template;
 import freemarker.template.TemplateNotFoundException;
+import io.kubernetes.client.openapi.models.V1Namespace;
+
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
+import org.jdrupes.vmoperator.manager.events.VmDefChanged.Type;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Event;
 import org.jgrapes.core.Manager;
 import org.jgrapes.core.annotation.Handler;
 import org.jgrapes.webconsole.base.Conlet.RenderMode;
+import org.jgrapes.webconsole.base.ConletBaseModel;
 import org.jgrapes.webconsole.base.ConsoleConnection;
+import org.jgrapes.webconsole.base.events.AddConletRequest;
 import org.jgrapes.webconsole.base.events.AddConletType;
 import org.jgrapes.webconsole.base.events.AddPageResources.ScriptResource;
 import org.jgrapes.webconsole.base.events.ConsoleReady;
@@ -44,10 +51,11 @@ import org.jgrapes.webconsole.base.freemarker.FreeMarkerConlet;
 
 /**
  */
-public class VmConlet extends FreeMarkerConlet<Serializable> {
+public class VmConlet extends FreeMarkerConlet<VmConlet.VmInfo> {
 
     private static final Set<RenderMode> MODES = RenderMode.asSet(
         RenderMode.Preview, RenderMode.View);
+    private Map<String, V1Namespace> vmInfos = new ConcurrentHashMap<>();
 
     /**
      * Creates a new component with its channel set to the given channel.
@@ -89,9 +97,14 @@ public class VmConlet extends FreeMarkerConlet<Serializable> {
     }
 
     @Override
+    protected Optional<VmInfo> createNewState(AddConletRequest event,
+            ConsoleConnection connection, String conletId) throws Exception {
+        return Optional.of(new VmInfo(conletId));
+    }
+
+    @Override
     protected Set<RenderMode> doRenderConlet(RenderConletRequestBase<?> event,
-            ConsoleConnection channel, String conletId,
-            Serializable conletState)
+            ConsoleConnection channel, String conletId, VmInfo conletState)
             throws Exception {
         Set<RenderMode> renderedAs = new HashSet<>();
         if (event.renderAs().contains(RenderMode.Preview)) {
@@ -125,10 +138,14 @@ public class VmConlet extends FreeMarkerConlet<Serializable> {
      * @param event the event
      * @param channel the channel
      */
-    @Handler
+    @Handler(namedChannels = "manager")
     @SuppressWarnings("PMD.ConfusingTernary")
     public void onVmDefChanged(VmDefChanged event, VmChannel channel) {
-
+        if (event.type() == Type.DELETED) {
+            vmInfos.remove(event.object().getMetadata().getName());
+        } else {
+            vmInfos.put(event.object().getMetadata().getName(), event.object());
+        }
     }
 
     @Override
@@ -137,4 +154,11 @@ public class VmConlet extends FreeMarkerConlet<Serializable> {
         return true;
     }
 
+    public class VmInfo extends ConletBaseModel {
+
+        public VmInfo(String conletId) {
+            super(conletId);
+        }
+
+    }
 }

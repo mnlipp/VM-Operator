@@ -67,30 +67,7 @@ import org.jgrapes.webconsole.rbac.RoleConletFilter;
 import org.jgrapes.webconsole.vuejs.VueJsConsoleWeblet;
 
 /**
- * The application class. In framework term, this is the root component.
- * Two of its child components, the {@link Controller} and the WebGui
- * implement user-visible functions. The others are used internally.
- * 
- * ![Manager components](manager-components.svg)
- * 
- * @startuml manager-components.svg
- * skinparam component {
- *   BackGroundColor #FEFECE
- *   BorderColor #A80036
- *   BorderThickness 1.25
- *   BackgroundColor<<internal>> #F1F1F1
- *   BorderColor<<internal>> #181818
- *   BorderThickness<<internal>> 1
- * }
- * 
- * [Manager]
- * [Manager] *--> [Controller]
- * [Manager] *--> [WebGui]
- * [NioDispatcher] <<internal>>
- * [Manager] *--> [NioDispatcher] <<internal>>
- * [FileSystemWatcher] <<internal>>
- * [Manager] *--> [FileSystemWatcher] <<internal>>
- * @enduml
+ * The application class.
  */
 public class Manager extends Component {
 
@@ -106,8 +83,9 @@ public class Manager extends Component {
     public Manager(CommandLine cmdLine) throws IOException {
         // Prepare component tree
         attach(new NioDispatcher());
-        attach(new FileSystemWatcher(channel()));
-        attach(new Controller(channel()));
+        Channel mgrChannel = new NamedChannel("manager");
+        attach(new FileSystemWatcher(mgrChannel));
+        attach(new Controller(mgrChannel));
 
         // Configuration store with file in /etc/opt (default)
         File cfgFile = new File(cmdLine.getOptionValue('c',
@@ -119,26 +97,27 @@ public class Manager extends Component {
         if (!Files.isReadable(cfgFile.toPath())) {
             throw new IOException("Cannot read configuration file " + cfgFile);
         }
-        attach(new YamlConfigurationStore(channel(), cfgFile, false));
+        attach(new YamlConfigurationStore(mgrChannel, cfgFile, false));
         fire(new WatchFile(cfgFile.toPath()));
 
         // Prepare GUI
-        Channel httpTransport = new NamedChannel("httpTransport");
+        Channel httpTransport = new NamedChannel("guiTransport");
         attach(new SocketServer(httpTransport)
             .setConnectionLimiter(new PermitsPool(300))
             .setMinimalPurgeableTime(1000)
             .setServerAddress(new InetSocketAddress(8080))
-            .setName("HttpSocketServer"));
+            .setName("GuiSocketServer"));
 
         // Create an HTTP server as converter between transport and application
         // layer.
-        Channel httpChannel = new NamedChannel("HTTP");
-        HttpServer httpServer = attach(new HttpServer(httpChannel,
+        Channel httpChannel = new NamedChannel("guiHttp");
+        HttpServer guiHttpServer = attach(new HttpServer(httpChannel,
             httpTransport, Request.In.Get.class, Request.In.Post.class));
+        guiHttpServer.setName("GuiHttpServer");
 
         // Build HTTP application layer
-        httpServer.attach(new InMemorySessionManager(httpChannel));
-        httpServer.attach(new LanguageSelector(httpChannel));
+        guiHttpServer.attach(new InMemorySessionManager(httpChannel));
+        guiHttpServer.attach(new LanguageSelector(httpChannel));
         URI rootUri;
         try {
             rootUri = new URI("/");
@@ -146,7 +125,7 @@ public class Manager extends Component {
             // Cannot happen
             return;
         }
-        ConsoleWeblet consoleWeblet = httpServer
+        ConsoleWeblet consoleWeblet = guiHttpServer
             .attach(new VueJsConsoleWeblet(httpChannel, Channel.SELF, rootUri))
             .prependClassTemplateLoader(getClass())
             .prependResourceBundleProvider(getClass())
