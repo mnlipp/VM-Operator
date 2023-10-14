@@ -142,7 +142,7 @@
 <span class="source-line-no">129</span><span id="line-129">    @SuppressWarnings("PMD.SingularField")</span>
 <span class="source-line-no">130</span><span id="line-130">    private final Configuration fmConfig;</span>
 <span class="source-line-no">131</span><span id="line-131">    private final ConfigMapReconciler cmReconciler;</span>
-<span class="source-line-no">132</span><span id="line-132">    private final StatefuleSetReconciler stsReconciler;</span>
+<span class="source-line-no">132</span><span id="line-132">    private final StatefulSetReconciler stsReconciler;</span>
 <span class="source-line-no">133</span><span id="line-133">    private final LoadBalancerReconciler lbReconciler;</span>
 <span class="source-line-no">134</span><span id="line-134">    @SuppressWarnings("PMD.UseConcurrentHashMap")</span>
 <span class="source-line-no">135</span><span id="line-135">    private final Map&lt;String, Object&gt; config = new HashMap&lt;&gt;();</span>
@@ -166,7 +166,7 @@
 <span class="source-line-no">153</span><span id="line-153">        fmConfig.setClassForTemplateLoading(Reconciler.class, "");</span>
 <span class="source-line-no">154</span><span id="line-154"></span>
 <span class="source-line-no">155</span><span id="line-155">        cmReconciler = new ConfigMapReconciler(fmConfig);</span>
-<span class="source-line-no">156</span><span id="line-156">        stsReconciler = new StatefuleSetReconciler(fmConfig);</span>
+<span class="source-line-no">156</span><span id="line-156">        stsReconciler = new StatefulSetReconciler(fmConfig);</span>
 <span class="source-line-no">157</span><span id="line-157">        lbReconciler = new LoadBalancerReconciler(fmConfig);</span>
 <span class="source-line-no">158</span><span id="line-158">    }</span>
 <span class="source-line-no">159</span><span id="line-159"></span>
