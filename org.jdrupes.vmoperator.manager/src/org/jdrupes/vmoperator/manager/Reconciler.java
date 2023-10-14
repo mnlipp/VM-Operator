@@ -129,7 +129,7 @@ public class Reconciler extends Component {
     @SuppressWarnings("PMD.SingularField")
     private final Configuration fmConfig;
     private final ConfigMapReconciler cmReconciler;
-    private final StatefuleSetReconciler stsReconciler;
+    private final StatefulSetReconciler stsReconciler;
     private final LoadBalancerReconciler lbReconciler;
     @SuppressWarnings("PMD.UseConcurrentHashMap")
     private final Map<String, Object> config = new HashMap<>();
@@ -153,7 +153,7 @@ public class Reconciler extends Component {
         fmConfig.setClassForTemplateLoading(Reconciler.class, "");
 
         cmReconciler = new ConfigMapReconciler(fmConfig);
-        stsReconciler = new StatefuleSetReconciler(fmConfig);
+        stsReconciler = new StatefulSetReconciler(fmConfig);
         lbReconciler = new LoadBalancerReconciler(fmConfig);
     }
 
