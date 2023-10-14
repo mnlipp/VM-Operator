@@ -10,7 +10,6 @@ plugins {
 
 dependencies {
     implementation project(':org.jdrupes.vmoperator.util')
-    runtime project(':org.jdrupes.vmoperator.vmconlet')
     
     implementation 'commons-cli:commons-cli:1.5.0'
     
@@ -32,6 +31,8 @@ dependencies {
     runtimeOnly 'org.eclipse.angus:angus-activation:[1.0.0,2.0.0)'
     runtimeOnly 'org.slf4j:slf4j-jdk14:[2.0.7,3)'
     runtimeOnly 'org.apache.logging.log4j:log4j-to-jul:2.20.0'
+
+    runtimeOnly project(':org.jdrupes.vmoperator.vmconlet')
     
     testImplementation 'io.fabric8:kubernetes-client:[6.8.1,6.9)'
 }
