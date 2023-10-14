@@ -3,6 +3,8 @@ plugins {
 }
 
 dependencies {
+    implementation project(':org.jdrupes.vmoperator.manager.events')
+    
     implementation 'org.jgrapes:org.jgrapes.webconsole.base:[1.2.0,2)'
     implementation 'org.jgrapes:org.jgrapes.webconsole.provider.vue:[1,2)'
     implementation 'org.jgrapes:org.jgrapes.webconsole.provider.jgwcvuecomponents:[1,2)'

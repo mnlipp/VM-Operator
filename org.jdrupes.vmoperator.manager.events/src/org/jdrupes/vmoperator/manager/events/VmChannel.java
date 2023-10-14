@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.jdrupes.vmoperator.manager;
+package org.jdrupes.vmoperator.manager.events;
 
 import com.google.gson.JsonObject;
 import io.kubernetes.client.openapi.ApiClient;

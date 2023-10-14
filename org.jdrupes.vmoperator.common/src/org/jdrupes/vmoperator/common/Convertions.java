@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.jdrupes.vmoperator.util;
+package org.jdrupes.vmoperator.common;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;

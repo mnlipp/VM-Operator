@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
+import org.jdrupes.vmoperator.manager.events.VmChannel;
+import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Event;
 import org.jgrapes.core.Manager;
@@ -117,9 +119,22 @@ public class VmConlet extends FreeMarkerConlet<Serializable> {
         return renderedAs;
     }
 
+    /**
+     * Track the VM definitions.
+     *
+     * @param event the event
+     * @param channel the channel
+     */
+    @Handler
+    @SuppressWarnings("PMD.ConfusingTernary")
+    public void onVmDefChanged(VmDefChanged event, VmChannel channel) {
+
+    }
+
     @Override
     protected boolean doSetLocale(SetLocale event, ConsoleConnection channel,
             String conletId) throws Exception {
         return true;
     }
+
 }

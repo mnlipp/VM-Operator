@@ -22,6 +22,7 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
 import java.io.IOException;
 import java.util.logging.Level;
+import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.annotation.Handler;

@@ -16,23 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.jdrupes.vmoperator.manager;
-
 /**
- * Some constants.
+ * Domain specific {@link org.jgrapes.core.Event}s (and 
+ * {@link org.jgrapes.core.Channel}s) used to communicate between 
+ * the core components of the {@link org.jgrapes.core.Manager} and 
+ * "plugin" components such as the conlets.
  */
-public class Constants extends org.jdrupes.vmoperator.common.Constants {
-
-    /** The Constant APP_NAME. */
-    public static final String APP_NAME = "vm-runner";
-
-    /** The Constant STATE_RUNNING. */
-    public static final String STATE_RUNNING = "Running";
-
-    /** The Constant STATE_STOPPED. */
-    public static final String STATE_STOPPED = "Stopped";
-
-    /** The Constant IMAGE_REPO_PATH. */
-    public static final String IMAGE_REPO_PATH
-        = "/var/local/vmop-image-repository";
-}
+package org.jdrupes.vmoperator.manager.events;

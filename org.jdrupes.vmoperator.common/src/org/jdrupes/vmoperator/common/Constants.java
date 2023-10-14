@@ -16,23 +16,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.jdrupes.vmoperator.manager;
+package org.jdrupes.vmoperator.common;
 
 /**
  * Some constants.
  */
-public class Constants extends org.jdrupes.vmoperator.common.Constants {
+public class Constants {
 
-    /** The Constant APP_NAME. */
-    public static final String APP_NAME = "vm-runner";
+    /** The Constant VM_OP_NAME. */
+    public static final String VM_OP_NAME = "vm-operator";
 
-    /** The Constant STATE_RUNNING. */
-    public static final String STATE_RUNNING = "Running";
+    /** The Constant VM_OP_GROUP. */
+    public static final String VM_OP_GROUP = "vmoperator.jdrupes.org";
 
-    /** The Constant STATE_STOPPED. */
-    public static final String STATE_STOPPED = "Stopped";
-
-    /** The Constant IMAGE_REPO_PATH. */
-    public static final String IMAGE_REPO_PATH
-        = "/var/local/vmop-image-repository";
+    /** The Constant VM_OP_KIND_VM. */
+    public static final String VM_OP_KIND_VM = "VirtualMachine";
 }

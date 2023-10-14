@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.jdrupes.vmoperator.util.Convertions;
+import org.jdrupes.vmoperator.common.Convertions;
 import org.jdrupes.vmoperator.util.Dto;
 import org.jdrupes.vmoperator.util.FsdUtils;
 

@@ -16,19 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.jdrupes.vmoperator.util;
-
 /**
- * Some constants.
+ * Classes and methods shared among the VM operator modules. 
  */
-public class Constants {
-
-    /** The Constant VM_OP_NAME. */
-    public static final String VM_OP_NAME = "vm-operator";
-
-    /** The Constant VM_OP_GROUP. */
-    public static final String VM_OP_GROUP = "vmoperator.jdrupes.org";
-
-    /** The Constant VM_OP_KIND_VM. */
-    public static final String VM_OP_KIND_VM = "VirtualMachine";
-}
+package org.jdrupes.vmoperator.common;
