@@ -10,6 +10,7 @@ plugins {
 
 dependencies {
     implementation project(':org.jdrupes.vmoperator.util')
+    runtime project(':org.jdrupes.vmoperator.vmconlet')
     
     implementation 'commons-cli:commons-cli:1.5.0'
     

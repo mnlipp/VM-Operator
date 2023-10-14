@@ -10,6 +10,7 @@ plugins {
     id 'pl.allegro.tech.build.axion-release' version '1.15.0' apply false
     id 'org.jdrupes.vmoperator.java-doc-conventions'
     id 'eclipse'
+    id "com.github.node-gradle.node" version "7.0.1"
 }
 
 allprojects {
