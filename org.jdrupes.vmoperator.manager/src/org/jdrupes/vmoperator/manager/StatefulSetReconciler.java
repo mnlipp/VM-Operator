@@ -70,7 +70,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
             throws IOException, TemplateException, ApiException {
         DynamicKubernetesApi stsApi = new DynamicKubernetesApi("apps", "v1",
             "statefulsets", channel.client());
-        var metadata = event.object().getMetadata();
+        var metadata = event.vmDefinition().getMetadata();
 
         // Combine template and data and parse result
         var fmTemplate = fmConfig.getTemplate("runnerSts.ftl.yaml");

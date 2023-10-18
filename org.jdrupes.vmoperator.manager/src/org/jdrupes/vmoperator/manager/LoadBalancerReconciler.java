@@ -122,7 +122,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
             = json.deserialize(json.serialize(asmData), JsonObject.class);
 
         // Get metadata from VM definition
-        var vmMeta = GsonPtr.to(channel.vmDefinition()).to("spec")
+        var vmMeta = GsonPtr.to(channel.vmDefinition().getRaw()).to("spec")
             .get(JsonObject.class, LOAD_BALANCER_SERVICE)
             .map(JsonObject::deepCopy).orElseGet(() -> new JsonObject());
 

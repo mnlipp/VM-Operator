@@ -22,6 +22,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import java.math.BigInteger;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -176,6 +177,17 @@ public class GsonPtr {
     }
 
     /**
+     * Returns the Integer value of the selected {@link JsonPrimitive}.
+     *
+     * @param selectors the selectors
+     * @return the as string
+     */
+    public Optional<BigInteger> getAsBigInteger(Object... selectors) {
+        return get(JsonPrimitive.class, selectors)
+            .map(JsonPrimitive::getAsBigInteger);
+    }
+
+    /**
      * Returns the Long value of the selected {@link JsonPrimitive}.
      *
      * @param selectors the selectors
@@ -184,6 +196,17 @@ public class GsonPtr {
     public Optional<Long> getAsLong(Object... selectors) {
         return get(JsonPrimitive.class, selectors)
             .map(JsonPrimitive::getAsLong);
+    }
+
+    /**
+     * Returns the boolean value of the selected {@link JsonPrimitive}.
+     *
+     * @param selectors the selectors
+     * @return the boolean
+     */
+    public Optional<Boolean> getAsBoolean(Object... selectors) {
+        return get(JsonPrimitive.class, selectors)
+            .map(JsonPrimitive::getAsBoolean);
     }
 
     /**

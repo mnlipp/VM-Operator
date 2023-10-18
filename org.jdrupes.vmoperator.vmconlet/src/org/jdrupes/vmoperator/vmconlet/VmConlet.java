@@ -22,9 +22,10 @@ import freemarker.core.ParseException;
 import freemarker.template.MalformedTemplateNameException;
 import freemarker.template.Template;
 import freemarker.template.TemplateNotFoundException;
-import io.kubernetes.client.openapi.models.V1Namespace;
+import io.kubernetes.client.custom.QuantityFormatter;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -33,6 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged.Type;
+import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Event;
 import org.jgrapes.core.Manager;
@@ -49,13 +51,15 @@ import org.jgrapes.webconsole.base.events.RenderConletRequestBase;
 import org.jgrapes.webconsole.base.events.SetLocale;
 import org.jgrapes.webconsole.base.freemarker.FreeMarkerConlet;
 
+import com.google.gson.Gson;
+
 /**
  */
-public class VmConlet extends FreeMarkerConlet<VmConlet.VmInfo> {
+public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
 
     private static final Set<RenderMode> MODES = RenderMode.asSet(
         RenderMode.Preview, RenderMode.View);
-    private Map<String, V1Namespace> vmInfos = new ConcurrentHashMap<>();
+    private Map<String, VmInfo> vmInfos = new ConcurrentHashMap<>();
 
     /**
      * Creates a new component with its channel set to the given channel.
@@ -97,14 +101,14 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmInfo> {
     }
 
     @Override
-    protected Optional<VmInfo> createNewState(AddConletRequest event,
+    protected Optional<VmsModel> createNewState(AddConletRequest event,
             ConsoleConnection connection, String conletId) throws Exception {
-        return Optional.of(new VmInfo(conletId));
+        return Optional.of(new VmsModel(conletId));
     }
 
     @Override
     protected Set<RenderMode> doRenderConlet(RenderConletRequestBase<?> event,
-            ConsoleConnection channel, String conletId, VmInfo conletState)
+            ConsoleConnection channel, String conletId, VmsModel conletState)
             throws Exception {
         Set<RenderMode> renderedAs = new HashSet<>();
         if (event.renderAs().contains(RenderMode.Preview)) {
@@ -142,9 +146,29 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmInfo> {
     @SuppressWarnings("PMD.ConfusingTernary")
     public void onVmDefChanged(VmDefChanged event, VmChannel channel) {
         if (event.type() == Type.DELETED) {
-            vmInfos.remove(event.object().getMetadata().getName());
+            vmInfos.remove(event.vmDefinition().getMetadata().getName());
         } else {
-            vmInfos.put(event.object().getMetadata().getName(), event.object());
+            String vmName = event.vmDefinition().getMetadata().getName();
+            VmInfo info = vmInfos.computeIfAbsent(vmName, k -> {
+                var newInfo = new VmInfo();
+                newInfo.name = k;
+                return newInfo;
+            });
+            var status
+                = GsonPtr.to(channel.vmDefinition().getRaw()).to("status");
+            info.running = status.to("conditions").get().getAsJsonArray()
+                .asList().stream().map(e -> GsonPtr.to(e))
+                .filter(p -> "Running".equals(p.getAsString("type").orElse("")))
+                .findFirst().flatMap(p -> p.getAsBoolean("status"))
+                .orElse(false);
+            info.currentCpus = status.getAsInt("cpus").orElse(0);
+            info.currentRam = new QuantityFormatter()
+                .parse(status.getAsString("ram").orElse("0")).getNumber()
+                .toBigInteger();
+            var gson = new Gson();
+            var text = gson.toJson(info);
+            System.out.println(text);
+            text = null;
         }
     }
 
@@ -154,9 +178,9 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmInfo> {
         return true;
     }
 
-    public class VmInfo extends ConletBaseModel {
+    public class VmsModel extends ConletBaseModel {
 
-        public VmInfo(String conletId) {
+        public VmsModel(String conletId) {
             super(conletId);
         }
 
