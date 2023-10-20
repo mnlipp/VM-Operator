@@ -16,18 +16,37 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.jdrupes.vmoperator.vmconlet;
+package org.jdrupes.vmoperator.manager.events;
 
-import java.math.BigInteger;
-import org.jdrupes.vmoperator.util.Dto;
+import org.jgrapes.core.Channel;
+import org.jgrapes.core.Event;
 
 /**
- * The Class VmInfo.
+ * Stops a VM.
  */
-public class VmInfo implements Dto {
+@SuppressWarnings("PMD.DataClass")
+public class StopVm extends Event<Void> {
 
-    public String name;
-    public boolean running;
-    public int currentCpus;
-    public BigInteger currentRam;
+    private final String name;
+
+    /**
+     * Instantiates a new start vm event.
+     *
+     * @param channels the channels
+     * @param name the name
+     */
+    public StopVm(String name, Channel... channels) {
+        super(channels);
+        this.name = name;
+    }
+
+    /**
+     * Gets the name.
+     *
+     * @return the name
+     */
+    public String name() {
+        return name;
+    }
+
 }

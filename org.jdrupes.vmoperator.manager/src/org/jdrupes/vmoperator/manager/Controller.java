@@ -18,16 +18,28 @@
 
 package org.jdrupes.vmoperator.manager;
 
+import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
+import io.kubernetes.client.util.Config;
+import io.kubernetes.client.util.generic.options.PatchOptions;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.logging.Level;
+import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
+import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
+import org.jdrupes.vmoperator.common.K8s;
+import org.jdrupes.vmoperator.manager.events.StartVm;
+import org.jdrupes.vmoperator.manager.events.StopVm;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.annotation.Handler;
 import org.jgrapes.core.events.HandlingError;
 import org.jgrapes.core.events.Start;
+import org.jgrapes.core.events.Stop;
+import org.jgrapes.util.events.ConfigurationUpdate;
 
 /**
  * Implements a controller as defined in the
@@ -67,6 +79,8 @@ import org.jgrapes.core.events.Start;
  */
 public class Controller extends Component {
 
+    private String namespace;
+
     /**
      * Creates a new instance.
      */
@@ -92,6 +106,20 @@ public class Controller extends Component {
     }
 
     /**
+     * Configure the component.
+     *
+     * @param event the event
+     */
+    @Handler
+    public void onConfigurationUpdate(ConfigurationUpdate event) {
+        event.structured(componentPath()).ifPresent(c -> {
+            if (c.containsKey("namespace")) {
+                namespace = (String) c.get("namespace");
+            }
+        });
+    }
+
+    /**
      * Handle the start event. Has higher priority because it configures
      * the default Kubernetes client.
      *
@@ -104,5 +132,73 @@ public class Controller extends Component {
         // Make sure to use thread specific client
         // https://github.com/kubernetes-client/java/issues/100
         Configuration.setDefaultApiClient(null);
+
+        // Verify that a namespace has been configured
+        if (namespace == null) {
+            var path = Path
+                .of("/var/run/secrets/kubernetes.io/serviceaccount/namespace");
+            if (Files.isReadable(path)) {
+                namespace = Files.lines(path).findFirst().orElse(null);
+            }
+        }
+        if (namespace == null) {
+            logger.severe(() -> "Namespace to watch not configured and"
+                + " no file in kubernetes directory.");
+            event.cancel(true);
+            fire(new Stop());
+            return;
+        }
+        logger.fine(() -> "Controlling namespace \"" + namespace + "\".");
+    }
+
+    /**
+     * On start vm.
+     *
+     * @param event the event
+     * @throws ApiException the api exception
+     * @throws IOException Signals that an I/O exception has occurred.
+     */
+    @Handler
+    public void onStartVm(StartVm event) throws ApiException, IOException {
+        patchRunning(event.name(), true);
+    }
+
+    /**
+     * On stop vm.
+     *
+     * @param event the event
+     * @throws ApiException the api exception
+     * @throws IOException Signals that an I/O exception has occurred.
+     */
+    @Handler
+    public void onStopVm(StopVm event) throws ApiException, IOException {
+        patchRunning(event.name(), false);
+    }
+
+    private void patchRunning(String name, boolean running)
+            throws ApiException, IOException {
+        var crApi = K8s.crApi(Config.defaultClient(), VM_OP_GROUP,
+            VM_OP_KIND_VM, namespace, name);
+        if (crApi.isEmpty()) {
+            logger.warning(() -> "Trying to patch " + namespace + "/" + name
+                + " which does not exist.");
+            return;
+        }
+
+        // Patch running
+        PatchOptions patchOpts = new PatchOptions();
+        patchOpts.setFieldManager("kubernetes-java-kubectl-apply");
+        var res = crApi.get().patch(namespace, name,
+            V1Patch.PATCH_FORMAT_JSON_PATCH,
+            new V1Patch("[{\"op\": \"replace\", \"path\": "
+                + "\"/spec/vm/state\", "
+                + "\"value\": \"" + (running ? "Running" : "Stopped")
+                + "\"}]"),
+            patchOpts);
+        if (!res.isSuccess()) {
+            logger.warning(
+                () -> "Cannot patch pod annotations: " + res.getStatus());
+        }
+
     }
 }

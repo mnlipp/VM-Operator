@@ -18,8 +18,6 @@
 
 package org.jdrupes.vmoperator.manager;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
@@ -33,13 +31,8 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
-import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashSet;
@@ -50,14 +43,13 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
+import org.jdrupes.vmoperator.common.K8s;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
-import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged.Type;
-import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.Components;
@@ -108,23 +100,7 @@ public class VmWatcher extends Component {
      */
     @Handler(priority = 10)
     public void onStart(Start event) throws IOException, ApiException {
-        // Get namespace
-        if (namespaceToWatch == null) {
-            var path = Path
-                .of("/var/run/secrets/kubernetes.io/serviceaccount/namespace");
-            if (Files.isReadable(path)) {
-                namespaceToWatch = Files.lines(path).findFirst().orElse(null);
-            }
-        }
-        if (namespaceToWatch == null) {
-            logger.severe(() -> "Namespace to watch not configured and"
-                + " no file in kubernetes directory.");
-            event.cancel(true);
-            fire(new Stop());
-            return;
-        }
-        logger
-            .fine(() -> "Controlling namespace \"" + namespaceToWatch + "\".");
+        logger.fine(() -> "Watching namespace \"" + namespaceToWatch + "\".");
 
         // Get all our API versions
         var client = Config.defaultClient();

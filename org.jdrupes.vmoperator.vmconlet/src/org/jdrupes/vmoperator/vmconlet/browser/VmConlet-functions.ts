@@ -24,6 +24,43 @@ import l10nBundles from "l10nBundles";
 
 import "./VmConlet-style.scss"
 
+//
+// Helpers
+//
+let unitMap = new Map<string,bigint>();
+let unitMappings = new Array<{key: string; value: bigint}>();
+let memorySize = /^\\s*(\\d+(\\.\\d+)?)\\s*([A-Za-z]*)\\s*/;
+
+// SI units and common abbreviations
+let factor = BigInt("1");
+unitMap.set("", factor);
+let scale = BigInt("1000");
+for (let unit of ["B", "kB", "MB", "GB", "TB", "PB", "EB"]) {
+    unitMap.set(unit, factor);
+    factor = factor * scale;
+}
+// Binary units
+factor = BigInt("1024");
+scale = BigInt("1024");
+for (let unit of ["KiB", "MiB", "GiB", "TiB", "PiB", "EiB"]) {
+    unitMap.set(unit, factor);
+    factor = factor * scale;
+}
+unitMap.forEach((value: bigint, key: string) => {
+    unitMappings.push({key, value});
+});
+unitMappings.sort((a,b) => a.value < b.value ? 1 : a.value > b.value ? -1 : 0);
+
+function formatMemory(size: bigint): string {
+    for (let mapping of unitMappings) {
+        if (size >= mapping.value
+            && (size % mapping.value) === BigInt("0")) {
+            return (size / mapping.value + " " + mapping.key).trim();
+        }
+    }
+    return size.toString();
+}
+
 // For global access
 declare global {
   interface Window {
@@ -32,6 +69,8 @@ declare global {
 }
 
 window.orgJDrupesVmOperatorVmConlet = {};
+
+let vmInfos = reactive(new Map());
 
 window.orgJDrupesVmOperatorVmConlet.initPreview 
         = (previewDom: HTMLElement, isUpdate: boolean) => {
@@ -49,13 +88,61 @@ window.orgJDrupesVmOperatorVmConlet.initView
             const conletId: string 
                 = (<HTMLElement>viewDom.parentNode!).dataset["conletId"]!;
 
-            provideApi(viewDom, {
-            });
+            const localize = (key: string) => {
+                return JGConsole.localize(
+                    l10nBundles, JGWC.lang() || "en", key);
+            };
 
-            return { }            
+            const controller = reactive(new JGConsole.TableController([
+                ["name", "vmname"],
+                ["running", "running"],
+                ["currentCpus", "currentCpus"],
+                ["currentRam", "currentRam"]
+                ], {
+                sortKey: "name",
+                sortOrder: "up"
+            }));
+            
+            let filteredData = computed(() => {
+                let infos = Array.from(vmInfos.values());
+                return controller.filter(infos);
+            });
+            
+            const vmAction = (vmName: string, action: string) => {
+                JGConsole.notifyConletModel(conletId, action, vmName);
+            };
+            
+            const idScope = JGWC.createIdScope();
+            const detailsByName = reactive(new Set());
+            
+            return { controller, vmInfos, filteredData, detailsByName, 
+                localize, formatMemory, vmAction,
+                scopedId: (id: string) => { return idScope.scopedId(id); } }
         }
     });
     app.use(JgwcPlugin);
     app.config.globalProperties.window = window;
     app.mount(viewDom);
 };
+
+JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
+    "updateVm", function(conletId: String, vmDefinition: any) {
+    // Add some short-cuts for table controller
+    vmDefinition.name = vmDefinition.metadata.name;
+    vmDefinition.currentCpus = vmDefinition.status.cpus;
+    vmDefinition.currentRam = vmDefinition.status.ram;
+    for (let condition of vmDefinition.status.conditions) {
+        if (condition.type === "Running") {
+            vmDefinition.running = condition.status === "True";
+            break;
+        }
+    }
+    
+    vmInfos.set(vmDefinition.name, vmDefinition);
+});
+
+JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
+    "removeVm", function(conletId: String, vmName: String) {
+    vmInfos.delete(vmName);
+});
+

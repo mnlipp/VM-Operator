@@ -23,14 +23,19 @@ import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.apis.ApisApi;
+import io.kubernetes.client.openapi.apis.CustomObjectsApi;
+import io.kubernetes.client.openapi.models.V1APIGroup;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1ConfigMapList;
+import io.kubernetes.client.openapi.models.V1GroupVersionForDiscovery;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimList;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.util.generic.GenericKubernetesApi;
+import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
 import io.kubernetes.client.util.generic.options.DeleteOptions;
 import io.kubernetes.client.util.generic.options.PatchOptions;
 import java.util.Optional;
@@ -38,7 +43,8 @@ import java.util.Optional;
 /**
  * Helpers for K8s API.
  */
-@SuppressWarnings({ "PMD.ShortClassName", "PMD.UseUtilityClass" })
+@SuppressWarnings({ "PMD.ShortClassName", "PMD.UseUtilityClass",
+    "PMD.DataflowAnomalyAnalysis" })
 public class K8s {
 
     /**
@@ -86,6 +92,45 @@ public class K8s {
             podApi(ApiClient client) {
         return new GenericKubernetesApi<>(V1Pod.class, V1PodList.class, "",
             "v1", "pods", client);
+    }
+
+    /**
+     * Get the API for a custom resource.
+     *
+     * @param client the client
+     * @param group the group
+     * @param kind the kind
+     * @param namespace the namespace
+     * @param name the name
+     * @return the dynamic kubernetes api
+     * @throws ApiException the api exception
+     */
+    @SuppressWarnings("PMD.UseObjectForClearerAPI")
+    public static Optional<DynamicKubernetesApi> crApi(ApiClient client,
+            String group, String kind, String namespace, String name)
+            throws ApiException {
+        var apis = new ApisApi(client).getAPIVersions();
+        var crdVersions = apis.getGroups().stream()
+            .filter(g -> g.getName().equals(group)).findFirst()
+            .map(V1APIGroup::getVersions).stream().flatMap(l -> l.stream())
+            .map(V1GroupVersionForDiscovery::getVersion).toList();
+        var coa = new CustomObjectsApi(client);
+        for (var crdVersion : crdVersions) {
+            var crdApiRes = coa.getAPIResources(group, crdVersion)
+                .getResources().stream().filter(r -> kind.equals(r.getKind()))
+                .findFirst();
+            if (crdApiRes.isEmpty()) {
+                continue;
+            }
+            @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+            var crApi = new DynamicKubernetesApi(group,
+                crdVersion, crdApiRes.get().getName(), client);
+            var customResource = crApi.get(namespace, name);
+            if (customResource.isSuccess()) {
+                return Optional.of(crApi);
+            }
+        }
+        return Optional.empty();
     }
 
     /**

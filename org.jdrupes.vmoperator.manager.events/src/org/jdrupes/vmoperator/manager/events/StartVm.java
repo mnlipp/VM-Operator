@@ -16,36 +16,37 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-/*
- * Conlet specific styles.
+package org.jdrupes.vmoperator.manager.events;
+
+import org.jgrapes.core.Channel;
+import org.jgrapes.core.Event;
+
+/**
+ * Starts a VM.
  */
- 
-.jdrupes-vmoperator-vmconlet-view-search {
-  display: flex; 
-  justify-content: flex-end
-}
+@SuppressWarnings("PMD.DataClass")
+public class StartVm extends Event<Void> {
 
-.jdrupes-vmoperator-vmconlet-view-search form {
-  white-space: nowrap;
-}
+    private final String name;
 
-.jdrupes-vmoperator-vmconlet-view-action-list {
-    white-space: nowrap;
-}
+    /**
+     * Instantiates a new start vm event.
+     *
+     * @param channels the channels
+     * @param name the name
+     */
+    public StartVm(String name, Channel... channels) {
+        super(channels);
+        this.name = name;
+    }
 
-.jdrupes-vmoperator-vmconlet-view-action-list [role=button]:not(:last-child) {
-  margin-right: 0.5em;
-}
+    /**
+     * Gets the name.
+     *
+     * @return the name
+     */
+    public String name() {
+        return name;
+    }
 
-.jdrupes-vmoperator-vmconlet-view td {
-  vertical-align: top;
 }
-
-.jdrupes-vmoperator-vmconlet-view td:not([colspan]):first-child {
-    white-space: nowrap;
-}
-
-.jdrupes-vmoperator-vmconlet-view table td.details {
-    padding-left: 1em;
-}
-

@@ -18,6 +18,8 @@
 
 package org.jdrupes.vmoperator.manager;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import freemarker.core.ParseException;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapperBuilder;
@@ -51,9 +53,6 @@ import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.annotation.Handler;
 import org.jgrapes.util.events.ConfigurationUpdate;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 
 /**
  * Adapts Kubenetes resources for instances of the Runner 
