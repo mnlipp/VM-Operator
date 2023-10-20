@@ -31,8 +31,8 @@
 <span class="source-line-no">018</span><span id="line-18"></span>
 <span class="source-line-no">019</span><span id="line-19">package org.jdrupes.vmoperator.manager.events;</span>
 <span class="source-line-no">020</span><span id="line-20"></span>
-<span class="source-line-no">021</span><span id="line-21">import com.google.gson.JsonObject;</span>
-<span class="source-line-no">022</span><span id="line-22">import io.kubernetes.client.openapi.ApiClient;</span>
+<span class="source-line-no">021</span><span id="line-21">import io.kubernetes.client.openapi.ApiClient;</span>
+<span class="source-line-no">022</span><span id="line-22">import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;</span>
 <span class="source-line-no">023</span><span id="line-23">import org.jgrapes.core.Channel;</span>
 <span class="source-line-no">024</span><span id="line-24">import org.jgrapes.core.EventPipeline;</span>
 <span class="source-line-no">025</span><span id="line-25">import org.jgrapes.core.Subchannel.DefaultSubchannel;</span>
@@ -45,7 +45,7 @@
 <span class="source-line-no">032</span><span id="line-32"></span>
 <span class="source-line-no">033</span><span id="line-33">    private final EventPipeline pipeline;</span>
 <span class="source-line-no">034</span><span id="line-34">    private final ApiClient client;</span>
-<span class="source-line-no">035</span><span id="line-35">    private JsonObject vmDefinition;</span>
+<span class="source-line-no">035</span><span id="line-35">    private DynamicKubernetesObject vmDefinition;</span>
 <span class="source-line-no">036</span><span id="line-36">    private long generation = -1;</span>
 <span class="source-line-no">037</span><span id="line-37"></span>
 <span class="source-line-no">038</span><span id="line-38">    /**</span>
@@ -69,7 +69,7 @@
 <span class="source-line-no">056</span><span id="line-56">     * @return the watch channel</span>
 <span class="source-line-no">057</span><span id="line-57">     */</span>
 <span class="source-line-no">058</span><span id="line-58">    @SuppressWarnings("PMD.LinguisticNaming")</span>
-<span class="source-line-no">059</span><span id="line-59">    public VmChannel setVmDefinition(JsonObject definition) {</span>
+<span class="source-line-no">059</span><span id="line-59">    public VmChannel setVmDefinition(DynamicKubernetesObject definition) {</span>
 <span class="source-line-no">060</span><span id="line-60">        this.vmDefinition = definition;</span>
 <span class="source-line-no">061</span><span id="line-61">        return this;</span>
 <span class="source-line-no">062</span><span id="line-62">    }</span>
@@ -79,7 +79,7 @@
 <span class="source-line-no">066</span><span id="line-66">     *</span>
 <span class="source-line-no">067</span><span id="line-67">     * @return the json object</span>
 <span class="source-line-no">068</span><span id="line-68">     */</span>
-<span class="source-line-no">069</span><span id="line-69">    public JsonObject vmDefinition() {</span>
+<span class="source-line-no">069</span><span id="line-69">    public DynamicKubernetesObject vmDefinition() {</span>
 <span class="source-line-no">070</span><span id="line-70">        return vmDefinition;</span>
 <span class="source-line-no">071</span><span id="line-71">    }</span>
 <span class="source-line-no">072</span><span id="line-72"></span>

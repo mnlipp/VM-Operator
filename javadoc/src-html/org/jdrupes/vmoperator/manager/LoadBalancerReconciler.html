@@ -135,7 +135,7 @@
 <span class="source-line-no">122</span><span id="line-122">            = json.deserialize(json.serialize(asmData), JsonObject.class);</span>
 <span class="source-line-no">123</span><span id="line-123"></span>
 <span class="source-line-no">124</span><span id="line-124">        // Get metadata from VM definition</span>
-<span class="source-line-no">125</span><span id="line-125">        var vmMeta = GsonPtr.to(channel.vmDefinition()).to("spec")</span>
+<span class="source-line-no">125</span><span id="line-125">        var vmMeta = GsonPtr.to(channel.vmDefinition().getRaw()).to("spec")</span>
 <span class="source-line-no">126</span><span id="line-126">            .get(JsonObject.class, LOAD_BALANCER_SERVICE)</span>
 <span class="source-line-no">127</span><span id="line-127">            .map(JsonObject::deepCopy).orElseGet(() -&gt; new JsonObject());</span>
 <span class="source-line-no">128</span><span id="line-128"></span>
