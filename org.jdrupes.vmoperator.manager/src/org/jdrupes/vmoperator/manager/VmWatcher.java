@@ -33,6 +33,8 @@ import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashSet;
@@ -100,6 +102,15 @@ public class VmWatcher extends Component {
      */
     @Handler(priority = 10)
     public void onStart(Start event) throws IOException, ApiException {
+        // Get namespace
+        if (namespaceToWatch == null) {
+            var path = Path
+                .of("/var/run/secrets/kubernetes.io/serviceaccount/namespace");
+            if (Files.isReadable(path)) {
+                namespaceToWatch = Files.lines(path).findFirst().orElse(null);
+            }
+        }
+        // Availability already checked by Controller.onStart
         logger.fine(() -> "Watching namespace \"" + namespaceToWatch + "\".");
 
         // Get all our API versions

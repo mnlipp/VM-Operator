@@ -142,7 +142,7 @@ public class Controller extends Component {
             }
         }
         if (namespace == null) {
-            logger.severe(() -> "Namespace to watch not configured and"
+            logger.severe(() -> "Namespace to control not configured and"
                 + " no file in kubernetes directory.");
             event.cancel(true);
             fire(new Stop());
