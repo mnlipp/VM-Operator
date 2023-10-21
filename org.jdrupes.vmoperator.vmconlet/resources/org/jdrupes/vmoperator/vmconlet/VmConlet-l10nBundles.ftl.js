@@ -24,7 +24,7 @@ let entries = null;
 entries = new Map();
 l10nBundles.set("${l.locale.toLanguageTag()}", entries);
 // <#list l.l10nBundle.keys as key>
-entries.set("${key}", "${l.l10nBundle.getString(key)}")
+entries.set("${key}", "${l.l10nBundle.getString(key)}");
 // </#list>
 // </#list>
 

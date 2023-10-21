@@ -47,9 +47,9 @@ for (let unit of ["KiB", "MiB", "GiB", "TiB", "PiB", "EiB"]) {
     factor = factor * scale;
 }
 unitMap.forEach((value: bigint, key: string) => {
-    unitMappings.push({key, value});
+    unitMappings.push({ key, value });
 });
-unitMappings.sort((a,b) => a.value < b.value ? 1 : a.value > b.value ? -1 : 0);
+unitMappings.sort((a, b) => a.value < b.value ? 1 : a.value > b.value ? -1 : 0);
 
 function formatMemory(size: bigint): string {
     for (let mapping of unitMappings) {
@@ -72,17 +72,16 @@ window.orgJDrupesVmOperatorVmConlet = {};
 
 let vmInfos = reactive(new Map());
 
-window.orgJDrupesVmOperatorVmConlet.initPreview 
+window.orgJDrupesVmOperatorVmConlet.initPreview
     = (previewDom: HTMLElement, isUpdate: boolean) => {
-    const app = createApp({});
-    app.use(JgwcPlugin, []);
-    app.config.globalProperties.window = window;
-    app.mount(previewDom);
-};
+        const app = createApp({});
+        app.use(JgwcPlugin, []);
+        app.config.globalProperties.window = window;
+        app.mount(previewDom);
+    };
 
-window.orgJDrupesVmOperatorVmConlet.initView 
-    = (viewDom: HTMLElement, isUpdate: boolean) => {
-    
+window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
+    isUpdate: boolean) => {
     const app = createApp({
         setup(_props: any) {
             const conletId: string
