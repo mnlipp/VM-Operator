@@ -16,16 +16,16 @@
  * with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-'use strict';
+"use strict";
 
 const l10nBundles = new Map();
 let entries = null;
 // <#list supportedLanguages() as l>
 entries = new Map();
-l10nBundles.set('${l.locale.toLanguageTag()}', entries);
+l10nBundles.set("${l.locale.toLanguageTag()}", entries);
 // <#list l.l10nBundle.keys as key>
-entries.set('${key}', '${l.l10nBundle.getString(key)}')
+entries.set("${key}", "${l.l10nBundle.getString(key)}")
 // </#list>
-// </#list>    
+// </#list>
 
 export default l10nBundles;

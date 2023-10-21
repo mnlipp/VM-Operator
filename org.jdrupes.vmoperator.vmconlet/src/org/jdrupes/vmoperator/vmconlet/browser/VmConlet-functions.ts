@@ -63,9 +63,9 @@ function formatMemory(size: bigint): string {
 
 // For global access
 declare global {
-  interface Window {
-    orgJDrupesVmOperatorVmConlet: any;
-  }
+    interface Window {
+        orgJDrupesVmOperatorVmConlet: any;
+    }
 }
 
 window.orgJDrupesVmOperatorVmConlet = {};
@@ -73,7 +73,7 @@ window.orgJDrupesVmOperatorVmConlet = {};
 let vmInfos = reactive(new Map());
 
 window.orgJDrupesVmOperatorVmConlet.initPreview 
-        = (previewDom: HTMLElement, isUpdate: boolean) => {
+    = (previewDom: HTMLElement, isUpdate: boolean) => {
     const app = createApp({});
     app.use(JgwcPlugin, []);
     app.config.globalProperties.window = window;
@@ -81,11 +81,11 @@ window.orgJDrupesVmOperatorVmConlet.initPreview
 };
 
 window.orgJDrupesVmOperatorVmConlet.initView 
-        = (viewDom: HTMLElement, isUpdate: boolean) => {
+    = (viewDom: HTMLElement, isUpdate: boolean) => {
     
     const app = createApp({
         setup(_props: any) {
-            const conletId: string 
+            const conletId: string
                 = (<HTMLElement>viewDom.parentNode!).dataset["conletId"]!;
 
             const localize = (key: string) => {
@@ -98,26 +98,28 @@ window.orgJDrupesVmOperatorVmConlet.initView
                 ["running", "running"],
                 ["currentCpus", "currentCpus"],
                 ["currentRam", "currentRam"]
-                ], {
+            ], {
                 sortKey: "name",
                 sortOrder: "up"
             }));
-            
+
             let filteredData = computed(() => {
                 let infos = Array.from(vmInfos.values());
                 return controller.filter(infos);
             });
-            
+
             const vmAction = (vmName: string, action: string) => {
                 JGConsole.notifyConletModel(conletId, action, vmName);
             };
-            
+
             const idScope = JGWC.createIdScope();
             const detailsByName = reactive(new Set());
-            
-            return { controller, vmInfos, filteredData, detailsByName, 
+
+            return {
+                controller, vmInfos, filteredData, detailsByName,
                 localize, formatMemory, vmAction,
-                scopedId: (id: string) => { return idScope.scopedId(id); } }
+                scopedId: (id: string) => { return idScope.scopedId(id); }
+            }
         }
     });
     app.use(JgwcPlugin);
@@ -127,22 +129,21 @@ window.orgJDrupesVmOperatorVmConlet.initView
 
 JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
     "updateVm", function(conletId: String, vmDefinition: any) {
-    // Add some short-cuts for table controller
-    vmDefinition.name = vmDefinition.metadata.name;
-    vmDefinition.currentCpus = vmDefinition.status.cpus;
-    vmDefinition.currentRam = vmDefinition.status.ram;
-    for (let condition of vmDefinition.status.conditions) {
-        if (condition.type === "Running") {
-            vmDefinition.running = condition.status === "True";
-            break;
+        // Add some short-cuts for table controller
+        vmDefinition.name = vmDefinition.metadata.name;
+        vmDefinition.currentCpus = vmDefinition.status.cpus;
+        vmDefinition.currentRam = vmDefinition.status.ram;
+        for (let condition of vmDefinition.status.conditions) {
+            if (condition.type === "Running") {
+                vmDefinition.running = condition.status === "True";
+                break;
+            }
         }
-    }
-    
-    vmInfos.set(vmDefinition.name, vmDefinition);
-});
+
+        vmInfos.set(vmDefinition.name, vmDefinition);
+    });
 
 JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
     "removeVm", function(conletId: String, vmName: String) {
-    vmInfos.delete(vmName);
-});
-
+        vmInfos.delete(vmName);
+    });
