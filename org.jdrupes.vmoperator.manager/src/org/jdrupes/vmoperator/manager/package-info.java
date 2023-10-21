@@ -16,4 +16,151 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/**
+ * The following diagram shows the components of the manager application.
+ *  
+ * In framework terms, the {@link org.jdrupes.vmoperator.manager.Manager}
+ * is the root component of the application. Two of its child components, 
+ * the {@link org.jdrupes.vmoperator.manager.Controller} and the WebGui
+ * provide the functions that are apparent to the user.
+ * 
+ * The position of the components in the component tree is important
+ * when writing the configuration file for the manager and therefore
+ * shown below. In order to  keep the diagram readable, the 
+ * components attached to the 
+ * {@link org.jgrapes.webconsole.base.WebConsole} are shown in a 
+ * separate diagram further down.
+ * 
+ * ![Manager components](manager-components.svg)
+ * 
+ * Component hierarchy of the web console:
+ * 
+ * ![Web console components](console-components.svg)
+ *
+ * The components marked as "&lt;&lt;internal&gt;&gt;" have no 
+ * configuration options or use their default values when used 
+ * in this application.
+ * 
+ * As an example, the following YAML configures a different port for the 
+ * GUI and some users. The relationship to the component tree should
+ * be obvious.  
+ * ```
+ * "/Manager":
+ *   "/GuiSocketServer":
+ *     port: 8888
+ *   "/GuiHttpServer":
+ *     "/ConsoleWeblet":
+ *       "/WebConsole":
+ *         "/LoginConlet":
+ *           users:
+ *             ...
+ * ```
+ *  
+ * Developers may also be interested in the usage of channels
+ * by the application's component:
+ *
+ * ![Main channels](app-channels.svg)
+ * 
+ * @startuml manager-components.svg
+ * skinparam component {
+ *   BackGroundColor #FEFECE
+ *   BorderColor #A80036
+ *   BorderThickness 1.25
+ *   BackgroundColor<<internal>> #F1F1F1
+ *   BorderColor<<internal>> #181818
+ *   BorderThickness<<internal>> 1
+ * }
+ * skinparam packageStyle rectangle
+ * 
+ * Component NioDispatcher as NioDispatcher <<internal>>
+ * [Manager] *-up- [NioDispatcher]
+ * Component FileSystemWatcher as FileSystemWatcher <<internal>>
+ * [Manager] *-up- [FileSystemWatcher]
+ * Component YamlConfigurationStore as YamlConfigurationStore <<internal>>
+ * [Manager] *-left- [YamlConfigurationStore]
+ * [YamlConfigurationStore] *-right[hidden]- [Controller]
+ *
+ * [Manager] *-- [Controller]
+ * [Controller] *-- [VmWatcher]
+ * [Controller] *-- [Reconciler]
+ * [Controller] -right[hidden]- [GuiHttpServer]
+ * 
+ * [Manager] *-down- [GuiSocketServer:8080]
+ * [Manager] *-- [GuiHttpServer]
+ * Component PreferencesStore as PreferencesStore <<internal>>
+ * [GuiHttpServer] *-up- [PreferencesStore]
+ * Component InMemorySessionManager as InMemorySessionManager <<internal>>
+ * [GuiHttpServer] *-up- [InMemorySessionManager]
+ * Component LanguageSelector as LanguageSelector <<internal>>
+ * [GuiHttpServer] *-right- [LanguageSelector]
+ * 
+ * package "Conceptual WebConsole" {
+ *   [ConsoleWeblet] *-- [WebConsole]
+ * }
+ * [GuiHttpServer] *-- [ConsoleWeblet]
+ * @enduml
+ * 
+ * @startuml console-components.svg
+ * skinparam component {
+ *   BackGroundColor #FEFECE
+ *   BorderColor #A80036
+ *   BorderThickness 1.25
+ *   BackgroundColor<<internal>> #F1F1F1
+ *   BorderColor<<internal>> #181818
+ *   BorderThickness<<internal>> 1
+ * }
+ * skinparam packageStyle rectangle
+ * 
+ * Component BrowserLocalBackedKVStore as BrowserLocalBackedKVStore <<internal>>
+ * [WebConsole] *-up- [BrowserLocalBackedKVStore]
+ * Component KVStoreBasedConsolePolicy as KVStoreBasedConsolePolicy <<internal>>
+ * [WebConsole] *-up- [KVStoreBasedConsolePolicy]
+ * 
+ * [WebConsole] *-- [RoleConfigurator]
+ * [WebConsole] *-- [RoleConletFilter]
+ * [WebConsole] *-left- [LoginConlet]
+ * 
+ * Component "ComponentCollector\nfor page resources" as cpr <<internal>>
+ * [WebConsole] *-- [cpr]
+ * Component "ComponentCollector\nfor conlets" as cc <<internal>>
+ * [WebConsole] *-- [cc]
+ * 
+ * package "Providers and Conlets" {
+ *   [Some component]
+ * }
+ * 
+ * [cpr] *-- [Some component]
+ * [cc] *-- [Some component]
+ * @enduml
+ * 
+ * @startuml app-channels.svg
+ * skinparam packageStyle rectangle
+ * 
+ * () "manager" as mgr
+ * mgr .left. [FileSystemWatcher]
+ * mgr .right. [YamlConfigurationStore]
+ * mgr .. [Controller]
+ * mgr .up. [VmWatcher]
+ * mgr .. [Reconciler]
+ * 
+ * () "guiTransport" as hT
+ * hT .up. [GuiSocketServer:8080]
+ * hT .down. [GuiHttpServer]
+ * 
+ * [YamlConfigurationStore] -right[hidden]- hT
+ * 
+ * () "guiHttp" as http
+ * http .up. [GuiHttpServer]
+ * 
+ * [PreferencesStore] .right. http
+ * [InMemorySessionManager] .up. http
+ * [LanguageSelector] .up. http
+ * 
+ * package "Conceptual WebConsole" {
+ *   [ConsoleWeblet] .left. http
+ *   [ConsoleWeblet] *-down- [WebConsole]
+ * }
+ * 
+ * @enduml
+ */
 package org.jdrupes.vmoperator.manager;

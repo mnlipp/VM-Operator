@@ -45,7 +45,8 @@ eclipse {
             }
 
             project.natures += 'org.eclipse.buildship.core.gradleprojectnature'
-            project.buildCommand 'org.eclipse.buildship.core.gradleprojectbuilder'
+            // Don't build, result not used by Eclipse anyway
+            // project.buildCommand 'org.eclipse.buildship.core.gradleprojectbuilder'
         }
     }
     

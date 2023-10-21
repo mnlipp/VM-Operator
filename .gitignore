@@ -9,3 +9,7 @@ bin
 .classpath
 .project
 org.eclipse.jdt.core.prefs
+**/.externalToolBuilders/
+
+# Node
+**/node_modules/

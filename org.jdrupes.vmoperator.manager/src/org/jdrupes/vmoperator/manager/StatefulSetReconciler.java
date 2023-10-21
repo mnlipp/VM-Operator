@@ -29,8 +29,10 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
 import java.util.logging.Logger;
+import org.jdrupes.vmoperator.common.K8s;
+import org.jdrupes.vmoperator.manager.events.VmChannel;
+import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.util.GsonPtr;
-import org.jdrupes.vmoperator.util.K8s;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
@@ -39,7 +41,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
  * Delegee for reconciling the stateful set (effectively the pod).
  */
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
-/* default */ class StatefuleSetReconciler {
+/* default */ class StatefulSetReconciler {
 
     protected final Logger logger = Logger.getLogger(getClass().getName());
     private final Configuration fmConfig;
@@ -49,7 +51,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
      *
      * @param fmConfig the fm config
      */
-    public StatefuleSetReconciler(Configuration fmConfig) {
+    public StatefulSetReconciler(Configuration fmConfig) {
         this.fmConfig = fmConfig;
     }
 
@@ -68,7 +70,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
             throws IOException, TemplateException, ApiException {
         DynamicKubernetesApi stsApi = new DynamicKubernetesApi("apps", "v1",
             "statefulsets", channel.client());
-        var metadata = event.object().getMetadata();
+        var metadata = event.vmDefinition().getMetadata();
 
         // Combine template and data and parse result
         var fmTemplate = fmConfig.getTemplate("runnerSts.ftl.yaml");

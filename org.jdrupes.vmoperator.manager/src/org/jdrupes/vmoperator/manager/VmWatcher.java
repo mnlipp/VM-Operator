@@ -44,11 +44,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
+import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
+import org.jdrupes.vmoperator.common.K8s;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
-import static org.jdrupes.vmoperator.manager.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
-import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
+import org.jdrupes.vmoperator.manager.events.VmChannel;
+import org.jdrupes.vmoperator.manager.events.VmDefChanged;
+import org.jdrupes.vmoperator.manager.events.VmDefChanged.Type;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.Components;
@@ -107,15 +110,8 @@ public class VmWatcher extends Component {
                 namespaceToWatch = Files.lines(path).findFirst().orElse(null);
             }
         }
-        if (namespaceToWatch == null) {
-            logger.severe(() -> "Namespace to watch not configured and"
-                + " no file in kubernetes directory.");
-            event.cancel(true);
-            fire(new Stop());
-            return;
-        }
-        logger
-            .fine(() -> "Controlling namespace \"" + namespaceToWatch + "\".");
+        // Availability already checked by Controller.onStart
+        logger.fine(() -> "Watching namespace \"" + namespaceToWatch + "\".");
 
         // Get all our API versions
         var client = Config.defaultClient();
@@ -140,8 +136,7 @@ public class VmWatcher extends Component {
         }
     }
 
-    @SuppressWarnings({ "PMD.AvoidInstantiatingObjectsInLoops",
-        "PMD.CognitiveComplexity" })
+    @SuppressWarnings("PMD.CognitiveComplexity")
     private void purge(ApiClient client, CustomObjectsApi coa,
             List<String> vmOpApiVersions) throws ApiException {
         // Get existing CRs (VMs)
@@ -161,6 +156,8 @@ public class VmWatcher extends Component {
                 + "app.kubernetes.io/name=" + APP_NAME);
         for (String resource : List.of("apps/v1/statefulsets",
             "v1/configmaps", "v1/secrets")) {
+            @SuppressWarnings({ "PMD.AvoidInstantiatingObjectsInLoops",
+                "PMD.AvoidDuplicateLiterals" })
             var resParts = new LinkedList<>(List.of(resource.split("/")));
             var group = resParts.size() == 3 ? resParts.poll() : "";
             var version = resParts.poll();
@@ -271,13 +268,20 @@ public class VmWatcher extends Component {
             return;
         }
 
-        // Filter duplicates
-        if (!"DELETED".equals(item.type) && !channel
-            .setGeneration(item.object.getMetadata().getGeneration())) {
-            return;
-        }
+        // if (event.type() == Type.DELETED) {
+
+        // Get full definition and associate with channel as backup
+        var apiVersion = K8s.version(item.object.getApiVersion());
+        DynamicKubernetesApi vmCrApi = new DynamicKubernetesApi(VM_OP_GROUP,
+            apiVersion, vmsCrd.getName(), channel.client());
+        var vmDef = K8s.get(vmCrApi, metadata);
+        vmDef.ifPresent(def -> channel.setVmDefinition(def));
+
+        // Create and fire event
         channel.pipeline().fire(new VmDefChanged(VmDefChanged.Type
-            .valueOf(item.type), vmsCrd, item.object), channel);
+            .valueOf(item.type),
+            channel.setGeneration(item.object.getMetadata().getGeneration()),
+            vmsCrd, vmDef.orElse(channel.vmDefinition())), channel);
     }
 
     /**
@@ -289,7 +293,7 @@ public class VmWatcher extends Component {
     @Handler(priority = -10_000)
     public void onVmDefChanged(VmDefChanged event, VmChannel channel) {
         if (event.type() == Type.DELETED) {
-            channels.remove(event.object().getMetadata().getName());
+            channels.remove(event.vmDefinition().getMetadata().getName());
         }
     }
 

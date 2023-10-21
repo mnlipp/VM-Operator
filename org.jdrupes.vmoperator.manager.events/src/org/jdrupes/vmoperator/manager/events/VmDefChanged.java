@@ -16,17 +16,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.jdrupes.vmoperator.manager;
+package org.jdrupes.vmoperator.manager.events;
 
 import io.kubernetes.client.openapi.models.V1APIResource;
-import io.kubernetes.client.openapi.models.V1Namespace;
+import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Components;
 import org.jgrapes.core.Event;
 
 /**
- * Indicates a change in a VM definition.
+ * Indicates a change in a VM definition. Note that the definition
+ * consists of the metadata (mostly immutable), the "spec" and the 
+ * "status" parts. Consumers that are only interested in "spec" 
+ * changes should check {@link #specChanged()} before processing 
+ * the event any further. 
  */
+@SuppressWarnings("PMD.DataClass")
 public class VmDefChanged extends Event<Void> {
 
     /**
@@ -37,20 +42,24 @@ public class VmDefChanged extends Event<Void> {
     }
 
     private final Type type;
+    private final boolean specChanged;
     private final V1APIResource crd;
-    private final V1Namespace object;
+    private final DynamicKubernetesObject vmDef;
 
     /**
      * Instantiates a new VM changed event.
      *
      * @param type the type
+     * @param specChanged the spec part changed
      * @param crd the crd
-     * @param object the object
+     * @param vmDefinition the VM definition
      */
-    public VmDefChanged(Type type, V1APIResource crd, V1Namespace object) {
+    public VmDefChanged(Type type, boolean specChanged, V1APIResource crd,
+            DynamicKubernetesObject vmDefinition) {
         this.type = type;
+        this.specChanged = specChanged;
         this.crd = crd;
-        this.object = object;
+        this.vmDef = vmDefinition;
     }
 
     /**
@@ -60,6 +69,13 @@ public class VmDefChanged extends Event<Void> {
      */
     public Type type() {
         return type;
+    }
+
+    /**
+     * Indicates if the "spec" part changed.
+     */
+    public boolean specChanged() {
+        return specChanged;
     }
 
     /**
@@ -76,15 +92,15 @@ public class VmDefChanged extends Event<Void> {
      *
      * @return the object.
      */
-    public V1Namespace object() {
-        return object;
+    public DynamicKubernetesObject vmDefinition() {
+        return vmDef;
     }
 
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
         builder.append(Components.objectName(this)).append(" [")
-            .append(object.getMetadata().getName()).append(' ').append(type);
+            .append(vmDef.getMetadata().getName()).append(' ').append(type);
         if (channels() != null) {
             builder.append(", channels=");
             builder.append(Channel.toString(channels()));

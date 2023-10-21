@@ -10,5 +10,5 @@ plugins {
 
 dependencies {
     api 'org.freemarker:freemarker:[2.3.32,2.4)'
-    api 'io.kubernetes:client-java:[18.0.0,19)'
+    api 'com.google.code.gson:gson:2.10.1'
 }

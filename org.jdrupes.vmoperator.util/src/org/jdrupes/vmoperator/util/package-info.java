@@ -16,4 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/**
+ * General utility classes and methods that are independent of the
+ * specific domain (VM operator).
+ */
 package org.jdrupes.vmoperator.util;

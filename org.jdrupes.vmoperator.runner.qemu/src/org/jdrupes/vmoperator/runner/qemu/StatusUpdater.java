@@ -38,13 +38,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
+import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
+import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.runner.qemu.events.BalloonChangeEvent;
 import org.jdrupes.vmoperator.runner.qemu.events.HotpluggableCpuStatus;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerConfigurationUpdate;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;
-import static org.jdrupes.vmoperator.util.Constants.VM_OP_GROUP;
-import static org.jdrupes.vmoperator.util.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
@@ -138,6 +138,9 @@ public class StatusUpdater extends Component {
     @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",
         "PMD.AvoidInstantiatingObjectsInLoops", "PMD.AvoidDuplicateLiterals" })
     public void onStart(Start event) throws IOException, ApiException {
+        if (namespace == null) {
+            return;
+        }
         var client = Config.defaultClient();
         var apis = new ApisApi(client).getAPIVersions();
         var crdVersions = apis.getGroups().stream()
@@ -154,7 +157,7 @@ public class StatusUpdater extends Component {
             }
             var crApi = new DynamicKubernetesApi(VM_OP_GROUP,
                 crdVersion, crdApiRes.get().getName(), client);
-            var vmCr = crApi.get(namespace, vmName).throwsApiException();
+            var vmCr = crApi.get(namespace, vmName);
             if (vmCr.isSuccess()) {
                 vmCrApi = crApi;
                 observedGeneration

@@ -33,7 +33,7 @@ import freemarker.template.TemplateModelException;
 import freemarker.template.TemplateNotFoundException;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
+import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -43,12 +43,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import static org.jdrupes.vmoperator.manager.Constants.VM_OP_GROUP;
-import org.jdrupes.vmoperator.manager.VmDefChanged.Type;
-import org.jdrupes.vmoperator.util.Convertions;
+import org.jdrupes.vmoperator.common.Convertions;
+import org.jdrupes.vmoperator.manager.events.VmChannel;
+import org.jdrupes.vmoperator.manager.events.VmDefChanged;
+import org.jdrupes.vmoperator.manager.events.VmDefChanged.Type;
 import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
 import org.jdrupes.vmoperator.util.GsonPtr;
-import org.jdrupes.vmoperator.util.K8s;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.annotation.Handler;
@@ -129,7 +129,7 @@ public class Reconciler extends Component {
     @SuppressWarnings("PMD.SingularField")
     private final Configuration fmConfig;
     private final ConfigMapReconciler cmReconciler;
-    private final StatefuleSetReconciler stsReconciler;
+    private final StatefulSetReconciler stsReconciler;
     private final LoadBalancerReconciler lbReconciler;
     @SuppressWarnings("PMD.UseConcurrentHashMap")
     private final Map<String, Object> config = new HashMap<>();
@@ -153,7 +153,7 @@ public class Reconciler extends Component {
         fmConfig.setClassForTemplateLoading(Reconciler.class, "");
 
         cmReconciler = new ConfigMapReconciler(fmConfig);
-        stsReconciler = new StatefuleSetReconciler(fmConfig);
+        stsReconciler = new StatefulSetReconciler(fmConfig);
         lbReconciler = new LoadBalancerReconciler(fmConfig);
     }
 
@@ -186,38 +186,65 @@ public class Reconciler extends Component {
     @SuppressWarnings("PMD.ConfusingTernary")
     public void onVmDefChanged(VmDefChanged event, VmChannel channel)
             throws ApiException, TemplateException, IOException {
-        var defMeta = event.object().getMetadata();
+        // We're only interested in "spec" changes.
+        if (!event.specChanged()) {
+            return;
+        }
 
         // Ownership relationships takes care of deletions
+        var defMeta = event.vmDefinition().getMetadata();
         if (event.type() == Type.DELETED) {
             logger.fine(() -> "VM \"" + defMeta.getName() + "\" deleted");
             return;
         }
 
-        // Get full definition and associate with channel
-        var apiVersion = K8s.version(event.object().getApiVersion());
-        DynamicKubernetesApi vmCrApi = new DynamicKubernetesApi(VM_OP_GROUP,
-            apiVersion, event.crd().getName(), channel.client());
-        K8s.get(vmCrApi, defMeta).ifPresent(def -> channel
-            .setVmDefinition(patchCr(def.getRaw().deepCopy())));
-
-        // Reconcile
-        Map<String, Object> model = prepareModel(channel.vmDefinition());
+        // Reconcile, use "augmented" vm definition for model
+        Map<String, Object> model = prepareModel(patchCr(event.vmDefinition()));
         var configMap = cmReconciler.reconcile(event, model, channel);
         model.put("cm", configMap.getRaw());
         stsReconciler.reconcile(event, model, channel);
         lbReconciler.reconcile(event, model, channel);
     }
 
+    private DynamicKubernetesObject patchCr(DynamicKubernetesObject vmDef) {
+        var json = vmDef.getRaw().deepCopy();
+        // Adjust cdromImage path
+        var disks
+            = GsonPtr.to(json).to("spec", "vm", "disks").get(JsonArray.class);
+        for (var disk : disks) {
+            var cdrom = (JsonObject) ((JsonObject) disk).get("cdrom");
+            if (cdrom == null) {
+                continue;
+            }
+            String image = cdrom.get("image").getAsString();
+            if (image.isEmpty()) {
+                continue;
+            }
+            try {
+                @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+                var imageUri = new URI("file://" + Constants.IMAGE_REPO_PATH
+                    + "/").resolve(image);
+                if ("file".equals(imageUri.getScheme())) {
+                    cdrom.addProperty("image", imageUri.getPath());
+                } else {
+                    cdrom.addProperty("image", imageUri.toString());
+                }
+            } catch (URISyntaxException e) {
+                logger.warning(() -> "Invalid CDROM image: " + image);
+            }
+        }
+        return new DynamicKubernetesObject(json);
+    }
+
     @SuppressWarnings("PMD.CognitiveComplexity")
-    private Map<String, Object> prepareModel(JsonObject vmDef)
+    private Map<String, Object> prepareModel(DynamicKubernetesObject vmDef)
             throws TemplateModelException {
         @SuppressWarnings("PMD.UseConcurrentHashMap")
         Map<String, Object> model = new HashMap<>();
         model.put("managerVersion",
             Optional.ofNullable(Reconciler.class.getPackage()
                 .getImplementationVersion()).orElse("(Unknown)"));
-        model.put("cr", vmDef);
+        model.put("cr", vmDef.getRaw());
         model.put("constants",
             (TemplateHashModel) new DefaultObjectWrapperBuilder(
                 Configuration.VERSION_2_3_32)
@@ -272,35 +299,6 @@ public class Reconciler extends Component {
             }
         });
         return model;
-    }
-
-    private JsonObject patchCr(JsonObject vmDef) {
-        // Adjust cdromImage path
-        var disks
-            = GsonPtr.to(vmDef).to("spec", "vm", "disks").get(JsonArray.class);
-        for (var disk : disks) {
-            var cdrom = (JsonObject) ((JsonObject) disk).get("cdrom");
-            if (cdrom == null) {
-                continue;
-            }
-            String image = cdrom.get("image").getAsString();
-            if (image.isEmpty()) {
-                continue;
-            }
-            try {
-                @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
-                var imageUri = new URI("file://" + Constants.IMAGE_REPO_PATH
-                    + "/").resolve(image);
-                if ("file".equals(imageUri.getScheme())) {
-                    cdrom.addProperty("image", imageUri.getPath());
-                } else {
-                    cdrom.addProperty("image", imageUri.toString());
-                }
-            } catch (URISyntaxException e) {
-                logger.warning(() -> "Invalid CDROM image: " + image);
-            }
-        }
-        return vmDef;
     }
 
 }

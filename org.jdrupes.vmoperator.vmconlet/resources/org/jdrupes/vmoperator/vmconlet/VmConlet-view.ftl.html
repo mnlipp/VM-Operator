@@ -1,0 +1,84 @@
+<div class="jdrupes-vmoperator-vmconlet jdrupes-vmoperator-vmconlet-view"
+  data-jgwc-on-load="orgJDrupesVmOperatorVmConlet.initView"
+  data-jgwc-on-unload="JGConsole.jgwc.unmountVueApps">
+  <div class="jdrupes-vmoperator-vmconlet-view-search">
+    <form>
+      <label class="form__label--horizontal">
+        <span>{{ localize("Filter") }}</span>
+        <input type="text" class="form__input-text--with-remove" 
+          v-on:input="controller.updateFilter($event)">
+        <span role="button" tabindex="0" class="fa fa-remove" 
+          v-on:click="controller.clearFilter($event)"></span>
+      </label>
+    </form>
+  </div>
+  <table 
+    class="table--basic--striped jdrupes-vmoperator-vmconlet-view-table">
+    <thead>
+      <tr>
+        <th v-for="key in controller.keys"
+          class="sortable" v-on:click="controller.sortBy(key)">
+          {{ localize(controller.label(key)) }}<span v-if="controller.sortedByAsc(key)"
+            role="button" tabindex="0">&#x25B2;</span><span
+            v-if="controller.sortedByDesc(key)" role="button" 
+            tabindex="0">&#x25BC;</span>
+        </th>
+        <th>
+          {{ localize("vmActions") }}
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <template v-for="(entry, rowIndex) in filteredData">
+        <tr :class="[(rowIndex % 2) ? 'odd' : 'even']"
+          :aria-expanded="(entry.name in detailsByName) ? 'true' : 'false'">
+          <td v-for="key in controller.keys" 
+            v-bind:title="key == 'name' ? entry['name']: false"
+            v-bind:rowspan="(key == 'name') && $aash.isDisclosed(scopedId(rowIndex)) ? 2 : false">
+            <aash-disclosure-button v-if="key === 'name'" :type="'div'"
+              :id-ref="scopedId(rowIndex)">
+              <span v-html="controller.breakBeforeDots(entry[key])"></span>
+            </aash-disclosure-button>
+            <span v-else-if="key === 'running'"
+              v-html="localize(entry[key] ? 'Yes' : 'No')"></span>
+            <span v-else-if="key === 'currentRam'"
+              v-html="formatMemory(BigInt(entry[key]))"></span>
+            <span v-else
+              v-html="controller.breakBeforeDots(entry[key])"></span>
+          </td>
+          <td class="jdrupes-vmoperator-vmconlet-view-action-list">
+            <span role="button" v-if="!entry['running']" 
+              tabindex="0" class="fa fa-play" :title="localize('Start VM')"
+              v-on:click="vmAction(entry.name, 'start')"></span>
+            <span role="button" v-if="entry['running']"
+              tabindex="0" class="fa fa-stop" :title="localize('Stop VM')"
+              v-on:click="vmAction(entry.name, 'stop')"></span>
+          </td>
+        </tr>
+        <tr :id="scopedId(rowIndex)" v-if="$aash.isDisclosed(scopedId(rowIndex))"
+          :class="[(rowIndex % 2) ? 'odd' : 'even']">
+          <td colspan="4" class="details">
+            <table class="table--basic table--basic--autoStriped">
+              <tr>
+                <td>{{ localize("maximumCpus") }}</td>
+                <td>{{ entry.spec.vm.maximumCpus }}</td>
+              </tr>
+              <tr>
+                <td>{{ localize("requestedCpus") }}</td>
+                <td>{{ entry.spec.vm.maximumCpus }}</td>
+              </tr>
+              <tr>
+                <td>{{ localize("maximumRam") }}</td>
+                <td>{{ formatMemory(BigInt(entry.spec.vm.maximumRam)) }}</td>
+              </tr>
+              <tr>
+                <td>{{ localize("requestedRam") }}</td>
+                <td>{{ formatMemory(BigInt(entry.spec.vm.maximumRam)) }}</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </template>
+    </tbody>
+  </table>
+</div>

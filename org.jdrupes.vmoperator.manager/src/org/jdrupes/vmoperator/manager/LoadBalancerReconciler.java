@@ -33,8 +33,10 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Logger;
+import org.jdrupes.vmoperator.common.K8s;
+import org.jdrupes.vmoperator.manager.events.VmChannel;
+import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.util.GsonPtr;
-import org.jdrupes.vmoperator.util.K8s;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
@@ -120,7 +122,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
             = json.deserialize(json.serialize(asmData), JsonObject.class);
 
         // Get metadata from VM definition
-        var vmMeta = GsonPtr.to(channel.vmDefinition()).to("spec")
+        var vmMeta = GsonPtr.to(channel.vmDefinition().getRaw()).to("spec")
             .get(JsonObject.class, LOAD_BALANCER_SERVICE)
             .map(JsonObject::deepCopy).orElseGet(() -> new JsonObject());
 
