@@ -1,7 +1,7 @@
 /*
  * VM-Operator
  * Copyright (C) 2023 Michael N. Lipp
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -17,18 +17,18 @@
  */
 
 import { reactive, ref, createApp, computed, onMounted } from "vue";
-import JGConsole from "jgconsole"
+import JGConsole from "jgconsole";
 import JgwcPlugin, { JGWC } from "jgwc";
 import { provideApi, getApi } from "aash-plugin";
 import l10nBundles from "l10nBundles";
 
-import "./VmConlet-style.scss"
+import "./VmConlet-style.scss";
 
 //
 // Helpers
 //
-let unitMap = new Map<string,bigint>();
-let unitMappings = new Array<{key: string; value: bigint}>();
+let unitMap = new Map<string, bigint>();
+let unitMappings = new Array<{ key: string; value: bigint }>();
 let memorySize = /^\\s*(\\d+(\\.\\d+)?)\\s*([A-Za-z]*)\\s*/;
 
 // SI units and common abbreviations
