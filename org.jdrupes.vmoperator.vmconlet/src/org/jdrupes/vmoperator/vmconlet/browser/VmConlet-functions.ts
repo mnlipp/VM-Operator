@@ -127,7 +127,7 @@ window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
 };
 
 JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
-    "updateVm", function(conletId: String, vmDefinition: any) {
+    "updateVm", function(_conletId: String, vmDefinition: any) {
         // Add some short-cuts for table controller
         vmDefinition.name = vmDefinition.metadata.name;
         vmDefinition.currentCpus = vmDefinition.status.cpus;
@@ -143,6 +143,6 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
     });
 
 JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
-    "removeVm", function(conletId: String, vmName: String) {
+    "removeVm", function(_conletId: String, vmName: String) {
         vmInfos.delete(vmName);
     });
