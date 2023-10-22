@@ -179,85 +179,86 @@
 <span class="source-line-no">166</span><span id="line-166">    public void onVmDefChanged(VmDefChanged event, VmChannel channel)</span>
 <span class="source-line-no">167</span><span id="line-167">            throws JsonDecodeException {</span>
 <span class="source-line-no">168</span><span id="line-168">        if (event.type() == Type.DELETED) {</span>
-<span class="source-line-no">169</span><span id="line-169">            vmInfos.remove(event.vmDefinition().getMetadata().getName());</span>
-<span class="source-line-no">170</span><span id="line-170">            for (var entry : conletIdsByConsoleConnection().entrySet()) {</span>
-<span class="source-line-no">171</span><span id="line-171">                for (String conletId : entry.getValue()) {</span>
-<span class="source-line-no">172</span><span id="line-172">                    entry.getKey().respond(new NotifyConletView(type(),</span>
-<span class="source-line-no">173</span><span id="line-173">                        conletId, "removeVm"));</span>
-<span class="source-line-no">174</span><span id="line-174">                }</span>
-<span class="source-line-no">175</span><span id="line-175">            }</span>
-<span class="source-line-no">176</span><span id="line-176">        } else {</span>
-<span class="source-line-no">177</span><span id="line-177">            var vmDef = new DynamicKubernetesObject(</span>
-<span class="source-line-no">178</span><span id="line-178">                event.vmDefinition().getRaw().deepCopy());</span>
-<span class="source-line-no">179</span><span id="line-179">            GsonPtr.to(vmDef.getRaw()).to("metadata").get(JsonObject.class)</span>
-<span class="source-line-no">180</span><span id="line-180">                .remove("managedFields");</span>
-<span class="source-line-no">181</span><span id="line-181">            var vmSpec = GsonPtr.to(vmDef.getRaw()).to("spec", "vm");</span>
-<span class="source-line-no">182</span><span id="line-182">            vmSpec.set("maximumRam", Quantity.fromString(</span>
-<span class="source-line-no">183</span><span id="line-183">                vmSpec.getAsString("maximumRam").orElse("0")).getNumber()</span>
-<span class="source-line-no">184</span><span id="line-184">                .toBigInteger().toString());</span>
-<span class="source-line-no">185</span><span id="line-185">            vmSpec.set("currentRam", Quantity.fromString(</span>
-<span class="source-line-no">186</span><span id="line-186">                vmSpec.getAsString("currentRam").orElse("0")).getNumber()</span>
-<span class="source-line-no">187</span><span id="line-187">                .toBigInteger().toString());</span>
-<span class="source-line-no">188</span><span id="line-188">            var status = GsonPtr.to(vmDef.getRaw()).to("status");</span>
-<span class="source-line-no">189</span><span id="line-189">            status.set("ram", Quantity.fromString(</span>
-<span class="source-line-no">190</span><span id="line-190">                status.getAsString("ram").orElse("0")).getNumber()</span>
-<span class="source-line-no">191</span><span id="line-191">                .toBigInteger().toString());</span>
-<span class="source-line-no">192</span><span id="line-192">            String vmName = event.vmDefinition().getMetadata().getName();</span>
-<span class="source-line-no">193</span><span id="line-193">            vmInfos.put(vmName, vmDef);</span>
-<span class="source-line-no">194</span><span id="line-194"></span>
-<span class="source-line-no">195</span><span id="line-195">            // Extract running</span>
-<span class="source-line-no">196</span><span id="line-196">            var def = JsonBeanDecoder.create(vmDef.getRaw().toString())</span>
-<span class="source-line-no">197</span><span id="line-197">                .readObject();</span>
-<span class="source-line-no">198</span><span id="line-198">            for (var entry : conletIdsByConsoleConnection().entrySet()) {</span>
-<span class="source-line-no">199</span><span id="line-199">                for (String conletId : entry.getValue()) {</span>
-<span class="source-line-no">200</span><span id="line-200">                    entry.getKey().respond(new NotifyConletView(type(),</span>
-<span class="source-line-no">201</span><span id="line-201">                        conletId, "updateVm", def));</span>
-<span class="source-line-no">202</span><span id="line-202">                }</span>
-<span class="source-line-no">203</span><span id="line-203">            }</span>
-<span class="source-line-no">204</span><span id="line-204">        }</span>
-<span class="source-line-no">205</span><span id="line-205">    }</span>
-<span class="source-line-no">206</span><span id="line-206"></span>
-<span class="source-line-no">207</span><span id="line-207">    @Override</span>
-<span class="source-line-no">208</span><span id="line-208">    protected void doUpdateConletState(NotifyConletModel event,</span>
-<span class="source-line-no">209</span><span id="line-209">            ConsoleConnection channel, VmsModel conletState)</span>
-<span class="source-line-no">210</span><span id="line-210">            throws Exception {</span>
-<span class="source-line-no">211</span><span id="line-211">        event.stop();</span>
-<span class="source-line-no">212</span><span id="line-212">        switch (event.method()) {</span>
-<span class="source-line-no">213</span><span id="line-213">        case "start":</span>
-<span class="source-line-no">214</span><span id="line-214">            fire(new StartVm(event.params().asString(0),</span>
-<span class="source-line-no">215</span><span id="line-215">                new NamedChannel("manager")));</span>
-<span class="source-line-no">216</span><span id="line-216">            break;</span>
-<span class="source-line-no">217</span><span id="line-217">        case "stop":</span>
-<span class="source-line-no">218</span><span id="line-218">            fire(new StopVm(event.params().asString(0),</span>
-<span class="source-line-no">219</span><span id="line-219">                new NamedChannel("manager")));</span>
-<span class="source-line-no">220</span><span id="line-220">            break;</span>
-<span class="source-line-no">221</span><span id="line-221">        default:// ignore</span>
-<span class="source-line-no">222</span><span id="line-222">            break;</span>
-<span class="source-line-no">223</span><span id="line-223">        }</span>
-<span class="source-line-no">224</span><span id="line-224">    }</span>
-<span class="source-line-no">225</span><span id="line-225"></span>
-<span class="source-line-no">226</span><span id="line-226">    @Override</span>
-<span class="source-line-no">227</span><span id="line-227">    protected boolean doSetLocale(SetLocale event, ConsoleConnection channel,</span>
-<span class="source-line-no">228</span><span id="line-228">            String conletId) throws Exception {</span>
-<span class="source-line-no">229</span><span id="line-229">        return true;</span>
-<span class="source-line-no">230</span><span id="line-230">    }</span>
-<span class="source-line-no">231</span><span id="line-231"></span>
-<span class="source-line-no">232</span><span id="line-232">    /**</span>
-<span class="source-line-no">233</span><span id="line-233">     * The Class VmsModel.</span>
-<span class="source-line-no">234</span><span id="line-234">     */</span>
-<span class="source-line-no">235</span><span id="line-235">    public class VmsModel extends ConletBaseModel {</span>
-<span class="source-line-no">236</span><span id="line-236"></span>
-<span class="source-line-no">237</span><span id="line-237">        /**</span>
-<span class="source-line-no">238</span><span id="line-238">         * Instantiates a new vms model.</span>
-<span class="source-line-no">239</span><span id="line-239">         *</span>
-<span class="source-line-no">240</span><span id="line-240">         * @param conletId the conlet id</span>
-<span class="source-line-no">241</span><span id="line-241">         */</span>
-<span class="source-line-no">242</span><span id="line-242">        public VmsModel(String conletId) {</span>
-<span class="source-line-no">243</span><span id="line-243">            super(conletId);</span>
-<span class="source-line-no">244</span><span id="line-244">        }</span>
-<span class="source-line-no">245</span><span id="line-245"></span>
-<span class="source-line-no">246</span><span id="line-246">    }</span>
-<span class="source-line-no">247</span><span id="line-247">}</span>
+<span class="source-line-no">169</span><span id="line-169">            var vmName = event.vmDefinition().getMetadata().getName();</span>
+<span class="source-line-no">170</span><span id="line-170">            vmInfos.remove(vmName);</span>
+<span class="source-line-no">171</span><span id="line-171">            for (var entry : conletIdsByConsoleConnection().entrySet()) {</span>
+<span class="source-line-no">172</span><span id="line-172">                for (String conletId : entry.getValue()) {</span>
+<span class="source-line-no">173</span><span id="line-173">                    entry.getKey().respond(new NotifyConletView(type(),</span>
+<span class="source-line-no">174</span><span id="line-174">                        conletId, "removeVm", vmName));</span>
+<span class="source-line-no">175</span><span id="line-175">                }</span>
+<span class="source-line-no">176</span><span id="line-176">            }</span>
+<span class="source-line-no">177</span><span id="line-177">        } else {</span>
+<span class="source-line-no">178</span><span id="line-178">            var vmDef = new DynamicKubernetesObject(</span>
+<span class="source-line-no">179</span><span id="line-179">                event.vmDefinition().getRaw().deepCopy());</span>
+<span class="source-line-no">180</span><span id="line-180">            GsonPtr.to(vmDef.getRaw()).to("metadata").get(JsonObject.class)</span>
+<span class="source-line-no">181</span><span id="line-181">                .remove("managedFields");</span>
+<span class="source-line-no">182</span><span id="line-182">            var vmSpec = GsonPtr.to(vmDef.getRaw()).to("spec", "vm");</span>
+<span class="source-line-no">183</span><span id="line-183">            vmSpec.set("maximumRam", Quantity.fromString(</span>
+<span class="source-line-no">184</span><span id="line-184">                vmSpec.getAsString("maximumRam").orElse("0")).getNumber()</span>
+<span class="source-line-no">185</span><span id="line-185">                .toBigInteger().toString());</span>
+<span class="source-line-no">186</span><span id="line-186">            vmSpec.set("currentRam", Quantity.fromString(</span>
+<span class="source-line-no">187</span><span id="line-187">                vmSpec.getAsString("currentRam").orElse("0")).getNumber()</span>
+<span class="source-line-no">188</span><span id="line-188">                .toBigInteger().toString());</span>
+<span class="source-line-no">189</span><span id="line-189">            var status = GsonPtr.to(vmDef.getRaw()).to("status");</span>
+<span class="source-line-no">190</span><span id="line-190">            status.set("ram", Quantity.fromString(</span>
+<span class="source-line-no">191</span><span id="line-191">                status.getAsString("ram").orElse("0")).getNumber()</span>
+<span class="source-line-no">192</span><span id="line-192">                .toBigInteger().toString());</span>
+<span class="source-line-no">193</span><span id="line-193">            String vmName = event.vmDefinition().getMetadata().getName();</span>
+<span class="source-line-no">194</span><span id="line-194">            vmInfos.put(vmName, vmDef);</span>
+<span class="source-line-no">195</span><span id="line-195"></span>
+<span class="source-line-no">196</span><span id="line-196">            // Extract running</span>
+<span class="source-line-no">197</span><span id="line-197">            var def = JsonBeanDecoder.create(vmDef.getRaw().toString())</span>
+<span class="source-line-no">198</span><span id="line-198">                .readObject();</span>
+<span class="source-line-no">199</span><span id="line-199">            for (var entry : conletIdsByConsoleConnection().entrySet()) {</span>
+<span class="source-line-no">200</span><span id="line-200">                for (String conletId : entry.getValue()) {</span>
+<span class="source-line-no">201</span><span id="line-201">                    entry.getKey().respond(new NotifyConletView(type(),</span>
+<span class="source-line-no">202</span><span id="line-202">                        conletId, "updateVm", def));</span>
+<span class="source-line-no">203</span><span id="line-203">                }</span>
+<span class="source-line-no">204</span><span id="line-204">            }</span>
+<span class="source-line-no">205</span><span id="line-205">        }</span>
+<span class="source-line-no">206</span><span id="line-206">    }</span>
+<span class="source-line-no">207</span><span id="line-207"></span>
+<span class="source-line-no">208</span><span id="line-208">    @Override</span>
+<span class="source-line-no">209</span><span id="line-209">    protected void doUpdateConletState(NotifyConletModel event,</span>
+<span class="source-line-no">210</span><span id="line-210">            ConsoleConnection channel, VmsModel conletState)</span>
+<span class="source-line-no">211</span><span id="line-211">            throws Exception {</span>
+<span class="source-line-no">212</span><span id="line-212">        event.stop();</span>
+<span class="source-line-no">213</span><span id="line-213">        switch (event.method()) {</span>
+<span class="source-line-no">214</span><span id="line-214">        case "start":</span>
+<span class="source-line-no">215</span><span id="line-215">            fire(new StartVm(event.params().asString(0),</span>
+<span class="source-line-no">216</span><span id="line-216">                new NamedChannel("manager")));</span>
+<span class="source-line-no">217</span><span id="line-217">            break;</span>
+<span class="source-line-no">218</span><span id="line-218">        case "stop":</span>
+<span class="source-line-no">219</span><span id="line-219">            fire(new StopVm(event.params().asString(0),</span>
+<span class="source-line-no">220</span><span id="line-220">                new NamedChannel("manager")));</span>
+<span class="source-line-no">221</span><span id="line-221">            break;</span>
+<span class="source-line-no">222</span><span id="line-222">        default:// ignore</span>
+<span class="source-line-no">223</span><span id="line-223">            break;</span>
+<span class="source-line-no">224</span><span id="line-224">        }</span>
+<span class="source-line-no">225</span><span id="line-225">    }</span>
+<span class="source-line-no">226</span><span id="line-226"></span>
+<span class="source-line-no">227</span><span id="line-227">    @Override</span>
+<span class="source-line-no">228</span><span id="line-228">    protected boolean doSetLocale(SetLocale event, ConsoleConnection channel,</span>
+<span class="source-line-no">229</span><span id="line-229">            String conletId) throws Exception {</span>
+<span class="source-line-no">230</span><span id="line-230">        return true;</span>
+<span class="source-line-no">231</span><span id="line-231">    }</span>
+<span class="source-line-no">232</span><span id="line-232"></span>
+<span class="source-line-no">233</span><span id="line-233">    /**</span>
+<span class="source-line-no">234</span><span id="line-234">     * The Class VmsModel.</span>
+<span class="source-line-no">235</span><span id="line-235">     */</span>
+<span class="source-line-no">236</span><span id="line-236">    public class VmsModel extends ConletBaseModel {</span>
+<span class="source-line-no">237</span><span id="line-237"></span>
+<span class="source-line-no">238</span><span id="line-238">        /**</span>
+<span class="source-line-no">239</span><span id="line-239">         * Instantiates a new vms model.</span>
+<span class="source-line-no">240</span><span id="line-240">         *</span>
+<span class="source-line-no">241</span><span id="line-241">         * @param conletId the conlet id</span>
+<span class="source-line-no">242</span><span id="line-242">         */</span>
+<span class="source-line-no">243</span><span id="line-243">        public VmsModel(String conletId) {</span>
+<span class="source-line-no">244</span><span id="line-244">            super(conletId);</span>
+<span class="source-line-no">245</span><span id="line-245">        }</span>
+<span class="source-line-no">246</span><span id="line-246"></span>
+<span class="source-line-no">247</span><span id="line-247">    }</span>
+<span class="source-line-no">248</span><span id="line-248">}</span>
 
 
 
