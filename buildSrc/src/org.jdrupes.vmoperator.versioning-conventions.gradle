@@ -16,6 +16,9 @@ scmVersion {
     tag {
         def shortened = project.name.startsWith(project.group + ".") ?
             project.name.substring(project.group.length() + 1) : project.name
+        if (shortened == "manager") {
+            shortened = "manager-app";
+        }
         var p = shortened.replace('.', '-') + "-"
         if (grgit.branch.current.name != "main"
             && !grgit.branch.current.name.startsWith("release")) {
