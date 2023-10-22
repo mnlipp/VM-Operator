@@ -92,11 +92,17 @@ task pushLatestImage(type: Exec) {
             + "/${project.name}:latest"
 }
 
-task pushForTest {
-    dependsOn pushImage
+task pushForTest(type: Exec) {
+    dependsOn buildImage
+
+    commandLine 'podman', 'push', '--tls-verify=false', \
+        "localhost/${project.name}:${project.version}", \
+        "${project.rootProject.properties['docker.registry']}" \
+            + "/${project.name}:test"
 }
 
 task pushImages {
+	// Don't push without testing first
     dependsOn test
     dependsOn pushImage
     dependsOn pushLatestImage

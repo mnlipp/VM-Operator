@@ -1,21 +1,20 @@
 package org.jdrupes.vmoperator.manager;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+import io.fabric8.kubernetes.client.Config;
+import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientBuilder;
+import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import org.junit.jupiter.api.AfterAll;
+import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.KubernetesClientBuilder;
-import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
-import io.fabric8.kubernetes.client.Config;
 
 class BasicTests {
 
@@ -41,7 +40,7 @@ class BasicTests {
             .inNamespace("vmop-dev");
         resourcesInNamespace.withName("unittest-vm").delete();
 
-        // Update pod by scaling deployment
+        // Update manager pod by scaling deployment
         client.apps().deployments().inNamespace("vmop-dev")
             .withName("vm-operator").scale(0);
         client.apps().deployments().inNamespace("vmop-dev")
