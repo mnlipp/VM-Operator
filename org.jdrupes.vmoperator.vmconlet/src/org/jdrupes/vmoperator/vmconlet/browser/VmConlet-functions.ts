@@ -73,7 +73,7 @@ window.orgJDrupesVmOperatorVmConlet = {};
 let vmInfos = reactive(new Map());
 
 window.orgJDrupesVmOperatorVmConlet.initPreview
-    = (previewDom: HTMLElement, isUpdate: boolean) => {
+    = (previewDom: HTMLElement, _isUpdate: boolean) => {
         const app = createApp({});
         app.use(JgwcPlugin, []);
         app.config.globalProperties.window = window;
@@ -81,7 +81,7 @@ window.orgJDrupesVmOperatorVmConlet.initPreview
     };
 
 window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
-    isUpdate: boolean) => {
+    _isUpdate: boolean) => {
     const app = createApp({
         setup(_props: any) {
             const conletId: string

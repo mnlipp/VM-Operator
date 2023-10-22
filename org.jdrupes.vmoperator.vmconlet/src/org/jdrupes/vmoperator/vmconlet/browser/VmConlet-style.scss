@@ -52,10 +52,12 @@
 .jdrupes-vmoperator-vmconlet-view-table  {
     td.column-running {
         text-align: center;
+
         span {
             &.fa-check {
                 color: var(--success);
             }
+
             &.fa-close {
                 color: var(--danger);
             }
