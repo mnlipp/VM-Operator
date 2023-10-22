@@ -42,7 +42,7 @@
             <span v-else-if="key === 'running'"
               v-html="localize(entry[key] ? 'Yes' : 'No')"></span>
             <span v-else-if="key === 'currentRam'"
-              v-html="formatMemory(BigInt(entry[key]))"></span>
+              v-html="formatMemory(entry[key])"></span>
             <span v-else
               v-html="controller.breakBeforeDots(entry[key])"></span>
           </td>

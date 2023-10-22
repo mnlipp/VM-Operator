@@ -131,7 +131,7 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
         // Add some short-cuts for table controller
         vmDefinition.name = vmDefinition.metadata.name;
         vmDefinition.currentCpus = vmDefinition.status.cpus;
-        vmDefinition.currentRam = vmDefinition.status.ram;
+        vmDefinition.currentRam = BigInt(vmDefinition.status.ram);
         for (let condition of vmDefinition.status.conditions) {
             if (condition.type === "Running") {
                 vmDefinition.running = condition.status === "True";
