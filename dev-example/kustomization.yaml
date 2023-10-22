@@ -43,7 +43,10 @@ patches:
   patch: |-
     - op: replace
       path: /spec/template/spec/containers/0/image
-      value: docker-registry.lan.mnl.de/vmoperator/org.jdrupes.vmoperator.manager:latest
+      value: docker-registry.lan.mnl.de/vmoperator/org.jdrupes.vmoperator.manager:test
+    - op: replace
+      path: /spec/template/spec/containers/0/imagePullPolicy
+      value: Always
     - op: replace
       path: /spec/replicas
       value: 0

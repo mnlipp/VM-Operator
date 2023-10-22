@@ -42,6 +42,10 @@ task buildArchImage(type: Exec) {
 task tagLatestArchImage(type: Exec) {
     dependsOn buildArchImage
     
+    enabled = !project.version.contains("SNAPSHOT")
+        && !project.version.contains("alpha") \
+        && !project.version.contains("beta") \
+
     commandLine 'podman', 'tag', "${project.name}-arch:${project.version}",\
         "${project.name}-arch:latest"
 }
@@ -63,6 +67,10 @@ task pushArchImage(type: Exec) {
 task pushArchLatestImage(type: Exec) {
     dependsOn buildLatestArchImage
 
+    enabled = !project.version.contains("SNAPSHOT")
+        && !project.version.contains("alpha") \
+        && !project.version.contains("beta") \
+
     commandLine 'podman', 'push', '--tls-verify=false', \
         "localhost/${project.name}-arch:${project.version}", \
         "${project.rootProject.properties['docker.registry']}" \
@@ -80,6 +88,10 @@ task buildAlpineImage(type: Exec) {
 task tagLatestAlpineImage(type: Exec) {
     dependsOn buildAlpineImage
     
+    enabled = !project.version.contains("SNAPSHOT")
+        && !project.version.contains("alpha") \
+        && !project.version.contains("beta") \
+
     commandLine 'podman', 'tag', "${project.name}-alpine:${project.version}",\
         "${project.name}-alpine:latest"
 }
@@ -100,6 +112,10 @@ task pushAlpineImage(type: Exec) {
 
 task pushAlpineLatestImage(type: Exec) {
     dependsOn buildLatestAlpineImage
+
+    enabled = !project.version.contains("SNAPSHOT")
+        && !project.version.contains("alpha") \
+        && !project.version.contains("beta") \
 
     commandLine 'podman', 'push', '--tls-verify=false', \
         "localhost/${project.name}-alpine:${project.version}", \
