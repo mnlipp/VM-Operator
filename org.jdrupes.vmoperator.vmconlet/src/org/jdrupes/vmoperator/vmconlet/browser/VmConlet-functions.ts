@@ -96,7 +96,8 @@ window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
                 ["name", "vmname"],
                 ["running", "running"],
                 ["currentCpus", "currentCpus"],
-                ["currentRam", "currentRam"]
+                ["currentRam", "currentRam"],
+                ["nodeName", "nodeName"]
             ], {
                 sortKey: "name",
                 sortOrder: "up"
