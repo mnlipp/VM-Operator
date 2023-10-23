@@ -284,7 +284,8 @@ public class VmWatcher extends Component {
             "app.kubernetes.io/name=" + APP_NAME
                 + ",app.kubernetes.io/component=" + APP_NAME
                 + ",app.kubernetes.io/instance=" + metadata.getName());
-        var podList = K8s.podApi(channel.client()).list(podSearch);
+        var podList
+            = K8s.podApi(channel.client()).list(namespaceToWatch, podSearch);
         var statusNode = GsonPtr.to(vmDef.getRaw()).get(JsonObject.class);
         statusNode.addProperty("nodeName", "");
         podList.getObject().getItems().stream().forEach(pod -> {
