@@ -8,6 +8,7 @@ resources:
 - vmop-image-repository-pvc.yaml
 - vmop-config-map.yaml
 - vmop-deployment.yaml
+- vmop-service.yaml
 - vmrunner-role.yaml
 - vmrunner-service-account.yaml
 - vmrunner-role-binding.yaml
