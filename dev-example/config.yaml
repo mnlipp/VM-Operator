@@ -23,15 +23,18 @@
               password: "$2b$05$hZaI/jToXf/d3BctZdT38Or7H7h6Pn2W3WiB49p5AyhDHFkkYCvo2"
         "/RoleConfigurator":
           rolesByUser:
+            # User admin has role admin
             admin:
             - admin
+            # All users have role other
             "*":
-            - user
+            - other
           replace: false
         "/RoleConletFilter":
           conletTypesByRole:
-            user:
-            - "!org.jgrapes.webconlet.sysinfo.SysInfoConlet"
-            - "*"
+            # Admins can use all conlets
             admin:
             - "*"
+            # Others cannot use any conlet (except login conlet to log out)
+            other:
+            - org.jgrapes.webconlet.locallogin.LoginConlet
