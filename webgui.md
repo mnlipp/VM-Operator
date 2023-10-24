@@ -51,8 +51,9 @@ of that framework.
             # Admins can use all conlets
             admin:
             - "*"
-            # Others cannot use any conlet
-            other: []
+            # Others cannot use any conlet (except login conlet to log out)
+            other:
+            - org.jgrapes.webconlet.locallogin.LoginConlet
 ```
 
 How users can be configured should be obvious from the example. Details
