@@ -73,7 +73,7 @@ window.orgJDrupesVmOperatorVmConlet = {};
 let vmInfos = reactive(new Map());
 
 window.orgJDrupesVmOperatorVmConlet.initPreview
-    = (previewDom: HTMLElement, isUpdate: boolean) => {
+    = (previewDom: HTMLElement, _isUpdate: boolean) => {
         const app = createApp({});
         app.use(JgwcPlugin, []);
         app.config.globalProperties.window = window;
@@ -81,7 +81,7 @@ window.orgJDrupesVmOperatorVmConlet.initPreview
     };
 
 window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
-    isUpdate: boolean) => {
+    _isUpdate: boolean) => {
     const app = createApp({
         setup(_props: any) {
             const conletId: string
@@ -96,7 +96,8 @@ window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
                 ["name", "vmname"],
                 ["running", "running"],
                 ["currentCpus", "currentCpus"],
-                ["currentRam", "currentRam"]
+                ["currentRam", "currentRam"],
+                ["nodeName", "nodeName"]
             ], {
                 sortKey: "name",
                 sortOrder: "up"
@@ -127,11 +128,11 @@ window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
 };
 
 JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
-    "updateVm", function(conletId: String, vmDefinition: any) {
+    "updateVm", function(_conletId: String, vmDefinition: any) {
         // Add some short-cuts for table controller
         vmDefinition.name = vmDefinition.metadata.name;
         vmDefinition.currentCpus = vmDefinition.status.cpus;
-        vmDefinition.currentRam = vmDefinition.status.ram;
+        vmDefinition.currentRam = BigInt(vmDefinition.status.ram);
         for (let condition of vmDefinition.status.conditions) {
             if (condition.type === "Running") {
                 vmDefinition.running = condition.status === "True";
@@ -143,6 +144,6 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
     });
 
 JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
-    "removeVm", function(conletId: String, vmName: String) {
+    "removeVm", function(_conletId: String, vmName: String) {
         vmInfos.delete(vmName);
     });

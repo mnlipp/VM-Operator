@@ -166,11 +166,12 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
     public void onVmDefChanged(VmDefChanged event, VmChannel channel)
             throws JsonDecodeException {
         if (event.type() == Type.DELETED) {
-            vmInfos.remove(event.vmDefinition().getMetadata().getName());
+            var vmName = event.vmDefinition().getMetadata().getName();
+            vmInfos.remove(vmName);
             for (var entry : conletIdsByConsoleConnection().entrySet()) {
                 for (String conletId : entry.getValue()) {
                     entry.getKey().respond(new NotifyConletView(type(),
-                        conletId, "removeVm"));
+                        conletId, "removeVm", vmName));
                 }
             }
         } else {

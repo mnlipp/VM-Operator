@@ -23,9 +23,6 @@ package org.jdrupes.vmoperator.manager;
  */
 public class Constants extends org.jdrupes.vmoperator.common.Constants {
 
-    /** The Constant APP_NAME. */
-    public static final String APP_NAME = "vm-runner";
-
     /** The Constant STATE_RUNNING. */
     public static final String STATE_RUNNING = "Running";
 

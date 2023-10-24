@@ -18,6 +18,8 @@
 
 package org.jdrupes.vmoperator.manager;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
@@ -31,6 +33,7 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
+import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -52,6 +55,7 @@ import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged.Type;
+import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.Components;
@@ -251,8 +255,8 @@ public class VmWatcher extends Component {
     }
 
     private void handleVmDefinitionChange(V1APIResource vmsCrd,
-            Watch.Response<V1Namespace> item) {
-        V1ObjectMeta metadata = item.object.getMetadata();
+            Watch.Response<V1Namespace> vmDefStub) {
+        V1ObjectMeta metadata = vmDefStub.object.getMetadata();
         VmChannel channel = channels.computeIfAbsent(metadata.getName(),
             k -> {
                 try {
@@ -268,20 +272,52 @@ public class VmWatcher extends Component {
             return;
         }
 
-        // if (event.type() == Type.DELETED) {
-
         // Get full definition and associate with channel as backup
-        var apiVersion = K8s.version(item.object.getApiVersion());
+        var apiVersion = K8s.version(vmDefStub.object.getApiVersion());
         DynamicKubernetesApi vmCrApi = new DynamicKubernetesApi(VM_OP_GROUP,
             apiVersion, vmsCrd.getName(), channel.client());
-        var vmDef = K8s.get(vmCrApi, metadata);
-        vmDef.ifPresent(def -> channel.setVmDefinition(def));
+        var curVmDef = K8s.get(vmCrApi, metadata);
+        curVmDef.ifPresent(def -> channel.setVmDefinition(def));
+
+        // Get eventual definition and augment with "dynamic" data.
+        var vmDef = curVmDef.orElse(channel.vmDefinition());
+        addDynamicData(channel, vmDef);
 
         // Create and fire event
         channel.pipeline().fire(new VmDefChanged(VmDefChanged.Type
-            .valueOf(item.type),
-            channel.setGeneration(item.object.getMetadata().getGeneration()),
-            vmsCrd, vmDef.orElse(channel.vmDefinition())), channel);
+            .valueOf(vmDefStub.type),
+            channel
+                .setGeneration(vmDefStub.object.getMetadata().getGeneration()),
+            vmsCrd, vmDef), channel);
+    }
+
+    private void addDynamicData(VmChannel channel,
+            DynamicKubernetesObject vmDef) {
+        var rootNode = GsonPtr.to(vmDef.getRaw()).get(JsonObject.class);
+        rootNode.addProperty("nodeName", "");
+
+        // VM definition status changes before the pod terminates.
+        // This results in pod information being shown for a stopped
+        // VM which is irritating. So check condition first.
+        var isRunning = GsonPtr.to(rootNode).to("status", "conditions")
+            .get(JsonArray.class)
+            .asList().stream().filter(el -> "Running"
+                .equals(((JsonObject) el).get("type").getAsString()))
+            .findFirst().map(el -> "True"
+                .equals(((JsonObject) el).get("status").getAsString()))
+            .orElse(false);
+        if (!isRunning) {
+            return;
+        }
+        var podSearch = new ListOptions();
+        podSearch.setLabelSelector("app.kubernetes.io/name=" + APP_NAME
+            + ",app.kubernetes.io/component=" + APP_NAME
+            + ",app.kubernetes.io/instance=" + vmDef.getMetadata().getName());
+        var podList = K8s.podApi(channel.client()).list(namespaceToWatch,
+            podSearch);
+        podList.getObject().getItems().stream().forEach(pod -> {
+            rootNode.addProperty("nodeName", pod.getSpec().getNodeName());
+        });
     }
 
     /**

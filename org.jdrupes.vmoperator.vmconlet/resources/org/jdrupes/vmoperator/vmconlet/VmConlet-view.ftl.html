@@ -33,26 +33,33 @@
         <tr :class="[(rowIndex % 2) ? 'odd' : 'even']"
           :aria-expanded="(entry.name in detailsByName) ? 'true' : 'false'">
           <td v-for="key in controller.keys" 
+            v-bind:class="'column-' + key"
             v-bind:title="key == 'name' ? entry['name']: false"
             v-bind:rowspan="(key == 'name') && $aash.isDisclosed(scopedId(rowIndex)) ? 2 : false">
             <aash-disclosure-button v-if="key === 'name'" :type="'div'"
               :id-ref="scopedId(rowIndex)">
               <span v-html="controller.breakBeforeDots(entry[key])"></span>
             </aash-disclosure-button>
-            <span v-else-if="key === 'running'"
-              v-html="localize(entry[key] ? 'Yes' : 'No')"></span>
+            <span v-else-if="key === 'running' && entry[key]"
+              class="fa fa-check" :title="localize('Yes')"></span>
+            <span v-else-if="key === 'running' && !entry[key]"
+              class="fa fa-close" :title="localize('No')"></span>
             <span v-else-if="key === 'currentRam'"
-              v-html="formatMemory(BigInt(entry[key]))"></span>
+              v-html="formatMemory(entry[key])"></span>
             <span v-else
               v-html="controller.breakBeforeDots(entry[key])"></span>
           </td>
           <td class="jdrupes-vmoperator-vmconlet-view-action-list">
-            <span role="button" v-if="!entry['running']" 
+            <span role="button" v-if="entry.spec.vm.state != 'Running'" 
               tabindex="0" class="fa fa-play" :title="localize('Start VM')"
               v-on:click="vmAction(entry.name, 'start')"></span>
-            <span role="button" v-if="entry['running']"
+            <span role="button" v-else class="fa fa-play"
+              aria-disabled="true" :title="localize('Start VM')"></span>
+            <span role="button" v-if="entry.spec.vm.state != 'Stopped'"
               tabindex="0" class="fa fa-stop" :title="localize('Stop VM')"
               v-on:click="vmAction(entry.name, 'stop')"></span>
+            <span role="button" v-else class="fa fa-stop"
+              aria-disabled="true" :title="localize('Stop VM')"></span>
           </td>
         </tr>
         <tr :id="scopedId(rowIndex)" v-if="$aash.isDisclosed(scopedId(rowIndex))"
