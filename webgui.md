@@ -11,9 +11,12 @@ The manager component provides a GUI via a web server.
 
 ![VM-Operator GUI](VM-Operator-GUI.png)
 
-By default, the service is made available at port 8080. Of course,
-a kubernetes service and an ingress configuration must be added as
-required by the environment.
+By default, the service is made available at port 8080 of the manager 
+pod. Of course, a kubernetes service and an ingress configuration must
+be added as required by the environment. (See the 
+[definition](https://github.com/mnlipp/VM-Operator/blob/main/deploy/vmop-service.yaml)
+from the
+[sample deployment](https://github.com/mnlipp/VM-Operator/tree/main/deploy)).
 
 The web GUI is implemented using components from the
 [JGrapes WebConsole](https://mnlipp.github.io/jgrapes/WebConsole.html)
