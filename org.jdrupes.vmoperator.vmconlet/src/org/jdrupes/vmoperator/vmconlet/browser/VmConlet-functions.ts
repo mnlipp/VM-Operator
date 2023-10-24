@@ -29,7 +29,7 @@ import "./VmConlet-style.scss";
 //
 let unitMap = new Map<string, bigint>();
 let unitMappings = new Array<{ key: string; value: bigint }>();
-let memorySize = /^\\s*(\\d+(\\.\\d+)?)\\s*([A-Za-z]*)\\s*/;
+let memorySize = /^\s*(\d+(\.\d+)?)\s*([A-Za-z]*)\s*/;
 
 // SI units and common abbreviations
 let factor = BigInt("1");
@@ -72,13 +72,44 @@ window.orgJDrupesVmOperatorVmConlet = {};
 
 let vmInfos = reactive(new Map());
 
-window.orgJDrupesVmOperatorVmConlet.initPreview
-    = (previewDom: HTMLElement, _isUpdate: boolean) => {
-        const app = createApp({});
-        app.use(JgwcPlugin, []);
-        app.config.globalProperties.window = window;
-        app.mount(previewDom);
-    };
+window.orgJDrupesVmOperatorVmConlet.initPreview = (previewDom: HTMLElement,
+    _isUpdate: boolean) => {
+    const app = createApp({
+        setup(_props: any) {
+            const conletId: string
+                = (<HTMLElement>previewDom.parentNode!).dataset["conletId"]!;
+
+            const localize = (key: string) => {
+                return JGConsole.localize(
+                    l10nBundles, JGWC.lang() || "en", key);
+            };
+
+            let data = computed(() => {
+                var running = 0;
+                var usedCpus = 0;
+                var usedRam = BigInt("0");
+                for (let vmDef of vmInfos.values()) {
+                    if (vmDef.running) {
+                        running += 1;
+                    }
+                    usedCpus += vmDef.currentCpus;
+                    usedRam += vmDef.currentRam;
+                }
+                return {
+                    totalVms: vmInfos.size,
+                    runningVms: running,
+                    usedCpus: usedCpus,
+                    usedRam: usedRam
+                };
+            });
+
+            return { localize, formatMemory, data };
+        }
+    });
+    app.use(JgwcPlugin, []);
+    app.config.globalProperties.window = window;
+    app.mount(previewDom);
+};
 
 window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
     _isUpdate: boolean) => {
@@ -119,7 +150,7 @@ window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
                 controller, vmInfos, filteredData, detailsByName,
                 localize, formatMemory, vmAction,
                 scopedId: (id: string) => { return idScope.scopedId(id); }
-            }
+            };
         }
     });
     app.use(JgwcPlugin);

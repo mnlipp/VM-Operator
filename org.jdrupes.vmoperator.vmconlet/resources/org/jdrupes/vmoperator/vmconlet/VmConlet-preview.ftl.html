@@ -1,5 +1,24 @@
 <div class="jdrupes-vmoperator-vmconlet jdrupes-vmoperator-vmconlet-preview"
   data-jgwc-on-load="orgJDrupesVmOperatorVmConlet.initPreview"
   data-jgwc-on-unload="JGConsole.jgwc.unmountVueApps"> 
-  <div>Preview</div>
+  <table>
+    <tbody>
+      <tr>
+        <td>{{ localize("Total VMs") }}:</td>
+        <td>{{ data.totalVms }}</td>
+      </tr>
+      <tr>
+        <td>{{ localize("Running VMs") }}:</td>
+        <td>{{ data.runningVms }}</td>
+      </tr>
+      <tr>
+        <td>{{ localize("Used CPUs") }}:</td>
+        <td>{{ data.usedCpus }}</td>
+      </tr>
+      <tr>
+        <td>{{ localize("Used RAM") }}:</td>
+        <td>{{ formatMemory(data.usedRam) }}</td>
+      </tr>
+    </tbody>
+  </table>
 </div>
