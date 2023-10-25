@@ -50,6 +50,7 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
+import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCont;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
 import org.jdrupes.vmoperator.runner.qemu.events.QmpConfigured;
@@ -178,8 +179,6 @@ import org.jgrapes.util.events.WatchFile;
     "PMD.DataflowAnomalyAnalysis" })
 public class Runner extends Component {
 
-    /** The Constant APP_NAME. */
-    public static final String APP_NAME = "vm-runner";
     private static final String TEMPLATE_DIR
         = "/opt/" + APP_NAME.replace("-", "") + "/templates";
     private static final String DEFAULT_TEMPLATE
@@ -609,7 +608,7 @@ public class Runner extends Component {
     static {
         try {
             InputStream props;
-            var path = FsdUtils.findConfigFile(Runner.APP_NAME.replace("-", ""),
+            var path = FsdUtils.findConfigFile(APP_NAME.replace("-", ""),
                 "logging.properties");
             if (path.isPresent()) {
                 props = Files.newInputStream(path.get());
