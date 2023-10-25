@@ -39,10 +39,6 @@ running Qemu in a pod using a simple, lightweight manager called "runner".
 Providing resources to the VM is left to Kubernetes mechanisms as
 much as possible.
 
-The project does in no way attempt to replace kubevirt. Its goal is 
-to provide a simple solution for the use case of running a virtual 
-machine in a common configuration in a Kubernetes cluster.
-
 ## VMs and Pods
 
 VMs are not the typical workload managed by Kubernetes. You can neither
