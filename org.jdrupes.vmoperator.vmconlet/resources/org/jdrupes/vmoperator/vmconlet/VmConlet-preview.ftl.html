@@ -2,6 +2,27 @@
   data-conlet-grid-rows="5"
   data-jgwc-on-load="orgJDrupesVmOperatorVmConlet.initPreview"
   data-jgwc-on-unload="JGConsole.jgwc.unmountVueApps">
+  
+  <form>
+    <fieldset>
+      <legend>{{ localize("Period") }}:</legend>
+      <ul>
+        <li>
+          <label>
+            <input type="radio" name="period" v-model="period" value="day">
+            <span>{{ localize("Last day") }}</span>
+          </label>
+        </li>
+        <li>
+          <label>
+            <input type="radio" name="period" v-model="period" value="hour">
+            <span>{{ localize("Last hour") }}</span>
+          </label>
+        </li>
+      </ul>
+    </fieldset>
+  </form>  
+  
   <table>
     <tbody>
       <tr>

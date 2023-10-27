@@ -149,7 +149,10 @@ let chartData = new TimeSeries(2);
 let chartDateUpdate = ref<Date>(null);
 
 class CpuRamChart extends Chart {
-    constructor(canvas: HTMLCanvasElement) {
+    
+    period: ref<string>;
+    
+    constructor(canvas: HTMLCanvasElement, period: ref<string>) {
         super(canvas.getContext('2d')!, {
             // The type of chart we want to create
             type: 'line',
@@ -214,8 +217,10 @@ class CpuRamChart extends Chart {
         this.setPropValue("options.scales.cpus.ticks.color", css.color);
         this.setPropValue("options.scales.ram.ticks.font.family", css.fontFamily);
         this.setPropValue("options.scales.ram.ticks.color", css.color);
-        
         this.localize();
+
+        this.period = period;        
+        watch(period, (_period) => this.update())
     }
 
     setPropValue(path: string, value: any) {
@@ -245,8 +250,13 @@ class CpuRamChart extends Chart {
     }
     
     update() {
+        let hours = 24;
+        // super constructor calls update when period isn't initialized yet
+        if (this.period && this.period.value === "hour") {
+            hours = 1;
+        }
         this.setPropValue("options.scales.x.min",
-            Date.now() - 24 * 3600 * 1000);
+            Date.now() - hours * 3600 * 1000);
         super.update();
     }
 }
@@ -258,11 +268,13 @@ window.orgJDrupesVmOperatorVmConlet.initPreview = (previewDom: HTMLElement,
             const conletId: string
                 = (<HTMLElement>previewDom.parentNode!).dataset["conletId"]!;
 
+            const period = ref<string>("day");
+
             let chart: CpuRamChart | null = null;
             onMounted(() => {
                 let canvas: HTMLCanvasElement
                     = previewDom.querySelector(":scope .vmsChart")!;
-                chart = new CpuRamChart(canvas);
+                chart = new CpuRamChart(canvas, period);
             })
 
             watch(chartDateUpdate, (_) => {
@@ -274,7 +286,7 @@ window.orgJDrupesVmOperatorVmConlet.initPreview = (previewDom: HTMLElement,
                 chart?.update();
             })
 
-            return { localize, formatMemory, vmSummary };
+            return { localize, formatMemory, vmSummary, period };
         }
     });
     app.use(JgwcPlugin, []);

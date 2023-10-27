@@ -21,13 +21,20 @@
  */
  
 .jdrupes-vmoperator-vmconlet-preview {
-    table {
-        margin-bottom: 1em;
-    }
+  form {
+    float: right;
+    padding: 0.5em;
+    border: 1px solid var(--panel-border);
+    border-radius: var(--corner-radius);    
+  }
 
-    .vmsChart-wrapper {
-        height: 12em;
-    }    
+  table {
+    margin-bottom: 1em;
+  }
+
+  .vmsChart-wrapper {
+    height: 12em;
+  }    
 }
  
 .jdrupes-vmoperator-vmconlet-view-search {
