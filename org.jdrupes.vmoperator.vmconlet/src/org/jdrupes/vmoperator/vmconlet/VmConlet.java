@@ -26,6 +26,9 @@ import freemarker.template.TemplateNotFoundException;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import java.io.IOException;
+import java.math.BigInteger;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -59,6 +62,7 @@ import org.jgrapes.webconsole.base.events.SetLocale;
 import org.jgrapes.webconsole.base.freemarker.FreeMarkerConlet;
 
 /**
+ * The Class VmConlet.
  */
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
@@ -67,6 +71,14 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
         RenderMode.Preview, RenderMode.View);
     private final Map<String, DynamicKubernetesObject> vmInfos
         = new ConcurrentHashMap<>();
+    private final TimeSeries summarySeries = new TimeSeries(Duration.ofDays(1));
+    private Summary cachedSummary;
+
+    /**
+     * The periodically generated update event.
+     */
+    public static class Update extends Event<Void> {
+    }
 
     /**
      * Creates a new component with its channel set to the given channel.
@@ -77,6 +89,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
      */
     public VmConlet(Channel componentChannel) {
         super(componentChannel);
+        setPeriodicRefresh(Duration.ofMinutes(1), () -> new Update());
     }
 
     /**
@@ -116,7 +129,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
             ConsoleConnection channel, String conletId, VmsModel conletState)
             throws Exception {
         Set<RenderMode> renderedAs = new HashSet<>();
-        boolean sendData = false;
+        boolean sendVmInfos = false;
         if (event.renderAs().contains(RenderMode.Preview)) {
             Template tpl
                 = freemarkerConfig().getTemplate("VmConlet-preview.ftl.html");
@@ -127,7 +140,12 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
                             RenderMode.Preview.addModifiers(event.renderAs()))
                         .setSupportedModes(MODES));
             renderedAs.add(RenderMode.View);
-            sendData = true;
+            channel.respond(new NotifyConletView(type(),
+                conletId, "summarySeries", summarySeries.entries()));
+            var summary = evaluateSummary(false);
+            channel.respond(new NotifyConletView(type(),
+                conletId, "updateSummary", summary));
+            sendVmInfos = true;
         }
         if (event.renderAs().contains(RenderMode.View)) {
             Template tpl
@@ -139,9 +157,9 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
                             RenderMode.View.addModifiers(event.renderAs()))
                         .setSupportedModes(MODES));
             renderedAs.add(RenderMode.View);
-            sendData = true;
+            sendVmInfos = true;
         }
-        if (sendData) {
+        if (sendVmInfos) {
             for (var vmInfo : vmInfos.values()) {
                 var def = JsonBeanDecoder.create(vmInfo.getRaw().toString())
                     .readObject();
@@ -158,13 +176,14 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
      *
      * @param event the event
      * @param channel the channel
-     * @throws JsonDecodeException 
+     * @throws JsonDecodeException the json decode exception
+     * @throws IOException 
      */
     @Handler(namedChannels = "manager")
-    @SuppressWarnings({ "PMD.ConfusingTernary",
+    @SuppressWarnings({ "PMD.ConfusingTernary", "PMD.CognitiveComplexity",
         "PMD.AvoidInstantiatingObjectsInLoops" })
     public void onVmDefChanged(VmDefChanged event, VmChannel channel)
-            throws JsonDecodeException {
+            throws JsonDecodeException, IOException {
         if (event.type() == Type.DELETED) {
             var vmName = event.vmDefinition().getMetadata().getName();
             vmInfos.remove(vmName);
@@ -175,25 +194,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
                 }
             }
         } else {
-            var vmDef = new DynamicKubernetesObject(
-                event.vmDefinition().getRaw().deepCopy());
-            GsonPtr.to(vmDef.getRaw()).to("metadata").get(JsonObject.class)
-                .remove("managedFields");
-            var vmSpec = GsonPtr.to(vmDef.getRaw()).to("spec", "vm");
-            vmSpec.set("maximumRam", Quantity.fromString(
-                vmSpec.getAsString("maximumRam").orElse("0")).getNumber()
-                .toBigInteger().toString());
-            vmSpec.set("currentRam", Quantity.fromString(
-                vmSpec.getAsString("currentRam").orElse("0")).getNumber()
-                .toBigInteger().toString());
-            var status = GsonPtr.to(vmDef.getRaw()).to("status");
-            status.set("ram", Quantity.fromString(
-                status.getAsString("ram").orElse("0")).getNumber()
-                .toBigInteger().toString());
-            String vmName = event.vmDefinition().getMetadata().getName();
-            vmInfos.put(vmName, vmDef);
-
-            // Extract running
+            var vmDef = updateVmDefs(event);
             var def = JsonBeanDecoder.create(vmDef.getRaw().toString())
                 .readObject();
             for (var entry : conletIdsByConsoleConnection().entrySet()) {
@@ -203,6 +204,135 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
                 }
             }
         }
+
+        var summary = evaluateSummary(true);
+        summarySeries.add(Instant.now(), summary.usedCpus, summary.usedRam);
+        for (var entry : conletIdsByConsoleConnection().entrySet()) {
+            for (String conletId : entry.getValue()) {
+                entry.getKey().respond(new NotifyConletView(type(),
+                    conletId, "updateSummary", summary));
+            }
+        }
+    }
+
+    private DynamicKubernetesObject updateVmDefs(VmDefChanged event) {
+        var vmDef = new DynamicKubernetesObject(
+            event.vmDefinition().getRaw().deepCopy());
+        GsonPtr.to(vmDef.getRaw()).to("metadata").get(JsonObject.class)
+            .remove("managedFields");
+        var vmSpec = GsonPtr.to(vmDef.getRaw()).to("spec", "vm");
+        vmSpec.set("maximumRam", Quantity.fromString(
+            vmSpec.getAsString("maximumRam").orElse("0")).getNumber()
+            .toBigInteger().toString());
+        vmSpec.set("currentRam", Quantity.fromString(
+            vmSpec.getAsString("currentRam").orElse("0")).getNumber()
+            .toBigInteger().toString());
+        var status = GsonPtr.to(vmDef.getRaw()).to("status");
+        status.set("ram", Quantity.fromString(
+            status.getAsString("ram").orElse("0")).getNumber()
+            .toBigInteger().toString());
+        String vmName = event.vmDefinition().getMetadata().getName();
+        vmInfos.put(vmName, vmDef);
+        return vmDef;
+    }
+
+    /**
+     * Handle the periodic update event by sending {@link NotifyConletView}
+     * events.
+     *
+     * @param event the event
+     * @param connection the console connection
+     */
+    @Handler
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+    public void onUpdate(Update event, ConsoleConnection connection) {
+        var summary = evaluateSummary(false);
+        summarySeries.add(Instant.now(), summary.usedCpus, summary.usedRam);
+        for (String conletId : conletIds(connection)) {
+            connection.respond(new NotifyConletView(type(),
+                conletId, "updateSummary", summary));
+        }
+    }
+
+    /**
+     * The Class Summary.
+     */
+    @SuppressWarnings("PMD.DataClass")
+    public static class Summary {
+
+        /** The total vms. */
+        public int totalVms;
+
+        /** The running vms. */
+        public int runningVms;
+
+        /** The used cpus. */
+        public int usedCpus;
+
+        /** The used ram. */
+        public BigInteger usedRam = BigInteger.ZERO;
+
+        /**
+         * Gets the total vms.
+         *
+         * @return the totalVms
+         */
+        public int getTotalVms() {
+            return totalVms;
+        }
+
+        /**
+         * Gets the running vms.
+         *
+         * @return the runningVms
+         */
+        public int getRunningVms() {
+            return runningVms;
+        }
+
+        /**
+         * Gets the used cpus.
+         *
+         * @return the usedCpus
+         */
+        public int getUsedCpus() {
+            return usedCpus;
+        }
+
+        /**
+         * Gets the used ram. Returned as String for Json rendering.
+         *
+         * @return the usedRam
+         */
+        public String getUsedRam() {
+            return usedRam.toString();
+        }
+
+    }
+
+    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
+    private Summary evaluateSummary(boolean force) {
+        if (!force && cachedSummary != null) {
+            return cachedSummary;
+        }
+        Summary summary = new Summary();
+        for (var vmDef : vmInfos.values()) {
+            summary.totalVms += 1;
+            var status = GsonPtr.to(vmDef.getRaw()).to("status");
+            summary.usedCpus += status.getAsInt("cpus").orElse(0);
+            summary.usedRam = summary.usedRam.add(status.getAsString("ram")
+                .map(BigInteger::new).orElse(BigInteger.ZERO));
+            for (var c : status.getAsListOf(JsonObject.class, "conditions")) {
+                if ("Running".equals(GsonPtr.to(c).getAsString("type")
+                    .orElse(null))
+                    && "True".equals(GsonPtr.to(c).getAsString("status")
+                        .orElse(null))) {
+                    summary.runningVms += 1;
+                }
+            }
+        }
+        cachedSummary = summary;
+        return summary;
     }
 
     @Override

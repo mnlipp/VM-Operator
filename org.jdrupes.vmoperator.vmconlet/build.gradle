@@ -7,7 +7,9 @@ dependencies {
     
     implementation 'org.jgrapes:org.jgrapes.webconsole.base:[1.2.0,2)'
     implementation 'org.jgrapes:org.jgrapes.webconsole.provider.vue:[1,2)'
-    implementation 'org.jgrapes:org.jgrapes.webconsole.provider.jgwcvuecomponents:[1,2)'
+    implementation 'org.jgrapes:org.jgrapes.webconsole.provider.jgwcvuecomponents:[1.2,2)'
+    implementation 'org.jgrapes:org.jgrapes.webconsole.provider.chartjs:[1.2,2)'
+    
 }
 
 apply plugin: 'com.github.node-gradle.node'
@@ -22,6 +24,7 @@ task extractDependencies(type: Copy) {
             || it.name.contains('org.jgrapes.webconsole.base')
         }
         .collect{ zipTree (it) }
+    exclude '*.class'
     into 'build/unpacked'
     duplicatesStrategy 'include'
   }

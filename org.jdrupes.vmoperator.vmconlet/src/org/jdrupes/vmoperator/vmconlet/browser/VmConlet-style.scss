@@ -20,6 +20,16 @@
  * Conlet specific styles.
  */
  
+.jdrupes-vmoperator-vmconlet-preview {
+    table {
+        margin-bottom: 1em;
+    }
+
+    .vmsChart-wrapper {
+        height: 12em;
+    }    
+}
+ 
 .jdrupes-vmoperator-vmconlet-view-search {
   display: flex; 
   justify-content: flex-end

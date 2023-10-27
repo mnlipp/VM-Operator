@@ -11,7 +11,8 @@ let pathsMap = {
     "jgconsole": "../../console-base-resource/jgconsole.js",
     "jgwc": "../../page-resource/jgwc-vue-components/jgwc-components.js",
     "l10nBundles": "./" + baseName + "-l10nBundles.ftl.js",
-    "vue": "../../page-resource/vue/vue.esm-browser.js"
+    "vue": "../../page-resource/vue/vue.esm-browser.js",
+    "chartjs": "../../page-resource/chart.js/auto.js"
 }
 
 export default {

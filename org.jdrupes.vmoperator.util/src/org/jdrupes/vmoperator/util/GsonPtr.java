@@ -23,6 +23,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import java.math.BigInteger;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -207,6 +209,21 @@ public class GsonPtr {
     public Optional<Boolean> getAsBoolean(Object... selectors) {
         return get(JsonPrimitive.class, selectors)
             .map(JsonPrimitive::getAsBoolean);
+    }
+
+    /**
+     * Returns the elements of the selected {@link JsonArray} as list.
+     *
+     * @param <T> the generic type
+     * @param cls the cls
+     * @param selectors the selectors
+     * @return the list
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends JsonElement> List<T> getAsListOf(Class<T> cls,
+            Object... selectors) {
+        return get(JsonArray.class, selectors).map(a -> (List<T>) a.asList())
+            .orElse(Collections.emptyList());
     }
 
     /**
