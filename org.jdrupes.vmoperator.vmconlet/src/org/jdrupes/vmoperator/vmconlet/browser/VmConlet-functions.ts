@@ -16,51 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { reactive, ref, createApp, computed, onMounted, onUnmounted,
-         watch } from "vue";
+import { reactive, ref, Ref, createApp, computed, onMounted, watch } from "vue";
 import JGConsole from "jgconsole";
 import JgwcPlugin, { JGWC } from "jgwc";
-import { Chart } from "chartjs";
 import l10nBundles from "l10nBundles";
+import TimeSeries from "./TimeSeries";
+import { formatMemory } from "./MemorySize";
+import CpuRamChart from "./CpuRamChart";
 
 import "./VmConlet-style.scss";
-
-//
-// Helpers
-//
-let unitMap = new Map<string, bigint>();
-let unitMappings = new Array<{ key: string; value: bigint }>();
-let memorySize = /^\s*(\d+(\.\d+)?)\s*([A-Za-z]*)\s*/;
-
-// SI units and common abbreviations
-let factor = BigInt("1");
-unitMap.set("", factor);
-let scale = BigInt("1000");
-for (let unit of ["B", "kB", "MB", "GB", "TB", "PB", "EB"]) {
-    unitMap.set(unit, factor);
-    factor = factor * scale;
-}
-// Binary units
-factor = BigInt("1024");
-scale = BigInt("1024");
-for (let unit of ["KiB", "MiB", "GiB", "TiB", "PiB", "EiB"]) {
-    unitMap.set(unit, factor);
-    factor = factor * scale;
-}
-unitMap.forEach((value: bigint, key: string) => {
-    unitMappings.push({ key, value });
-});
-unitMappings.sort((a, b) => a.value < b.value ? 1 : a.value > b.value ? -1 : 0);
-
-function formatMemory(size: bigint): string {
-    for (let mapping of unitMappings) {
-        if (size >= mapping.value
-            && (size % mapping.value) === BigInt("0")) {
-            return (size / mapping.value + " " + mapping.key).trim();
-        }
-    }
-    return size.toString();
-}
 
 // For global access
 declare global {
@@ -84,182 +48,9 @@ const localize = (key: string) => {
         l10nBundles, JGWC.lang(), key);
 };
 
-class TimeSeries {
-    timestamps: Date[] = [];
-    series: number[][];
-
-    constructor(nbOfSeries: number) {
-        this.series = [];
-        while (this.series.length < nbOfSeries) {
-            this.series.push([]);
-        }
-    }
-
-    clear() {
-        this.timestamps.length = 0;
-        for (let values of this.series) {
-            values.length = 0;
-        }
-    }
-
-    push(time: Date, ...values: number[]) {
-        let adjust = false;
-        if (this.timestamps.length >= 2) {
-            adjust = true;
-            for (let i = 0; i < values.length; i++) {
-                if (values[i] !== this.series[i][this.series[i].length - 1]
-                || values[i] !== this.series[i][this.series[i].length - 2]) {
-                    adjust = false;
-                    break;
-                }
-            }
-        }
-        if (adjust) {
-            this.timestamps[this.timestamps.length - 1] = time;
-        } else {        
-            this.timestamps.push(time);
-            for (let i = 0; i < values.length; i++) {
-                this.series[i].push(values[i]);
-            }
-        }
-        
-        // Purge
-        let limit = Date.now() - 24 * 3600 * 1000;
-        while (this.timestamps.length > 2
-            && this.timestamps[0].getTime() < limit
-            && this.timestamps[1].getTime() < limit) {
-            this.timestamps.shift();
-            for (let values of this.series) {
-                values.shift();
-            }
-        }
-    }
-
-    getTimes(): Date[] {
-        return this.timestamps;
-    }
-
-    getSeries(n: number): number[] {
-        return this.series[n];
-    }
-}
-
 // Cannot be reactive, leads to infinite recursion.
 let chartData = new TimeSeries(2);
 let chartDateUpdate = ref<Date>(null);
-
-class CpuRamChart extends Chart {
-    
-    period: ref<string>;
-    
-    constructor(canvas: HTMLCanvasElement, period: ref<string>) {
-        super(canvas.getContext('2d')!, {
-            // The type of chart we want to create
-            type: 'line',
-
-            // The data for our datasets
-            data: {
-                labels: chartData.getTimes(),
-                datasets: [{
-                    // See localize
-                    data: chartData.getSeries(0),
-                    yAxisID: 'cpus'
-                }, {
-                    // See localize
-                    data: chartData.getSeries(1),
-                    yAxisID: 'ram'
-                }]
-            },
-
-            // Configuration options go here
-            options: {
-                animation: false,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        type: 'time',
-                        time: { minUnit: 'minute' },
-                        adapters: {
-                            date: {
-                                // See localize
-                            }
-                        }
-                    },
-                    cpus: {
-                        type: 'linear',
-                        display: true,
-                        position: 'left',
-                        min: 0
-                    },
-                    ram: {
-                        type: 'linear',
-                        display: true,
-                        position: 'right',
-                        min: 0,
-                        grid: { drawOnChartArea: false },
-                        ticks: {
-                            stepSize: 1024 * 1024 * 1024,
-                            callback: function(value, _index, _values) {
-                                return formatMemory(BigInt(Math.round(Number(value))));
-                            }
-                        }
-                    }
-                }
-            }
-        });
-        
-        let css = getComputedStyle(canvas);
-        this.setPropValue("options.plugins.legend.labels.font.family", css.fontFamily);
-        this.setPropValue("options.plugins.legend.labels.color", css.color);
-        this.setPropValue("options.scales.x.ticks.font.family", css.fontFamily);
-        this.setPropValue("options.scales.x.ticks.color", css.color);
-        this.setPropValue("options.scales.cpus.ticks.font.family", css.fontFamily);
-        this.setPropValue("options.scales.cpus.ticks.color", css.color);
-        this.setPropValue("options.scales.ram.ticks.font.family", css.fontFamily);
-        this.setPropValue("options.scales.ram.ticks.color", css.color);
-        this.localize();
-
-        this.period = period;        
-        watch(period, (_period) => this.update())
-    }
-
-    setPropValue(path: string, value: any) {
-        let ptr: any = this;
-        let segs = path.split(".");
-        let lastSeg = segs.pop()!;
-        for (let seg of segs) {
-            let cur = ptr[seg];
-            if (!cur) {
-                ptr[seg] = {};
-            }
-            // ptr[seg] = ptr[seg] || {}
-            ptr = ptr[seg];
-        }
-        ptr[lastSeg] = value;
-    }
-
-    localize() {
-        (<any>this.options.scales?.x).adapters.date.locale = JGWC.lang();
-        this.data.datasets[0].label = localize("Used CPUs");
-        this.data.datasets[1].label = localize("Used RAM");
-    }
-    
-    shift() {
-        this.setPropValue("options.scales.x.max", Date.now());
-        this.update();
-    }
-    
-    update() {
-        let hours = 24;
-        // super constructor calls update when period isn't initialized yet
-        if (this.period && this.period.value === "hour") {
-            hours = 1;
-        }
-        this.setPropValue("options.scales.x.min",
-            Date.now() - hours * 3600 * 1000);
-        super.update();
-    }
-}
 
 window.orgJDrupesVmOperatorVmConlet.initPreview = (previewDom: HTMLElement,
     _isUpdate: boolean) => {
@@ -268,13 +59,11 @@ window.orgJDrupesVmOperatorVmConlet.initPreview = (previewDom: HTMLElement,
             const conletId: string
                 = (<HTMLElement>previewDom.parentNode!).dataset["conletId"]!;
 
-            const period = ref<string>("day");
-
             let chart: CpuRamChart | null = null;
             onMounted(() => {
                 let canvas: HTMLCanvasElement
                     = previewDom.querySelector(":scope .vmsChart")!;
-                chart = new CpuRamChart(canvas, period);
+                chart = new CpuRamChart(canvas, chartData);
             })
 
             watch(chartDateUpdate, (_) => {
@@ -282,9 +71,15 @@ window.orgJDrupesVmOperatorVmConlet.initPreview = (previewDom: HTMLElement,
             })
 
             watch(JGWC.langRef(), (_) => {
-                chart?.localize();
-                chart?.update();
+                chart?.localizeChart();
             })
+
+            const period: Ref<string> = ref<string>("day");
+            
+            watch(period, (_) => { 
+                let hours = (period.value === "day") ? 24 : 1;
+                chart?.setPeriod(hours * 3600 * 1000);
+            });
 
             return { localize, formatMemory, vmSummary, period };
         }
@@ -300,11 +95,6 @@ window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
         setup(_props: any) {
             const conletId: string
                 = (<HTMLElement>viewDom.parentNode!).dataset["conletId"]!;
-
-            const localize = (key: string) => {
-                return JGConsole.localize(
-                    l10nBundles, JGWC.lang() || "en", key);
-            };
 
             const controller = reactive(new JGConsole.TableController([
                 ["name", "vmname"],
@@ -346,7 +136,7 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
         // Add some short-cuts for table controller
         vmDefinition.name = vmDefinition.metadata.name;
         vmDefinition.currentCpus = vmDefinition.status.cpus;
-        vmDefinition.currentRam = BigInt(vmDefinition.status.ram);
+        vmDefinition.currentRam = Number(vmDefinition.status.ram);
         for (let condition of vmDefinition.status.conditions) {
             if (condition.type === "Running") {
                 vmDefinition.running = condition.status === "True";

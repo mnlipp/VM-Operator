@@ -35,7 +35,7 @@
       </tr>
       <tr>
         <td>{{ localize("Used RAM") }}:</td>
-        <td>{{ formatMemory(BigInt(vmSummary.usedRam)) }}</td>
+        <td>{{ formatMemory(Number(vmSummary.usedRam)) }}</td>
       </tr>
     </tbody>
   </table>

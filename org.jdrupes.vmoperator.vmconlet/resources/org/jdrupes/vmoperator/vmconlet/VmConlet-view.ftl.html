@@ -76,11 +76,11 @@
               </tr>
               <tr>
                 <td>{{ localize("maximumRam") }}</td>
-                <td>{{ formatMemory(BigInt(entry.spec.vm.maximumRam)) }}</td>
+                <td>{{ formatMemory(Number(entry.spec.vm.maximumRam)) }}</td>
               </tr>
               <tr>
                 <td>{{ localize("requestedRam") }}</td>
-                <td>{{ formatMemory(BigInt(entry.spec.vm.maximumRam)) }}</td>
+                <td>{{ formatMemory(Number(entry.spec.vm.maximumRam)) }}</td>
               </tr>
             </table>
           </td>
