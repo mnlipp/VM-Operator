@@ -48,6 +48,12 @@ const localize = (key: string) => {
         l10nBundles, JGWC.lang(), key);
 };
 
+const shortDateTime = (time: Date) => {
+    // https://stackoverflow.com/questions/63958875/why-do-i-get-rangeerror-date-value-is-not-finite-in-datetimeformat-format-w
+    return new Intl.DateTimeFormat(JGWC.lang(),
+        { dateStyle: "short", timeStyle: "short" }).format(new Date(time));
+};
+
 // Cannot be reactive, leads to infinite recursion.
 let chartData = new TimeSeries(2);
 let chartDateUpdate = ref<Date>(null);
@@ -99,6 +105,7 @@ window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
             const controller = reactive(new JGConsole.TableController([
                 ["name", "vmname"],
                 ["running", "running"],
+                ["runningConditionSince", "since"],
                 ["currentCpus", "currentCpus"],
                 ["currentRam", "currentRam"],
                 ["nodeName", "nodeName"]
@@ -121,7 +128,7 @@ window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
 
             return {
                 controller, vmInfos, filteredData, detailsByName,
-                localize, formatMemory, vmAction,
+                localize, shortDateTime, formatMemory, vmAction,
                 scopedId: (id: string) => { return idScope.scopedId(id); }
             };
         }
@@ -140,6 +147,8 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
         for (let condition of vmDefinition.status.conditions) {
             if (condition.type === "Running") {
                 vmDefinition.running = condition.status === "True";
+                vmDefinition.runningConditionSince 
+                    = new Date(condition.lastTransitionTime);
                 break;
             }
         }

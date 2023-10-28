@@ -44,8 +44,10 @@
               class="fa fa-check" :title="localize('Yes')"></span>
             <span v-else-if="key === 'running' && !entry[key]"
               class="fa fa-close" :title="localize('No')"></span>
+            <span v-else-if="key === 'runningConditionSince'"
+              >{{ shortDateTime(entry[key].toString()) }}</span>
             <span v-else-if="key === 'currentRam'"
-              v-html="formatMemory(entry[key])"></span>
+              >{{ formatMemory(entry[key]) }}</span>
             <span v-else
               v-html="controller.breakBeforeDots(entry[key])"></span>
           </td>
