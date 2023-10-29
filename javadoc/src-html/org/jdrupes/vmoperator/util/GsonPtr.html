@@ -45,7 +45,7 @@
 <span class="source-line-no">032</span><span id="line-32"> * Utility class for pointing to elements on a Gson (Json) tree.</span>
 <span class="source-line-no">033</span><span id="line-33"> */</span>
 <span class="source-line-no">034</span><span id="line-34">@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",</span>
-<span class="source-line-no">035</span><span id="line-35">    "PMD.ClassWithOnlyPrivateConstructorsShouldBeFinal" })</span>
+<span class="source-line-no">035</span><span id="line-35">    "PMD.ClassWithOnlyPrivateConstructorsShouldBeFinal", "PMD.GodClass" })</span>
 <span class="source-line-no">036</span><span id="line-36">public class GsonPtr {</span>
 <span class="source-line-no">037</span><span id="line-37"></span>
 <span class="source-line-no">038</span><span id="line-38">    private final JsonElement position;</span>
@@ -279,53 +279,65 @@
 <span class="source-line-no">266</span><span id="line-266">    }</span>
 <span class="source-line-no">267</span><span id="line-267"></span>
 <span class="source-line-no">268</span><span id="line-268">    /**</span>
-<span class="source-line-no">269</span><span id="line-269">     * Same as {@link #set(Object, JsonElement)}, but sets the value</span>
-<span class="source-line-no">270</span><span id="line-270">     * only if it doesn't exist yet, else returns the existing value.</span>
-<span class="source-line-no">271</span><span id="line-271">     * If this pointer points to a {@link JsonArray} and the selector</span>
-<span class="source-line-no">272</span><span id="line-272">     * if larger than or equal to the size of the array, the supplied</span>
-<span class="source-line-no">273</span><span id="line-273">     * value will be appended.</span>
-<span class="source-line-no">274</span><span id="line-274">     *</span>
-<span class="source-line-no">275</span><span id="line-275">     * @param &lt;T&gt; the generic type</span>
-<span class="source-line-no">276</span><span id="line-276">     * @param selector the selector</span>
-<span class="source-line-no">277</span><span id="line-277">     * @param supplier the supplier of the missing value</span>
-<span class="source-line-no">278</span><span id="line-278">     * @return the existing or supplied value</span>
-<span class="source-line-no">279</span><span id="line-279">     */</span>
-<span class="source-line-no">280</span><span id="line-280">    @SuppressWarnings("unchecked")</span>
-<span class="source-line-no">281</span><span id="line-281">    public &lt;T extends JsonElement&gt; T</span>
-<span class="source-line-no">282</span><span id="line-282">            computeIfAbsent(Object selector, Supplier&lt;T&gt; supplier) {</span>
-<span class="source-line-no">283</span><span id="line-283">        if (position instanceof JsonObject obj</span>
-<span class="source-line-no">284</span><span id="line-284">            &amp;&amp; selector instanceof String member) {</span>
-<span class="source-line-no">285</span><span id="line-285">            return Optional.ofNullable((T) obj.get(member)).orElseGet(() -&gt; {</span>
-<span class="source-line-no">286</span><span id="line-286">                var res = supplier.get();</span>
-<span class="source-line-no">287</span><span id="line-287">                obj.add(member, res);</span>
-<span class="source-line-no">288</span><span id="line-288">                return res;</span>
-<span class="source-line-no">289</span><span id="line-289">            });</span>
-<span class="source-line-no">290</span><span id="line-290">        }</span>
-<span class="source-line-no">291</span><span id="line-291">        if (position instanceof JsonArray arr</span>
-<span class="source-line-no">292</span><span id="line-292">            &amp;&amp; selector instanceof Integer index) {</span>
-<span class="source-line-no">293</span><span id="line-293">            if (index &gt;= arr.size()) {</span>
-<span class="source-line-no">294</span><span id="line-294">                var res = supplier.get();</span>
-<span class="source-line-no">295</span><span id="line-295">                arr.add(res);</span>
-<span class="source-line-no">296</span><span id="line-296">                return res;</span>
-<span class="source-line-no">297</span><span id="line-297">            }</span>
-<span class="source-line-no">298</span><span id="line-298">            return (T) arr.get(index);</span>
-<span class="source-line-no">299</span><span id="line-299">        }</span>
-<span class="source-line-no">300</span><span id="line-300">        throw new IllegalStateException("Invalid selection");</span>
-<span class="source-line-no">301</span><span id="line-301">    }</span>
-<span class="source-line-no">302</span><span id="line-302"></span>
-<span class="source-line-no">303</span><span id="line-303">    /**</span>
-<span class="source-line-no">304</span><span id="line-304">     * Short for `computeIfAbsent(selector, () -&gt; new JsonPrimitive(value))`.</span>
-<span class="source-line-no">305</span><span id="line-305">     *</span>
-<span class="source-line-no">306</span><span id="line-306">     * @param selector the selector</span>
-<span class="source-line-no">307</span><span id="line-307">     * @param value the value</span>
-<span class="source-line-no">308</span><span id="line-308">     * @return the Gson pointer</span>
-<span class="source-line-no">309</span><span id="line-309">     */</span>
-<span class="source-line-no">310</span><span id="line-310">    public GsonPtr getOrSet(Object selector, String value) {</span>
-<span class="source-line-no">311</span><span id="line-311">        computeIfAbsent(selector, () -&gt; new JsonPrimitive(value));</span>
-<span class="source-line-no">312</span><span id="line-312">        return this;</span>
+<span class="source-line-no">269</span><span id="line-269">     * Short for `set(selector, new JsonPrimitive(value))`.</span>
+<span class="source-line-no">270</span><span id="line-270">     *</span>
+<span class="source-line-no">271</span><span id="line-271">     * @param selector the selector</span>
+<span class="source-line-no">272</span><span id="line-272">     * @param value the value</span>
+<span class="source-line-no">273</span><span id="line-273">     * @return the gson ptr</span>
+<span class="source-line-no">274</span><span id="line-274">     * @see #set(Object, JsonElement)</span>
+<span class="source-line-no">275</span><span id="line-275">     */</span>
+<span class="source-line-no">276</span><span id="line-276">    public GsonPtr set(Object selector, BigInteger value) {</span>
+<span class="source-line-no">277</span><span id="line-277">        return set(selector, new JsonPrimitive(value));</span>
+<span class="source-line-no">278</span><span id="line-278">    }</span>
+<span class="source-line-no">279</span><span id="line-279"></span>
+<span class="source-line-no">280</span><span id="line-280">    /**</span>
+<span class="source-line-no">281</span><span id="line-281">     * Same as {@link #set(Object, JsonElement)}, but sets the value</span>
+<span class="source-line-no">282</span><span id="line-282">     * only if it doesn't exist yet, else returns the existing value.</span>
+<span class="source-line-no">283</span><span id="line-283">     * If this pointer points to a {@link JsonArray} and the selector</span>
+<span class="source-line-no">284</span><span id="line-284">     * if larger than or equal to the size of the array, the supplied</span>
+<span class="source-line-no">285</span><span id="line-285">     * value will be appended.</span>
+<span class="source-line-no">286</span><span id="line-286">     *</span>
+<span class="source-line-no">287</span><span id="line-287">     * @param &lt;T&gt; the generic type</span>
+<span class="source-line-no">288</span><span id="line-288">     * @param selector the selector</span>
+<span class="source-line-no">289</span><span id="line-289">     * @param supplier the supplier of the missing value</span>
+<span class="source-line-no">290</span><span id="line-290">     * @return the existing or supplied value</span>
+<span class="source-line-no">291</span><span id="line-291">     */</span>
+<span class="source-line-no">292</span><span id="line-292">    @SuppressWarnings("unchecked")</span>
+<span class="source-line-no">293</span><span id="line-293">    public &lt;T extends JsonElement&gt; T</span>
+<span class="source-line-no">294</span><span id="line-294">            computeIfAbsent(Object selector, Supplier&lt;T&gt; supplier) {</span>
+<span class="source-line-no">295</span><span id="line-295">        if (position instanceof JsonObject obj</span>
+<span class="source-line-no">296</span><span id="line-296">            &amp;&amp; selector instanceof String member) {</span>
+<span class="source-line-no">297</span><span id="line-297">            return Optional.ofNullable((T) obj.get(member)).orElseGet(() -&gt; {</span>
+<span class="source-line-no">298</span><span id="line-298">                var res = supplier.get();</span>
+<span class="source-line-no">299</span><span id="line-299">                obj.add(member, res);</span>
+<span class="source-line-no">300</span><span id="line-300">                return res;</span>
+<span class="source-line-no">301</span><span id="line-301">            });</span>
+<span class="source-line-no">302</span><span id="line-302">        }</span>
+<span class="source-line-no">303</span><span id="line-303">        if (position instanceof JsonArray arr</span>
+<span class="source-line-no">304</span><span id="line-304">            &amp;&amp; selector instanceof Integer index) {</span>
+<span class="source-line-no">305</span><span id="line-305">            if (index &gt;= arr.size()) {</span>
+<span class="source-line-no">306</span><span id="line-306">                var res = supplier.get();</span>
+<span class="source-line-no">307</span><span id="line-307">                arr.add(res);</span>
+<span class="source-line-no">308</span><span id="line-308">                return res;</span>
+<span class="source-line-no">309</span><span id="line-309">            }</span>
+<span class="source-line-no">310</span><span id="line-310">            return (T) arr.get(index);</span>
+<span class="source-line-no">311</span><span id="line-311">        }</span>
+<span class="source-line-no">312</span><span id="line-312">        throw new IllegalStateException("Invalid selection");</span>
 <span class="source-line-no">313</span><span id="line-313">    }</span>
 <span class="source-line-no">314</span><span id="line-314"></span>
-<span class="source-line-no">315</span><span id="line-315">}</span>
+<span class="source-line-no">315</span><span id="line-315">    /**</span>
+<span class="source-line-no">316</span><span id="line-316">     * Short for `computeIfAbsent(selector, () -&gt; new JsonPrimitive(value))`.</span>
+<span class="source-line-no">317</span><span id="line-317">     *</span>
+<span class="source-line-no">318</span><span id="line-318">     * @param selector the selector</span>
+<span class="source-line-no">319</span><span id="line-319">     * @param value the value</span>
+<span class="source-line-no">320</span><span id="line-320">     * @return the Gson pointer</span>
+<span class="source-line-no">321</span><span id="line-321">     */</span>
+<span class="source-line-no">322</span><span id="line-322">    public GsonPtr getOrSet(Object selector, String value) {</span>
+<span class="source-line-no">323</span><span id="line-323">        computeIfAbsent(selector, () -&gt; new JsonPrimitive(value));</span>
+<span class="source-line-no">324</span><span id="line-324">        return this;</span>
+<span class="source-line-no">325</span><span id="line-325">    }</span>
+<span class="source-line-no">326</span><span id="line-326"></span>
+<span class="source-line-no">327</span><span id="line-327">}</span>
 
 
 
