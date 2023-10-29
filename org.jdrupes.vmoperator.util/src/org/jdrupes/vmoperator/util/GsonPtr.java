@@ -32,7 +32,7 @@ import java.util.function.Supplier;
  * Utility class for pointing to elements on a Gson (Json) tree.
  */
 @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",
-    "PMD.ClassWithOnlyPrivateConstructorsShouldBeFinal" })
+    "PMD.ClassWithOnlyPrivateConstructorsShouldBeFinal", "PMD.GodClass" })
 public class GsonPtr {
 
     private final JsonElement position;
@@ -262,6 +262,18 @@ public class GsonPtr {
      * @see #set(Object, JsonElement)
      */
     public GsonPtr set(Object selector, String value) {
+        return set(selector, new JsonPrimitive(value));
+    }
+
+    /**
+     * Short for `set(selector, new JsonPrimitive(value))`.
+     *
+     * @param selector the selector
+     * @param value the value
+     * @return the gson ptr
+     * @see #set(Object, JsonElement)
+     */
+    public GsonPtr set(Object selector, BigInteger value) {
         return set(selector, new JsonPrimitive(value));
     }
 

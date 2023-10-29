@@ -56,6 +56,11 @@
 
 .jdrupes-vmoperator-vmconlet-view td {
   vertical-align: top;
+  
+  &[tabindex] {
+    outline: 1px solid var(--primary);
+    cursor: text;
+  }
 }
 
 .jdrupes-vmoperator-vmconlet-view td:not([colspan]):first-child {

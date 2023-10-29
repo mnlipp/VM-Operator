@@ -24,8 +24,10 @@ import freemarker.template.MalformedTemplateNameException;
 import freemarker.template.Template;
 import freemarker.template.TemplateNotFoundException;
 import io.kubernetes.client.custom.Quantity;
+import io.kubernetes.client.custom.Quantity.Format;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.time.Instant;
@@ -36,8 +38,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.jdrupes.json.JsonBeanDecoder;
 import org.jdrupes.json.JsonDecodeException;
-import org.jdrupes.vmoperator.manager.events.StartVm;
-import org.jdrupes.vmoperator.manager.events.StopVm;
+import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged.Type;
@@ -181,7 +182,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
      */
     @Handler(namedChannels = "manager")
     @SuppressWarnings({ "PMD.ConfusingTernary", "PMD.CognitiveComplexity",
-        "PMD.AvoidInstantiatingObjectsInLoops" })
+        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.AvoidDuplicateLiterals" })
     public void onVmDefChanged(VmDefChanged event, VmChannel channel)
             throws JsonDecodeException, IOException {
         if (event.type() == Type.DELETED) {
@@ -194,7 +195,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
                 }
             }
         } else {
-            var vmDef = updateVmDefs(event);
+            var vmDef = prepareForSending(event);
             var def = JsonBeanDecoder.create(vmDef.getRaw().toString())
                 .readObject();
             for (var entry : conletIdsByConsoleConnection().entrySet()) {
@@ -215,22 +216,26 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
         }
     }
 
-    private DynamicKubernetesObject updateVmDefs(VmDefChanged event) {
+    @SuppressWarnings("PMD.AvoidDuplicateLiterals")
+    private DynamicKubernetesObject prepareForSending(VmDefChanged event) {
+        // Clone and remove managed fields
         var vmDef = new DynamicKubernetesObject(
             event.vmDefinition().getRaw().deepCopy());
         GsonPtr.to(vmDef.getRaw()).to("metadata").get(JsonObject.class)
             .remove("managedFields");
+
+        // Convert RAM sizes to unitless numbers
         var vmSpec = GsonPtr.to(vmDef.getRaw()).to("spec", "vm");
         vmSpec.set("maximumRam", Quantity.fromString(
             vmSpec.getAsString("maximumRam").orElse("0")).getNumber()
-            .toBigInteger().toString());
+            .toBigInteger());
         vmSpec.set("currentRam", Quantity.fromString(
             vmSpec.getAsString("currentRam").orElse("0")).getNumber()
-            .toBigInteger().toString());
+            .toBigInteger());
         var status = GsonPtr.to(vmDef.getRaw()).to("status");
         status.set("ram", Quantity.fromString(
             status.getAsString("ram").orElse("0")).getNumber()
-            .toBigInteger().toString());
+            .toBigInteger());
         String vmName = event.vmDefinition().getMetadata().getName();
         vmInfos.put(vmName, vmDef);
         return vmDef;
@@ -336,17 +341,29 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
     }
 
     @Override
+    @SuppressWarnings("PMD.AvoidDecimalLiteralsInBigDecimalConstructor")
     protected void doUpdateConletState(NotifyConletModel event,
             ConsoleConnection channel, VmsModel conletState)
             throws Exception {
         event.stop();
         switch (event.method()) {
         case "start":
-            fire(new StartVm(event.params().asString(0),
+            fire(new ModifyVm(event.params().asString(0), "state", "Running",
                 new NamedChannel("manager")));
             break;
         case "stop":
-            fire(new StopVm(event.params().asString(0),
+            fire(new ModifyVm(event.params().asString(0), "state", "Stopped",
+                new NamedChannel("manager")));
+            break;
+        case "cpus":
+            fire(new ModifyVm(event.params().asString(0), "currentCpus",
+                new BigDecimal(event.params().asDouble(1)).toBigInteger(),
+                new NamedChannel("manager")));
+            break;
+        case "ram":
+            fire(new ModifyVm(event.params().asString(0), "currentRam",
+                new Quantity(new BigDecimal(event.params().asDouble(1)),
+                    Format.BINARY_SI).toSuffixedString(),
                 new NamedChannel("manager")));
             break;
         default:// ignore

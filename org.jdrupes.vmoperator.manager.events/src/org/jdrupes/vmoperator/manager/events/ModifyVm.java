@@ -22,22 +22,27 @@ import org.jgrapes.core.Channel;
 import org.jgrapes.core.Event;
 
 /**
- * Stops a VM.
+ * Modifies a VM.
  */
 @SuppressWarnings("PMD.DataClass")
-public class StopVm extends Event<Void> {
+public class ModifyVm extends Event<Void> {
 
     private final String name;
+    private final String path;
+    private final Object value;
 
     /**
-     * Instantiates a new start vm event.
+     * Instantiates a new modify vm event.
      *
      * @param channels the channels
      * @param name the name
      */
-    public StopVm(String name, Channel... channels) {
+    public ModifyVm(String name, String path, Object value,
+            Channel... channels) {
         super(channels);
         this.name = name;
+        this.path = path;
+        this.value = value;
     }
 
     /**
@@ -47,6 +52,24 @@ public class StopVm extends Event<Void> {
      */
     public String name() {
         return name;
+    }
+
+    /**
+     * Gets the path.
+     *
+     * @return the path
+     */
+    public String path() {
+        return path;
+    }
+
+    /**
+     * Gets the value.
+     *
+     * @return the value
+     */
+    public Object value() {
+        return value;
     }
 
 }

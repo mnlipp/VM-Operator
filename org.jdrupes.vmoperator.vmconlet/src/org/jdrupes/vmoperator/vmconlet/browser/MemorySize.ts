@@ -18,7 +18,7 @@
 
 let unitMap = new Map<string, number>();
 let unitMappings = new Array<{ key: string; value: number }>();
-let memorySize = /^\s*(\d+(\.\d+)?)\s*([A-Za-z]*)\s*/;
+let memorySize = /^(\d+(\.\d+)?)\s*(B|kB|MB|GB|TB|PB|EB|KiB|MiB|GiB|TiB|PiB|EiB)?$/;
 
 // SI units and common abbreviations
 let factor = 1;
@@ -49,4 +49,17 @@ export function formatMemory(size: number): string {
         }
     }
     return size.toString();
+}
+
+export function parseMemory(value: string): number | null {
+    let match = value.match(memorySize);
+    if (!match) {
+        return null;
+    }
+    
+    let unit = 1;
+    if (match[3]) {
+        unit = unitMap.get(match[3])!;
+    }
+    return Number(match[1]) * unit;   
 }

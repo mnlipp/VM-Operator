@@ -30,8 +30,7 @@ import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.common.K8s;
-import org.jdrupes.vmoperator.manager.events.StartVm;
-import org.jdrupes.vmoperator.manager.events.StopVm;
+import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
@@ -152,30 +151,18 @@ public class Controller extends Component {
     }
 
     /**
-     * On start vm.
+     * On modify vm.
      *
      * @param event the event
      * @throws ApiException the api exception
      * @throws IOException Signals that an I/O exception has occurred.
      */
     @Handler
-    public void onStartVm(StartVm event) throws ApiException, IOException {
-        patchRunning(event.name(), true);
+    public void onModigyVm(ModifyVm event) throws ApiException, IOException {
+        patchVmSpec(event.name(), event.path(), event.value());
     }
 
-    /**
-     * On stop vm.
-     *
-     * @param event the event
-     * @throws ApiException the api exception
-     * @throws IOException Signals that an I/O exception has occurred.
-     */
-    @Handler
-    public void onStopVm(StopVm event) throws ApiException, IOException {
-        patchRunning(event.name(), false);
-    }
-
-    private void patchRunning(String name, boolean running)
+    private void patchVmSpec(String name, String path, Object value)
             throws ApiException, IOException {
         var crApi = K8s.crApi(Config.defaultClient(), VM_OP_GROUP,
             VM_OP_KIND_VM, namespace, name);
@@ -188,12 +175,13 @@ public class Controller extends Component {
         // Patch running
         PatchOptions patchOpts = new PatchOptions();
         patchOpts.setFieldManager("kubernetes-java-kubectl-apply");
+        String valueAsText = value instanceof String
+            ? "\"" + value + "\""
+            : value.toString();
         var res = crApi.get().patch(namespace, name,
             V1Patch.PATCH_FORMAT_JSON_PATCH,
-            new V1Patch("[{\"op\": \"replace\", \"path\": "
-                + "\"/spec/vm/state\", "
-                + "\"value\": \"" + (running ? "Running" : "Stopped")
-                + "\"}]"),
+            new V1Patch("[{\"op\": \"replace\", \"path\": \"/spec/vm/"
+                + path + "\", \"value\": " + valueAsText + "}]"),
             patchOpts);
         if (!res.isSuccess()) {
             logger.warning(
