@@ -9,7 +9,9 @@ title: VM-Operator Web-GUI
 
 The manager component provides a GUI via a web server.
 
-![VM-Operator GUI](VM-Operator-GUI.png)
+![VM-Operator GUI](VM-Operator-GUI-preview.png)
+
+![VM-Operator GUI](VM-Operator-GUI-view.png)
 
 By default, the service is made available at port 8080 of the manager 
 pod. Of course, a kubernetes service and an ingress configuration must
