@@ -25,6 +25,7 @@ import l10nBundles from "l10nBundles";
 import TimeSeries from "./TimeSeries";
 import { formatMemory, parseMemory } from "./MemorySize";
 import CpuRamChart from "./CpuRamChart";
+import ConditionlInputController from "./ConditionalInputController";
 
 import "./VmConlet-style.scss";
 
@@ -128,54 +129,30 @@ window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
             const idScope = JGWC.createIdScope();
             const detailsByName = reactive(new Set());
             
-            const editing = ref<string>("");
-            const editors = ref(null);
-            
-            const startEdit = (key: string, value: any) => {
-                editing.value = key;
-                nextTick(() => {
-                    editors.value[0].value = value;
-                    editors.value[0].focus();
-                });
-            }
-
-            const parseNumber = (value: string): number | null => {
-                if (value.match(/^\d+$/)) {
-                    return Number(value);
+            const submitCallback = (selected: string, value: any) => {
+                if (value === null) {
+                    return localize("Illegal format");
                 }
+                let vmName = selected.substring(0, selected.lastIndexOf(":"));
+                let property = selected.substring(selected.lastIndexOf(":") + 1);
+                var vmDef = vmInfos.get(vmName);
+                let maxValue = vmDef.spec.vm["maximum" 
+                    + property.substring(0, 1).toUpperCase() + property.substring(1)];
+                if (value > maxValue) {
+                    return localize("Value is above maximum");
+                }
+                JGConsole.notifyConletModel(conletId, property, vmName, value);
                 return null;
             }
 
-            const endEdit = (converter?: (value: string) => number) => {
-                if (typeof converter === 'undefined') {
-                    editing.value = "";
-                    return;
-                }
-                let newValue = converter(editors.value[0].value);
-                if (!newValue) {
-                    return;
-                }
-                let vmName = editing.value
-                    .substr(0, editing.value.lastIndexOf(":"));
-                let property = editing.value
-                    .substr(editing.value.lastIndexOf(":") + 1);
-                var vmDef = vmInfos.get(vmName);
-                let maxValue = vmDef.spec.vm["maximum" 
-                    + property.substr(0, 1).toUpperCase() + property.substr(1)];
-                if (newValue > maxValue) {
-                    return;
-                }
-                editing.value = "";
-                JGConsole.notifyConletModel(conletId, 
-                    property, vmName, newValue);
-                // In case it is called by form action
-                return false;
-            }
+            const cicInput = ref(null);
+            const cic = reactive
+                (new ConditionlInputController(cicInput, submitCallback));
 
             return {
                 controller, vmInfos, filteredData, detailsByName, localize, 
-                shortDateTime, formatMemory, vmAction, 
-                editing, startEdit, endEdit, editors, parseNumber, parseMemory,
+                shortDateTime, formatMemory, vmAction, cicInput, cic, 
+                parseMemory,
                 scopedId: (id: string) => { return idScope.scopedId(id); }
             };
         }

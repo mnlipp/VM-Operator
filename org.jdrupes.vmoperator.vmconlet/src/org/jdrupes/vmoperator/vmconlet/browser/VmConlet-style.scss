@@ -85,4 +85,11 @@
             }
         }
     }
+    
+    td.details {
+        input ~ span {
+            margin-left: 0.5em;
+            color: var(--danger);
+        }
+    }
 }

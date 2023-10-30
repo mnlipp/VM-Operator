@@ -74,17 +74,15 @@
               </tr>
               <tr>
                 <td>{{ localize("requestedCpus") }}</td>
-                <td v-if="editing !== (entry['name'] + ':cpus')" tabindex="0"
-                   v-on:focus="startEdit(entry['name'] + ':cpus', entry.spec.vm.currentCpus)"
-                   v-on:click="startEdit(entry['name'] + ':cpus', entry.spec.vm.currentCpus)"
+                <td v-if="cic.key !== (entry['name'] + ':cpus')" tabindex="0"
+                   v-on:focus="cic.startEdit(entry['name'] + ':cpus', entry.spec.vm.currentCpus)"
                   >{{ entry.spec.vm.currentCpus }}</td>
-                <td v-else><form action="javascript:void(0);"
-                  ><input size="4" ref="editors"
+                <td v-else><form action="javascript:void();"
+                  ><input size="4" ref="cicInput"
                    type="number" :max="entry.spec.vm.maximumCpus"
-                   v-on:keypress.enter="endEdit(parseNumber)"
-                   v-on:keydown.escape="endEdit()"
-                   v-on:blur="endEdit()"
-                  ></form></td>
+                   v-on:focusout="cic.endEdit(cic.parseNumber)"
+                   v-on:keydown.escape="cic.endEdit()"
+                  ><span>{{ cic.error }}</span></form></td>
               </tr>
               <tr>
                 <td>{{ localize("maximumRam") }}</td>
@@ -92,17 +90,15 @@
               </tr>
               <tr>
                 <td>{{ localize("requestedRam") }}</td>
-                <td v-if="editing !== (entry['name'] + ':ram')" tabindex="0"
+                <td v-if="cic.key !== (entry['name'] + ':ram')" tabindex="0"
                    :set="formatted = formatMemory(entry.spec.vm.currentRam)"
-                   v-on:focus="startEdit(entry['name'] + ':ram', formatted)"
-                   v-on:click="startEdit(entry['name'] + ':ram', formatted)"
+                   v-on:focus="cic.startEdit(entry['name'] + ':ram', formatted)"
                 >{{ formatted }}</td>
                 <td v-else><form action="javascript:void(0);"
-                  ><input size="7" ref="editors" type="text" required
-                   v-on:keypress.enter="endEdit(parseMemory)"
-                   v-on:keydown.escape="endEdit()"
-                   v-on:blur="endEdit()"
-                  ></form></td>
+                  ><input size="7" ref="cicInput" type="text" required
+                   v-on:focusout="cic.endEdit(parseMemory)"
+                   v-on:keydown.escape="cic.endEdit()"
+                  ><span>{{ cic.error }}</span></form></td>
               </tr>
             </table>
           </td>
