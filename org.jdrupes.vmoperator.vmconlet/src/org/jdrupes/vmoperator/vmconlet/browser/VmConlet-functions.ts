@@ -145,13 +145,11 @@ window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
                 return null;
             }
 
-            const cicInput = ref(null);
-            const cic = new ConditionlInputController(cicInput, submitCallback);
+            const cic = new ConditionlInputController(submitCallback);
 
             return {
                 controller, vmInfos, filteredData, detailsByName, localize, 
-                shortDateTime, formatMemory, vmAction, cicInput, cic, 
-                parseMemory,
+                shortDateTime, formatMemory, vmAction, cic, parseMemory,
                 scopedId: (id: string) => { return idScope.scopedId(id); }
             };
         }

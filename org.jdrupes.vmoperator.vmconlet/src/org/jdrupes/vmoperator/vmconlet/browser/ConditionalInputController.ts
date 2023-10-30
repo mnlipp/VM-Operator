@@ -29,17 +29,14 @@ export default class ConditionlInputController {
     private submitCallback: (selected: string, value: any) => string | null;
     private readonly inputKey = ref("");
     private startValue: any;
-    private inputRef: Ref<HTMLInputElement> | Ref<Array<HTMLInputElement>>;
+    private inputElement: HTMLInputElement | null = null;
     private errorMessage = ref("");
 
     /**
-     * Creates a new controller. The ref to the displayed element cannot
-     * be provided by this object, because binding a `HTMLInputElement` 
-     * to a ref works only if the ref is directly defined in the setup.
+     * Creates a new controller.
      */
-    constructor(inputRef: Ref<HTMLInputElement> | Ref<Array<HTMLInputElement>>,
-        submitCallback: (selected: string, value: string) => string | null) {
-        this.inputRef = inputRef;
+    constructor(submitCallback: (selected: string, value: string) => string | null) {
+        // this.inputRef = inputRef;
         this.submitCallback = submitCallback;
     }
     
@@ -51,13 +48,10 @@ export default class ConditionlInputController {
         return this.errorMessage.value;
     }
 
-    private element(): HTMLInputElement {
-        if (this.inputRef.value instanceof Array) {
-            return this.inputRef.value[0];
-        }
-        return this.inputRef.value;
+    set input(element: HTMLInputElement) {
+        this.inputElement = element;
     }
-  
+
     startEdit (key: string, value: any) {
         if (this.inputKey.value != "") {
             return;
@@ -66,8 +60,8 @@ export default class ConditionlInputController {
         this.errorMessage.value = "";
         this.inputKey.value = key;
         nextTick(() => {
-            this.element().value = value;
-            this.element().focus();
+            this.inputElement!.value = value;
+            this.inputElement!.focus();
         });
     }
 
@@ -76,7 +70,7 @@ export default class ConditionlInputController {
             this.inputKey.value = "";
             return false;
         }
-        let newValue = converter(this.element().value);
+        let newValue = converter(this.inputElement!.value);
         if (newValue === this.startValue) {
             this.inputKey.value = "";
             return false;
@@ -85,7 +79,7 @@ export default class ConditionlInputController {
         if (submitResult !== null) {
             this.errorMessage.value = submitResult;
             // Neither doing it directly nor doing it with nextTick works.
-            setTimeout(() => this.element().focus(), 10);
+            setTimeout(() => this.inputElement!.focus(), 10);
         } else {
             this.inputKey.value = "";
         }
