@@ -135,6 +135,7 @@ public class Manager extends Component {
         console.attach(new BrowserLocalBackedKVStore(
             console.channel(), consoleWeblet.prefix().getPath()));
         console.attach(new KVStoreBasedConsolePolicy(console.channel()));
+        console.attach(new AvoidEmptyPolicy(console.channel()));
         console.attach(new RoleConfigurator(console.channel()));
         console.attach(new RoleConletFilter(console.channel()));
         console.attach(new LoginConlet(console.channel()));
