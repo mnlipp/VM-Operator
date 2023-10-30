@@ -28,6 +28,7 @@ export default class ConditionlInputController {
 
     private submitCallback: (selected: string, value: any) => string | null;
     private readonly inputKey = ref("");
+    private startValue: any;
     private inputRef: Ref<HTMLInputElement> | Ref<Array<HTMLInputElement>>;
     private errorMessage = ref("");
 
@@ -61,6 +62,7 @@ export default class ConditionlInputController {
         if (this.inputKey.value != "") {
             return;
         }
+        this.startValue = value;
         this.errorMessage.value = "";
         this.inputKey.value = key;
         nextTick(() => {
@@ -69,12 +71,16 @@ export default class ConditionlInputController {
         });
     }
 
-    endEdit (converter?: (value: string) => any | null) {
+    endEdit (converter?: (value: string) => any | null) : boolean {
         if (typeof converter === 'undefined') {
             this.inputKey.value = "";
-            return null;
+            return false;
         }
         let newValue = converter(this.element().value);
+        if (newValue === this.startValue) {
+            this.inputKey.value = "";
+            return false;
+        }
         let submitResult = this.submitCallback (this.inputKey.value, newValue);
         if (submitResult !== null) {
             this.errorMessage.value = submitResult;
