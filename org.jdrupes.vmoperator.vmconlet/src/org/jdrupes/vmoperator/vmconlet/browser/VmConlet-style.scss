@@ -47,7 +47,7 @@
 }
 
 .jdrupes-vmoperator-vmconlet-view-action-list {
-    white-space: nowrap;
+  white-space: nowrap;
 }
 
 .jdrupes-vmoperator-vmconlet-view-action-list [role=button]:not(:last-child) {
@@ -64,32 +64,43 @@
 }
 
 .jdrupes-vmoperator-vmconlet-view td:not([colspan]):first-child {
-    white-space: nowrap;
+  white-space: nowrap;
 }
 
 .jdrupes-vmoperator-vmconlet-view table td.details {
-    padding-left: 1em;
+  padding-left: 1em;
 }
 
-.jdrupes-vmoperator-vmconlet-view-table  {
-    td.column-running {
-        text-align: center;
+.jdrupes-vmoperator-vmconlet-view-table {
+  td.column-running {
+    text-align: center;
 
-        span {
-            &.fa-check {
-                color: var(--success);
-            }
+    span {
+      &.fa-check {
+        color: var(--success);
+      }
 
-            &.fa-close {
-                color: var(--danger);
-            }
-        }
+      &.fa-close {
+        color: var(--danger);
+      }
     }
-    
-    td.details {
-        input ~ span {
-            margin-left: 0.5em;
-            color: var(--danger);
-        }
+  }
+
+  td.details {
+    table {
+      
+      td:nth-child(2) {
+        min-width: 7em;
+
+        input {
+          max-width: 5em;
+        }  
+      }
+      
+      input~span {
+        margin-left: 0.5em;
+        color: var(--danger);
+      }
     }
+  }
 }

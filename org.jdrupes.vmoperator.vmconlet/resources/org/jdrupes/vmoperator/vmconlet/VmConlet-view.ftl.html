@@ -78,7 +78,7 @@
                    v-on:focus="cic.startEdit(entry['name'] + ':cpus', entry.spec.vm.currentCpus)"
                   >{{ entry.spec.vm.currentCpus }}</td>
                 <td v-else><form action="javascript:void();"
-                  ><input size="4" :ref="(el) => { cic.input = el; }"
+                  ><input :ref="(el) => { cic.input = el; }"
                    type="number" required :max="entry.spec.vm.maximumCpus"
                    v-on:focusout="cic.endEdit(cic.parseNumber)"
                    v-on:keydown.escape="cic.endEdit()"
@@ -94,7 +94,7 @@
                    v-on:focus="cic.startEdit(entry['name'] + ':ram', formatMemory(entry.spec.vm.currentRam))"
                 >{{ formatMemory(entry.spec.vm.currentRam) }}</td>
                 <td v-else><form action="javascript:void(0);"
-                  ><input size="7"  :ref="(el) => { cic.input = el; }"
+                  ><input :ref="(el) => { cic.input = el; }"
                    type="text" required
                    v-on:focusout="cic.endEdit(parseMemory)"
                    v-on:keydown.escape="cic.endEdit()"
