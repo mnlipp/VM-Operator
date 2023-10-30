@@ -27,42 +27,42 @@ import { ref, Ref, nextTick } from "vue";
 export default class ConditionlInputController {
 
     private submitCallback: (selected: string, value: any) => string | null;
-    private inputKey = "";
+    private readonly inputKey = ref("");
     private inputRef: Ref<HTMLInputElement> | Ref<Array<HTMLInputElement>>;
-    private errorMessage: string = "";
+    private errorMessage = ref("");
 
     /**
      * Creates a new controller. The ref to the displayed element cannot
      * be provided by this object, because binding a `HTMLInputElement` 
      * to a ref works only if the ref is directly defined in the setup.
-     */    
+     */
     constructor(inputRef: Ref<HTMLInputElement> | Ref<Array<HTMLInputElement>>,
         submitCallback: (selected: string, value: string) => string | null) {
         this.inputRef = inputRef;
         this.submitCallback = submitCallback;
     }
     
-    private element(): HTMLInputElement {
-        if (this.inputRef instanceof Array) {
-            return this.inputRef[0];
-        }
-        return this.inputRef!;
-    }
-  
     get key() {
-        return this.inputKey;
+        return this.inputKey.value;
     }
 
     get error() {
-        return this.errorMessage;
+        return this.errorMessage.value;
+    }
+
+    private element(): HTMLInputElement {
+        if (this.inputRef.value instanceof Array) {
+            return this.inputRef.value[0];
+        }
+        return this.inputRef.value;
     }
   
     startEdit (key: string, value: any) {
-        if (this.inputKey != "") {
+        if (this.inputKey.value != "") {
             return;
         }
-        this.errorMessage = "";
-        this.inputKey = key;
+        this.errorMessage.value = "";
+        this.inputKey.value = key;
         nextTick(() => {
             this.element().value = value;
             this.element().focus();
@@ -71,16 +71,17 @@ export default class ConditionlInputController {
 
     endEdit (converter?: (value: string) => any | null) {
         if (typeof converter === 'undefined') {
-            this.inputKey = "";
+            this.inputKey.value = "";
             return null;
         }
         let newValue = converter(this.element().value);
-        let submitResult = this.submitCallback (this.inputKey, newValue);
+        let submitResult = this.submitCallback (this.inputKey.value, newValue);
         if (submitResult !== null) {
-            this.errorMessage = submitResult;
+            this.errorMessage.value = submitResult;
+            // Neither doing it directly nor doing it with nextTick works.
             setTimeout(() => this.element().focus(), 10);
         } else {
-            this.inputKey = "";
+            this.inputKey.value = "";
         }
         
         // In case it is called by form action

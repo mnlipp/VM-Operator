@@ -146,8 +146,7 @@ window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
             }
 
             const cicInput = ref(null);
-            const cic = reactive
-                (new ConditionlInputController(cicInput, submitCallback));
+            const cic = new ConditionlInputController(cicInput, submitCallback);
 
             return {
                 controller, vmInfos, filteredData, detailsByName, localize, 
