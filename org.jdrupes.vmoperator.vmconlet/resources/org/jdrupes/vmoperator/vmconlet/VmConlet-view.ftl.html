@@ -91,9 +91,8 @@
               <tr>
                 <td>{{ localize("requestedRam") }}</td>
                 <td v-if="cic.key !== (entry['name'] + ':ram')" tabindex="0"
-                   :set="formatted = formatMemory(entry.spec.vm.currentRam)"
-                   v-on:focus="cic.startEdit(entry['name'] + ':ram', formatted)"
-                >{{ formatted }}</td>
+                   v-on:focus="cic.startEdit(entry['name'] + ':ram', formatMemory(entry.spec.vm.currentRam))"
+                >{{ formatMemory(entry.spec.vm.currentRam) }}</td>
                 <td v-else><form action="javascript:void(0);"
                   ><input size="7" ref="cicInput" type="text" required
                    v-on:focusout="cic.endEdit(parseMemory)"
