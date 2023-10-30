@@ -8,7 +8,7 @@
         "jsdoc": "^4.0.2",
         "node-sass": "^9.0.0",
         "npm": "^8.11.0",
-        "rollup": "^3.17.2",
+        "rollup": "^4.1.5",
         "rollup-plugin-peer-deps-external": "^2.2.3",
         "rollup-plugin-postcss": "^4.0.2",
         "rollup-plugin-typescript2": "^0.36.0",

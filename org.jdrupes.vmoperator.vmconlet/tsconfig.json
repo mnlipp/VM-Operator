@@ -15,7 +15,8 @@
       "jgconsole": ["./build/unpacked/org/jgrapes/webconsole/base/JGConsole"],
       "jgwc": ["./build/unpacked/org/jgrapes/webconsole/provider/jgwcvuecomponents/jgwc-vue-components/jgwc-components"],
       "l10nBundles": ["./src/org/jdrupes/vmoperator/vmconlet/browser/l10nBundles-stub"],
-      "vue": ["./build/unpacked/org/jgrapes/webconsole/provider/vue/vue/vue"]
+      "vue": ["./build/unpacked/org/jgrapes/webconsole/provider/vue/vue/vue"],
+      "chartjs": ["./build/unpacked/org/jgrapes/webconsole/provider/chartjs/chart.js/auto/auto"]
     }
   },
   "include": ["src/**/*.ts"],

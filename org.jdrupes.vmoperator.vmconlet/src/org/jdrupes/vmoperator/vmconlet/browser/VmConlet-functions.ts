@@ -16,50 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { reactive, ref, createApp, computed, onMounted } from "vue";
+import {
+    reactive, ref, Ref, createApp, computed, onMounted, watch, nextTick
+} from "vue";
 import JGConsole from "jgconsole";
 import JgwcPlugin, { JGWC } from "jgwc";
-import { provideApi, getApi } from "aash-plugin";
 import l10nBundles from "l10nBundles";
+import TimeSeries from "./TimeSeries";
+import { formatMemory, parseMemory } from "./MemorySize";
+import CpuRamChart from "./CpuRamChart";
+import ConditionlInputController from "./ConditionalInputController";
 
 import "./VmConlet-style.scss";
-
-//
-// Helpers
-//
-let unitMap = new Map<string, bigint>();
-let unitMappings = new Array<{ key: string; value: bigint }>();
-let memorySize = /^\\s*(\\d+(\\.\\d+)?)\\s*([A-Za-z]*)\\s*/;
-
-// SI units and common abbreviations
-let factor = BigInt("1");
-unitMap.set("", factor);
-let scale = BigInt("1000");
-for (let unit of ["B", "kB", "MB", "GB", "TB", "PB", "EB"]) {
-    unitMap.set(unit, factor);
-    factor = factor * scale;
-}
-// Binary units
-factor = BigInt("1024");
-scale = BigInt("1024");
-for (let unit of ["KiB", "MiB", "GiB", "TiB", "PiB", "EiB"]) {
-    unitMap.set(unit, factor);
-    factor = factor * scale;
-}
-unitMap.forEach((value: bigint, key: string) => {
-    unitMappings.push({ key, value });
-});
-unitMappings.sort((a, b) => a.value < b.value ? 1 : a.value > b.value ? -1 : 0);
-
-function formatMemory(size: bigint): string {
-    for (let mapping of unitMappings) {
-        if (size >= mapping.value
-            && (size % mapping.value) === BigInt("0")) {
-            return (size / mapping.value + " " + mapping.key).trim();
-        }
-    }
-    return size.toString();
-}
 
 // For global access
 declare global {
@@ -71,14 +39,64 @@ declare global {
 window.orgJDrupesVmOperatorVmConlet = {};
 
 let vmInfos = reactive(new Map());
+let vmSummary = reactive({
+    totalVms: 0,
+    runningVms: 0,
+    usedCpus: 0,
+    usedRam: ""
+});
 
-window.orgJDrupesVmOperatorVmConlet.initPreview
-    = (previewDom: HTMLElement, _isUpdate: boolean) => {
-        const app = createApp({});
-        app.use(JgwcPlugin, []);
-        app.config.globalProperties.window = window;
-        app.mount(previewDom);
-    };
+const localize = (key: string) => {
+    return JGConsole.localize(
+        l10nBundles, JGWC.lang(), key);
+};
+
+const shortDateTime = (time: Date) => {
+    // https://stackoverflow.com/questions/63958875/why-do-i-get-rangeerror-date-value-is-not-finite-in-datetimeformat-format-w
+    return new Intl.DateTimeFormat(JGWC.lang(),
+        { dateStyle: "short", timeStyle: "short" }).format(new Date(time));
+};
+
+// Cannot be reactive, leads to infinite recursion.
+let chartData = new TimeSeries(2);
+let chartDateUpdate = ref<Date>(null);
+
+window.orgJDrupesVmOperatorVmConlet.initPreview = (previewDom: HTMLElement,
+    _isUpdate: boolean) => {
+    const app = createApp({
+        setup(_props: any) {
+            const conletId: string
+                = (<HTMLElement>previewDom.parentNode!).dataset["conletId"]!;
+
+            let chart: CpuRamChart | null = null;
+            onMounted(() => {
+                let canvas: HTMLCanvasElement
+                    = previewDom.querySelector(":scope .vmsChart")!;
+                chart = new CpuRamChart(canvas, chartData);
+            })
+
+            watch(chartDateUpdate, (_) => {
+                chart?.update();
+            })
+
+            watch(JGWC.langRef(), (_) => {
+                chart?.localizeChart();
+            })
+
+            const period: Ref<string> = ref<string>("day");
+            
+            watch(period, (_) => { 
+                let hours = (period.value === "day") ? 24 : 1;
+                chart?.setPeriod(hours * 3600 * 1000);
+            });
+
+            return { localize, formatMemory, vmSummary, period };
+        }
+    });
+    app.use(JgwcPlugin, []);
+    app.config.globalProperties.window = window;
+    app.mount(previewDom);
+};
 
 window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
     _isUpdate: boolean) => {
@@ -87,14 +105,10 @@ window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
             const conletId: string
                 = (<HTMLElement>viewDom.parentNode!).dataset["conletId"]!;
 
-            const localize = (key: string) => {
-                return JGConsole.localize(
-                    l10nBundles, JGWC.lang() || "en", key);
-            };
-
             const controller = reactive(new JGConsole.TableController([
                 ["name", "vmname"],
                 ["running", "running"],
+                ["runningConditionSince", "since"],
                 ["currentCpus", "currentCpus"],
                 ["currentRam", "currentRam"],
                 ["nodeName", "nodeName"]
@@ -114,12 +128,30 @@ window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
 
             const idScope = JGWC.createIdScope();
             const detailsByName = reactive(new Set());
+            
+            const submitCallback = (selected: string, value: any) => {
+                if (value === null) {
+                    return localize("Illegal format");
+                }
+                let vmName = selected.substring(0, selected.lastIndexOf(":"));
+                let property = selected.substring(selected.lastIndexOf(":") + 1);
+                var vmDef = vmInfos.get(vmName);
+                let maxValue = vmDef.spec.vm["maximum" 
+                    + property.substring(0, 1).toUpperCase() + property.substring(1)];
+                if (value > maxValue) {
+                    return localize("Value is above maximum");
+                }
+                JGConsole.notifyConletModel(conletId, property, vmName, value);
+                return null;
+            }
+
+            const cic = new ConditionlInputController(submitCallback);
 
             return {
-                controller, vmInfos, filteredData, detailsByName,
-                localize, formatMemory, vmAction,
+                controller, vmInfos, filteredData, detailsByName, localize, 
+                shortDateTime, formatMemory, vmAction, cic, parseMemory,
                 scopedId: (id: string) => { return idScope.scopedId(id); }
-            }
+            };
         }
     });
     app.use(JgwcPlugin);
@@ -132,14 +164,15 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
         // Add some short-cuts for table controller
         vmDefinition.name = vmDefinition.metadata.name;
         vmDefinition.currentCpus = vmDefinition.status.cpus;
-        vmDefinition.currentRam = BigInt(vmDefinition.status.ram);
+        vmDefinition.currentRam = Number(vmDefinition.status.ram);
         for (let condition of vmDefinition.status.conditions) {
             if (condition.type === "Running") {
                 vmDefinition.running = condition.status === "True";
+                vmDefinition.runningConditionSince 
+                    = new Date(condition.lastTransitionTime);
                 break;
             }
         }
-
         vmInfos.set(vmDefinition.name, vmDefinition);
     });
 
@@ -147,3 +180,22 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
     "removeVm", function(_conletId: String, vmName: String) {
         vmInfos.delete(vmName);
     });
+
+JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
+    "summarySeries", function(_conletId: String, series: any[]) {
+        chartData.clear();
+        for (let entry of series) {
+            chartData.push(new Date(entry.time.epochSecond * 1000
+                + entry.time.nano / 1000000),
+                entry.values[0], entry.values[1]);
+        }
+        chartDateUpdate.value = new Date();
+});
+
+JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
+    "updateSummary", function(_conletId: String, summary: any) {
+        chartData.push(new Date(), summary.usedCpus, Number(summary.usedRam));
+        chartDateUpdate.value = new Date();
+        Object.assign(vmSummary, summary);
+});
+

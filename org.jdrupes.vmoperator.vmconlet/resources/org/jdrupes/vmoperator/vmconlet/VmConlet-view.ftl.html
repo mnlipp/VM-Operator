@@ -44,8 +44,10 @@
               class="fa fa-check" :title="localize('Yes')"></span>
             <span v-else-if="key === 'running' && !entry[key]"
               class="fa fa-close" :title="localize('No')"></span>
+            <span v-else-if="key === 'runningConditionSince'"
+              >{{ shortDateTime(entry[key].toString()) }}</span>
             <span v-else-if="key === 'currentRam'"
-              v-html="formatMemory(entry[key])"></span>
+              >{{ formatMemory(entry[key]) }}</span>
             <span v-else
               v-html="controller.breakBeforeDots(entry[key])"></span>
           </td>
@@ -64,7 +66,7 @@
         </tr>
         <tr :id="scopedId(rowIndex)" v-if="$aash.isDisclosed(scopedId(rowIndex))"
           :class="[(rowIndex % 2) ? 'odd' : 'even']">
-          <td colspan="4" class="details">
+          <td colspan="6" class="details">
             <table class="table--basic table--basic--autoStriped">
               <tr>
                 <td>{{ localize("maximumCpus") }}</td>
@@ -72,15 +74,31 @@
               </tr>
               <tr>
                 <td>{{ localize("requestedCpus") }}</td>
-                <td>{{ entry.spec.vm.maximumCpus }}</td>
+                <td v-if="cic.key !== (entry['name'] + ':cpus')" tabindex="0"
+                   v-on:focus="cic.startEdit(entry['name'] + ':cpus', entry.spec.vm.currentCpus)"
+                  >{{ entry.spec.vm.currentCpus }}</td>
+                <td v-else><form action="javascript:void();"
+                  ><input :ref="(el) => { cic.input = el; }"
+                   type="number" required :max="entry.spec.vm.maximumCpus"
+                   v-on:focusout="cic.endEdit(cic.parseNumber)"
+                   v-on:keydown.escape="cic.endEdit()"
+                  ><span>{{ cic.error }}</span></form></td>
               </tr>
               <tr>
                 <td>{{ localize("maximumRam") }}</td>
-                <td>{{ formatMemory(BigInt(entry.spec.vm.maximumRam)) }}</td>
+                <td>{{ formatMemory(Number(entry.spec.vm.maximumRam)) }}</td>
               </tr>
               <tr>
                 <td>{{ localize("requestedRam") }}</td>
-                <td>{{ formatMemory(BigInt(entry.spec.vm.maximumRam)) }}</td>
+                <td v-if="cic.key !== (entry['name'] + ':ram')" tabindex="0"
+                   v-on:focus="cic.startEdit(entry['name'] + ':ram', formatMemory(entry.spec.vm.currentRam))"
+                >{{ formatMemory(entry.spec.vm.currentRam) }}</td>
+                <td v-else><form action="javascript:void(0);"
+                  ><input :ref="(el) => { cic.input = el; }"
+                   type="text" required
+                   v-on:focusout="cic.endEdit(parseMemory)"
+                   v-on:keydown.escape="cic.endEdit()"
+                  ><span>{{ cic.error }}</span></form></td>
               </tr>
             </table>
           </td>

@@ -34,6 +34,37 @@ patches:
             "/Reconciler":
               runnerData:
                 storageClassName: null
+          "/GuiSocketServer":
+            port: 8888
+          "/GuiHttpServer":
+            # This configures the GUI
+            "/ConsoleWeblet":
+              "/WebConsole":
+                "/LoginConlet":
+                  users:
+                    admin:
+                      fullName: Administrator
+                      password: "$2b$05$NiBd74ZGdplLC63ePZf1f.UtjMKkbQ23cQoO2OKOFalDBHWAOy21."
+                    test:
+                      fullName: Test Account
+                      password: "$2b$05$hZaI/jToXf/d3BctZdT38Or7H7h6Pn2W3WiB49p5AyhDHFkkYCvo2"
+                "/RoleConfigurator":
+                  rolesByUser:
+                    # User admin has role admin
+                    admin:
+                    - admin
+                    # All users have role other
+                    "*":
+                    - other
+                  replace: false
+                "/RoleConletFilter":
+                  conletTypesByRole:
+                    # Admins can use all conlets
+                    admin:
+                    - "*"
+                    # Others cannot use any conlet (except login conlet to log out)
+                    other:
+                    - org.jgrapes.webconlet.locallogin.LoginConlet
 
 - target:
     group: apps

@@ -23,6 +23,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import java.math.BigInteger;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -30,7 +32,7 @@ import java.util.function.Supplier;
  * Utility class for pointing to elements on a Gson (Json) tree.
  */
 @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",
-    "PMD.ClassWithOnlyPrivateConstructorsShouldBeFinal" })
+    "PMD.ClassWithOnlyPrivateConstructorsShouldBeFinal", "PMD.GodClass" })
 public class GsonPtr {
 
     private final JsonElement position;
@@ -210,6 +212,21 @@ public class GsonPtr {
     }
 
     /**
+     * Returns the elements of the selected {@link JsonArray} as list.
+     *
+     * @param <T> the generic type
+     * @param cls the cls
+     * @param selectors the selectors
+     * @return the list
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends JsonElement> List<T> getAsListOf(Class<T> cls,
+            Object... selectors) {
+        return get(JsonArray.class, selectors).map(a -> (List<T>) a.asList())
+            .orElse(Collections.emptyList());
+    }
+
+    /**
      * Sets the selected value. This pointer must point to a
      * {@link JsonObject} or {@link JsonArray}. The selector must
      * be a {@link String} or an integer respectively.
@@ -245,6 +262,18 @@ public class GsonPtr {
      * @see #set(Object, JsonElement)
      */
     public GsonPtr set(Object selector, String value) {
+        return set(selector, new JsonPrimitive(value));
+    }
+
+    /**
+     * Short for `set(selector, new JsonPrimitive(value))`.
+     *
+     * @param selector the selector
+     * @param value the value
+     * @return the gson ptr
+     * @see #set(Object, JsonElement)
+     */
+    public GsonPtr set(Object selector, BigInteger value) {
         return set(selector, new JsonPrimitive(value));
     }
 

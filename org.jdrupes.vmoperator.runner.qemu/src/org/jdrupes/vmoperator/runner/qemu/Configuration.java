@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import org.jdrupes.vmoperator.common.Convertions;
 import org.jdrupes.vmoperator.util.Dto;
 import org.jdrupes.vmoperator.util.FsdUtils;
@@ -272,7 +273,7 @@ public class Configuration implements Dto {
     private boolean checkRuntimeDir() {
         // Runtime directory (sockets etc.)
         if (runtimeDir == null) {
-            var appDir = FsdUtils.runtimeDir(Runner.APP_NAME.replace("-", ""));
+            var appDir = FsdUtils.runtimeDir(APP_NAME.replace("-", ""));
             if (!Files.exists(appDir) && appDir.toFile().mkdirs()) {
                 try {
                     // When appDir is derived from XDG_RUNTIME_DIR
@@ -288,7 +289,7 @@ public class Configuration implements Dto {
                         runtimeDir));
                 }
             }
-            runtimeDir = FsdUtils.runtimeDir(Runner.APP_NAME.replace("-", ""))
+            runtimeDir = FsdUtils.runtimeDir(APP_NAME.replace("-", ""))
                 .resolve(vm.name);
             runtimeDir.toFile().mkdir();
             swtpmSocket = runtimeDir.resolve("swtpm-sock");
@@ -308,8 +309,8 @@ public class Configuration implements Dto {
     private boolean checkDataDir() {
         // Data directory
         if (dataDir == null) {
-            dataDir = FsdUtils.dataHome(Runner.APP_NAME.replace("-", ""))
-                .resolve(vm.name);
+            dataDir
+                = FsdUtils.dataHome(APP_NAME.replace("-", "")).resolve(vm.name);
         }
         if (!Files.exists(dataDir)) {
             dataDir.toFile().mkdirs();
