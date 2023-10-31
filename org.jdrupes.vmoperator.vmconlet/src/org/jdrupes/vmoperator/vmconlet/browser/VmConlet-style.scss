@@ -40,24 +40,16 @@
 .jdrupes-vmoperator-vmconlet-view-search {
   display: flex; 
   justify-content: flex-end
+  
+  form {
+    white-space: nowrap;
+  }
 }
 
-.jdrupes-vmoperator-vmconlet-view-search form {
-  white-space: nowrap;
-}
-
-.jdrupes-vmoperator-vmconlet-view-action-list {
-  white-space: nowrap;
-}
-
-.jdrupes-vmoperator-vmconlet-view-action-list [role=button]:not(:last-child) {
-  margin-right: 0.5em;
-}
-
-.jdrupes-vmoperator-vmconlet-view {
+.jdrupes-vmoperator-vmconlet-view-table {
   td {
     vertical-align: top;
-  
+
     &[tabindex] {
       outline: 1px solid var(--primary);
       cursor: text;
@@ -66,29 +58,25 @@
     &:not([colspan]):first-child {
       white-space: nowrap;
     }
-  }
-  
-  table td.details {
-    padding-left: 1em;
-  }
-}
 
-.jdrupes-vmoperator-vmconlet-view-table {
-  td.column-running {
-    text-align: center;
+    &.column-running {
+      text-align: center;
 
-    span {
-      &.fa-check {
-        color: var(--success);
-      }
+      span {
+        &.fa-check {
+          color: var(--success);
+        }
 
-      &.fa-close {
-        color: var(--danger);
+        &.fa-close {
+          color: var(--danger);
+        }
       }
     }
   }
-
+  
   td.details {
+    padding-left: 1em;
+
     table {
       td:nth-child(2) {
         min-width: 7em;
@@ -103,5 +91,13 @@
         color: var(--danger);
       }
     }
+  }
+}
+
+.jdrupes-vmoperator-vmconlet-view-action-list {
+  white-space: nowrap;
+
+  [role=button]:not(:last-child) {
+    margin-right: 0.5em;
   }
 }
