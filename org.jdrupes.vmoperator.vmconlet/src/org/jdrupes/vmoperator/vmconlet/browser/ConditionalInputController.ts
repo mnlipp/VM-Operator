@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ref, Ref, nextTick } from "vue";
+import { ref, nextTick } from "vue";
 
 /**
  * A controller for conditionally shown inputs. "Conditionally shown"
@@ -26,16 +26,18 @@ import { ref, Ref, nextTick } from "vue";
  */
 export default class ConditionlInputController {
 
-    private submitCallback: (selected: string, value: any) => string | null;
+    private submitCallback: (selected: string, value: number | null) 
+        => string | null;
     private readonly inputKey = ref("");
-    private startValue: any;
+    private startValue: string | null = null;
     private inputElement: HTMLInputElement | null = null;
     private errorMessage = ref("");
 
     /**
      * Creates a new controller.
      */
-    constructor(submitCallback: (selected: string, value: string) => string | null) {
+    constructor(submitCallback: (selected: string, value: number | null) 
+        => string | null) {
         // this.inputRef = inputRef;
         this.submitCallback = submitCallback;
     }
@@ -52,7 +54,7 @@ export default class ConditionlInputController {
         this.inputElement = element;
     }
 
-    startEdit (key: string, value: any) {
+    startEdit (key: string, value: string) {
         if (this.inputKey.value != "") {
             return;
         }
@@ -65,17 +67,17 @@ export default class ConditionlInputController {
         });
     }
 
-    endEdit (converter?: (value: string) => any | null) : boolean {
+    endEdit (converter?: (value: string) => number | null) : boolean {
         if (typeof converter === 'undefined') {
             this.inputKey.value = "";
             return false;
         }
-        let newValue = converter(this.inputElement!.value);
+        const newValue = converter(this.inputElement!.value);
         if (newValue === this.startValue) {
             this.inputKey.value = "";
             return false;
         }
-        let submitResult = this.submitCallback (this.inputKey.value, newValue);
+        const submitResult = this.submitCallback (this.inputKey.value, newValue);
         if (submitResult !== null) {
             this.errorMessage.value = submitResult;
             // Neither doing it directly nor doing it with nextTick works.

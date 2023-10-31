@@ -22,6 +22,7 @@ import { formatMemory } from "./MemorySize";
 import JGConsole from "jgconsole";
 import l10nBundles from "l10nBundles";
 import { JGWC } from "jgwc";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 export default class CpuRamChart extends Chart {
     
@@ -83,7 +84,7 @@ export default class CpuRamChart extends Chart {
             }
         });
         
-        let css = getComputedStyle(canvas);
+        const css = getComputedStyle(canvas);
         this.setPropValue("options.plugins.legend.labels.font.family", css.fontFamily);
         this.setPropValue("options.plugins.legend.labels.color", css.color);
         this.setPropValue("options.scales.x.ticks.font.family", css.fontFamily);
@@ -102,11 +103,12 @@ export default class CpuRamChart extends Chart {
     }
 
     setPropValue(path: string, value: any) {
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
         let ptr: any = this;
-        let segs = path.split(".");
-        let lastSeg = segs.pop()!;
-        for (let seg of segs) {
-            let cur = ptr[seg];
+        const segs = path.split(".");
+        const lastSeg = segs.pop()!;
+        for (const seg of segs) {
+            const cur = ptr[seg];
             if (!cur) {
                 ptr[seg] = {};
             }
