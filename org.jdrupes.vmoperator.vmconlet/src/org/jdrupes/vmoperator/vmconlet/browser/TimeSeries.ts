@@ -36,7 +36,7 @@ export default class TimeSeries {
 
     clear() {
         this.timestamps.length = 0;
-        for (let values of this.series) {
+        for (const values of this.series) {
             values.length = 0;
         }
         if (this.onChange) {
@@ -66,12 +66,12 @@ export default class TimeSeries {
         }
         
         // Purge
-        let limit = time.getTime() - this.period;
+        const limit = time.getTime() - this.period;
         while (this.timestamps.length > 2
             && this.timestamps[0].getTime() < limit
             && this.timestamps[1].getTime() < limit) {
             this.timestamps.shift();
-            for (let values of this.series) {
+            for (const values of this.series) {
                 values.shift();
             }
         }

@@ -16,15 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-let unitMap = new Map<string, number>();
-let unitMappings = new Array<{ key: string; value: number }>();
-let memorySize = /^(\d+(\.\d+)?)\s*(B|kB|MB|GB|TB|PB|EB|KiB|MiB|GiB|TiB|PiB|EiB)?$/;
+const unitMap = new Map<string, number>();
+const unitMappings = new Array<{ key: string; value: number }>();
+const memorySize = /^(\d+(\.\d+)?)\s*(B|kB|MB|GB|TB|PB|EB|KiB|MiB|GiB|TiB|PiB|EiB)?$/;
 
 // SI units and common abbreviations
 let factor = 1;
 unitMap.set("", factor);
 let scale = 1000;
-for (let unit of ["B", "kB", "MB", "GB", "TB", "PB", "EB"]) {
+for (const unit of ["B", "kB", "MB", "GB", "TB", "PB", "EB"]) {
     unitMap.set(unit, factor);
     factor = factor * scale;
 }
@@ -32,7 +32,7 @@ for (let unit of ["B", "kB", "MB", "GB", "TB", "PB", "EB"]) {
 // Binary units
 factor = 1024;
 scale = 1024;
-for (let unit of ["KiB", "MiB", "GiB", "TiB", "PiB", "EiB"]) {
+for (const unit of ["KiB", "MiB", "GiB", "TiB", "PiB", "EiB"]) {
     unitMap.set(unit, factor);
     factor = factor * scale;
 }
@@ -42,7 +42,7 @@ unitMap.forEach((value: number, key: string) => {
 unitMappings.sort((a, b) => a.value < b.value ? 1 : a.value > b.value ? -1 : 0);
 
 export function formatMemory(size: number): string {
-    for (let mapping of unitMappings) {
+    for (const mapping of unitMappings) {
         if (size >= mapping.value
             && (size % mapping.value) === 0) {
             return (size / mapping.value + " " + mapping.key).trim();
@@ -52,7 +52,7 @@ export function formatMemory(size: number): string {
 }
 
 export function parseMemory(value: string): number | null {
-    let match = value.match(memorySize);
+    const match = value.match(memorySize);
     if (!match) {
         return null;
     }

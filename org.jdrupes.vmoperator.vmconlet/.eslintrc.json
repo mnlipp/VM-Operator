@@ -1,5 +1,4 @@
 {
-    "root": false,
     "extends": [
         "eslint:recommended",
         "plugin:@typescript-eslint/recommended"
@@ -10,7 +9,7 @@
         "@typescript-eslint"
     ],
     "rules": {
-    },
-    "ignorePatterns": ["src/**/*.test.ts", "build/**"]
+	"constructor-super": "off"
+    }
 }
 

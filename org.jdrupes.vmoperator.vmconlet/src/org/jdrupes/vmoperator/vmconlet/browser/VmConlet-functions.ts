@@ -32,14 +32,17 @@ import "./VmConlet-style.scss";
 // For global access
 declare global {
     interface Window {
-        orgJDrupesVmOperatorVmConlet: any;
+        orgJDrupesVmOperatorVmConlet: { 
+            initPreview?: (previewDom: HTMLElement, isUpdate: boolean) => void,
+            initView?: (viewDom: HTMLElement, isUpdate: boolean) => void
+        }
     }
 }
 
 window.orgJDrupesVmOperatorVmConlet = {};
 
-let vmInfos = reactive(new Map());
-let vmSummary = reactive({
+const vmInfos = reactive(new Map());
+const vmSummary = reactive({
     totalVms: 0,
     runningVms: 0,
     usedCpus: 0,
@@ -58,16 +61,16 @@ const shortDateTime = (time: Date) => {
 };
 
 // Cannot be reactive, leads to infinite recursion.
-let chartData = new TimeSeries(2);
-let chartDateUpdate = ref<Date>(null);
+const chartData = new TimeSeries(2);
+const chartDateUpdate = ref<Date>(null);
 
 window.orgJDrupesVmOperatorVmConlet.initPreview = (previewDom: HTMLElement,
     _isUpdate: boolean) => {
     const app = createApp({
-        setup(_props: any) {
+        setup(_props: object) {
             let chart: CpuRamChart | null = null;
             onMounted(() => {
-                let canvas: HTMLCanvasElement
+                const canvas: HTMLCanvasElement
                     = previewDom.querySelector(":scope .vmsChart")!;
                 chart = new CpuRamChart(canvas, chartData);
             })
@@ -83,7 +86,7 @@ window.orgJDrupesVmOperatorVmConlet.initPreview = (previewDom: HTMLElement,
             const period: Ref<string> = ref<string>("day");
             
             watch(period, (_) => { 
-                let hours = (period.value === "day") ? 24 : 1;
+                const hours = (period.value === "day") ? 24 : 1;
                 chart?.setPeriod(hours * 3600 * 1000);
             });
 
@@ -98,7 +101,7 @@ window.orgJDrupesVmOperatorVmConlet.initPreview = (previewDom: HTMLElement,
 window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
     _isUpdate: boolean) => {
     const app = createApp({
-        setup(_props: any) {
+        setup(_props: object) {
             const conletId: string
                 = (<HTMLElement>viewDom.parentNode!).dataset["conletId"]!;
 
@@ -114,8 +117,8 @@ window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
                 sortOrder: "up"
             }));
 
-            let filteredData = computed(() => {
-                let infos = Array.from(vmInfos.values());
+            const filteredData = computed(() => {
+                const infos = Array.from(vmInfos.values());
                 return controller.filter(infos);
             });
 
@@ -126,14 +129,14 @@ window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
             const idScope = JGWC.createIdScope();
             const detailsByName = reactive(new Set());
             
-            const submitCallback = (selected: string, value: any) => {
+            const submitCallback = (selected: string, value: number | null) => {
                 if (value === null) {
                     return localize("Illegal format");
                 }
-                let vmName = selected.substring(0, selected.lastIndexOf(":"));
-                let property = selected.substring(selected.lastIndexOf(":") + 1);
-                var vmDef = vmInfos.get(vmName);
-                let maxValue = vmDef.spec.vm["maximum" 
+                const vmName = selected.substring(0, selected.lastIndexOf(":"));
+                const property = selected.substring(selected.lastIndexOf(":") + 1);
+                const vmDef = vmInfos.get(vmName);
+                const maxValue = vmDef.spec.vm["maximum" 
                     + property.substring(0, 1).toUpperCase() + property.substring(1)];
                 if (value > maxValue) {
                     return localize("Value is above maximum");
@@ -157,12 +160,13 @@ window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
 };
 
 JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
-    "updateVm", function(_conletId: String, vmDefinition: any) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    "updateVm", function(_conletId: string, vmDefinition: any) {
         // Add some short-cuts for table controller
         vmDefinition.name = vmDefinition.metadata.name;
         vmDefinition.currentCpus = vmDefinition.status.cpus;
         vmDefinition.currentRam = Number(vmDefinition.status.ram);
-        for (let condition of vmDefinition.status.conditions) {
+        for (const condition of vmDefinition.status.conditions) {
             if (condition.type === "Running") {
                 vmDefinition.running = condition.status === "True";
                 vmDefinition.runningConditionSince 
@@ -174,14 +178,15 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
     });
 
 JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
-    "removeVm", function(_conletId: String, vmName: String) {
+    "removeVm", function(_conletId: string, vmName: string) {
         vmInfos.delete(vmName);
     });
 
 JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
-    "summarySeries", function(_conletId: String, series: any[]) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    "summarySeries", function(_conletId: string, series: any[]) {
         chartData.clear();
-        for (let entry of series) {
+        for (const entry of series) {
             chartData.push(new Date(entry.time.epochSecond * 1000
                 + entry.time.nano / 1000000),
                 entry.values[0], entry.values[1]);
@@ -190,7 +195,8 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
 });
 
 JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
-    "updateSummary", function(_conletId: String, summary: any) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    "updateSummary", function(_conletId: string, summary: any) {
         chartData.push(new Date(), summary.usedCpus, Number(summary.usedRam));
         chartDateUpdate.value = new Date();
         Object.assign(vmSummary, summary);
