@@ -17,7 +17,7 @@
  */
 
 import {
-    reactive, ref, Ref, createApp, computed, onMounted, watch, nextTick
+    reactive, ref, Ref, createApp, computed, onMounted, watch
 } from "vue";
 import JGConsole from "jgconsole";
 import JgwcPlugin, { JGWC } from "jgwc";
@@ -65,9 +65,6 @@ window.orgJDrupesVmOperatorVmConlet.initPreview = (previewDom: HTMLElement,
     _isUpdate: boolean) => {
     const app = createApp({
         setup(_props: any) {
-            const conletId: string
-                = (<HTMLElement>previewDom.parentNode!).dataset["conletId"]!;
-
             let chart: CpuRamChart | null = null;
             onMounted(() => {
                 let canvas: HTMLCanvasElement

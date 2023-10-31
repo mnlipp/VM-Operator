@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ref, Ref, nextTick } from "vue";
+import { ref, nextTick } from "vue";
 
 /**
  * A controller for conditionally shown inputs. "Conditionally shown"
