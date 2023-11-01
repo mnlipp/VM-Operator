@@ -16,7 +16,7 @@ let pathsMap = {
 }
 
 export default {
-  external: ['vue', 'aash-plugin', 'jgconsole', 'jgwc', 'l10nBundles'],
+  external: ['aash-plugin', 'jgconsole', 'jgwc', 'l10nBundles', 'vue', 'chartjs'],
   input: "src/" + packagePath + "/browser/" + baseName + "-functions.ts",
   output: [
     {
