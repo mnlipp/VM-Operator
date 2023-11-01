@@ -5,8 +5,6 @@ title: VM-Operator Web-GUI
 
 # The Web-GUI
 
-*Planned for version 2.0, preview (alpha) version available.*
-
 The manager component provides a GUI via a web server.
 
 An overview display shows the current CPU and RAM usage and a graph
