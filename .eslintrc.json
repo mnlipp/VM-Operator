@@ -11,6 +11,6 @@
         }
       ]
     },
-    "ignorePatterns": ["src/**/*.test.ts", "build/**"]
+    "ignorePatterns": ["src/**/*.test.ts", "build/**/*"]
 }
 
