@@ -24,8 +24,8 @@ dependencies {
     implementation 'org.jgrapes:org.jgrapes.webconlet.locallogin:[1.0.0,2)'
     
     runtimeOnly 'org.jgrapes:org.jgrapes.webconlet.locallogin:[0.1.0,2)'
-    runtimeOnly 'org.jgrapes:org.jgrapes.webconlet.sysinfo:[1.2.0,2)'
-    runtimeOnly 'org.jgrapes:org.jgrapes.webconlet.logviewer:[0.1.0-SNAPSHOT,2)'
+    runtimeOnly 'org.jgrapes:org.jgrapes.webconlet.sysinfo:[1.4.0,2)'
+    runtimeOnly 'org.jgrapes:org.jgrapes.webconlet.logviewer:[0.2.0,2)'
     
     runtimeOnly 'com.electronwill.night-config:yaml:[3.6.7,3.7)'    
     runtimeOnly 'org.eclipse.angus:angus-activation:[1.0.0,2.0.0)'
