@@ -147,9 +147,22 @@ window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
 
             const cic = new ConditionlInputController(submitCallback);
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const maximumCpus = (vmDef: any) => {
+                if (vmDef.spec.vm["maximumCpus"]) {
+                    return vmDef.spec.vm.maximumCpus;
+                }
+                const topo = vmDef.spec.vm.cpuTopology;
+                return Math.max(1, topo.coresPerDie)
+                    * Math.max(1, topo.diesPerSocket)
+                    * Math.max(1, topo.sockets)
+                    * Math.max(1, topo.threadsPerCore);
+            }
+
             return {
                 controller, vmInfos, filteredData, detailsByName, localize, 
                 shortDateTime, formatMemory, vmAction, cic, parseMemory,
+                maximumCpus,
                 scopedId: (id: string) => { return idScope.scopedId(id); }
             };
         }
