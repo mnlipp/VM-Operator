@@ -195,7 +195,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
                 }
             }
         } else {
-            var vmDef = prepareForSending(event);
+            var vmDef = convertQuantities(event);
             var def = JsonBeanDecoder.create(vmDef.getRaw().toString())
                 .readObject();
             for (var entry : conletIdsByConsoleConnection().entrySet()) {
@@ -217,7 +217,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
     }
 
     @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-    private DynamicKubernetesObject prepareForSending(VmDefChanged event) {
+    private DynamicKubernetesObject convertQuantities(VmDefChanged event) {
         // Clone and remove managed fields
         var vmDef = new DynamicKubernetesObject(
             event.vmDefinition().getRaw().deepCopy());
