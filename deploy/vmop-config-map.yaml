@@ -8,3 +8,17 @@ metadata:
 data:
   config.yaml: |
     "/Manager": {}
+
+  logging.properties: |
+    handlers=java.util.logging.ConsoleHandler, \
+        org.jgrapes.webconlet.logviewer.LogViewerHandler
+    
+    org.jgrapes.level=FINE
+    org.jdrupes.vmoperator.manager.level=FINE
+    
+    java.util.logging.ConsoleHandler.level=ALL
+    java.util.logging.ConsoleHandler.formatter=java.util.logging.SimpleFormatter
+    java.util.logging.SimpleFormatter.format=%1$tb %1$td %1$tT %4$s %5$s%6$s%n
+
+    org.jgrapes.webconlet.logviewer.LogViewerHandler.level=CONFIG
+    
