@@ -277,11 +277,14 @@ public class VmWatcher extends Component {
         DynamicKubernetesApi vmCrApi = new DynamicKubernetesApi(VM_OP_GROUP,
             apiVersion, vmsCrd.getName(), channel.client());
         var curVmDef = K8s.get(vmCrApi, metadata);
-        curVmDef.ifPresent(def -> channel.setVmDefinition(def));
+        curVmDef.ifPresent(def -> {
+            // Augment with "dynamic" data and associate with channel
+            addDynamicData(channel.client(), def);
+            channel.setVmDefinition(def);
+        });
 
-        // Get eventual definition and augment with "dynamic" data.
+        // Get eventual definition to use
         var vmDef = curVmDef.orElse(channel.vmDefinition());
-        addDynamicData(channel, vmDef);
 
         // Create and fire event
         channel.pipeline().fire(new VmDefChanged(VmDefChanged.Type
@@ -291,7 +294,7 @@ public class VmWatcher extends Component {
             vmsCrd, vmDef), channel);
     }
 
-    private void addDynamicData(VmChannel channel,
+    private void addDynamicData(ApiClient client,
             DynamicKubernetesObject vmDef) {
         var rootNode = GsonPtr.to(vmDef.getRaw()).get(JsonObject.class);
         rootNode.addProperty("nodeName", "");
@@ -313,8 +316,7 @@ public class VmWatcher extends Component {
         podSearch.setLabelSelector("app.kubernetes.io/name=" + APP_NAME
             + ",app.kubernetes.io/component=" + APP_NAME
             + ",app.kubernetes.io/instance=" + vmDef.getMetadata().getName());
-        var podList = K8s.podApi(channel.client()).list(namespaceToWatch,
-            podSearch);
+        var podList = K8s.podApi(client).list(namespaceToWatch, podSearch);
         podList.getObject().getItems().stream().forEach(pod -> {
             rootNode.addProperty("nodeName", pod.getSpec().getNodeName());
         });
