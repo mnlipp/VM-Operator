@@ -28,7 +28,9 @@ from the
 The web GUI is implemented using components from the
 [JGrapes WebConsole](https://mnlipp.github.io/jgrapes/WebConsole.html)
 project. Configuration of the GUI therefore follows the conventions
-of that framework.
+of that framework. (See
+[the package description](latest-release/javadoc/org/jdrupes/vmoperator/manager/package-summary.html)
+for information about the complete components structure.)
 
 ```yaml
 "/Manager":
