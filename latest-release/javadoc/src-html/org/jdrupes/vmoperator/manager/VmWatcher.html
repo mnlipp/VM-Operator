@@ -290,63 +290,65 @@
 <span class="source-line-no">277</span><span id="line-277">        DynamicKubernetesApi vmCrApi = new DynamicKubernetesApi(VM_OP_GROUP,</span>
 <span class="source-line-no">278</span><span id="line-278">            apiVersion, vmsCrd.getName(), channel.client());</span>
 <span class="source-line-no">279</span><span id="line-279">        var curVmDef = K8s.get(vmCrApi, metadata);</span>
-<span class="source-line-no">280</span><span id="line-280">        curVmDef.ifPresent(def -&gt; channel.setVmDefinition(def));</span>
-<span class="source-line-no">281</span><span id="line-281"></span>
-<span class="source-line-no">282</span><span id="line-282">        // Get eventual definition and augment with "dynamic" data.</span>
-<span class="source-line-no">283</span><span id="line-283">        var vmDef = curVmDef.orElse(channel.vmDefinition());</span>
-<span class="source-line-no">284</span><span id="line-284">        addDynamicData(channel, vmDef);</span>
+<span class="source-line-no">280</span><span id="line-280">        curVmDef.ifPresent(def -&gt; {</span>
+<span class="source-line-no">281</span><span id="line-281">            // Augment with "dynamic" data and associate with channel</span>
+<span class="source-line-no">282</span><span id="line-282">            addDynamicData(channel.client(), def);</span>
+<span class="source-line-no">283</span><span id="line-283">            channel.setVmDefinition(def);</span>
+<span class="source-line-no">284</span><span id="line-284">        });</span>
 <span class="source-line-no">285</span><span id="line-285"></span>
-<span class="source-line-no">286</span><span id="line-286">        // Create and fire event</span>
-<span class="source-line-no">287</span><span id="line-287">        channel.pipeline().fire(new VmDefChanged(VmDefChanged.Type</span>
-<span class="source-line-no">288</span><span id="line-288">            .valueOf(vmDefStub.type),</span>
-<span class="source-line-no">289</span><span id="line-289">            channel</span>
-<span class="source-line-no">290</span><span id="line-290">                .setGeneration(vmDefStub.object.getMetadata().getGeneration()),</span>
-<span class="source-line-no">291</span><span id="line-291">            vmsCrd, vmDef), channel);</span>
-<span class="source-line-no">292</span><span id="line-292">    }</span>
-<span class="source-line-no">293</span><span id="line-293"></span>
-<span class="source-line-no">294</span><span id="line-294">    private void addDynamicData(VmChannel channel,</span>
-<span class="source-line-no">295</span><span id="line-295">            DynamicKubernetesObject vmDef) {</span>
-<span class="source-line-no">296</span><span id="line-296">        var rootNode = GsonPtr.to(vmDef.getRaw()).get(JsonObject.class);</span>
-<span class="source-line-no">297</span><span id="line-297">        rootNode.addProperty("nodeName", "");</span>
-<span class="source-line-no">298</span><span id="line-298"></span>
-<span class="source-line-no">299</span><span id="line-299">        // VM definition status changes before the pod terminates.</span>
-<span class="source-line-no">300</span><span id="line-300">        // This results in pod information being shown for a stopped</span>
-<span class="source-line-no">301</span><span id="line-301">        // VM which is irritating. So check condition first.</span>
-<span class="source-line-no">302</span><span id="line-302">        var isRunning = GsonPtr.to(rootNode).to("status", "conditions")</span>
-<span class="source-line-no">303</span><span id="line-303">            .get(JsonArray.class)</span>
-<span class="source-line-no">304</span><span id="line-304">            .asList().stream().filter(el -&gt; "Running"</span>
-<span class="source-line-no">305</span><span id="line-305">                .equals(((JsonObject) el).get("type").getAsString()))</span>
-<span class="source-line-no">306</span><span id="line-306">            .findFirst().map(el -&gt; "True"</span>
-<span class="source-line-no">307</span><span id="line-307">                .equals(((JsonObject) el).get("status").getAsString()))</span>
-<span class="source-line-no">308</span><span id="line-308">            .orElse(false);</span>
-<span class="source-line-no">309</span><span id="line-309">        if (!isRunning) {</span>
-<span class="source-line-no">310</span><span id="line-310">            return;</span>
-<span class="source-line-no">311</span><span id="line-311">        }</span>
-<span class="source-line-no">312</span><span id="line-312">        var podSearch = new ListOptions();</span>
-<span class="source-line-no">313</span><span id="line-313">        podSearch.setLabelSelector("app.kubernetes.io/name=" + APP_NAME</span>
-<span class="source-line-no">314</span><span id="line-314">            + ",app.kubernetes.io/component=" + APP_NAME</span>
-<span class="source-line-no">315</span><span id="line-315">            + ",app.kubernetes.io/instance=" + vmDef.getMetadata().getName());</span>
-<span class="source-line-no">316</span><span id="line-316">        var podList = K8s.podApi(channel.client()).list(namespaceToWatch,</span>
-<span class="source-line-no">317</span><span id="line-317">            podSearch);</span>
-<span class="source-line-no">318</span><span id="line-318">        podList.getObject().getItems().stream().forEach(pod -&gt; {</span>
-<span class="source-line-no">319</span><span id="line-319">            rootNode.addProperty("nodeName", pod.getSpec().getNodeName());</span>
-<span class="source-line-no">320</span><span id="line-320">        });</span>
-<span class="source-line-no">321</span><span id="line-321">    }</span>
-<span class="source-line-no">322</span><span id="line-322"></span>
-<span class="source-line-no">323</span><span id="line-323">    /**</span>
-<span class="source-line-no">324</span><span id="line-324">     * Remove VM channel when VM is deleted.</span>
-<span class="source-line-no">325</span><span id="line-325">     *</span>
-<span class="source-line-no">326</span><span id="line-326">     * @param event the event</span>
-<span class="source-line-no">327</span><span id="line-327">     * @param channel the channel</span>
-<span class="source-line-no">328</span><span id="line-328">     */</span>
-<span class="source-line-no">329</span><span id="line-329">    @Handler(priority = -10_000)</span>
-<span class="source-line-no">330</span><span id="line-330">    public void onVmDefChanged(VmDefChanged event, VmChannel channel) {</span>
-<span class="source-line-no">331</span><span id="line-331">        if (event.type() == Type.DELETED) {</span>
-<span class="source-line-no">332</span><span id="line-332">            channels.remove(event.vmDefinition().getMetadata().getName());</span>
-<span class="source-line-no">333</span><span id="line-333">        }</span>
-<span class="source-line-no">334</span><span id="line-334">    }</span>
-<span class="source-line-no">335</span><span id="line-335"></span>
-<span class="source-line-no">336</span><span id="line-336">}</span>
+<span class="source-line-no">286</span><span id="line-286">        // Get eventual definition to use</span>
+<span class="source-line-no">287</span><span id="line-287">        var vmDef = curVmDef.orElse(channel.vmDefinition());</span>
+<span class="source-line-no">288</span><span id="line-288"></span>
+<span class="source-line-no">289</span><span id="line-289">        // Create and fire event</span>
+<span class="source-line-no">290</span><span id="line-290">        channel.pipeline().fire(new VmDefChanged(VmDefChanged.Type</span>
+<span class="source-line-no">291</span><span id="line-291">            .valueOf(vmDefStub.type),</span>
+<span class="source-line-no">292</span><span id="line-292">            channel</span>
+<span class="source-line-no">293</span><span id="line-293">                .setGeneration(vmDefStub.object.getMetadata().getGeneration()),</span>
+<span class="source-line-no">294</span><span id="line-294">            vmsCrd, vmDef), channel);</span>
+<span class="source-line-no">295</span><span id="line-295">    }</span>
+<span class="source-line-no">296</span><span id="line-296"></span>
+<span class="source-line-no">297</span><span id="line-297">    private void addDynamicData(ApiClient client,</span>
+<span class="source-line-no">298</span><span id="line-298">            DynamicKubernetesObject vmDef) {</span>
+<span class="source-line-no">299</span><span id="line-299">        var rootNode = GsonPtr.to(vmDef.getRaw()).get(JsonObject.class);</span>
+<span class="source-line-no">300</span><span id="line-300">        rootNode.addProperty("nodeName", "");</span>
+<span class="source-line-no">301</span><span id="line-301"></span>
+<span class="source-line-no">302</span><span id="line-302">        // VM definition status changes before the pod terminates.</span>
+<span class="source-line-no">303</span><span id="line-303">        // This results in pod information being shown for a stopped</span>
+<span class="source-line-no">304</span><span id="line-304">        // VM which is irritating. So check condition first.</span>
+<span class="source-line-no">305</span><span id="line-305">        var isRunning = GsonPtr.to(rootNode).to("status", "conditions")</span>
+<span class="source-line-no">306</span><span id="line-306">            .get(JsonArray.class)</span>
+<span class="source-line-no">307</span><span id="line-307">            .asList().stream().filter(el -&gt; "Running"</span>
+<span class="source-line-no">308</span><span id="line-308">                .equals(((JsonObject) el).get("type").getAsString()))</span>
+<span class="source-line-no">309</span><span id="line-309">            .findFirst().map(el -&gt; "True"</span>
+<span class="source-line-no">310</span><span id="line-310">                .equals(((JsonObject) el).get("status").getAsString()))</span>
+<span class="source-line-no">311</span><span id="line-311">            .orElse(false);</span>
+<span class="source-line-no">312</span><span id="line-312">        if (!isRunning) {</span>
+<span class="source-line-no">313</span><span id="line-313">            return;</span>
+<span class="source-line-no">314</span><span id="line-314">        }</span>
+<span class="source-line-no">315</span><span id="line-315">        var podSearch = new ListOptions();</span>
+<span class="source-line-no">316</span><span id="line-316">        podSearch.setLabelSelector("app.kubernetes.io/name=" + APP_NAME</span>
+<span class="source-line-no">317</span><span id="line-317">            + ",app.kubernetes.io/component=" + APP_NAME</span>
+<span class="source-line-no">318</span><span id="line-318">            + ",app.kubernetes.io/instance=" + vmDef.getMetadata().getName());</span>
+<span class="source-line-no">319</span><span id="line-319">        var podList = K8s.podApi(client).list(namespaceToWatch, podSearch);</span>
+<span class="source-line-no">320</span><span id="line-320">        podList.getObject().getItems().stream().forEach(pod -&gt; {</span>
+<span class="source-line-no">321</span><span id="line-321">            rootNode.addProperty("nodeName", pod.getSpec().getNodeName());</span>
+<span class="source-line-no">322</span><span id="line-322">        });</span>
+<span class="source-line-no">323</span><span id="line-323">    }</span>
+<span class="source-line-no">324</span><span id="line-324"></span>
+<span class="source-line-no">325</span><span id="line-325">    /**</span>
+<span class="source-line-no">326</span><span id="line-326">     * Remove VM channel when VM is deleted.</span>
+<span class="source-line-no">327</span><span id="line-327">     *</span>
+<span class="source-line-no">328</span><span id="line-328">     * @param event the event</span>
+<span class="source-line-no">329</span><span id="line-329">     * @param channel the channel</span>
+<span class="source-line-no">330</span><span id="line-330">     */</span>
+<span class="source-line-no">331</span><span id="line-331">    @Handler(priority = -10_000)</span>
+<span class="source-line-no">332</span><span id="line-332">    public void onVmDefChanged(VmDefChanged event, VmChannel channel) {</span>
+<span class="source-line-no">333</span><span id="line-333">        if (event.type() == Type.DELETED) {</span>
+<span class="source-line-no">334</span><span id="line-334">            channels.remove(event.vmDefinition().getMetadata().getName());</span>
+<span class="source-line-no">335</span><span id="line-335">        }</span>
+<span class="source-line-no">336</span><span id="line-336">    }</span>
+<span class="source-line-no">337</span><span id="line-337"></span>
+<span class="source-line-no">338</span><span id="line-338">}</span>
 
 
 
