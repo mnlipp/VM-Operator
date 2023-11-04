@@ -82,6 +82,8 @@ patches:
     data:
       config.yaml: |
         "/Manager":
+          # "/GuiHttpServer":
+            # See section about the GUI
           "/Controller":
             "/Reconciler":
               runnerDataPvc:
