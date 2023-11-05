@@ -140,6 +140,7 @@
  * mgr .left. [FileSystemWatcher]
  * mgr .right. [YamlConfigurationStore]
  * mgr .. [Controller]
+ * mgr .up. [Manager]
  * mgr .up. [VmWatcher]
  * mgr .. [Reconciler]
  * 

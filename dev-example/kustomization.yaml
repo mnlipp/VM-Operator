@@ -29,6 +29,7 @@ patches:
       # Keep in sync with config.yaml
       config.yaml: |
         "/Manager":
+          # clusterName: "test"
           "/Controller":
             namespace: vmop-dev
             "/Reconciler":

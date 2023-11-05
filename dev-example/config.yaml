@@ -1,6 +1,8 @@
 # Used for running manager outside Kubernetes.
 # Keep in sync with kustomize.yaml 
 "/Manager":
+  # If provided, is shown at top left before namespace
+  # clusterName: "test"
   # The controller manages the VM
   "/Controller":
     namespace: vmop-dev

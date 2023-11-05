@@ -138,6 +138,8 @@ public class Controller extends Component {
                 .of("/var/run/secrets/kubernetes.io/serviceaccount/namespace");
             if (Files.isReadable(path)) {
                 namespace = Files.lines(path).findFirst().orElse(null);
+                fire(new ConfigurationUpdate().add(componentPath(), "namespace",
+                    namespace));
             }
         }
         if (namespace == null) {

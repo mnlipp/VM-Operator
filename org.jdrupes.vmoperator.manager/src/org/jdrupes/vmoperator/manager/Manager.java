@@ -18,6 +18,8 @@
 
 package org.jdrupes.vmoperator.manager;
 
+import freemarker.template.TemplateMethodModelEx;
+import freemarker.template.TemplateModelException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,6 +29,9 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
@@ -54,6 +59,7 @@ import org.jgrapes.net.SocketServer;
 import org.jgrapes.util.ComponentCollector;
 import org.jgrapes.util.FileSystemWatcher;
 import org.jgrapes.util.YamlConfigurationStore;
+import org.jgrapes.util.events.ConfigurationUpdate;
 import org.jgrapes.util.events.WatchFile;
 import org.jgrapes.webconlet.locallogin.LoginConlet;
 import org.jgrapes.webconsole.base.BrowserLocalBackedKVStore;
@@ -69,9 +75,13 @@ import org.jgrapes.webconsole.vuejs.VueJsConsoleWeblet;
 /**
  * The application class.
  */
+@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.ExcessiveImports" })
 public class Manager extends Component {
 
+    private static String version;
     private static Manager app;
+    private String clusterName;
+    private String namespace = "unknown";
 
     /**
      * Instantiates a new manager.
@@ -79,26 +89,26 @@ public class Manager extends Component {
      *
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    @SuppressWarnings("PMD.TooFewBranchesForASwitchStatement")
+    @SuppressWarnings({ "PMD.TooFewBranchesForASwitchStatement",
+        "PMD.NcssCount" })
     public Manager(CommandLine cmdLine) throws IOException {
+        super(new NamedChannel("manager"));
         // Prepare component tree
         attach(new NioDispatcher());
-        Channel mgrChannel = new NamedChannel("manager");
-        attach(new FileSystemWatcher(mgrChannel));
-        attach(new Controller(mgrChannel));
+        attach(new FileSystemWatcher(channel()));
+        attach(new Controller(channel()));
 
         // Configuration store with file in /etc/opt (default)
         File cfgFile = new File(cmdLine.getOptionValue('c',
-            "/etc/opt/" + VM_OP_NAME.replace("-", "") + "/config.yaml"))
-                .getCanonicalFile();
+            "/etc/opt/" + VM_OP_NAME.replace("-", "") + "/config.yaml"));
         logger.config(() -> "Using configuration from: " + cfgFile.getPath());
         // Don't rely on night config to produce a good exception
         // for this simple case
         if (!Files.isReadable(cfgFile.toPath())) {
             throw new IOException("Cannot read configuration file " + cfgFile);
         }
-        attach(new YamlConfigurationStore(mgrChannel, cfgFile, false));
-        fire(new WatchFile(cfgFile.toPath()));
+        attach(new YamlConfigurationStore(channel(), cfgFile, false));
+        fire(new WatchFile(cfgFile.toPath()), channel());
 
         // Prepare GUI
         Channel httpTransport = new NamedChannel("guiTransport");
@@ -126,7 +136,12 @@ public class Manager extends Component {
             return;
         }
         ConsoleWeblet consoleWeblet = guiHttpServer
-            .attach(new VueJsConsoleWeblet(httpChannel, Channel.SELF, rootUri))
+            .attach(new VueJsConsoleWeblet(httpChannel, Channel.SELF, rootUri) {
+                @Override
+                protected Map<String, Object> createConsoleBaseModel() {
+                    return augmentBaseModel(super.createConsoleBaseModel());
+                }
+            })
             .prependClassTemplateLoader(getClass())
             .prependResourceBundleProvider(getClass())
             .prependConsoleResourceProvider(getClass());
@@ -152,6 +167,47 @@ public class Manager extends Component {
                     return Arrays.asList(Collections.emptyMap());
                 }
             }));
+    }
+
+    private Map<String, Object> augmentBaseModel(Map<String, Object> base) {
+        base.put("version", version);
+        base.put("clusterName", new TemplateMethodModelEx() {
+            @Override
+            public Object exec(@SuppressWarnings("rawtypes") List arguments)
+                    throws TemplateModelException {
+                return clusterName;
+            }
+        });
+        base.put("namespace", new TemplateMethodModelEx() {
+            @Override
+            public Object exec(@SuppressWarnings("rawtypes") List arguments)
+                    throws TemplateModelException {
+                return namespace;
+            }
+        });
+        return base;
+    }
+
+    /**
+     * Configure the component.
+     *
+     * @param event the event
+     */
+    @Handler
+    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
+    public void onConfigurationUpdate(ConfigurationUpdate event) {
+        event.structured(componentPath()).ifPresent(c -> {
+            if (c.containsKey("clusterName")) {
+                clusterName = (String) c.get("clusterName");
+            } else {
+                clusterName = null;
+            }
+        });
+        event.structured(componentPath() + "/Controller").ifPresent(c -> {
+            if (c.containsKey("namespace")) {
+                namespace = (String) c.get("namespace");
+            }
+        });
     }
 
     /**
@@ -207,8 +263,10 @@ public class Manager extends Component {
         try {
             // Instance logger is not available yet.
             var logger = Logger.getLogger(Manager.class.getName());
-            logger.config(() -> "Version: "
-                + Manager.class.getPackage().getImplementationVersion());
+            version = Optional.ofNullable(
+                Manager.class.getPackage().getImplementationVersion())
+                .orElse("unknown");
+            logger.config(() -> "Version: " + version);
             logger.config(() -> "running on "
                 + System.getProperty("java.vm.name")
                 + " (" + System.getProperty("java.vm.version") + ")"
