@@ -1,8 +1,9 @@
-FROM archlinux/archlinux
+FROM archlinux/archlinux:latest
 
 RUN systemd-firstboot
 
-RUN pacman -Suy --noconfirm \
+RUN pacman-key --init \
+    && pacman -Sy --noconfirm archlinux-keyring && pacman -Su --noconfirm \
     && pacman -S --noconfirm which qemu-full virtiofsd \
         edk2-ovmf swtpm iproute2 bridge-utils jre17-openjdk-headless \
     && pacman -Scc --noconfirm
