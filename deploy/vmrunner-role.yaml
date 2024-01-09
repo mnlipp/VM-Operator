@@ -18,3 +18,9 @@ rules:
   - vms/status
   verbs:
   - patch
+- apiGroups:
+  - events.k8s.io
+  resources:
+  - events
+  verbs:
+  - create
