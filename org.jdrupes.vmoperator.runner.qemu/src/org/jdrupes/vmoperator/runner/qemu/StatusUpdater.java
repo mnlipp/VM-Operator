@@ -41,6 +41,7 @@ import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.runner.qemu.events.BalloonChangeEvent;
+import org.jdrupes.vmoperator.runner.qemu.events.Exit;
 import org.jdrupes.vmoperator.runner.qemu.events.HotpluggableCpuStatus;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerConfigurationUpdate;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;
@@ -57,6 +58,7 @@ import org.jgrapes.util.events.InitialConfiguration;
 /**
  * Updates the CR status.
  */
+@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class StatusUpdater extends Component {
 
     private static final Set<State> RUNNING_STATES
@@ -135,12 +137,21 @@ public class StatusUpdater extends Component {
      * @throws ApiException 
      */
     @Handler
-    @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",
-        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.AvoidDuplicateLiterals" })
-    public void onStart(Start event) throws IOException, ApiException {
+    public void onStart(Start event) {
         if (namespace == null) {
             return;
         }
+        try {
+            initVmCrApi(event);
+        } catch (IOException | ApiException e) {
+            logger.log(Level.SEVERE, e,
+                () -> "Cannot access VM's CR, terminating.");
+            event.cancel(true);
+            fire(new Exit(1));
+        }
+    }
+
+    private void initVmCrApi(Start event) throws IOException, ApiException {
         var client = Config.defaultClient();
         var apis = new ApisApi(client).getAPIVersions();
         var crdVersions = apis.getGroups().stream()
@@ -155,6 +166,7 @@ public class StatusUpdater extends Component {
             if (crdApiRes.isEmpty()) {
                 continue;
             }
+            @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
             var crApi = new DynamicKubernetesApi(VM_OP_GROUP,
                 crdVersion, crdApiRes.get().getName(), client);
             var vmCr = crApi.get(namespace, vmName);
@@ -166,8 +178,9 @@ public class StatusUpdater extends Component {
             }
         }
         if (vmCrApi == null) {
-            logger.warning(() -> "Cannot find VM's CR, status will not"
-                + " be updated.");
+            logger.severe(() -> "Cannot find VM's CR, terminating.");
+            event.cancel(true);
+            fire(new Exit(1));
         }
     }
 

@@ -52,6 +52,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCont;
+import org.jdrupes.vmoperator.runner.qemu.events.Exit;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
 import org.jdrupes.vmoperator.runner.qemu.events.QmpConfigured;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerConfigurationUpdate;
@@ -185,6 +186,7 @@ public class Runner extends Component {
         = "Standard-VM-latest.ftl.yaml";
     private static final String SAVED_TEMPLATE = "VM.ftl.yaml";
     private static final String FW_VARS = "fw-vars.fd";
+    private static int exitStatus;
 
     private EventPipeline rep;
     private final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
@@ -582,6 +584,16 @@ public class Runner extends Component {
             "The VM has been shut down"));
     }
 
+    /**
+     * On exit.
+     *
+     * @param event the event
+     */
+    @Handler
+    public void onExit(Exit event) {
+        exitStatus = event.exitStatus();
+    }
+
     private void shutdown() {
         if (state != State.TERMINATING) {
             fire(new Stop());
@@ -650,6 +662,11 @@ public class Runner extends Component {
 
             // Start the application
             Components.start(app);
+
+            // Wait for (regular) termination
+            Components.awaitExhaustion();
+            System.exit(exitStatus);
+
         } catch (IOException | InterruptedException
                 | org.apache.commons.cli.ParseException e) {
             Logger.getLogger(Runner.class.getName()).log(Level.SEVERE, e,
