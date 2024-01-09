@@ -42,6 +42,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
@@ -595,7 +596,7 @@ public class Runner extends Component {
     }
 
     private void shutdown() {
-        if (state != State.TERMINATING) {
+        if (!Set.of(State.TERMINATING, State.STOPPED).contains(state)) {
             fire(new Stop());
         }
         try {
