@@ -24,8 +24,11 @@ import io.kubernetes.client.custom.Quantity.Format;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.ApisApi;
 import io.kubernetes.client.openapi.apis.CustomObjectsApi;
+import io.kubernetes.client.openapi.apis.EventsV1Api;
+import io.kubernetes.client.openapi.models.EventsV1Event;
 import io.kubernetes.client.openapi.models.V1APIGroup;
 import io.kubernetes.client.openapi.models.V1GroupVersionForDiscovery;
+import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
@@ -34,12 +37,15 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
+import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
+import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.runner.qemu.events.BalloonChangeEvent;
 import org.jdrupes.vmoperator.runner.qemu.events.Exit;
 import org.jdrupes.vmoperator.runner.qemu.events.HotpluggableCpuStatus;
@@ -67,6 +73,7 @@ public class StatusUpdater extends Component {
     private String namespace;
     private String vmName;
     private DynamicKubernetesApi vmCrApi;
+    private EventsV1Api evtsApi;
     private long observedGeneration;
 
     /**
@@ -146,6 +153,14 @@ public class StatusUpdater extends Component {
         } catch (IOException | ApiException e) {
             logger.log(Level.SEVERE, e,
                 () -> "Cannot access VM's CR, terminating.");
+            event.cancel(true);
+            fire(new Exit(1));
+        }
+        try {
+            evtsApi = new EventsV1Api(Config.defaultClient());
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, e,
+                () -> "Cannot access events API, terminating.");
             event.cancel(true);
             fire(new Exit(1));
         }
@@ -252,6 +267,18 @@ public class StatusUpdater extends Component {
             }
             return status;
         }).throwsApiException();
+
+        // Log event
+        var evt = new EventsV1Event().kind("Event")
+            .metadata(new V1ObjectMeta().namespace(namespace)
+                .generateName("vmrunner-"))
+            .reportingController(VM_OP_GROUP + "/" + APP_NAME)
+            .reportingInstance(vmCr.getMetadata().getName())
+            .eventTime(OffsetDateTime.now()).type("Normal")
+            .regarding(K8s.objectReference(vmCr))
+            .action("StatusUpdate").reason(event.reason())
+            .note(event.message());
+        evtsApi.createNamespacedEvent(namespace, evt, null, null, null, null);
     }
 
     private void updateRunningCondition(RunnerStateChange event,

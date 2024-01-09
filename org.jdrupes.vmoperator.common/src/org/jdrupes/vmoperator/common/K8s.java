@@ -30,12 +30,14 @@ import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1ConfigMapList;
 import io.kubernetes.client.openapi.models.V1GroupVersionForDiscovery;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import io.kubernetes.client.openapi.models.V1ObjectReference;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimList;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.util.generic.GenericKubernetesApi;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
+import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import io.kubernetes.client.util.generic.options.DeleteOptions;
 import io.kubernetes.client.util.generic.options.PatchOptions;
 import java.util.Optional;
@@ -204,4 +206,19 @@ public class K8s {
         return response.getObject();
     }
 
+    /**
+     * Create an object reference.
+     *
+     * @param object the object
+     * @return the v 1 object reference
+     */
+    public static V1ObjectReference
+            objectReference(DynamicKubernetesObject object) {
+        return new V1ObjectReference().apiVersion(object.getApiVersion())
+            .kind(object.getKind())
+            .namespace(object.getMetadata().getNamespace())
+            .name(object.getMetadata().getName())
+            .resourceVersion(object.getMetadata().getResourceVersion())
+            .uid(object.getMetadata().getUid());
+    }
 }
