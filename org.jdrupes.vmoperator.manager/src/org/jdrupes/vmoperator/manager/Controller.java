@@ -30,6 +30,7 @@ import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.common.K8s;
+import org.jdrupes.vmoperator.manager.events.Exit;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jgrapes.core.Channel;
@@ -37,7 +38,6 @@ import org.jgrapes.core.Component;
 import org.jgrapes.core.annotation.Handler;
 import org.jgrapes.core.events.HandlingError;
 import org.jgrapes.core.events.Start;
-import org.jgrapes.core.events.Stop;
 import org.jgrapes.util.events.ConfigurationUpdate;
 
 /**
@@ -146,7 +146,7 @@ public class Controller extends Component {
             logger.severe(() -> "Namespace to control not configured and"
                 + " no file in kubernetes directory.");
             event.cancel(true);
-            fire(new Stop());
+            fire(new Exit(2));
             return;
         }
         logger.fine(() -> "Controlling namespace \"" + namespace + "\".");

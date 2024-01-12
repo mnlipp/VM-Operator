@@ -41,6 +41,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
+import org.jdrupes.vmoperator.manager.events.Exit;
 import org.jdrupes.vmoperator.util.FsdUtils;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
@@ -82,6 +83,7 @@ public class Manager extends Component {
     private static Manager app;
     private String clusterName;
     private String namespace = "unknown";
+    private static int exitStatus;
 
     /**
      * Instantiates a new manager.
@@ -225,6 +227,16 @@ public class Manager extends Component {
     }
 
     /**
+     * On exit.
+     *
+     * @param event the event
+     */
+    @Handler
+    public void onExit(Exit event) {
+        exitStatus = event.exitStatus();
+    }
+
+    /**
      * On stop.
      *
      * @param event the event
@@ -294,6 +306,10 @@ public class Manager extends Component {
 
             // Start the application
             Components.start(app);
+
+            // Wait for (regular) termination
+            Components.awaitExhaustion();
+            System.exit(exitStatus);
         } catch (IOException | InterruptedException
                 | org.apache.commons.cli.ParseException e) {
             Logger.getLogger(Manager.class.getName()).log(Level.SEVERE, e,

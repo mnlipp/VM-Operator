@@ -52,6 +52,7 @@ import org.jdrupes.vmoperator.common.K8s;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
+import org.jdrupes.vmoperator.manager.events.Exit;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged.Type;
@@ -105,7 +106,18 @@ public class VmWatcher extends Component {
      * @throws ApiException 
      */
     @Handler(priority = 10)
-    public void onStart(Start event) throws IOException, ApiException {
+    public void onStart(Start event) {
+        try {
+            startWatching();
+        } catch (IOException | ApiException e) {
+            logger.log(Level.SEVERE, e,
+                () -> "Cannot watch VMs, terminating.");
+            event.cancel(true);
+            fire(new Exit(1));
+        }
+    }
+
+    private void startWatching() throws IOException, ApiException {
         // Get namespace
         if (namespaceToWatch == null) {
             var path = Path
