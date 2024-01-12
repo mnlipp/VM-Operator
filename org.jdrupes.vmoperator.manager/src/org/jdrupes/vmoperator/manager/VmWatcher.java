@@ -219,6 +219,8 @@ public class VmWatcher extends Component {
             "PMD.AvoidCatchingThrowable", "PMD.AvoidCatchingGenericException" })
         var watcher = new Thread(() -> {
             try {
+                logger.info(() -> "Watching objects created from "
+                    + crd.getName() + "." + VM_OP_GROUP + "/" + version);
                 // Watch sometimes terminates without apparent reason.
                 while (true) {
                     Instant startedAt = Instant.now();
