@@ -232,135 +232,137 @@
 <span class="source-line-no">219</span><span id="line-219">            "PMD.AvoidCatchingThrowable", "PMD.AvoidCatchingGenericException" })</span>
 <span class="source-line-no">220</span><span id="line-220">        var watcher = new Thread(() -&gt; {</span>
 <span class="source-line-no">221</span><span id="line-221">            try {</span>
-<span class="source-line-no">222</span><span id="line-222">                // Watch sometimes terminates without apparent reason.</span>
-<span class="source-line-no">223</span><span id="line-223">                while (true) {</span>
-<span class="source-line-no">224</span><span id="line-224">                    Instant startedAt = Instant.now();</span>
-<span class="source-line-no">225</span><span id="line-225">                    var client = Config.defaultClient();</span>
-<span class="source-line-no">226</span><span id="line-226">                    var coa = new CustomObjectsApi(client);</span>
-<span class="source-line-no">227</span><span id="line-227">                    var call = coa.listNamespacedCustomObjectCall(VM_OP_GROUP,</span>
-<span class="source-line-no">228</span><span id="line-228">                        version, namespaceToWatch, crd.getName(), null, false,</span>
-<span class="source-line-no">229</span><span id="line-229">                        null, null, null, null, null, null, null, true, null);</span>
-<span class="source-line-no">230</span><span id="line-230">                    try (Watch&lt;V1Namespace&gt; watch</span>
-<span class="source-line-no">231</span><span id="line-231">                        = Watch.createWatch(client, call,</span>
-<span class="source-line-no">232</span><span id="line-232">                            new TypeToken&lt;Watch.Response&lt;V1Namespace&gt;&gt;() {</span>
-<span class="source-line-no">233</span><span id="line-233">                            }.getType())) {</span>
-<span class="source-line-no">234</span><span id="line-234">                        for (Watch.Response&lt;V1Namespace&gt; item : watch) {</span>
-<span class="source-line-no">235</span><span id="line-235">                            handleVmDefinitionChange(crd, item);</span>
-<span class="source-line-no">236</span><span id="line-236">                        }</span>
-<span class="source-line-no">237</span><span id="line-237">                    } catch (IOException | ApiException | RuntimeException e) {</span>
-<span class="source-line-no">238</span><span id="line-238">                        logger.log(Level.FINE, e, () -&gt; "Problem watching \""</span>
-<span class="source-line-no">239</span><span id="line-239">                            + crd.getName() + "\" (will retry): "</span>
-<span class="source-line-no">240</span><span id="line-240">                            + e.getMessage());</span>
-<span class="source-line-no">241</span><span id="line-241">                        delayRestart(startedAt);</span>
-<span class="source-line-no">242</span><span id="line-242">                    }</span>
-<span class="source-line-no">243</span><span id="line-243">                }</span>
-<span class="source-line-no">244</span><span id="line-244">            } catch (Throwable e) {</span>
-<span class="source-line-no">245</span><span id="line-245">                logger.log(Level.SEVERE, e, () -&gt; "Probem watching: "</span>
-<span class="source-line-no">246</span><span id="line-246">                    + e.getMessage());</span>
-<span class="source-line-no">247</span><span id="line-247">            }</span>
-<span class="source-line-no">248</span><span id="line-248">            fire(new Stop());</span>
-<span class="source-line-no">249</span><span id="line-249">        });</span>
-<span class="source-line-no">250</span><span id="line-250">        watcher.setDaemon(true);</span>
-<span class="source-line-no">251</span><span id="line-251">        watcher.start();</span>
-<span class="source-line-no">252</span><span id="line-252">    }</span>
-<span class="source-line-no">253</span><span id="line-253"></span>
-<span class="source-line-no">254</span><span id="line-254">    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")</span>
-<span class="source-line-no">255</span><span id="line-255">    private void delayRestart(Instant started) {</span>
-<span class="source-line-no">256</span><span id="line-256">        var runningFor = Duration</span>
-<span class="source-line-no">257</span><span id="line-257">            .between(started, Instant.now()).toMillis();</span>
-<span class="source-line-no">258</span><span id="line-258">        if (runningFor &lt; 5000) {</span>
-<span class="source-line-no">259</span><span id="line-259">            logger.log(Level.FINE, () -&gt; "Waiting... ");</span>
-<span class="source-line-no">260</span><span id="line-260">            try {</span>
-<span class="source-line-no">261</span><span id="line-261">                Thread.sleep(5000 - runningFor);</span>
-<span class="source-line-no">262</span><span id="line-262">            } catch (InterruptedException e1) { // NOPMD</span>
-<span class="source-line-no">263</span><span id="line-263">                // Retry</span>
-<span class="source-line-no">264</span><span id="line-264">            }</span>
-<span class="source-line-no">265</span><span id="line-265">            logger.log(Level.FINE, () -&gt; "Retrying");</span>
-<span class="source-line-no">266</span><span id="line-266">        }</span>
-<span class="source-line-no">267</span><span id="line-267">    }</span>
-<span class="source-line-no">268</span><span id="line-268"></span>
-<span class="source-line-no">269</span><span id="line-269">    private void handleVmDefinitionChange(V1APIResource vmsCrd,</span>
-<span class="source-line-no">270</span><span id="line-270">            Watch.Response&lt;V1Namespace&gt; vmDefStub) {</span>
-<span class="source-line-no">271</span><span id="line-271">        V1ObjectMeta metadata = vmDefStub.object.getMetadata();</span>
-<span class="source-line-no">272</span><span id="line-272">        VmChannel channel = channels.computeIfAbsent(metadata.getName(),</span>
-<span class="source-line-no">273</span><span id="line-273">            k -&gt; {</span>
-<span class="source-line-no">274</span><span id="line-274">                try {</span>
-<span class="source-line-no">275</span><span id="line-275">                    return new VmChannel(channel(), newEventPipeline(),</span>
-<span class="source-line-no">276</span><span id="line-276">                        Config.defaultClient());</span>
-<span class="source-line-no">277</span><span id="line-277">                } catch (IOException e) {</span>
-<span class="source-line-no">278</span><span id="line-278">                    logger.log(Level.SEVERE, e, () -&gt; "Failed to create client"</span>
-<span class="source-line-no">279</span><span id="line-279">                        + " for handling changes: " + e.getMessage());</span>
-<span class="source-line-no">280</span><span id="line-280">                    return null;</span>
-<span class="source-line-no">281</span><span id="line-281">                }</span>
-<span class="source-line-no">282</span><span id="line-282">            });</span>
-<span class="source-line-no">283</span><span id="line-283">        if (channel == null) {</span>
-<span class="source-line-no">284</span><span id="line-284">            return;</span>
-<span class="source-line-no">285</span><span id="line-285">        }</span>
-<span class="source-line-no">286</span><span id="line-286"></span>
-<span class="source-line-no">287</span><span id="line-287">        // Get full definition and associate with channel as backup</span>
-<span class="source-line-no">288</span><span id="line-288">        var apiVersion = K8s.version(vmDefStub.object.getApiVersion());</span>
-<span class="source-line-no">289</span><span id="line-289">        DynamicKubernetesApi vmCrApi = new DynamicKubernetesApi(VM_OP_GROUP,</span>
-<span class="source-line-no">290</span><span id="line-290">            apiVersion, vmsCrd.getName(), channel.client());</span>
-<span class="source-line-no">291</span><span id="line-291">        var curVmDef = K8s.get(vmCrApi, metadata);</span>
-<span class="source-line-no">292</span><span id="line-292">        curVmDef.ifPresent(def -&gt; {</span>
-<span class="source-line-no">293</span><span id="line-293">            // Augment with "dynamic" data and associate with channel</span>
-<span class="source-line-no">294</span><span id="line-294">            addDynamicData(channel.client(), def);</span>
-<span class="source-line-no">295</span><span id="line-295">            channel.setVmDefinition(def);</span>
-<span class="source-line-no">296</span><span id="line-296">        });</span>
-<span class="source-line-no">297</span><span id="line-297"></span>
-<span class="source-line-no">298</span><span id="line-298">        // Get eventual definition to use</span>
-<span class="source-line-no">299</span><span id="line-299">        var vmDef = curVmDef.orElse(channel.vmDefinition());</span>
-<span class="source-line-no">300</span><span id="line-300"></span>
-<span class="source-line-no">301</span><span id="line-301">        // Create and fire event</span>
-<span class="source-line-no">302</span><span id="line-302">        channel.pipeline().fire(new VmDefChanged(VmDefChanged.Type</span>
-<span class="source-line-no">303</span><span id="line-303">            .valueOf(vmDefStub.type),</span>
-<span class="source-line-no">304</span><span id="line-304">            channel</span>
-<span class="source-line-no">305</span><span id="line-305">                .setGeneration(vmDefStub.object.getMetadata().getGeneration()),</span>
-<span class="source-line-no">306</span><span id="line-306">            vmsCrd, vmDef), channel);</span>
-<span class="source-line-no">307</span><span id="line-307">    }</span>
-<span class="source-line-no">308</span><span id="line-308"></span>
-<span class="source-line-no">309</span><span id="line-309">    private void addDynamicData(ApiClient client,</span>
-<span class="source-line-no">310</span><span id="line-310">            DynamicKubernetesObject vmDef) {</span>
-<span class="source-line-no">311</span><span id="line-311">        var rootNode = GsonPtr.to(vmDef.getRaw()).get(JsonObject.class);</span>
-<span class="source-line-no">312</span><span id="line-312">        rootNode.addProperty("nodeName", "");</span>
-<span class="source-line-no">313</span><span id="line-313"></span>
-<span class="source-line-no">314</span><span id="line-314">        // VM definition status changes before the pod terminates.</span>
-<span class="source-line-no">315</span><span id="line-315">        // This results in pod information being shown for a stopped</span>
-<span class="source-line-no">316</span><span id="line-316">        // VM which is irritating. So check condition first.</span>
-<span class="source-line-no">317</span><span id="line-317">        var isRunning = GsonPtr.to(rootNode).to("status", "conditions")</span>
-<span class="source-line-no">318</span><span id="line-318">            .get(JsonArray.class)</span>
-<span class="source-line-no">319</span><span id="line-319">            .asList().stream().filter(el -&gt; "Running"</span>
-<span class="source-line-no">320</span><span id="line-320">                .equals(((JsonObject) el).get("type").getAsString()))</span>
-<span class="source-line-no">321</span><span id="line-321">            .findFirst().map(el -&gt; "True"</span>
-<span class="source-line-no">322</span><span id="line-322">                .equals(((JsonObject) el).get("status").getAsString()))</span>
-<span class="source-line-no">323</span><span id="line-323">            .orElse(false);</span>
-<span class="source-line-no">324</span><span id="line-324">        if (!isRunning) {</span>
-<span class="source-line-no">325</span><span id="line-325">            return;</span>
-<span class="source-line-no">326</span><span id="line-326">        }</span>
-<span class="source-line-no">327</span><span id="line-327">        var podSearch = new ListOptions();</span>
-<span class="source-line-no">328</span><span id="line-328">        podSearch.setLabelSelector("app.kubernetes.io/name=" + APP_NAME</span>
-<span class="source-line-no">329</span><span id="line-329">            + ",app.kubernetes.io/component=" + APP_NAME</span>
-<span class="source-line-no">330</span><span id="line-330">            + ",app.kubernetes.io/instance=" + vmDef.getMetadata().getName());</span>
-<span class="source-line-no">331</span><span id="line-331">        var podList = K8s.podApi(client).list(namespaceToWatch, podSearch);</span>
-<span class="source-line-no">332</span><span id="line-332">        podList.getObject().getItems().stream().forEach(pod -&gt; {</span>
-<span class="source-line-no">333</span><span id="line-333">            rootNode.addProperty("nodeName", pod.getSpec().getNodeName());</span>
-<span class="source-line-no">334</span><span id="line-334">        });</span>
-<span class="source-line-no">335</span><span id="line-335">    }</span>
-<span class="source-line-no">336</span><span id="line-336"></span>
-<span class="source-line-no">337</span><span id="line-337">    /**</span>
-<span class="source-line-no">338</span><span id="line-338">     * Remove VM channel when VM is deleted.</span>
-<span class="source-line-no">339</span><span id="line-339">     *</span>
-<span class="source-line-no">340</span><span id="line-340">     * @param event the event</span>
-<span class="source-line-no">341</span><span id="line-341">     * @param channel the channel</span>
-<span class="source-line-no">342</span><span id="line-342">     */</span>
-<span class="source-line-no">343</span><span id="line-343">    @Handler(priority = -10_000)</span>
-<span class="source-line-no">344</span><span id="line-344">    public void onVmDefChanged(VmDefChanged event, VmChannel channel) {</span>
-<span class="source-line-no">345</span><span id="line-345">        if (event.type() == Type.DELETED) {</span>
-<span class="source-line-no">346</span><span id="line-346">            channels.remove(event.vmDefinition().getMetadata().getName());</span>
-<span class="source-line-no">347</span><span id="line-347">        }</span>
-<span class="source-line-no">348</span><span id="line-348">    }</span>
-<span class="source-line-no">349</span><span id="line-349"></span>
-<span class="source-line-no">350</span><span id="line-350">}</span>
+<span class="source-line-no">222</span><span id="line-222">                logger.info(() -&gt; "Watching objects created from "</span>
+<span class="source-line-no">223</span><span id="line-223">                    + crd.getName() + "." + VM_OP_GROUP + "/" + version);</span>
+<span class="source-line-no">224</span><span id="line-224">                // Watch sometimes terminates without apparent reason.</span>
+<span class="source-line-no">225</span><span id="line-225">                while (true) {</span>
+<span class="source-line-no">226</span><span id="line-226">                    Instant startedAt = Instant.now();</span>
+<span class="source-line-no">227</span><span id="line-227">                    var client = Config.defaultClient();</span>
+<span class="source-line-no">228</span><span id="line-228">                    var coa = new CustomObjectsApi(client);</span>
+<span class="source-line-no">229</span><span id="line-229">                    var call = coa.listNamespacedCustomObjectCall(VM_OP_GROUP,</span>
+<span class="source-line-no">230</span><span id="line-230">                        version, namespaceToWatch, crd.getName(), null, false,</span>
+<span class="source-line-no">231</span><span id="line-231">                        null, null, null, null, null, null, null, true, null);</span>
+<span class="source-line-no">232</span><span id="line-232">                    try (Watch&lt;V1Namespace&gt; watch</span>
+<span class="source-line-no">233</span><span id="line-233">                        = Watch.createWatch(client, call,</span>
+<span class="source-line-no">234</span><span id="line-234">                            new TypeToken&lt;Watch.Response&lt;V1Namespace&gt;&gt;() {</span>
+<span class="source-line-no">235</span><span id="line-235">                            }.getType())) {</span>
+<span class="source-line-no">236</span><span id="line-236">                        for (Watch.Response&lt;V1Namespace&gt; item : watch) {</span>
+<span class="source-line-no">237</span><span id="line-237">                            handleVmDefinitionChange(crd, item);</span>
+<span class="source-line-no">238</span><span id="line-238">                        }</span>
+<span class="source-line-no">239</span><span id="line-239">                    } catch (IOException | ApiException | RuntimeException e) {</span>
+<span class="source-line-no">240</span><span id="line-240">                        logger.log(Level.FINE, e, () -&gt; "Problem watching \""</span>
+<span class="source-line-no">241</span><span id="line-241">                            + crd.getName() + "\" (will retry): "</span>
+<span class="source-line-no">242</span><span id="line-242">                            + e.getMessage());</span>
+<span class="source-line-no">243</span><span id="line-243">                        delayRestart(startedAt);</span>
+<span class="source-line-no">244</span><span id="line-244">                    }</span>
+<span class="source-line-no">245</span><span id="line-245">                }</span>
+<span class="source-line-no">246</span><span id="line-246">            } catch (Throwable e) {</span>
+<span class="source-line-no">247</span><span id="line-247">                logger.log(Level.SEVERE, e, () -&gt; "Probem watching: "</span>
+<span class="source-line-no">248</span><span id="line-248">                    + e.getMessage());</span>
+<span class="source-line-no">249</span><span id="line-249">            }</span>
+<span class="source-line-no">250</span><span id="line-250">            fire(new Stop());</span>
+<span class="source-line-no">251</span><span id="line-251">        });</span>
+<span class="source-line-no">252</span><span id="line-252">        watcher.setDaemon(true);</span>
+<span class="source-line-no">253</span><span id="line-253">        watcher.start();</span>
+<span class="source-line-no">254</span><span id="line-254">    }</span>
+<span class="source-line-no">255</span><span id="line-255"></span>
+<span class="source-line-no">256</span><span id="line-256">    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")</span>
+<span class="source-line-no">257</span><span id="line-257">    private void delayRestart(Instant started) {</span>
+<span class="source-line-no">258</span><span id="line-258">        var runningFor = Duration</span>
+<span class="source-line-no">259</span><span id="line-259">            .between(started, Instant.now()).toMillis();</span>
+<span class="source-line-no">260</span><span id="line-260">        if (runningFor &lt; 5000) {</span>
+<span class="source-line-no">261</span><span id="line-261">            logger.log(Level.FINE, () -&gt; "Waiting... ");</span>
+<span class="source-line-no">262</span><span id="line-262">            try {</span>
+<span class="source-line-no">263</span><span id="line-263">                Thread.sleep(5000 - runningFor);</span>
+<span class="source-line-no">264</span><span id="line-264">            } catch (InterruptedException e1) { // NOPMD</span>
+<span class="source-line-no">265</span><span id="line-265">                // Retry</span>
+<span class="source-line-no">266</span><span id="line-266">            }</span>
+<span class="source-line-no">267</span><span id="line-267">            logger.log(Level.FINE, () -&gt; "Retrying");</span>
+<span class="source-line-no">268</span><span id="line-268">        }</span>
+<span class="source-line-no">269</span><span id="line-269">    }</span>
+<span class="source-line-no">270</span><span id="line-270"></span>
+<span class="source-line-no">271</span><span id="line-271">    private void handleVmDefinitionChange(V1APIResource vmsCrd,</span>
+<span class="source-line-no">272</span><span id="line-272">            Watch.Response&lt;V1Namespace&gt; vmDefStub) {</span>
+<span class="source-line-no">273</span><span id="line-273">        V1ObjectMeta metadata = vmDefStub.object.getMetadata();</span>
+<span class="source-line-no">274</span><span id="line-274">        VmChannel channel = channels.computeIfAbsent(metadata.getName(),</span>
+<span class="source-line-no">275</span><span id="line-275">            k -&gt; {</span>
+<span class="source-line-no">276</span><span id="line-276">                try {</span>
+<span class="source-line-no">277</span><span id="line-277">                    return new VmChannel(channel(), newEventPipeline(),</span>
+<span class="source-line-no">278</span><span id="line-278">                        Config.defaultClient());</span>
+<span class="source-line-no">279</span><span id="line-279">                } catch (IOException e) {</span>
+<span class="source-line-no">280</span><span id="line-280">                    logger.log(Level.SEVERE, e, () -&gt; "Failed to create client"</span>
+<span class="source-line-no">281</span><span id="line-281">                        + " for handling changes: " + e.getMessage());</span>
+<span class="source-line-no">282</span><span id="line-282">                    return null;</span>
+<span class="source-line-no">283</span><span id="line-283">                }</span>
+<span class="source-line-no">284</span><span id="line-284">            });</span>
+<span class="source-line-no">285</span><span id="line-285">        if (channel == null) {</span>
+<span class="source-line-no">286</span><span id="line-286">            return;</span>
+<span class="source-line-no">287</span><span id="line-287">        }</span>
+<span class="source-line-no">288</span><span id="line-288"></span>
+<span class="source-line-no">289</span><span id="line-289">        // Get full definition and associate with channel as backup</span>
+<span class="source-line-no">290</span><span id="line-290">        var apiVersion = K8s.version(vmDefStub.object.getApiVersion());</span>
+<span class="source-line-no">291</span><span id="line-291">        DynamicKubernetesApi vmCrApi = new DynamicKubernetesApi(VM_OP_GROUP,</span>
+<span class="source-line-no">292</span><span id="line-292">            apiVersion, vmsCrd.getName(), channel.client());</span>
+<span class="source-line-no">293</span><span id="line-293">        var curVmDef = K8s.get(vmCrApi, metadata);</span>
+<span class="source-line-no">294</span><span id="line-294">        curVmDef.ifPresent(def -&gt; {</span>
+<span class="source-line-no">295</span><span id="line-295">            // Augment with "dynamic" data and associate with channel</span>
+<span class="source-line-no">296</span><span id="line-296">            addDynamicData(channel.client(), def);</span>
+<span class="source-line-no">297</span><span id="line-297">            channel.setVmDefinition(def);</span>
+<span class="source-line-no">298</span><span id="line-298">        });</span>
+<span class="source-line-no">299</span><span id="line-299"></span>
+<span class="source-line-no">300</span><span id="line-300">        // Get eventual definition to use</span>
+<span class="source-line-no">301</span><span id="line-301">        var vmDef = curVmDef.orElse(channel.vmDefinition());</span>
+<span class="source-line-no">302</span><span id="line-302"></span>
+<span class="source-line-no">303</span><span id="line-303">        // Create and fire event</span>
+<span class="source-line-no">304</span><span id="line-304">        channel.pipeline().fire(new VmDefChanged(VmDefChanged.Type</span>
+<span class="source-line-no">305</span><span id="line-305">            .valueOf(vmDefStub.type),</span>
+<span class="source-line-no">306</span><span id="line-306">            channel</span>
+<span class="source-line-no">307</span><span id="line-307">                .setGeneration(vmDefStub.object.getMetadata().getGeneration()),</span>
+<span class="source-line-no">308</span><span id="line-308">            vmsCrd, vmDef), channel);</span>
+<span class="source-line-no">309</span><span id="line-309">    }</span>
+<span class="source-line-no">310</span><span id="line-310"></span>
+<span class="source-line-no">311</span><span id="line-311">    private void addDynamicData(ApiClient client,</span>
+<span class="source-line-no">312</span><span id="line-312">            DynamicKubernetesObject vmDef) {</span>
+<span class="source-line-no">313</span><span id="line-313">        var rootNode = GsonPtr.to(vmDef.getRaw()).get(JsonObject.class);</span>
+<span class="source-line-no">314</span><span id="line-314">        rootNode.addProperty("nodeName", "");</span>
+<span class="source-line-no">315</span><span id="line-315"></span>
+<span class="source-line-no">316</span><span id="line-316">        // VM definition status changes before the pod terminates.</span>
+<span class="source-line-no">317</span><span id="line-317">        // This results in pod information being shown for a stopped</span>
+<span class="source-line-no">318</span><span id="line-318">        // VM which is irritating. So check condition first.</span>
+<span class="source-line-no">319</span><span id="line-319">        var isRunning = GsonPtr.to(rootNode).to("status", "conditions")</span>
+<span class="source-line-no">320</span><span id="line-320">            .get(JsonArray.class)</span>
+<span class="source-line-no">321</span><span id="line-321">            .asList().stream().filter(el -&gt; "Running"</span>
+<span class="source-line-no">322</span><span id="line-322">                .equals(((JsonObject) el).get("type").getAsString()))</span>
+<span class="source-line-no">323</span><span id="line-323">            .findFirst().map(el -&gt; "True"</span>
+<span class="source-line-no">324</span><span id="line-324">                .equals(((JsonObject) el).get("status").getAsString()))</span>
+<span class="source-line-no">325</span><span id="line-325">            .orElse(false);</span>
+<span class="source-line-no">326</span><span id="line-326">        if (!isRunning) {</span>
+<span class="source-line-no">327</span><span id="line-327">            return;</span>
+<span class="source-line-no">328</span><span id="line-328">        }</span>
+<span class="source-line-no">329</span><span id="line-329">        var podSearch = new ListOptions();</span>
+<span class="source-line-no">330</span><span id="line-330">        podSearch.setLabelSelector("app.kubernetes.io/name=" + APP_NAME</span>
+<span class="source-line-no">331</span><span id="line-331">            + ",app.kubernetes.io/component=" + APP_NAME</span>
+<span class="source-line-no">332</span><span id="line-332">            + ",app.kubernetes.io/instance=" + vmDef.getMetadata().getName());</span>
+<span class="source-line-no">333</span><span id="line-333">        var podList = K8s.podApi(client).list(namespaceToWatch, podSearch);</span>
+<span class="source-line-no">334</span><span id="line-334">        podList.getObject().getItems().stream().forEach(pod -&gt; {</span>
+<span class="source-line-no">335</span><span id="line-335">            rootNode.addProperty("nodeName", pod.getSpec().getNodeName());</span>
+<span class="source-line-no">336</span><span id="line-336">        });</span>
+<span class="source-line-no">337</span><span id="line-337">    }</span>
+<span class="source-line-no">338</span><span id="line-338"></span>
+<span class="source-line-no">339</span><span id="line-339">    /**</span>
+<span class="source-line-no">340</span><span id="line-340">     * Remove VM channel when VM is deleted.</span>
+<span class="source-line-no">341</span><span id="line-341">     *</span>
+<span class="source-line-no">342</span><span id="line-342">     * @param event the event</span>
+<span class="source-line-no">343</span><span id="line-343">     * @param channel the channel</span>
+<span class="source-line-no">344</span><span id="line-344">     */</span>
+<span class="source-line-no">345</span><span id="line-345">    @Handler(priority = -10_000)</span>
+<span class="source-line-no">346</span><span id="line-346">    public void onVmDefChanged(VmDefChanged event, VmChannel channel) {</span>
+<span class="source-line-no">347</span><span id="line-347">        if (event.type() == Type.DELETED) {</span>
+<span class="source-line-no">348</span><span id="line-348">            channels.remove(event.vmDefinition().getMetadata().getName());</span>
+<span class="source-line-no">349</span><span id="line-349">        }</span>
+<span class="source-line-no">350</span><span id="line-350">    }</span>
+<span class="source-line-no">351</span><span id="line-351"></span>
+<span class="source-line-no">352</span><span id="line-352">}</span>
 
 
 
