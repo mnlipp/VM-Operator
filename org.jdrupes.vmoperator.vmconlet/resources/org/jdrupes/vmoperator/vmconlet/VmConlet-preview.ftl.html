@@ -30,11 +30,11 @@
         <td>{{ vmSummary.runningVms }} / {{ vmSummary.totalVms }}</td>
       </tr>
       <tr>
-        <td>{{ localize("Used CPUs") }}:</td>
+        <td>{{ localize("currentCpus") }}:</td>
         <td>{{ vmSummary.usedCpus }}</td>
       </tr>
       <tr>
-        <td>{{ localize("Used RAM") }}:</td>
+        <td>{{ localize("currentRam") }}:</td>
         <td>{{ formatMemory(Number(vmSummary.usedRam)) }}</td>
       </tr>
     </tbody>
