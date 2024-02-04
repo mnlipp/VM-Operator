@@ -39,7 +39,7 @@ dependencies {
 
 application {
     applicationName = 'vm-manager'
-    applicationDefaultJvmArgs = ['-Xmx64m', '-XX:+UseParallelGC',
+    applicationDefaultJvmArgs = ['-Xmx128m', '-XX:+UseParallelGC',
         '-Djava.util.logging.manager=org.jdrupes.vmoperator.util.LongLoggingManager'
         ]
     // Define the main class for the application.
