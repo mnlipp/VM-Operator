@@ -37,355 +37,377 @@
 <span class="source-line-no">024</span><span id="line-24">import java.nio.file.Files;</span>
 <span class="source-line-no">025</span><span id="line-25">import java.nio.file.Path;</span>
 <span class="source-line-no">026</span><span id="line-26">import java.nio.file.attribute.PosixFilePermission;</span>
-<span class="source-line-no">027</span><span id="line-27">import java.util.Map;</span>
-<span class="source-line-no">028</span><span id="line-28">import java.util.Set;</span>
-<span class="source-line-no">029</span><span id="line-29">import java.util.UUID;</span>
-<span class="source-line-no">030</span><span id="line-30">import java.util.logging.Level;</span>
-<span class="source-line-no">031</span><span id="line-31">import java.util.logging.Logger;</span>
-<span class="source-line-no">032</span><span id="line-32">import static org.jdrupes.vmoperator.common.Constants.APP_NAME;</span>
-<span class="source-line-no">033</span><span id="line-33">import org.jdrupes.vmoperator.common.Convertions;</span>
-<span class="source-line-no">034</span><span id="line-34">import org.jdrupes.vmoperator.util.Dto;</span>
-<span class="source-line-no">035</span><span id="line-35">import org.jdrupes.vmoperator.util.FsdUtils;</span>
-<span class="source-line-no">036</span><span id="line-36"></span>
-<span class="source-line-no">037</span><span id="line-37">/**</span>
-<span class="source-line-no">038</span><span id="line-38"> * The configuration information from the configuration file.</span>
-<span class="source-line-no">039</span><span id="line-39"> */</span>
-<span class="source-line-no">040</span><span id="line-40">@SuppressWarnings("PMD.ExcessivePublicCount")</span>
-<span class="source-line-no">041</span><span id="line-41">public class Configuration implements Dto {</span>
-<span class="source-line-no">042</span><span id="line-42">    @SuppressWarnings("PMD.FieldNamingConventions")</span>
-<span class="source-line-no">043</span><span id="line-43">    protected final Logger logger = Logger.getLogger(getClass().getName());</span>
-<span class="source-line-no">044</span><span id="line-44"></span>
-<span class="source-line-no">045</span><span id="line-45">    /** The data dir. */</span>
-<span class="source-line-no">046</span><span id="line-46">    public Path dataDir;</span>
-<span class="source-line-no">047</span><span id="line-47"></span>
-<span class="source-line-no">048</span><span id="line-48">    /** The runtime dir. */</span>
-<span class="source-line-no">049</span><span id="line-49">    public Path runtimeDir;</span>
-<span class="source-line-no">050</span><span id="line-50"></span>
-<span class="source-line-no">051</span><span id="line-51">    /** The template. */</span>
-<span class="source-line-no">052</span><span id="line-52">    public String template;</span>
-<span class="source-line-no">053</span><span id="line-53"></span>
-<span class="source-line-no">054</span><span id="line-54">    /** The update template. */</span>
-<span class="source-line-no">055</span><span id="line-55">    public boolean updateTemplate;</span>
-<span class="source-line-no">056</span><span id="line-56"></span>
-<span class="source-line-no">057</span><span id="line-57">    /** The swtpm socket. */</span>
-<span class="source-line-no">058</span><span id="line-58">    public Path swtpmSocket;</span>
-<span class="source-line-no">059</span><span id="line-59"></span>
-<span class="source-line-no">060</span><span id="line-60">    /** The monitor socket. */</span>
-<span class="source-line-no">061</span><span id="line-61">    public Path monitorSocket;</span>
-<span class="source-line-no">062</span><span id="line-62"></span>
-<span class="source-line-no">063</span><span id="line-63">    /** The firmware rom. */</span>
-<span class="source-line-no">064</span><span id="line-64">    public Path firmwareRom;</span>
-<span class="source-line-no">065</span><span id="line-65"></span>
-<span class="source-line-no">066</span><span id="line-66">    /** The firmware vars. */</span>
-<span class="source-line-no">067</span><span id="line-67">    public Path firmwareVars;</span>
-<span class="source-line-no">068</span><span id="line-68"></span>
-<span class="source-line-no">069</span><span id="line-69">    /** Optional cloud-init data. */</span>
-<span class="source-line-no">070</span><span id="line-70">    public CloudInit cloudInit;</span>
-<span class="source-line-no">071</span><span id="line-71"></span>
-<span class="source-line-no">072</span><span id="line-72">    /** The vm. */</span>
-<span class="source-line-no">073</span><span id="line-73">    @SuppressWarnings("PMD.ShortVariable")</span>
-<span class="source-line-no">074</span><span id="line-74">    public Vm vm;</span>
+<span class="source-line-no">027</span><span id="line-27">import java.time.Instant;</span>
+<span class="source-line-no">028</span><span id="line-28">import java.util.HashMap;</span>
+<span class="source-line-no">029</span><span id="line-29">import java.util.Map;</span>
+<span class="source-line-no">030</span><span id="line-30">import java.util.Set;</span>
+<span class="source-line-no">031</span><span id="line-31">import java.util.UUID;</span>
+<span class="source-line-no">032</span><span id="line-32">import java.util.logging.Level;</span>
+<span class="source-line-no">033</span><span id="line-33">import java.util.logging.Logger;</span>
+<span class="source-line-no">034</span><span id="line-34">import static org.jdrupes.vmoperator.common.Constants.APP_NAME;</span>
+<span class="source-line-no">035</span><span id="line-35">import org.jdrupes.vmoperator.common.Convertions;</span>
+<span class="source-line-no">036</span><span id="line-36">import org.jdrupes.vmoperator.util.Dto;</span>
+<span class="source-line-no">037</span><span id="line-37">import org.jdrupes.vmoperator.util.FsdUtils;</span>
+<span class="source-line-no">038</span><span id="line-38"></span>
+<span class="source-line-no">039</span><span id="line-39">/**</span>
+<span class="source-line-no">040</span><span id="line-40"> * The configuration information from the configuration file.</span>
+<span class="source-line-no">041</span><span id="line-41"> */</span>
+<span class="source-line-no">042</span><span id="line-42">@SuppressWarnings("PMD.ExcessivePublicCount")</span>
+<span class="source-line-no">043</span><span id="line-43">public class Configuration implements Dto {</span>
+<span class="source-line-no">044</span><span id="line-44">    private static final String CI_INSTANCE_ID = "instance-id";</span>
+<span class="source-line-no">045</span><span id="line-45"></span>
+<span class="source-line-no">046</span><span id="line-46">    @SuppressWarnings("PMD.FieldNamingConventions")</span>
+<span class="source-line-no">047</span><span id="line-47">    protected final Logger logger = Logger.getLogger(getClass().getName());</span>
+<span class="source-line-no">048</span><span id="line-48"></span>
+<span class="source-line-no">049</span><span id="line-49">    /** Configuration timestamp */</span>
+<span class="source-line-no">050</span><span id="line-50">    public Instant asOf;</span>
+<span class="source-line-no">051</span><span id="line-51"></span>
+<span class="source-line-no">052</span><span id="line-52">    /** The data dir. */</span>
+<span class="source-line-no">053</span><span id="line-53">    public Path dataDir;</span>
+<span class="source-line-no">054</span><span id="line-54"></span>
+<span class="source-line-no">055</span><span id="line-55">    /** The runtime dir. */</span>
+<span class="source-line-no">056</span><span id="line-56">    public Path runtimeDir;</span>
+<span class="source-line-no">057</span><span id="line-57"></span>
+<span class="source-line-no">058</span><span id="line-58">    /** The template. */</span>
+<span class="source-line-no">059</span><span id="line-59">    public String template;</span>
+<span class="source-line-no">060</span><span id="line-60"></span>
+<span class="source-line-no">061</span><span id="line-61">    /** The update template. */</span>
+<span class="source-line-no">062</span><span id="line-62">    public boolean updateTemplate;</span>
+<span class="source-line-no">063</span><span id="line-63"></span>
+<span class="source-line-no">064</span><span id="line-64">    /** The swtpm socket. */</span>
+<span class="source-line-no">065</span><span id="line-65">    public Path swtpmSocket;</span>
+<span class="source-line-no">066</span><span id="line-66"></span>
+<span class="source-line-no">067</span><span id="line-67">    /** The monitor socket. */</span>
+<span class="source-line-no">068</span><span id="line-68">    public Path monitorSocket;</span>
+<span class="source-line-no">069</span><span id="line-69"></span>
+<span class="source-line-no">070</span><span id="line-70">    /** The firmware rom. */</span>
+<span class="source-line-no">071</span><span id="line-71">    public Path firmwareRom;</span>
+<span class="source-line-no">072</span><span id="line-72"></span>
+<span class="source-line-no">073</span><span id="line-73">    /** The firmware vars. */</span>
+<span class="source-line-no">074</span><span id="line-74">    public Path firmwareVars;</span>
 <span class="source-line-no">075</span><span id="line-75"></span>
-<span class="source-line-no">076</span><span id="line-76">    /**</span>
-<span class="source-line-no">077</span><span id="line-77">     * Subsection "cloud-init".</span>
-<span class="source-line-no">078</span><span id="line-78">     */</span>
-<span class="source-line-no">079</span><span id="line-79">    public static class CloudInit implements Dto {</span>
-<span class="source-line-no">080</span><span id="line-80">        @SuppressWarnings("PMD.UseConcurrentHashMap")</span>
-<span class="source-line-no">081</span><span id="line-81">        public Map&lt;String, Object&gt; metaData;</span>
-<span class="source-line-no">082</span><span id="line-82">        @SuppressWarnings("PMD.UseConcurrentHashMap")</span>
-<span class="source-line-no">083</span><span id="line-83">        public Map&lt;String, Object&gt; userData;</span>
-<span class="source-line-no">084</span><span id="line-84">    }</span>
-<span class="source-line-no">085</span><span id="line-85"></span>
-<span class="source-line-no">086</span><span id="line-86">    /**</span>
-<span class="source-line-no">087</span><span id="line-87">     * Subsection "vm".</span>
-<span class="source-line-no">088</span><span id="line-88">     */</span>
-<span class="source-line-no">089</span><span id="line-89">    @SuppressWarnings({ "PMD.ShortClassName", "PMD.TooManyFields",</span>
-<span class="source-line-no">090</span><span id="line-90">        "PMD.DataClass" })</span>
-<span class="source-line-no">091</span><span id="line-91">    public static class Vm implements Dto {</span>
+<span class="source-line-no">076</span><span id="line-76">    /** Optional cloud-init data. */</span>
+<span class="source-line-no">077</span><span id="line-77">    public CloudInit cloudInit;</span>
+<span class="source-line-no">078</span><span id="line-78"></span>
+<span class="source-line-no">079</span><span id="line-79">    /** The vm. */</span>
+<span class="source-line-no">080</span><span id="line-80">    @SuppressWarnings("PMD.ShortVariable")</span>
+<span class="source-line-no">081</span><span id="line-81">    public Vm vm;</span>
+<span class="source-line-no">082</span><span id="line-82"></span>
+<span class="source-line-no">083</span><span id="line-83">    /**</span>
+<span class="source-line-no">084</span><span id="line-84">     * Subsection "cloud-init".</span>
+<span class="source-line-no">085</span><span id="line-85">     */</span>
+<span class="source-line-no">086</span><span id="line-86">    public static class CloudInit implements Dto {</span>
+<span class="source-line-no">087</span><span id="line-87">        @SuppressWarnings("PMD.UseConcurrentHashMap")</span>
+<span class="source-line-no">088</span><span id="line-88">        public Map&lt;String, Object&gt; metaData;</span>
+<span class="source-line-no">089</span><span id="line-89">        @SuppressWarnings("PMD.UseConcurrentHashMap")</span>
+<span class="source-line-no">090</span><span id="line-90">        public Map&lt;String, Object&gt; userData;</span>
+<span class="source-line-no">091</span><span id="line-91">    }</span>
 <span class="source-line-no">092</span><span id="line-92"></span>
-<span class="source-line-no">093</span><span id="line-93">        /** The name. */</span>
-<span class="source-line-no">094</span><span id="line-94">        public String name;</span>
-<span class="source-line-no">095</span><span id="line-95"></span>
-<span class="source-line-no">096</span><span id="line-96">        /** The uuid. */</span>
-<span class="source-line-no">097</span><span id="line-97">        public String uuid;</span>
-<span class="source-line-no">098</span><span id="line-98"></span>
-<span class="source-line-no">099</span><span id="line-99">        /** The use tpm. */</span>
-<span class="source-line-no">100</span><span id="line-100">        public boolean useTpm;</span>
-<span class="source-line-no">101</span><span id="line-101"></span>
-<span class="source-line-no">102</span><span id="line-102">        /** The boot menu. */</span>
-<span class="source-line-no">103</span><span id="line-103">        public boolean bootMenu;</span>
-<span class="source-line-no">104</span><span id="line-104"></span>
-<span class="source-line-no">105</span><span id="line-105">        /** The firmware. */</span>
-<span class="source-line-no">106</span><span id="line-106">        public String firmware = "uefi";</span>
-<span class="source-line-no">107</span><span id="line-107"></span>
-<span class="source-line-no">108</span><span id="line-108">        /** The maximum ram. */</span>
-<span class="source-line-no">109</span><span id="line-109">        public BigInteger maximumRam;</span>
-<span class="source-line-no">110</span><span id="line-110"></span>
-<span class="source-line-no">111</span><span id="line-111">        /** The current ram. */</span>
-<span class="source-line-no">112</span><span id="line-112">        public BigInteger currentRam;</span>
-<span class="source-line-no">113</span><span id="line-113"></span>
-<span class="source-line-no">114</span><span id="line-114">        /** The cpu model. */</span>
-<span class="source-line-no">115</span><span id="line-115">        public String cpuModel = "host";</span>
-<span class="source-line-no">116</span><span id="line-116"></span>
-<span class="source-line-no">117</span><span id="line-117">        /** The maximum cpus. */</span>
-<span class="source-line-no">118</span><span id="line-118">        public int maximumCpus = 1;</span>
-<span class="source-line-no">119</span><span id="line-119"></span>
-<span class="source-line-no">120</span><span id="line-120">        /** The current cpus. */</span>
-<span class="source-line-no">121</span><span id="line-121">        public int currentCpus = 1;</span>
-<span class="source-line-no">122</span><span id="line-122"></span>
-<span class="source-line-no">123</span><span id="line-123">        /** The cpu sockets. */</span>
-<span class="source-line-no">124</span><span id="line-124">        public int sockets;</span>
-<span class="source-line-no">125</span><span id="line-125"></span>
-<span class="source-line-no">126</span><span id="line-126">        /** The dies per socket. */</span>
-<span class="source-line-no">127</span><span id="line-127">        public int diesPerSocket;</span>
-<span class="source-line-no">128</span><span id="line-128"></span>
-<span class="source-line-no">129</span><span id="line-129">        /** The cores per die. */</span>
-<span class="source-line-no">130</span><span id="line-130">        public int coresPerDie;</span>
-<span class="source-line-no">131</span><span id="line-131"></span>
-<span class="source-line-no">132</span><span id="line-132">        /** The threads per core. */</span>
-<span class="source-line-no">133</span><span id="line-133">        public int threadsPerCore;</span>
-<span class="source-line-no">134</span><span id="line-134"></span>
-<span class="source-line-no">135</span><span id="line-135">        /** The accelerator. */</span>
-<span class="source-line-no">136</span><span id="line-136">        public String accelerator = "kvm";</span>
-<span class="source-line-no">137</span><span id="line-137"></span>
-<span class="source-line-no">138</span><span id="line-138">        /** The rtc base. */</span>
-<span class="source-line-no">139</span><span id="line-139">        public String rtcBase = "utc";</span>
-<span class="source-line-no">140</span><span id="line-140"></span>
-<span class="source-line-no">141</span><span id="line-141">        /** The rtc clock. */</span>
-<span class="source-line-no">142</span><span id="line-142">        public String rtcClock = "rt";</span>
-<span class="source-line-no">143</span><span id="line-143"></span>
-<span class="source-line-no">144</span><span id="line-144">        /** The powerdown timeout. */</span>
-<span class="source-line-no">145</span><span id="line-145">        public int powerdownTimeout = 900;</span>
-<span class="source-line-no">146</span><span id="line-146"></span>
-<span class="source-line-no">147</span><span id="line-147">        /** The network. */</span>
-<span class="source-line-no">148</span><span id="line-148">        public Network[] network = { new Network() };</span>
-<span class="source-line-no">149</span><span id="line-149"></span>
-<span class="source-line-no">150</span><span id="line-150">        /** The drives. */</span>
-<span class="source-line-no">151</span><span id="line-151">        public Drive[] drives = new Drive[0];</span>
-<span class="source-line-no">152</span><span id="line-152"></span>
-<span class="source-line-no">153</span><span id="line-153">        /** The display. */</span>
-<span class="source-line-no">154</span><span id="line-154">        public Display display;</span>
-<span class="source-line-no">155</span><span id="line-155"></span>
-<span class="source-line-no">156</span><span id="line-156">        /**</span>
-<span class="source-line-no">157</span><span id="line-157">         * Convert value from JSON parser.</span>
-<span class="source-line-no">158</span><span id="line-158">         *</span>
-<span class="source-line-no">159</span><span id="line-159">         * @param value the new maximum ram</span>
-<span class="source-line-no">160</span><span id="line-160">         */</span>
-<span class="source-line-no">161</span><span id="line-161">        public void setMaximumRam(String value) {</span>
-<span class="source-line-no">162</span><span id="line-162">            maximumRam = Convertions.parseMemory(value);</span>
-<span class="source-line-no">163</span><span id="line-163">        }</span>
-<span class="source-line-no">164</span><span id="line-164"></span>
-<span class="source-line-no">165</span><span id="line-165">        /**</span>
-<span class="source-line-no">166</span><span id="line-166">         * Convert value from JSON parser.</span>
-<span class="source-line-no">167</span><span id="line-167">         *</span>
-<span class="source-line-no">168</span><span id="line-168">         * @param value the new current ram</span>
-<span class="source-line-no">169</span><span id="line-169">         */</span>
-<span class="source-line-no">170</span><span id="line-170">        public void setCurrentRam(String value) {</span>
-<span class="source-line-no">171</span><span id="line-171">            currentRam = Convertions.parseMemory(value);</span>
-<span class="source-line-no">172</span><span id="line-172">        }</span>
-<span class="source-line-no">173</span><span id="line-173">    }</span>
-<span class="source-line-no">174</span><span id="line-174"></span>
-<span class="source-line-no">175</span><span id="line-175">    /**</span>
-<span class="source-line-no">176</span><span id="line-176">     * Subsection "network".</span>
-<span class="source-line-no">177</span><span id="line-177">     */</span>
-<span class="source-line-no">178</span><span id="line-178">    public static class Network implements Dto {</span>
-<span class="source-line-no">179</span><span id="line-179"></span>
-<span class="source-line-no">180</span><span id="line-180">        /** The type. */</span>
-<span class="source-line-no">181</span><span id="line-181">        public String type = "tap";</span>
-<span class="source-line-no">182</span><span id="line-182"></span>
-<span class="source-line-no">183</span><span id="line-183">        /** The bridge. */</span>
-<span class="source-line-no">184</span><span id="line-184">        public String bridge;</span>
-<span class="source-line-no">185</span><span id="line-185"></span>
-<span class="source-line-no">186</span><span id="line-186">        /** The device. */</span>
-<span class="source-line-no">187</span><span id="line-187">        public String device = "virtio-net";</span>
-<span class="source-line-no">188</span><span id="line-188"></span>
-<span class="source-line-no">189</span><span id="line-189">        /** The mac. */</span>
-<span class="source-line-no">190</span><span id="line-190">        public String mac;</span>
-<span class="source-line-no">191</span><span id="line-191"></span>
-<span class="source-line-no">192</span><span id="line-192">        /** The net. */</span>
-<span class="source-line-no">193</span><span id="line-193">        public String net;</span>
-<span class="source-line-no">194</span><span id="line-194">    }</span>
+<span class="source-line-no">093</span><span id="line-93">    /**</span>
+<span class="source-line-no">094</span><span id="line-94">     * Subsection "vm".</span>
+<span class="source-line-no">095</span><span id="line-95">     */</span>
+<span class="source-line-no">096</span><span id="line-96">    @SuppressWarnings({ "PMD.ShortClassName", "PMD.TooManyFields",</span>
+<span class="source-line-no">097</span><span id="line-97">        "PMD.DataClass" })</span>
+<span class="source-line-no">098</span><span id="line-98">    public static class Vm implements Dto {</span>
+<span class="source-line-no">099</span><span id="line-99"></span>
+<span class="source-line-no">100</span><span id="line-100">        /** The name. */</span>
+<span class="source-line-no">101</span><span id="line-101">        public String name;</span>
+<span class="source-line-no">102</span><span id="line-102"></span>
+<span class="source-line-no">103</span><span id="line-103">        /** The uuid. */</span>
+<span class="source-line-no">104</span><span id="line-104">        public String uuid;</span>
+<span class="source-line-no">105</span><span id="line-105"></span>
+<span class="source-line-no">106</span><span id="line-106">        /** The use tpm. */</span>
+<span class="source-line-no">107</span><span id="line-107">        public boolean useTpm;</span>
+<span class="source-line-no">108</span><span id="line-108"></span>
+<span class="source-line-no">109</span><span id="line-109">        /** The boot menu. */</span>
+<span class="source-line-no">110</span><span id="line-110">        public boolean bootMenu;</span>
+<span class="source-line-no">111</span><span id="line-111"></span>
+<span class="source-line-no">112</span><span id="line-112">        /** The firmware. */</span>
+<span class="source-line-no">113</span><span id="line-113">        public String firmware = "uefi";</span>
+<span class="source-line-no">114</span><span id="line-114"></span>
+<span class="source-line-no">115</span><span id="line-115">        /** The maximum ram. */</span>
+<span class="source-line-no">116</span><span id="line-116">        public BigInteger maximumRam;</span>
+<span class="source-line-no">117</span><span id="line-117"></span>
+<span class="source-line-no">118</span><span id="line-118">        /** The current ram. */</span>
+<span class="source-line-no">119</span><span id="line-119">        public BigInteger currentRam;</span>
+<span class="source-line-no">120</span><span id="line-120"></span>
+<span class="source-line-no">121</span><span id="line-121">        /** The cpu model. */</span>
+<span class="source-line-no">122</span><span id="line-122">        public String cpuModel = "host";</span>
+<span class="source-line-no">123</span><span id="line-123"></span>
+<span class="source-line-no">124</span><span id="line-124">        /** The maximum cpus. */</span>
+<span class="source-line-no">125</span><span id="line-125">        public int maximumCpus = 1;</span>
+<span class="source-line-no">126</span><span id="line-126"></span>
+<span class="source-line-no">127</span><span id="line-127">        /** The current cpus. */</span>
+<span class="source-line-no">128</span><span id="line-128">        public int currentCpus = 1;</span>
+<span class="source-line-no">129</span><span id="line-129"></span>
+<span class="source-line-no">130</span><span id="line-130">        /** The cpu sockets. */</span>
+<span class="source-line-no">131</span><span id="line-131">        public int sockets;</span>
+<span class="source-line-no">132</span><span id="line-132"></span>
+<span class="source-line-no">133</span><span id="line-133">        /** The dies per socket. */</span>
+<span class="source-line-no">134</span><span id="line-134">        public int diesPerSocket;</span>
+<span class="source-line-no">135</span><span id="line-135"></span>
+<span class="source-line-no">136</span><span id="line-136">        /** The cores per die. */</span>
+<span class="source-line-no">137</span><span id="line-137">        public int coresPerDie;</span>
+<span class="source-line-no">138</span><span id="line-138"></span>
+<span class="source-line-no">139</span><span id="line-139">        /** The threads per core. */</span>
+<span class="source-line-no">140</span><span id="line-140">        public int threadsPerCore;</span>
+<span class="source-line-no">141</span><span id="line-141"></span>
+<span class="source-line-no">142</span><span id="line-142">        /** The accelerator. */</span>
+<span class="source-line-no">143</span><span id="line-143">        public String accelerator = "kvm";</span>
+<span class="source-line-no">144</span><span id="line-144"></span>
+<span class="source-line-no">145</span><span id="line-145">        /** The rtc base. */</span>
+<span class="source-line-no">146</span><span id="line-146">        public String rtcBase = "utc";</span>
+<span class="source-line-no">147</span><span id="line-147"></span>
+<span class="source-line-no">148</span><span id="line-148">        /** The rtc clock. */</span>
+<span class="source-line-no">149</span><span id="line-149">        public String rtcClock = "rt";</span>
+<span class="source-line-no">150</span><span id="line-150"></span>
+<span class="source-line-no">151</span><span id="line-151">        /** The powerdown timeout. */</span>
+<span class="source-line-no">152</span><span id="line-152">        public int powerdownTimeout = 900;</span>
+<span class="source-line-no">153</span><span id="line-153"></span>
+<span class="source-line-no">154</span><span id="line-154">        /** The network. */</span>
+<span class="source-line-no">155</span><span id="line-155">        public Network[] network = { new Network() };</span>
+<span class="source-line-no">156</span><span id="line-156"></span>
+<span class="source-line-no">157</span><span id="line-157">        /** The drives. */</span>
+<span class="source-line-no">158</span><span id="line-158">        public Drive[] drives = new Drive[0];</span>
+<span class="source-line-no">159</span><span id="line-159"></span>
+<span class="source-line-no">160</span><span id="line-160">        /** The display. */</span>
+<span class="source-line-no">161</span><span id="line-161">        public Display display;</span>
+<span class="source-line-no">162</span><span id="line-162"></span>
+<span class="source-line-no">163</span><span id="line-163">        /**</span>
+<span class="source-line-no">164</span><span id="line-164">         * Convert value from JSON parser.</span>
+<span class="source-line-no">165</span><span id="line-165">         *</span>
+<span class="source-line-no">166</span><span id="line-166">         * @param value the new maximum ram</span>
+<span class="source-line-no">167</span><span id="line-167">         */</span>
+<span class="source-line-no">168</span><span id="line-168">        public void setMaximumRam(String value) {</span>
+<span class="source-line-no">169</span><span id="line-169">            maximumRam = Convertions.parseMemory(value);</span>
+<span class="source-line-no">170</span><span id="line-170">        }</span>
+<span class="source-line-no">171</span><span id="line-171"></span>
+<span class="source-line-no">172</span><span id="line-172">        /**</span>
+<span class="source-line-no">173</span><span id="line-173">         * Convert value from JSON parser.</span>
+<span class="source-line-no">174</span><span id="line-174">         *</span>
+<span class="source-line-no">175</span><span id="line-175">         * @param value the new current ram</span>
+<span class="source-line-no">176</span><span id="line-176">         */</span>
+<span class="source-line-no">177</span><span id="line-177">        public void setCurrentRam(String value) {</span>
+<span class="source-line-no">178</span><span id="line-178">            currentRam = Convertions.parseMemory(value);</span>
+<span class="source-line-no">179</span><span id="line-179">        }</span>
+<span class="source-line-no">180</span><span id="line-180">    }</span>
+<span class="source-line-no">181</span><span id="line-181"></span>
+<span class="source-line-no">182</span><span id="line-182">    /**</span>
+<span class="source-line-no">183</span><span id="line-183">     * Subsection "network".</span>
+<span class="source-line-no">184</span><span id="line-184">     */</span>
+<span class="source-line-no">185</span><span id="line-185">    public static class Network implements Dto {</span>
+<span class="source-line-no">186</span><span id="line-186"></span>
+<span class="source-line-no">187</span><span id="line-187">        /** The type. */</span>
+<span class="source-line-no">188</span><span id="line-188">        public String type = "tap";</span>
+<span class="source-line-no">189</span><span id="line-189"></span>
+<span class="source-line-no">190</span><span id="line-190">        /** The bridge. */</span>
+<span class="source-line-no">191</span><span id="line-191">        public String bridge;</span>
+<span class="source-line-no">192</span><span id="line-192"></span>
+<span class="source-line-no">193</span><span id="line-193">        /** The device. */</span>
+<span class="source-line-no">194</span><span id="line-194">        public String device = "virtio-net";</span>
 <span class="source-line-no">195</span><span id="line-195"></span>
-<span class="source-line-no">196</span><span id="line-196">    /**</span>
-<span class="source-line-no">197</span><span id="line-197">     * Subsection "drive".</span>
-<span class="source-line-no">198</span><span id="line-198">     */</span>
-<span class="source-line-no">199</span><span id="line-199">    public static class Drive implements Dto {</span>
-<span class="source-line-no">200</span><span id="line-200"></span>
-<span class="source-line-no">201</span><span id="line-201">        /** The type. */</span>
-<span class="source-line-no">202</span><span id="line-202">        public String type;</span>
-<span class="source-line-no">203</span><span id="line-203"></span>
-<span class="source-line-no">204</span><span id="line-204">        /** The bootindex. */</span>
-<span class="source-line-no">205</span><span id="line-205">        public Integer bootindex;</span>
-<span class="source-line-no">206</span><span id="line-206"></span>
-<span class="source-line-no">207</span><span id="line-207">        /** The device. */</span>
-<span class="source-line-no">208</span><span id="line-208">        public String device;</span>
-<span class="source-line-no">209</span><span id="line-209"></span>
-<span class="source-line-no">210</span><span id="line-210">        /** The file. */</span>
-<span class="source-line-no">211</span><span id="line-211">        public String file;</span>
-<span class="source-line-no">212</span><span id="line-212"></span>
-<span class="source-line-no">213</span><span id="line-213">        /** The resource. */</span>
-<span class="source-line-no">214</span><span id="line-214">        public String resource;</span>
-<span class="source-line-no">215</span><span id="line-215">    }</span>
+<span class="source-line-no">196</span><span id="line-196">        /** The mac. */</span>
+<span class="source-line-no">197</span><span id="line-197">        public String mac;</span>
+<span class="source-line-no">198</span><span id="line-198"></span>
+<span class="source-line-no">199</span><span id="line-199">        /** The net. */</span>
+<span class="source-line-no">200</span><span id="line-200">        public String net;</span>
+<span class="source-line-no">201</span><span id="line-201">    }</span>
+<span class="source-line-no">202</span><span id="line-202"></span>
+<span class="source-line-no">203</span><span id="line-203">    /**</span>
+<span class="source-line-no">204</span><span id="line-204">     * Subsection "drive".</span>
+<span class="source-line-no">205</span><span id="line-205">     */</span>
+<span class="source-line-no">206</span><span id="line-206">    public static class Drive implements Dto {</span>
+<span class="source-line-no">207</span><span id="line-207"></span>
+<span class="source-line-no">208</span><span id="line-208">        /** The type. */</span>
+<span class="source-line-no">209</span><span id="line-209">        public String type;</span>
+<span class="source-line-no">210</span><span id="line-210"></span>
+<span class="source-line-no">211</span><span id="line-211">        /** The bootindex. */</span>
+<span class="source-line-no">212</span><span id="line-212">        public Integer bootindex;</span>
+<span class="source-line-no">213</span><span id="line-213"></span>
+<span class="source-line-no">214</span><span id="line-214">        /** The device. */</span>
+<span class="source-line-no">215</span><span id="line-215">        public String device;</span>
 <span class="source-line-no">216</span><span id="line-216"></span>
-<span class="source-line-no">217</span><span id="line-217">    /**</span>
-<span class="source-line-no">218</span><span id="line-218">     * The Class Display.</span>
-<span class="source-line-no">219</span><span id="line-219">     */</span>
-<span class="source-line-no">220</span><span id="line-220">    public static class Display implements Dto {</span>
-<span class="source-line-no">221</span><span id="line-221">        public Spice spice;</span>
+<span class="source-line-no">217</span><span id="line-217">        /** The file. */</span>
+<span class="source-line-no">218</span><span id="line-218">        public String file;</span>
+<span class="source-line-no">219</span><span id="line-219"></span>
+<span class="source-line-no">220</span><span id="line-220">        /** The resource. */</span>
+<span class="source-line-no">221</span><span id="line-221">        public String resource;</span>
 <span class="source-line-no">222</span><span id="line-222">    }</span>
 <span class="source-line-no">223</span><span id="line-223"></span>
 <span class="source-line-no">224</span><span id="line-224">    /**</span>
-<span class="source-line-no">225</span><span id="line-225">     * Subsection "spice".</span>
+<span class="source-line-no">225</span><span id="line-225">     * The Class Display.</span>
 <span class="source-line-no">226</span><span id="line-226">     */</span>
-<span class="source-line-no">227</span><span id="line-227">    public static class Spice implements Dto {</span>
-<span class="source-line-no">228</span><span id="line-228"></span>
-<span class="source-line-no">229</span><span id="line-229">        /** The port. */</span>
-<span class="source-line-no">230</span><span id="line-230">        public int port = 5900;</span>
-<span class="source-line-no">231</span><span id="line-231"></span>
-<span class="source-line-no">232</span><span id="line-232">        /** The ticket. */</span>
-<span class="source-line-no">233</span><span id="line-233">        public String ticket;</span>
-<span class="source-line-no">234</span><span id="line-234"></span>
-<span class="source-line-no">235</span><span id="line-235">        /** The streaming video. */</span>
-<span class="source-line-no">236</span><span id="line-236">        public String streamingVideo;</span>
-<span class="source-line-no">237</span><span id="line-237"></span>
-<span class="source-line-no">238</span><span id="line-238">        /** The usb redirects. */</span>
-<span class="source-line-no">239</span><span id="line-239">        public int usbRedirects = 2;</span>
-<span class="source-line-no">240</span><span id="line-240">    }</span>
+<span class="source-line-no">227</span><span id="line-227">    public static class Display implements Dto {</span>
+<span class="source-line-no">228</span><span id="line-228">        public Spice spice;</span>
+<span class="source-line-no">229</span><span id="line-229">    }</span>
+<span class="source-line-no">230</span><span id="line-230"></span>
+<span class="source-line-no">231</span><span id="line-231">    /**</span>
+<span class="source-line-no">232</span><span id="line-232">     * Subsection "spice".</span>
+<span class="source-line-no">233</span><span id="line-233">     */</span>
+<span class="source-line-no">234</span><span id="line-234">    public static class Spice implements Dto {</span>
+<span class="source-line-no">235</span><span id="line-235"></span>
+<span class="source-line-no">236</span><span id="line-236">        /** The port. */</span>
+<span class="source-line-no">237</span><span id="line-237">        public int port = 5900;</span>
+<span class="source-line-no">238</span><span id="line-238"></span>
+<span class="source-line-no">239</span><span id="line-239">        /** The ticket. */</span>
+<span class="source-line-no">240</span><span id="line-240">        public String ticket;</span>
 <span class="source-line-no">241</span><span id="line-241"></span>
-<span class="source-line-no">242</span><span id="line-242">    /**</span>
-<span class="source-line-no">243</span><span id="line-243">     * Check configuration.</span>
-<span class="source-line-no">244</span><span id="line-244">     *</span>
-<span class="source-line-no">245</span><span id="line-245">     * @return true, if successful</span>
-<span class="source-line-no">246</span><span id="line-246">     */</span>
-<span class="source-line-no">247</span><span id="line-247">    public boolean check() {</span>
-<span class="source-line-no">248</span><span id="line-248">        if (vm == null || vm.name == null) {</span>
-<span class="source-line-no">249</span><span id="line-249">            logger.severe(() -&gt; "Configuration is missing mandatory entries.");</span>
-<span class="source-line-no">250</span><span id="line-250">            return false;</span>
-<span class="source-line-no">251</span><span id="line-251">        }</span>
-<span class="source-line-no">252</span><span id="line-252">        if (!checkRuntimeDir() || !checkDataDir() || !checkUuid()) {</span>
-<span class="source-line-no">253</span><span id="line-253">            return false;</span>
-<span class="source-line-no">254</span><span id="line-254">        }</span>
-<span class="source-line-no">255</span><span id="line-255"></span>
-<span class="source-line-no">256</span><span id="line-256">        // Adjust max cpus if necessary</span>
-<span class="source-line-no">257</span><span id="line-257">        if (vm.currentCpus &gt; vm.maximumCpus) {</span>
-<span class="source-line-no">258</span><span id="line-258">            vm.maximumCpus = vm.currentCpus;</span>
-<span class="source-line-no">259</span><span id="line-259">        }</span>
-<span class="source-line-no">260</span><span id="line-260"></span>
-<span class="source-line-no">261</span><span id="line-261">        checkDrives();</span>
+<span class="source-line-no">242</span><span id="line-242">        /** The streaming video. */</span>
+<span class="source-line-no">243</span><span id="line-243">        public String streamingVideo;</span>
+<span class="source-line-no">244</span><span id="line-244"></span>
+<span class="source-line-no">245</span><span id="line-245">        /** The usb redirects. */</span>
+<span class="source-line-no">246</span><span id="line-246">        public int usbRedirects = 2;</span>
+<span class="source-line-no">247</span><span id="line-247">    }</span>
+<span class="source-line-no">248</span><span id="line-248"></span>
+<span class="source-line-no">249</span><span id="line-249">    /**</span>
+<span class="source-line-no">250</span><span id="line-250">     * Check configuration.</span>
+<span class="source-line-no">251</span><span id="line-251">     *</span>
+<span class="source-line-no">252</span><span id="line-252">     * @return true, if successful</span>
+<span class="source-line-no">253</span><span id="line-253">     */</span>
+<span class="source-line-no">254</span><span id="line-254">    public boolean check() {</span>
+<span class="source-line-no">255</span><span id="line-255">        if (vm == null || vm.name == null) {</span>
+<span class="source-line-no">256</span><span id="line-256">            logger.severe(() -&gt; "Configuration is missing mandatory entries.");</span>
+<span class="source-line-no">257</span><span id="line-257">            return false;</span>
+<span class="source-line-no">258</span><span id="line-258">        }</span>
+<span class="source-line-no">259</span><span id="line-259">        if (!checkRuntimeDir() || !checkDataDir() || !checkUuid()) {</span>
+<span class="source-line-no">260</span><span id="line-260">            return false;</span>
+<span class="source-line-no">261</span><span id="line-261">        }</span>
 <span class="source-line-no">262</span><span id="line-262"></span>
-<span class="source-line-no">263</span><span id="line-263">        return true;</span>
-<span class="source-line-no">264</span><span id="line-264">    }</span>
-<span class="source-line-no">265</span><span id="line-265"></span>
-<span class="source-line-no">266</span><span id="line-266">    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")</span>
-<span class="source-line-no">267</span><span id="line-267">    private void checkDrives() {</span>
-<span class="source-line-no">268</span><span id="line-268">        for (Drive drive : vm.drives) {</span>
-<span class="source-line-no">269</span><span id="line-269">            if (drive.file != null || drive.device != null</span>
-<span class="source-line-no">270</span><span id="line-270">                || "ide-cd".equals(drive.type)) {</span>
-<span class="source-line-no">271</span><span id="line-271">                continue;</span>
-<span class="source-line-no">272</span><span id="line-272">            }</span>
-<span class="source-line-no">273</span><span id="line-273">            if (drive.resource == null) {</span>
-<span class="source-line-no">274</span><span id="line-274">                logger.severe(</span>
-<span class="source-line-no">275</span><span id="line-275">                    () -&gt; "Drive configuration is missing its resource.");</span>
-<span class="source-line-no">276</span><span id="line-276"></span>
-<span class="source-line-no">277</span><span id="line-277">            }</span>
-<span class="source-line-no">278</span><span id="line-278">            if (Files.isRegularFile(Path.of(drive.resource))) {</span>
-<span class="source-line-no">279</span><span id="line-279">                drive.file = drive.resource;</span>
-<span class="source-line-no">280</span><span id="line-280">            } else {</span>
-<span class="source-line-no">281</span><span id="line-281">                drive.device = drive.resource;</span>
-<span class="source-line-no">282</span><span id="line-282">            }</span>
-<span class="source-line-no">283</span><span id="line-283">        }</span>
-<span class="source-line-no">284</span><span id="line-284">    }</span>
-<span class="source-line-no">285</span><span id="line-285"></span>
-<span class="source-line-no">286</span><span id="line-286">    @SuppressWarnings("PMD.AvoidDeeplyNestedIfStmts")</span>
-<span class="source-line-no">287</span><span id="line-287">    private boolean checkRuntimeDir() {</span>
-<span class="source-line-no">288</span><span id="line-288">        // Runtime directory (sockets etc.)</span>
-<span class="source-line-no">289</span><span id="line-289">        if (runtimeDir == null) {</span>
-<span class="source-line-no">290</span><span id="line-290">            var appDir = FsdUtils.runtimeDir(APP_NAME.replace("-", ""));</span>
-<span class="source-line-no">291</span><span id="line-291">            if (!Files.exists(appDir) &amp;&amp; appDir.toFile().mkdirs()) {</span>
-<span class="source-line-no">292</span><span id="line-292">                try {</span>
-<span class="source-line-no">293</span><span id="line-293">                    // When appDir is derived from XDG_RUNTIME_DIR</span>
-<span class="source-line-no">294</span><span id="line-294">                    // the latter should already have these permissions,</span>
-<span class="source-line-no">295</span><span id="line-295">                    // but let's be on the safe side.</span>
-<span class="source-line-no">296</span><span id="line-296">                    Files.setPosixFilePermissions(appDir,</span>
-<span class="source-line-no">297</span><span id="line-297">                        Set.of(PosixFilePermission.OWNER_READ,</span>
-<span class="source-line-no">298</span><span id="line-298">                            PosixFilePermission.OWNER_WRITE,</span>
-<span class="source-line-no">299</span><span id="line-299">                            PosixFilePermission.OWNER_EXECUTE));</span>
-<span class="source-line-no">300</span><span id="line-300">                } catch (IOException e) {</span>
-<span class="source-line-no">301</span><span id="line-301">                    logger.warning(() -&gt; String.format(</span>
-<span class="source-line-no">302</span><span id="line-302">                        "Cannot set permissions rwx------ on \"%s\".",</span>
-<span class="source-line-no">303</span><span id="line-303">                        runtimeDir));</span>
-<span class="source-line-no">304</span><span id="line-304">                }</span>
-<span class="source-line-no">305</span><span id="line-305">            }</span>
-<span class="source-line-no">306</span><span id="line-306">            runtimeDir = FsdUtils.runtimeDir(APP_NAME.replace("-", ""))</span>
-<span class="source-line-no">307</span><span id="line-307">                .resolve(vm.name);</span>
-<span class="source-line-no">308</span><span id="line-308">            runtimeDir.toFile().mkdir();</span>
-<span class="source-line-no">309</span><span id="line-309">            swtpmSocket = runtimeDir.resolve("swtpm-sock");</span>
-<span class="source-line-no">310</span><span id="line-310">            monitorSocket = runtimeDir.resolve("monitor.sock");</span>
-<span class="source-line-no">311</span><span id="line-311">        }</span>
-<span class="source-line-no">312</span><span id="line-312">        if (!Files.isDirectory(runtimeDir) || !Files.isWritable(runtimeDir)) {</span>
-<span class="source-line-no">313</span><span id="line-313">            logger.severe(() -&gt; String.format(</span>
-<span class="source-line-no">314</span><span id="line-314">                "Configured runtime directory \"%s\""</span>
-<span class="source-line-no">315</span><span id="line-315">                    + " does not exist or isn't writable.",</span>
-<span class="source-line-no">316</span><span id="line-316">                runtimeDir));</span>
-<span class="source-line-no">317</span><span id="line-317">            return false;</span>
-<span class="source-line-no">318</span><span id="line-318">        }</span>
-<span class="source-line-no">319</span><span id="line-319">        return true;</span>
-<span class="source-line-no">320</span><span id="line-320">    }</span>
-<span class="source-line-no">321</span><span id="line-321"></span>
-<span class="source-line-no">322</span><span id="line-322">    @SuppressWarnings("PMD.AvoidDeeplyNestedIfStmts")</span>
-<span class="source-line-no">323</span><span id="line-323">    private boolean checkDataDir() {</span>
-<span class="source-line-no">324</span><span id="line-324">        // Data directory</span>
-<span class="source-line-no">325</span><span id="line-325">        if (dataDir == null) {</span>
-<span class="source-line-no">326</span><span id="line-326">            dataDir</span>
-<span class="source-line-no">327</span><span id="line-327">                = FsdUtils.dataHome(APP_NAME.replace("-", "")).resolve(vm.name);</span>
-<span class="source-line-no">328</span><span id="line-328">        }</span>
-<span class="source-line-no">329</span><span id="line-329">        if (!Files.exists(dataDir)) {</span>
-<span class="source-line-no">330</span><span id="line-330">            dataDir.toFile().mkdirs();</span>
-<span class="source-line-no">331</span><span id="line-331">        }</span>
-<span class="source-line-no">332</span><span id="line-332">        if (!Files.isDirectory(dataDir) || !Files.isWritable(dataDir)) {</span>
-<span class="source-line-no">333</span><span id="line-333">            logger.severe(() -&gt; String.format(</span>
-<span class="source-line-no">334</span><span id="line-334">                "Configured data directory \"%s\""</span>
-<span class="source-line-no">335</span><span id="line-335">                    + " does not exist or isn't writable.",</span>
-<span class="source-line-no">336</span><span id="line-336">                dataDir));</span>
-<span class="source-line-no">337</span><span id="line-337">            return false;</span>
-<span class="source-line-no">338</span><span id="line-338">        }</span>
-<span class="source-line-no">339</span><span id="line-339">        return true;</span>
-<span class="source-line-no">340</span><span id="line-340">    }</span>
-<span class="source-line-no">341</span><span id="line-341"></span>
-<span class="source-line-no">342</span><span id="line-342">    private boolean checkUuid() {</span>
-<span class="source-line-no">343</span><span id="line-343">        // Explicitly configured uuid takes precedence.</span>
-<span class="source-line-no">344</span><span id="line-344">        if (vm.uuid != null) {</span>
-<span class="source-line-no">345</span><span id="line-345">            return true;</span>
+<span class="source-line-no">263</span><span id="line-263">        // Adjust max cpus if necessary</span>
+<span class="source-line-no">264</span><span id="line-264">        if (vm.currentCpus &gt; vm.maximumCpus) {</span>
+<span class="source-line-no">265</span><span id="line-265">            vm.maximumCpus = vm.currentCpus;</span>
+<span class="source-line-no">266</span><span id="line-266">        }</span>
+<span class="source-line-no">267</span><span id="line-267"></span>
+<span class="source-line-no">268</span><span id="line-268">        checkDrives();</span>
+<span class="source-line-no">269</span><span id="line-269">        checkCloudInit();</span>
+<span class="source-line-no">270</span><span id="line-270"></span>
+<span class="source-line-no">271</span><span id="line-271">        return true;</span>
+<span class="source-line-no">272</span><span id="line-272">    }</span>
+<span class="source-line-no">273</span><span id="line-273"></span>
+<span class="source-line-no">274</span><span id="line-274">    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")</span>
+<span class="source-line-no">275</span><span id="line-275">    private void checkDrives() {</span>
+<span class="source-line-no">276</span><span id="line-276">        for (Drive drive : vm.drives) {</span>
+<span class="source-line-no">277</span><span id="line-277">            if (drive.file != null || drive.device != null</span>
+<span class="source-line-no">278</span><span id="line-278">                || "ide-cd".equals(drive.type)) {</span>
+<span class="source-line-no">279</span><span id="line-279">                continue;</span>
+<span class="source-line-no">280</span><span id="line-280">            }</span>
+<span class="source-line-no">281</span><span id="line-281">            if (drive.resource == null) {</span>
+<span class="source-line-no">282</span><span id="line-282">                logger.severe(</span>
+<span class="source-line-no">283</span><span id="line-283">                    () -&gt; "Drive configuration is missing its resource.");</span>
+<span class="source-line-no">284</span><span id="line-284"></span>
+<span class="source-line-no">285</span><span id="line-285">            }</span>
+<span class="source-line-no">286</span><span id="line-286">            if (Files.isRegularFile(Path.of(drive.resource))) {</span>
+<span class="source-line-no">287</span><span id="line-287">                drive.file = drive.resource;</span>
+<span class="source-line-no">288</span><span id="line-288">            } else {</span>
+<span class="source-line-no">289</span><span id="line-289">                drive.device = drive.resource;</span>
+<span class="source-line-no">290</span><span id="line-290">            }</span>
+<span class="source-line-no">291</span><span id="line-291">        }</span>
+<span class="source-line-no">292</span><span id="line-292">    }</span>
+<span class="source-line-no">293</span><span id="line-293"></span>
+<span class="source-line-no">294</span><span id="line-294">    @SuppressWarnings("PMD.AvoidDeeplyNestedIfStmts")</span>
+<span class="source-line-no">295</span><span id="line-295">    private boolean checkRuntimeDir() {</span>
+<span class="source-line-no">296</span><span id="line-296">        // Runtime directory (sockets etc.)</span>
+<span class="source-line-no">297</span><span id="line-297">        if (runtimeDir == null) {</span>
+<span class="source-line-no">298</span><span id="line-298">            var appDir = FsdUtils.runtimeDir(APP_NAME.replace("-", ""));</span>
+<span class="source-line-no">299</span><span id="line-299">            if (!Files.exists(appDir) &amp;&amp; appDir.toFile().mkdirs()) {</span>
+<span class="source-line-no">300</span><span id="line-300">                try {</span>
+<span class="source-line-no">301</span><span id="line-301">                    // When appDir is derived from XDG_RUNTIME_DIR</span>
+<span class="source-line-no">302</span><span id="line-302">                    // the latter should already have these permissions,</span>
+<span class="source-line-no">303</span><span id="line-303">                    // but let's be on the safe side.</span>
+<span class="source-line-no">304</span><span id="line-304">                    Files.setPosixFilePermissions(appDir,</span>
+<span class="source-line-no">305</span><span id="line-305">                        Set.of(PosixFilePermission.OWNER_READ,</span>
+<span class="source-line-no">306</span><span id="line-306">                            PosixFilePermission.OWNER_WRITE,</span>
+<span class="source-line-no">307</span><span id="line-307">                            PosixFilePermission.OWNER_EXECUTE));</span>
+<span class="source-line-no">308</span><span id="line-308">                } catch (IOException e) {</span>
+<span class="source-line-no">309</span><span id="line-309">                    logger.warning(() -&gt; String.format(</span>
+<span class="source-line-no">310</span><span id="line-310">                        "Cannot set permissions rwx------ on \"%s\".",</span>
+<span class="source-line-no">311</span><span id="line-311">                        runtimeDir));</span>
+<span class="source-line-no">312</span><span id="line-312">                }</span>
+<span class="source-line-no">313</span><span id="line-313">            }</span>
+<span class="source-line-no">314</span><span id="line-314">            runtimeDir = FsdUtils.runtimeDir(APP_NAME.replace("-", ""))</span>
+<span class="source-line-no">315</span><span id="line-315">                .resolve(vm.name);</span>
+<span class="source-line-no">316</span><span id="line-316">            runtimeDir.toFile().mkdir();</span>
+<span class="source-line-no">317</span><span id="line-317">            swtpmSocket = runtimeDir.resolve("swtpm-sock");</span>
+<span class="source-line-no">318</span><span id="line-318">            monitorSocket = runtimeDir.resolve("monitor.sock");</span>
+<span class="source-line-no">319</span><span id="line-319">        }</span>
+<span class="source-line-no">320</span><span id="line-320">        if (!Files.isDirectory(runtimeDir) || !Files.isWritable(runtimeDir)) {</span>
+<span class="source-line-no">321</span><span id="line-321">            logger.severe(() -&gt; String.format(</span>
+<span class="source-line-no">322</span><span id="line-322">                "Configured runtime directory \"%s\""</span>
+<span class="source-line-no">323</span><span id="line-323">                    + " does not exist or isn't writable.",</span>
+<span class="source-line-no">324</span><span id="line-324">                runtimeDir));</span>
+<span class="source-line-no">325</span><span id="line-325">            return false;</span>
+<span class="source-line-no">326</span><span id="line-326">        }</span>
+<span class="source-line-no">327</span><span id="line-327">        return true;</span>
+<span class="source-line-no">328</span><span id="line-328">    }</span>
+<span class="source-line-no">329</span><span id="line-329"></span>
+<span class="source-line-no">330</span><span id="line-330">    @SuppressWarnings("PMD.AvoidDeeplyNestedIfStmts")</span>
+<span class="source-line-no">331</span><span id="line-331">    private boolean checkDataDir() {</span>
+<span class="source-line-no">332</span><span id="line-332">        // Data directory</span>
+<span class="source-line-no">333</span><span id="line-333">        if (dataDir == null) {</span>
+<span class="source-line-no">334</span><span id="line-334">            dataDir</span>
+<span class="source-line-no">335</span><span id="line-335">                = FsdUtils.dataHome(APP_NAME.replace("-", "")).resolve(vm.name);</span>
+<span class="source-line-no">336</span><span id="line-336">        }</span>
+<span class="source-line-no">337</span><span id="line-337">        if (!Files.exists(dataDir)) {</span>
+<span class="source-line-no">338</span><span id="line-338">            dataDir.toFile().mkdirs();</span>
+<span class="source-line-no">339</span><span id="line-339">        }</span>
+<span class="source-line-no">340</span><span id="line-340">        if (!Files.isDirectory(dataDir) || !Files.isWritable(dataDir)) {</span>
+<span class="source-line-no">341</span><span id="line-341">            logger.severe(() -&gt; String.format(</span>
+<span class="source-line-no">342</span><span id="line-342">                "Configured data directory \"%s\""</span>
+<span class="source-line-no">343</span><span id="line-343">                    + " does not exist or isn't writable.",</span>
+<span class="source-line-no">344</span><span id="line-344">                dataDir));</span>
+<span class="source-line-no">345</span><span id="line-345">            return false;</span>
 <span class="source-line-no">346</span><span id="line-346">        }</span>
-<span class="source-line-no">347</span><span id="line-347"></span>
-<span class="source-line-no">348</span><span id="line-348">        // Try to read stored uuid.</span>
-<span class="source-line-no">349</span><span id="line-349">        Path uuidPath = dataDir.resolve("uuid.txt");</span>
-<span class="source-line-no">350</span><span id="line-350">        if (Files.isReadable(uuidPath)) {</span>
-<span class="source-line-no">351</span><span id="line-351">            try {</span>
-<span class="source-line-no">352</span><span id="line-352">                var stored</span>
-<span class="source-line-no">353</span><span id="line-353">                    = Files.lines(uuidPath, StandardCharsets.UTF_8).findFirst();</span>
-<span class="source-line-no">354</span><span id="line-354">                if (stored.isPresent()) {</span>
-<span class="source-line-no">355</span><span id="line-355">                    vm.uuid = stored.get();</span>
-<span class="source-line-no">356</span><span id="line-356">                    return true;</span>
-<span class="source-line-no">357</span><span id="line-357">                }</span>
-<span class="source-line-no">358</span><span id="line-358">            } catch (IOException e) {</span>
-<span class="source-line-no">359</span><span id="line-359">                logger.log(Level.WARNING, e,</span>
-<span class="source-line-no">360</span><span id="line-360">                    () -&gt; "Stored uuid cannot be read: " + e.getMessage());</span>
-<span class="source-line-no">361</span><span id="line-361">            }</span>
-<span class="source-line-no">362</span><span id="line-362">        }</span>
-<span class="source-line-no">363</span><span id="line-363"></span>
-<span class="source-line-no">364</span><span id="line-364">        // Generate new uuid</span>
-<span class="source-line-no">365</span><span id="line-365">        vm.uuid = UUID.randomUUID().toString();</span>
-<span class="source-line-no">366</span><span id="line-366">        try {</span>
-<span class="source-line-no">367</span><span id="line-367">            Files.writeString(uuidPath, vm.uuid + "\n");</span>
-<span class="source-line-no">368</span><span id="line-368">        } catch (IOException e) {</span>
-<span class="source-line-no">369</span><span id="line-369">            logger.log(Level.WARNING, e,</span>
-<span class="source-line-no">370</span><span id="line-370">                () -&gt; "Cannot store uuid: " + e.getMessage());</span>
-<span class="source-line-no">371</span><span id="line-371">        }</span>
-<span class="source-line-no">372</span><span id="line-372"></span>
-<span class="source-line-no">373</span><span id="line-373">        return true;</span>
-<span class="source-line-no">374</span><span id="line-374">    }</span>
-<span class="source-line-no">375</span><span id="line-375">}</span>
+<span class="source-line-no">347</span><span id="line-347">        return true;</span>
+<span class="source-line-no">348</span><span id="line-348">    }</span>
+<span class="source-line-no">349</span><span id="line-349"></span>
+<span class="source-line-no">350</span><span id="line-350">    private boolean checkUuid() {</span>
+<span class="source-line-no">351</span><span id="line-351">        // Explicitly configured uuid takes precedence.</span>
+<span class="source-line-no">352</span><span id="line-352">        if (vm.uuid != null) {</span>
+<span class="source-line-no">353</span><span id="line-353">            return true;</span>
+<span class="source-line-no">354</span><span id="line-354">        }</span>
+<span class="source-line-no">355</span><span id="line-355"></span>
+<span class="source-line-no">356</span><span id="line-356">        // Try to read stored uuid.</span>
+<span class="source-line-no">357</span><span id="line-357">        Path uuidPath = dataDir.resolve("uuid.txt");</span>
+<span class="source-line-no">358</span><span id="line-358">        if (Files.isReadable(uuidPath)) {</span>
+<span class="source-line-no">359</span><span id="line-359">            try {</span>
+<span class="source-line-no">360</span><span id="line-360">                var stored</span>
+<span class="source-line-no">361</span><span id="line-361">                    = Files.lines(uuidPath, StandardCharsets.UTF_8).findFirst();</span>
+<span class="source-line-no">362</span><span id="line-362">                if (stored.isPresent()) {</span>
+<span class="source-line-no">363</span><span id="line-363">                    vm.uuid = stored.get();</span>
+<span class="source-line-no">364</span><span id="line-364">                    return true;</span>
+<span class="source-line-no">365</span><span id="line-365">                }</span>
+<span class="source-line-no">366</span><span id="line-366">            } catch (IOException e) {</span>
+<span class="source-line-no">367</span><span id="line-367">                logger.log(Level.WARNING, e,</span>
+<span class="source-line-no">368</span><span id="line-368">                    () -&gt; "Stored uuid cannot be read: " + e.getMessage());</span>
+<span class="source-line-no">369</span><span id="line-369">            }</span>
+<span class="source-line-no">370</span><span id="line-370">        }</span>
+<span class="source-line-no">371</span><span id="line-371"></span>
+<span class="source-line-no">372</span><span id="line-372">        // Generate new uuid</span>
+<span class="source-line-no">373</span><span id="line-373">        vm.uuid = UUID.randomUUID().toString();</span>
+<span class="source-line-no">374</span><span id="line-374">        try {</span>
+<span class="source-line-no">375</span><span id="line-375">            Files.writeString(uuidPath, vm.uuid + "\n");</span>
+<span class="source-line-no">376</span><span id="line-376">        } catch (IOException e) {</span>
+<span class="source-line-no">377</span><span id="line-377">            logger.log(Level.WARNING, e,</span>
+<span class="source-line-no">378</span><span id="line-378">                () -&gt; "Cannot store uuid: " + e.getMessage());</span>
+<span class="source-line-no">379</span><span id="line-379">        }</span>
+<span class="source-line-no">380</span><span id="line-380"></span>
+<span class="source-line-no">381</span><span id="line-381">        return true;</span>
+<span class="source-line-no">382</span><span id="line-382">    }</span>
+<span class="source-line-no">383</span><span id="line-383"></span>
+<span class="source-line-no">384</span><span id="line-384">    private void checkCloudInit() {</span>
+<span class="source-line-no">385</span><span id="line-385">        if (cloudInit == null) {</span>
+<span class="source-line-no">386</span><span id="line-386">            return;</span>
+<span class="source-line-no">387</span><span id="line-387">        }</span>
+<span class="source-line-no">388</span><span id="line-388"></span>
+<span class="source-line-no">389</span><span id="line-389">        // Provide default for instance-id</span>
+<span class="source-line-no">390</span><span id="line-390">        if (cloudInit.metaData == null) {</span>
+<span class="source-line-no">391</span><span id="line-391">            cloudInit.metaData = new HashMap&lt;&gt;();</span>
+<span class="source-line-no">392</span><span id="line-392">        }</span>
+<span class="source-line-no">393</span><span id="line-393">        if (!cloudInit.metaData.containsKey(CI_INSTANCE_ID)) {</span>
+<span class="source-line-no">394</span><span id="line-394">            cloudInit.metaData.put(CI_INSTANCE_ID, "v" + asOf.getEpochSecond());</span>
+<span class="source-line-no">395</span><span id="line-395">        }</span>
+<span class="source-line-no">396</span><span id="line-396">    }</span>
+<span class="source-line-no">397</span><span id="line-397">}</span>
 
 
 

@@ -52,10 +52,10 @@
 <span class="source-line-no">039</span><span id="line-39">import java.nio.file.Files;</span>
 <span class="source-line-no">040</span><span id="line-40">import java.nio.file.Path;</span>
 <span class="source-line-no">041</span><span id="line-41">import java.nio.file.Paths;</span>
-<span class="source-line-no">042</span><span id="line-42">import java.util.Comparator;</span>
-<span class="source-line-no">043</span><span id="line-43">import java.util.HashMap;</span>
-<span class="source-line-no">044</span><span id="line-44">import java.util.HashSet;</span>
-<span class="source-line-no">045</span><span id="line-45">import java.util.Map;</span>
+<span class="source-line-no">042</span><span id="line-42">import java.time.Instant;</span>
+<span class="source-line-no">043</span><span id="line-43">import java.util.Comparator;</span>
+<span class="source-line-no">044</span><span id="line-44">import java.util.HashMap;</span>
+<span class="source-line-no">045</span><span id="line-45">import java.util.HashSet;</span>
 <span class="source-line-no">046</span><span id="line-46">import java.util.Optional;</span>
 <span class="source-line-no">047</span><span id="line-47">import java.util.Set;</span>
 <span class="source-line-no">048</span><span id="line-48">import java.util.logging.Level;</span>
@@ -213,107 +213,107 @@
 <span class="source-line-no">200</span><span id="line-200">        .build());</span>
 <span class="source-line-no">201</span><span id="line-201">    private final JsonNode defaults;</span>
 <span class="source-line-no">202</span><span id="line-202">    @SuppressWarnings("PMD.UseConcurrentHashMap")</span>
-<span class="source-line-no">203</span><span id="line-203">    private Configuration config = new Configuration();</span>
-<span class="source-line-no">204</span><span id="line-204">    private final freemarker.template.Configuration fmConfig;</span>
-<span class="source-line-no">205</span><span id="line-205">    private CommandDefinition swtpmDefinition;</span>
-<span class="source-line-no">206</span><span id="line-206">    private CommandDefinition cloudInitImgDefinition;</span>
-<span class="source-line-no">207</span><span id="line-207">    private CommandDefinition qemuDefinition;</span>
-<span class="source-line-no">208</span><span id="line-208">    private final QemuMonitor qemuMonitor;</span>
-<span class="source-line-no">209</span><span id="line-209">    private State state = State.INITIALIZING;</span>
-<span class="source-line-no">210</span><span id="line-210"></span>
-<span class="source-line-no">211</span><span id="line-211">    /** Preparatory actions for QEMU start */</span>
-<span class="source-line-no">212</span><span id="line-212">    @SuppressWarnings("PMD.FieldNamingConventions")</span>
-<span class="source-line-no">213</span><span id="line-213">    private enum QemuPreps {</span>
-<span class="source-line-no">214</span><span id="line-214">        Config,</span>
-<span class="source-line-no">215</span><span id="line-215">        Tpm,</span>
-<span class="source-line-no">216</span><span id="line-216">        CloudInit</span>
-<span class="source-line-no">217</span><span id="line-217">    }</span>
-<span class="source-line-no">218</span><span id="line-218"></span>
-<span class="source-line-no">219</span><span id="line-219">    private final Set&lt;QemuPreps&gt; qemuLatch = new HashSet&lt;&gt;();</span>
-<span class="source-line-no">220</span><span id="line-220"></span>
-<span class="source-line-no">221</span><span id="line-221">    /**</span>
-<span class="source-line-no">222</span><span id="line-222">     * Instantiates a new runner.</span>
-<span class="source-line-no">223</span><span id="line-223">     *</span>
-<span class="source-line-no">224</span><span id="line-224">     * @param cmdLine the cmd line</span>
-<span class="source-line-no">225</span><span id="line-225">     * @throws IOException Signals that an I/O exception has occurred.</span>
-<span class="source-line-no">226</span><span id="line-226">     */</span>
-<span class="source-line-no">227</span><span id="line-227">    @SuppressWarnings("PMD.SystemPrintln")</span>
-<span class="source-line-no">228</span><span id="line-228">    public Runner(CommandLine cmdLine) throws IOException {</span>
-<span class="source-line-no">229</span><span id="line-229">        yamlMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,</span>
-<span class="source-line-no">230</span><span id="line-230">            false);</span>
-<span class="source-line-no">231</span><span id="line-231"></span>
-<span class="source-line-no">232</span><span id="line-232">        // Get defaults</span>
-<span class="source-line-no">233</span><span id="line-233">        defaults = yamlMapper.readValue(</span>
-<span class="source-line-no">234</span><span id="line-234">            Runner.class.getResourceAsStream("defaults.yaml"), JsonNode.class);</span>
-<span class="source-line-no">235</span><span id="line-235"></span>
-<span class="source-line-no">236</span><span id="line-236">        // Configure freemarker library</span>
-<span class="source-line-no">237</span><span id="line-237">        fmConfig = new freemarker.template.Configuration(</span>
-<span class="source-line-no">238</span><span id="line-238">            freemarker.template.Configuration.VERSION_2_3_32);</span>
-<span class="source-line-no">239</span><span id="line-239">        fmConfig.setDirectoryForTemplateLoading(new File("/"));</span>
-<span class="source-line-no">240</span><span id="line-240">        fmConfig.setDefaultEncoding("utf-8");</span>
-<span class="source-line-no">241</span><span id="line-241">        fmConfig.setObjectWrapper(new ExtendedObjectWrapper(</span>
-<span class="source-line-no">242</span><span id="line-242">            fmConfig.getIncompatibleImprovements()));</span>
-<span class="source-line-no">243</span><span id="line-243">        fmConfig.setTemplateExceptionHandler(</span>
-<span class="source-line-no">244</span><span id="line-244">            TemplateExceptionHandler.RETHROW_HANDLER);</span>
-<span class="source-line-no">245</span><span id="line-245">        fmConfig.setLogTemplateExceptions(false);</span>
-<span class="source-line-no">246</span><span id="line-246"></span>
-<span class="source-line-no">247</span><span id="line-247">        // Prepare component tree</span>
-<span class="source-line-no">248</span><span id="line-248">        attach(new NioDispatcher());</span>
-<span class="source-line-no">249</span><span id="line-249">        attach(new FileSystemWatcher(channel()));</span>
-<span class="source-line-no">250</span><span id="line-250">        attach(new ProcessManager(channel()));</span>
-<span class="source-line-no">251</span><span id="line-251">        attach(new SocketConnector(channel()));</span>
-<span class="source-line-no">252</span><span id="line-252">        attach(qemuMonitor = new QemuMonitor(channel()));</span>
-<span class="source-line-no">253</span><span id="line-253">        attach(new StatusUpdater(channel()));</span>
-<span class="source-line-no">254</span><span id="line-254"></span>
-<span class="source-line-no">255</span><span id="line-255">        // Configuration store with file in /etc/opt (default)</span>
-<span class="source-line-no">256</span><span id="line-256">        File config = new File(cmdLine.getOptionValue('c',</span>
+<span class="source-line-no">203</span><span id="line-203">    private final File configFile;</span>
+<span class="source-line-no">204</span><span id="line-204">    private Configuration config = new Configuration();</span>
+<span class="source-line-no">205</span><span id="line-205">    private final freemarker.template.Configuration fmConfig;</span>
+<span class="source-line-no">206</span><span id="line-206">    private CommandDefinition swtpmDefinition;</span>
+<span class="source-line-no">207</span><span id="line-207">    private CommandDefinition cloudInitImgDefinition;</span>
+<span class="source-line-no">208</span><span id="line-208">    private CommandDefinition qemuDefinition;</span>
+<span class="source-line-no">209</span><span id="line-209">    private final QemuMonitor qemuMonitor;</span>
+<span class="source-line-no">210</span><span id="line-210">    private State state = State.INITIALIZING;</span>
+<span class="source-line-no">211</span><span id="line-211"></span>
+<span class="source-line-no">212</span><span id="line-212">    /** Preparatory actions for QEMU start */</span>
+<span class="source-line-no">213</span><span id="line-213">    @SuppressWarnings("PMD.FieldNamingConventions")</span>
+<span class="source-line-no">214</span><span id="line-214">    private enum QemuPreps {</span>
+<span class="source-line-no">215</span><span id="line-215">        Config,</span>
+<span class="source-line-no">216</span><span id="line-216">        Tpm,</span>
+<span class="source-line-no">217</span><span id="line-217">        CloudInit</span>
+<span class="source-line-no">218</span><span id="line-218">    }</span>
+<span class="source-line-no">219</span><span id="line-219"></span>
+<span class="source-line-no">220</span><span id="line-220">    private final Set&lt;QemuPreps&gt; qemuLatch = new HashSet&lt;&gt;();</span>
+<span class="source-line-no">221</span><span id="line-221"></span>
+<span class="source-line-no">222</span><span id="line-222">    /**</span>
+<span class="source-line-no">223</span><span id="line-223">     * Instantiates a new runner.</span>
+<span class="source-line-no">224</span><span id="line-224">     *</span>
+<span class="source-line-no">225</span><span id="line-225">     * @param cmdLine the cmd line</span>
+<span class="source-line-no">226</span><span id="line-226">     * @throws IOException Signals that an I/O exception has occurred.</span>
+<span class="source-line-no">227</span><span id="line-227">     */</span>
+<span class="source-line-no">228</span><span id="line-228">    @SuppressWarnings("PMD.SystemPrintln")</span>
+<span class="source-line-no">229</span><span id="line-229">    public Runner(CommandLine cmdLine) throws IOException {</span>
+<span class="source-line-no">230</span><span id="line-230">        yamlMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,</span>
+<span class="source-line-no">231</span><span id="line-231">            false);</span>
+<span class="source-line-no">232</span><span id="line-232"></span>
+<span class="source-line-no">233</span><span id="line-233">        // Get defaults</span>
+<span class="source-line-no">234</span><span id="line-234">        defaults = yamlMapper.readValue(</span>
+<span class="source-line-no">235</span><span id="line-235">            Runner.class.getResourceAsStream("defaults.yaml"), JsonNode.class);</span>
+<span class="source-line-no">236</span><span id="line-236"></span>
+<span class="source-line-no">237</span><span id="line-237">        // Configure freemarker library</span>
+<span class="source-line-no">238</span><span id="line-238">        fmConfig = new freemarker.template.Configuration(</span>
+<span class="source-line-no">239</span><span id="line-239">            freemarker.template.Configuration.VERSION_2_3_32);</span>
+<span class="source-line-no">240</span><span id="line-240">        fmConfig.setDirectoryForTemplateLoading(new File("/"));</span>
+<span class="source-line-no">241</span><span id="line-241">        fmConfig.setDefaultEncoding("utf-8");</span>
+<span class="source-line-no">242</span><span id="line-242">        fmConfig.setObjectWrapper(new ExtendedObjectWrapper(</span>
+<span class="source-line-no">243</span><span id="line-243">            fmConfig.getIncompatibleImprovements()));</span>
+<span class="source-line-no">244</span><span id="line-244">        fmConfig.setTemplateExceptionHandler(</span>
+<span class="source-line-no">245</span><span id="line-245">            TemplateExceptionHandler.RETHROW_HANDLER);</span>
+<span class="source-line-no">246</span><span id="line-246">        fmConfig.setLogTemplateExceptions(false);</span>
+<span class="source-line-no">247</span><span id="line-247"></span>
+<span class="source-line-no">248</span><span id="line-248">        // Prepare component tree</span>
+<span class="source-line-no">249</span><span id="line-249">        attach(new NioDispatcher());</span>
+<span class="source-line-no">250</span><span id="line-250">        attach(new FileSystemWatcher(channel()));</span>
+<span class="source-line-no">251</span><span id="line-251">        attach(new ProcessManager(channel()));</span>
+<span class="source-line-no">252</span><span id="line-252">        attach(new SocketConnector(channel()));</span>
+<span class="source-line-no">253</span><span id="line-253">        attach(qemuMonitor = new QemuMonitor(channel()));</span>
+<span class="source-line-no">254</span><span id="line-254">        attach(new StatusUpdater(channel()));</span>
+<span class="source-line-no">255</span><span id="line-255"></span>
+<span class="source-line-no">256</span><span id="line-256">        configFile = new File(cmdLine.getOptionValue('c',</span>
 <span class="source-line-no">257</span><span id="line-257">            "/etc/opt/" + APP_NAME.replace("-", "") + "/config.yaml"));</span>
 <span class="source-line-no">258</span><span id="line-258">        // Don't rely on night config to produce a good exception</span>
 <span class="source-line-no">259</span><span id="line-259">        // for this simple case</span>
-<span class="source-line-no">260</span><span id="line-260">        if (!Files.isReadable(config.toPath())) {</span>
-<span class="source-line-no">261</span><span id="line-261">            throw new IOException("Cannot read configuration file " + config);</span>
-<span class="source-line-no">262</span><span id="line-262">        }</span>
-<span class="source-line-no">263</span><span id="line-263">        attach(new YamlConfigurationStore(channel(), config, false));</span>
-<span class="source-line-no">264</span><span id="line-264">        fire(new WatchFile(config.toPath()));</span>
-<span class="source-line-no">265</span><span id="line-265">    }</span>
-<span class="source-line-no">266</span><span id="line-266"></span>
-<span class="source-line-no">267</span><span id="line-267">    /**</span>
-<span class="source-line-no">268</span><span id="line-268">     * Log the exception when a handling error is reported.</span>
-<span class="source-line-no">269</span><span id="line-269">     *</span>
-<span class="source-line-no">270</span><span id="line-270">     * @param event the event</span>
-<span class="source-line-no">271</span><span id="line-271">     */</span>
-<span class="source-line-no">272</span><span id="line-272">    @Handler(channels = Channel.class, priority = -10_000)</span>
-<span class="source-line-no">273</span><span id="line-273">    @SuppressWarnings("PMD.GuardLogStatement")</span>
-<span class="source-line-no">274</span><span id="line-274">    public void onHandlingError(HandlingError event) {</span>
-<span class="source-line-no">275</span><span id="line-275">        logger.log(Level.WARNING, event.throwable(),</span>
-<span class="source-line-no">276</span><span id="line-276">            () -&gt; "Problem invoking handler with " + event.event() + ": "</span>
-<span class="source-line-no">277</span><span id="line-277">                + event.message());</span>
-<span class="source-line-no">278</span><span id="line-278">        event.stop();</span>
-<span class="source-line-no">279</span><span id="line-279">    }</span>
-<span class="source-line-no">280</span><span id="line-280"></span>
-<span class="source-line-no">281</span><span id="line-281">    /**</span>
-<span class="source-line-no">282</span><span id="line-282">     * On configuration update.</span>
-<span class="source-line-no">283</span><span id="line-283">     *</span>
-<span class="source-line-no">284</span><span id="line-284">     * @param event the event</span>
-<span class="source-line-no">285</span><span id="line-285">     */</span>
-<span class="source-line-no">286</span><span id="line-286">    @Handler</span>
-<span class="source-line-no">287</span><span id="line-287">    public void onConfigurationUpdate(ConfigurationUpdate event) {</span>
-<span class="source-line-no">288</span><span id="line-288">        event.structured(componentPath()).ifPresent(c -&gt; {</span>
-<span class="source-line-no">289</span><span id="line-289">            if (event instanceof InitialConfiguration) {</span>
-<span class="source-line-no">290</span><span id="line-290">                processInitialConfiguration(c);</span>
-<span class="source-line-no">291</span><span id="line-291">                return;</span>
-<span class="source-line-no">292</span><span id="line-292">            }</span>
-<span class="source-line-no">293</span><span id="line-293">            logger.fine(() -&gt; "Updating configuration");</span>
-<span class="source-line-no">294</span><span id="line-294">            var newConf = yamlMapper.convertValue(c, Configuration.class);</span>
-<span class="source-line-no">295</span><span id="line-295">            rep.fire(new RunnerConfigurationUpdate(newConf, state));</span>
-<span class="source-line-no">296</span><span id="line-296">        });</span>
-<span class="source-line-no">297</span><span id="line-297">    }</span>
-<span class="source-line-no">298</span><span id="line-298"></span>
-<span class="source-line-no">299</span><span id="line-299">    private void processInitialConfiguration(</span>
-<span class="source-line-no">300</span><span id="line-300">            Map&lt;String, Object&gt; runnerConfiguration) {</span>
-<span class="source-line-no">301</span><span id="line-301">        try {</span>
-<span class="source-line-no">302</span><span id="line-302">            config = yamlMapper.convertValue(runnerConfiguration,</span>
-<span class="source-line-no">303</span><span id="line-303">                Configuration.class);</span>
+<span class="source-line-no">260</span><span id="line-260">        if (!Files.isReadable(configFile.toPath())) {</span>
+<span class="source-line-no">261</span><span id="line-261">            throw new IOException(</span>
+<span class="source-line-no">262</span><span id="line-262">                "Cannot read configuration file " + configFile);</span>
+<span class="source-line-no">263</span><span id="line-263">        }</span>
+<span class="source-line-no">264</span><span id="line-264">        attach(new YamlConfigurationStore(channel(), configFile, false));</span>
+<span class="source-line-no">265</span><span id="line-265">        fire(new WatchFile(configFile.toPath()));</span>
+<span class="source-line-no">266</span><span id="line-266">    }</span>
+<span class="source-line-no">267</span><span id="line-267"></span>
+<span class="source-line-no">268</span><span id="line-268">    /**</span>
+<span class="source-line-no">269</span><span id="line-269">     * Log the exception when a handling error is reported.</span>
+<span class="source-line-no">270</span><span id="line-270">     *</span>
+<span class="source-line-no">271</span><span id="line-271">     * @param event the event</span>
+<span class="source-line-no">272</span><span id="line-272">     */</span>
+<span class="source-line-no">273</span><span id="line-273">    @Handler(channels = Channel.class, priority = -10_000)</span>
+<span class="source-line-no">274</span><span id="line-274">    @SuppressWarnings("PMD.GuardLogStatement")</span>
+<span class="source-line-no">275</span><span id="line-275">    public void onHandlingError(HandlingError event) {</span>
+<span class="source-line-no">276</span><span id="line-276">        logger.log(Level.WARNING, event.throwable(),</span>
+<span class="source-line-no">277</span><span id="line-277">            () -&gt; "Problem invoking handler with " + event.event() + ": "</span>
+<span class="source-line-no">278</span><span id="line-278">                + event.message());</span>
+<span class="source-line-no">279</span><span id="line-279">        event.stop();</span>
+<span class="source-line-no">280</span><span id="line-280">    }</span>
+<span class="source-line-no">281</span><span id="line-281"></span>
+<span class="source-line-no">282</span><span id="line-282">    /**</span>
+<span class="source-line-no">283</span><span id="line-283">     * On configuration update.</span>
+<span class="source-line-no">284</span><span id="line-284">     *</span>
+<span class="source-line-no">285</span><span id="line-285">     * @param event the event</span>
+<span class="source-line-no">286</span><span id="line-286">     */</span>
+<span class="source-line-no">287</span><span id="line-287">    @Handler</span>
+<span class="source-line-no">288</span><span id="line-288">    public void onConfigurationUpdate(ConfigurationUpdate event) {</span>
+<span class="source-line-no">289</span><span id="line-289">        event.structured(componentPath()).ifPresent(c -&gt; {</span>
+<span class="source-line-no">290</span><span id="line-290">            var newConf = yamlMapper.convertValue(c, Configuration.class);</span>
+<span class="source-line-no">291</span><span id="line-291">            newConf.asOf = Instant.ofEpochSecond(configFile.lastModified());</span>
+<span class="source-line-no">292</span><span id="line-292">            if (event instanceof InitialConfiguration) {</span>
+<span class="source-line-no">293</span><span id="line-293">                processInitialConfiguration(newConf);</span>
+<span class="source-line-no">294</span><span id="line-294">                return;</span>
+<span class="source-line-no">295</span><span id="line-295">            }</span>
+<span class="source-line-no">296</span><span id="line-296">            logger.fine(() -&gt; "Updating configuration");</span>
+<span class="source-line-no">297</span><span id="line-297">            rep.fire(new RunnerConfigurationUpdate(newConf, state));</span>
+<span class="source-line-no">298</span><span id="line-298">        });</span>
+<span class="source-line-no">299</span><span id="line-299">    }</span>
+<span class="source-line-no">300</span><span id="line-300"></span>
+<span class="source-line-no">301</span><span id="line-301">    private void processInitialConfiguration(Configuration newConfig) {</span>
+<span class="source-line-no">302</span><span id="line-302">        try {</span>
+<span class="source-line-no">303</span><span id="line-303">            config = newConfig;</span>
 <span class="source-line-no">304</span><span id="line-304">            if (!config.check()) {</span>
 <span class="source-line-no">305</span><span id="line-305">                // Invalid configuration, not used, problems already logged.</span>
 <span class="source-line-no">306</span><span id="line-306">                config = null;</span>
