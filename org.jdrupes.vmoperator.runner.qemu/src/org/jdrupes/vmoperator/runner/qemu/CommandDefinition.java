@@ -42,6 +42,7 @@ class CommandDefinition {
         for (JsonNode path : jsonData.get("executable")) {
             if (Files.isExecutable(Path.of(path.asText()))) {
                 command.add(path.asText());
+                break;
             }
         }
         if (command.isEmpty()) {
