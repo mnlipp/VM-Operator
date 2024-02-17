@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import freemarker.core.ParseException;
 import freemarker.template.MalformedTemplateNameException;
 import freemarker.template.TemplateException;
@@ -40,6 +41,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -178,9 +180,12 @@ import org.jgrapes.util.events.WatchFile;
  * 
  */
 @SuppressWarnings({ "PMD.ExcessiveImports", "PMD.AvoidPrintStackTrace",
-    "PMD.DataflowAnomalyAnalysis" })
+    "PMD.DataflowAnomalyAnalysis", "PMD.TooManyMethods" })
 public class Runner extends Component {
 
+    private static final String QEMU = "qemu";
+    private static final String SWTPM = "swtpm";
+    private static final String CLOUD_INIT_IMG = "cloudInitImg";
     private static final String TEMPLATE_DIR
         = "/opt/" + APP_NAME.replace("-", "") + "/templates";
     private static final String DEFAULT_TEMPLATE
@@ -190,15 +195,28 @@ public class Runner extends Component {
     private static int exitStatus;
 
     private EventPipeline rep;
-    private final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
+    private final ObjectMapper yamlMapper = new ObjectMapper(YAMLFactory
+        .builder().disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER)
+        .build());
     private final JsonNode defaults;
     @SuppressWarnings("PMD.UseConcurrentHashMap")
     private Configuration config = new Configuration();
     private final freemarker.template.Configuration fmConfig;
     private CommandDefinition swtpmDefinition;
+    private CommandDefinition cloudInitImgDefinition;
     private CommandDefinition qemuDefinition;
     private final QemuMonitor qemuMonitor;
     private State state = State.INITIALIZING;
+
+    /** Preparatory actions for QEMU start */
+    @SuppressWarnings("PMD.FieldNamingConventions")
+    private enum QemuPreps {
+        Config,
+        Tpm,
+        CloudInit
+    }
+
+    private final Set<QemuPreps> qemuLatch = new HashSet<>();
 
     /**
      * Instantiates a new runner.
@@ -293,10 +311,14 @@ public class Runner extends Component {
 
             // Obtain more context data from template
             var tplData = dataFromTemplate();
-            swtpmDefinition = Optional.ofNullable(tplData.get("swtpm"))
-                .map(d -> new CommandDefinition("swtpm", d)).orElse(null);
-            qemuDefinition = Optional.ofNullable(tplData.get("qemu"))
-                .map(d -> new CommandDefinition("qemu", d)).orElse(null);
+            swtpmDefinition = Optional.ofNullable(tplData.get(SWTPM))
+                .map(d -> new CommandDefinition(SWTPM, d)).orElse(null);
+            qemuDefinition = Optional.ofNullable(tplData.get(QEMU))
+                .map(d -> new CommandDefinition(QEMU, d)).orElse(null);
+            cloudInitImgDefinition
+                = Optional.ofNullable(tplData.get(CLOUD_INIT_IMG))
+                    .map(d -> new CommandDefinition(CLOUD_INIT_IMG, d))
+                    .orElse(null);
 
             // Forward some values to child components
             qemuMonitor.configure(config.monitorSocket,
@@ -360,6 +382,7 @@ public class Runner extends Component {
             .map(Object::toString).orElse(null));
         model.put("firmwareVars", Optional.ofNullable(config.firmwareVars)
             .map(Object::toString).orElse(null));
+        model.put("cloudInit", config.cloudInit);
         model.put("vm", config.vm);
         if (Optional.ofNullable(config.vm.display)
             .map(d -> d.spice).map(s -> s.ticket).isPresent()) {
@@ -430,12 +453,56 @@ public class Runner extends Component {
         state = State.STARTING;
         rep.fire(new RunnerStateChange(state, "RunnerStarted",
             "Runner has been started"));
-        // Start first process
+        // Start first process(es)
+        qemuLatch.add(QemuPreps.Config);
         if (config.vm.useTpm && swtpmDefinition != null) {
             startProcess(swtpmDefinition);
-            return;
+            qemuLatch.add(QemuPreps.Tpm);
         }
-        startProcess(qemuDefinition);
+        if (config.cloudInit != null) {
+            generateCloudInitImg();
+            qemuLatch.add(QemuPreps.CloudInit);
+        }
+        mayBeStartQemu(QemuPreps.Config);
+    }
+
+    private void mayBeStartQemu(QemuPreps done) {
+        synchronized (qemuLatch) {
+            if (qemuLatch.isEmpty()) {
+                return;
+            }
+            qemuLatch.remove(done);
+            if (qemuLatch.isEmpty()) {
+                startProcess(qemuDefinition);
+            }
+        }
+    }
+
+    private void generateCloudInitImg() {
+        try {
+            var cloudInitDir = config.dataDir.resolve("cloud-init");
+            cloudInitDir.toFile().mkdir();
+            var metaOut
+                = Files.newBufferedWriter(cloudInitDir.resolve("meta-data"));
+            if (config.cloudInit.metaData != null) {
+                yamlMapper.writer().writeValue(metaOut,
+                    config.cloudInit.metaData);
+            }
+            metaOut.close();
+            var userOut
+                = Files.newBufferedWriter(cloudInitDir.resolve("user-data"));
+            userOut.write("#cloud-config\n");
+            if (config.cloudInit.userData != null) {
+                yamlMapper.writer().writeValue(userOut,
+                    config.cloudInit.userData);
+            }
+            userOut.close();
+            startProcess(cloudInitImgDefinition);
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, e,
+                () -> "Cannot start runner: " + e.getMessage());
+            fire(new Stop());
+        }
     }
 
     private boolean startProcess(CommandDefinition toStart) {
@@ -456,8 +523,8 @@ public class Runner extends Component {
     public void onFileChanged(FileChanged event) {
         if (event.change() == Kind.CREATED
             && event.path().equals(config.swtpmSocket)) {
-            // swtpm running, start qemu
-            startProcess(qemuDefinition);
+            // swtpm running, maybe start qemu
+            mayBeStartQemu(QemuPreps.Tpm);
             return;
         }
     }
@@ -545,7 +612,13 @@ public class Runner extends Component {
     @Handler
     public void onProcessExited(ProcessExited event, ProcessChannel channel) {
         channel.associated(CommandDefinition.class).ifPresent(procDef -> {
-            // No process(es) may exit during startup
+            if (procDef.equals(cloudInitImgDefinition)
+                && event.exitValue() == 0) {
+                // Cloud-init ISO generation was successful.
+                mayBeStartQemu(QemuPreps.CloudInit);
+                return;
+            }
+            // No other process(es) may exit during startup
             if (state == State.STARTING) {
                 logger.severe(() -> "Process " + procDef.name
                     + " has exited with value " + event.exitValue()

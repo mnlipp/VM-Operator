@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -65,9 +66,22 @@ public class Configuration implements Dto {
     /** The firmware vars. */
     public Path firmwareVars;
 
+    /** Optional cloud-init data. */
+    public CloudInit cloudInit;
+
     /** The vm. */
     @SuppressWarnings("PMD.ShortVariable")
     public Vm vm;
+
+    /**
+     * Subsection "cloud-init".
+     */
+    public static class CloudInit implements Dto {
+        @SuppressWarnings("PMD.UseConcurrentHashMap")
+        public Map<String, Object> metaData;
+        @SuppressWarnings("PMD.UseConcurrentHashMap")
+        public Map<String, Object> userData;
+    }
 
     /**
      * Subsection "vm".

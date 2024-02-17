@@ -2,7 +2,7 @@ FROM docker.io/alpine
 
 RUN apk update
 
-RUN apk add qemu-system-x86_64 qemu-modules ovmf swtpm openjdk17
+RUN apk add qemu-system-x86_64 qemu-modules ovmf swtpm openjdk17 mtools
 
 RUN mkdir -p /etc/qemu && echo "allow all" > /etc/qemu/bridge.conf
 

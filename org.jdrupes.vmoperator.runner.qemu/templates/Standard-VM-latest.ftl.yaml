@@ -11,6 +11,19 @@
     - [ "--ctrl", "type=unixio,path=${ runtimeDir }/swtpm-sock,mode=0600" ]
     - "--terminate"
 
+"cloudInitImg":
+  # Candidate paths for the executable 
+  "executable": [ "/bin/sh", "/usr/bin/sh" ]
+  
+  # Arguments may be specified as nested lists for better readability.
+  # The arguments are flattened before being passed to the process.
+  "arguments":
+    - "-c"
+    - >-
+      mformat -C -f 1440 -v CIDATA -i ${ runtimeDir }/cloud-init.img
+      && mcopy -i ${ runtimeDir }/cloud-init.img
+      ${ dataDir }/cloud-init/meta-data ${ dataDir }/cloud-init/user-data ::
+
 "qemu":
   # Candidate paths for the executable 
   "executable": [ "/usr/bin/qemu-system-x86_64" ]
@@ -183,6 +196,16 @@
     <#break>
     </#switch>
     </#list>
+    # Cloud-init image
+    <#if cloudInit??>
+    - [ "-blockdev", "node-name=drive-${ drvCounter }-host-resource,\
+        driver=file,filename=${ runtimeDir }/cloud-init.img" ]
+    #   - how to use the file (as sequence of literal blocks)
+    - [ "-blockdev", "node-name=drive-${ drvCounter }-backend,driver=raw,\
+        file=drive-${ drvCounter }-host-resource" ]
+    #   - the driver (what the guest sees)
+    - [ "-device", "virtio-blk-pci,drive=drive-${ drvCounter }-backend" ]
+    </#if>
     
     <#if vm.display??>
     <#if vm.display.spice??>

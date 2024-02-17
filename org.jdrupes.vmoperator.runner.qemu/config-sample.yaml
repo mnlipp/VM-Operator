@@ -27,6 +27,14 @@
   # be set when starting the runner during development e.g. from the IDE.
   # "namespace": ...
 
+  # Defines data for generating a cloud-init ISO image that is
+  # attached to the VM.
+  # "cloudInit":
+  #   "metaData":
+  #     ...
+  #   "userData":
+  #     ...  
+
   # Define the VM (required)
   "vm":
     # The VM's name (required)
