@@ -112,21 +112,27 @@ import org.jgrapes.util.events.WatchFile;
  * 
  * state "Starting (Processes)" as StartingProcess {
  * 
- *     state which <<choice>>
- *     state "Start swtpm" as swtpm
  *     state "Start qemu" as qemu
  *     state "Open monitor" as monitor
  *     state "Configure QMP" as waitForConfigured
  *     state "Configure QEMU" as configure
  *     state success <<exitPoint>>
  *     state error <<exitPoint>>
- *      
- *     which --> swtpm: [use swtpm]
- *     which --> qemu: [else]
- * 
+ *     
+ *     state prepFork <<fork>>
+ *     state prepJoin <<join>>
+ *     state "Generate cloud-init image" as cloudInit
+ *     prepFork --> cloudInit: [cloud-init data provided]
+ *     swtpm --> prepJoin: FileChanged[swtpm socket created]
+ *     state "Start swtpm" as swtpm
+ *     prepFork --> swtpm: [use swtpm]
  *     swtpm: entry/start swtpm
- *     swtpm -> qemu: FileChanged[swtpm socket created]
- * 
+ *     cloudInit --> prepJoin: ProcessExited
+ *     cloudInit: entry/generate cloud-init image
+ *     prepFork --> prepJoin: [else]
+ *     
+ *     prepJoin --> qemu
+ *     
  *     qemu: entry/start qemu
  *     qemu --> monitor : FileChanged[monitor socket created] 
  * 
@@ -141,7 +147,7 @@ import org.jgrapes.util.events.WatchFile;
  *     configure --> success: RunnerConfigurationUpdate (last handler)/fire cont command
  * }
  * 
- * Initializing --> which: Started
+ * Initializing --> prepFork: Started
  * 
  * success --> Running
  * 
