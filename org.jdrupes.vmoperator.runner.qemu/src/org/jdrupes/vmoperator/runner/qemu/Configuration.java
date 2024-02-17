@@ -24,6 +24,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
+import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -39,8 +41,13 @@ import org.jdrupes.vmoperator.util.FsdUtils;
  */
 @SuppressWarnings("PMD.ExcessivePublicCount")
 public class Configuration implements Dto {
+    private static final String CI_INSTANCE_ID = "instance-id";
+
     @SuppressWarnings("PMD.FieldNamingConventions")
     protected final Logger logger = Logger.getLogger(getClass().getName());
+
+    /** Configuration timestamp */
+    public Instant asOf;
 
     /** The data dir. */
     public Path dataDir;
@@ -259,6 +266,7 @@ public class Configuration implements Dto {
         }
 
         checkDrives();
+        checkCloudInit();
 
         return true;
     }
@@ -371,5 +379,19 @@ public class Configuration implements Dto {
         }
 
         return true;
+    }
+
+    private void checkCloudInit() {
+        if (cloudInit == null) {
+            return;
+        }
+
+        // Provide default for instance-id
+        if (cloudInit.metaData == null) {
+            cloudInit.metaData = new HashMap<>();
+        }
+        if (!cloudInit.metaData.containsKey(CI_INSTANCE_ID)) {
+            cloudInit.metaData.put(CI_INSTANCE_ID, "v" + asOf.getEpochSecond());
+        }
     }
 }

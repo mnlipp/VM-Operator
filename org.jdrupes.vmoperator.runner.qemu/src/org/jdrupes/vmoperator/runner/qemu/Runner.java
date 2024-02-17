@@ -39,10 +39,10 @@ import java.lang.reflect.UndeclaredThrowableException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
@@ -200,6 +200,7 @@ public class Runner extends Component {
         .build());
     private final JsonNode defaults;
     @SuppressWarnings("PMD.UseConcurrentHashMap")
+    private final File configFile;
     private Configuration config = new Configuration();
     private final freemarker.template.Configuration fmConfig;
     private CommandDefinition swtpmDefinition;
@@ -252,16 +253,16 @@ public class Runner extends Component {
         attach(qemuMonitor = new QemuMonitor(channel()));
         attach(new StatusUpdater(channel()));
 
-        // Configuration store with file in /etc/opt (default)
-        File config = new File(cmdLine.getOptionValue('c',
+        configFile = new File(cmdLine.getOptionValue('c',
             "/etc/opt/" + APP_NAME.replace("-", "") + "/config.yaml"));
         // Don't rely on night config to produce a good exception
         // for this simple case
-        if (!Files.isReadable(config.toPath())) {
-            throw new IOException("Cannot read configuration file " + config);
+        if (!Files.isReadable(configFile.toPath())) {
+            throw new IOException(
+                "Cannot read configuration file " + configFile);
         }
-        attach(new YamlConfigurationStore(channel(), config, false));
-        fire(new WatchFile(config.toPath()));
+        attach(new YamlConfigurationStore(channel(), configFile, false));
+        fire(new WatchFile(configFile.toPath()));
     }
 
     /**
@@ -286,21 +287,20 @@ public class Runner extends Component {
     @Handler
     public void onConfigurationUpdate(ConfigurationUpdate event) {
         event.structured(componentPath()).ifPresent(c -> {
+            var newConf = yamlMapper.convertValue(c, Configuration.class);
+            newConf.asOf = Instant.ofEpochSecond(configFile.lastModified());
             if (event instanceof InitialConfiguration) {
-                processInitialConfiguration(c);
+                processInitialConfiguration(newConf);
                 return;
             }
             logger.fine(() -> "Updating configuration");
-            var newConf = yamlMapper.convertValue(c, Configuration.class);
             rep.fire(new RunnerConfigurationUpdate(newConf, state));
         });
     }
 
-    private void processInitialConfiguration(
-            Map<String, Object> runnerConfiguration) {
+    private void processInitialConfiguration(Configuration newConfig) {
         try {
-            config = yamlMapper.convertValue(runnerConfiguration,
-                Configuration.class);
+            config = newConfig;
             if (!config.check()) {
                 // Invalid configuration, not used, problems already logged.
                 config = null;
