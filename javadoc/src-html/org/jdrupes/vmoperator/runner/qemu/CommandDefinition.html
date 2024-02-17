@@ -55,33 +55,34 @@
 <span class="source-line-no">042</span><span id="line-42">        for (JsonNode path : jsonData.get("executable")) {</span>
 <span class="source-line-no">043</span><span id="line-43">            if (Files.isExecutable(Path.of(path.asText()))) {</span>
 <span class="source-line-no">044</span><span id="line-44">                command.add(path.asText());</span>
-<span class="source-line-no">045</span><span id="line-45">            }</span>
-<span class="source-line-no">046</span><span id="line-46">        }</span>
-<span class="source-line-no">047</span><span id="line-47">        if (command.isEmpty()) {</span>
-<span class="source-line-no">048</span><span id="line-48">            throw new IllegalArgumentException("No executable found.");</span>
-<span class="source-line-no">049</span><span id="line-49">        }</span>
-<span class="source-line-no">050</span><span id="line-50">        collect(command, jsonData.get("arguments"));</span>
-<span class="source-line-no">051</span><span id="line-51">    }</span>
-<span class="source-line-no">052</span><span id="line-52"></span>
-<span class="source-line-no">053</span><span id="line-53">    private void collect(List&lt;String&gt; result, JsonNode node) {</span>
-<span class="source-line-no">054</span><span id="line-54">        if (!node.isArray()) {</span>
-<span class="source-line-no">055</span><span id="line-55">            result.add(node.asText());</span>
-<span class="source-line-no">056</span><span id="line-56">            return;</span>
-<span class="source-line-no">057</span><span id="line-57">        }</span>
-<span class="source-line-no">058</span><span id="line-58">        for (var element : node) {</span>
-<span class="source-line-no">059</span><span id="line-59">            collect(result, element);</span>
-<span class="source-line-no">060</span><span id="line-60">        }</span>
-<span class="source-line-no">061</span><span id="line-61">    }</span>
-<span class="source-line-no">062</span><span id="line-62"></span>
-<span class="source-line-no">063</span><span id="line-63">    /**</span>
-<span class="source-line-no">064</span><span id="line-64">     * Returns the name.</span>
-<span class="source-line-no">065</span><span id="line-65">     *</span>
-<span class="source-line-no">066</span><span id="line-66">     * @return the string</span>
-<span class="source-line-no">067</span><span id="line-67">     */</span>
-<span class="source-line-no">068</span><span id="line-68">    public String name() {</span>
-<span class="source-line-no">069</span><span id="line-69">        return name;</span>
-<span class="source-line-no">070</span><span id="line-70">    }</span>
-<span class="source-line-no">071</span><span id="line-71">}</span>
+<span class="source-line-no">045</span><span id="line-45">                break;</span>
+<span class="source-line-no">046</span><span id="line-46">            }</span>
+<span class="source-line-no">047</span><span id="line-47">        }</span>
+<span class="source-line-no">048</span><span id="line-48">        if (command.isEmpty()) {</span>
+<span class="source-line-no">049</span><span id="line-49">            throw new IllegalArgumentException("No executable found.");</span>
+<span class="source-line-no">050</span><span id="line-50">        }</span>
+<span class="source-line-no">051</span><span id="line-51">        collect(command, jsonData.get("arguments"));</span>
+<span class="source-line-no">052</span><span id="line-52">    }</span>
+<span class="source-line-no">053</span><span id="line-53"></span>
+<span class="source-line-no">054</span><span id="line-54">    private void collect(List&lt;String&gt; result, JsonNode node) {</span>
+<span class="source-line-no">055</span><span id="line-55">        if (!node.isArray()) {</span>
+<span class="source-line-no">056</span><span id="line-56">            result.add(node.asText());</span>
+<span class="source-line-no">057</span><span id="line-57">            return;</span>
+<span class="source-line-no">058</span><span id="line-58">        }</span>
+<span class="source-line-no">059</span><span id="line-59">        for (var element : node) {</span>
+<span class="source-line-no">060</span><span id="line-60">            collect(result, element);</span>
+<span class="source-line-no">061</span><span id="line-61">        }</span>
+<span class="source-line-no">062</span><span id="line-62">    }</span>
+<span class="source-line-no">063</span><span id="line-63"></span>
+<span class="source-line-no">064</span><span id="line-64">    /**</span>
+<span class="source-line-no">065</span><span id="line-65">     * Returns the name.</span>
+<span class="source-line-no">066</span><span id="line-66">     *</span>
+<span class="source-line-no">067</span><span id="line-67">     * @return the string</span>
+<span class="source-line-no">068</span><span id="line-68">     */</span>
+<span class="source-line-no">069</span><span id="line-69">    public String name() {</span>
+<span class="source-line-no">070</span><span id="line-70">        return name;</span>
+<span class="source-line-no">071</span><span id="line-71">    }</span>
+<span class="source-line-no">072</span><span id="line-72">}</span>
 
 
 
