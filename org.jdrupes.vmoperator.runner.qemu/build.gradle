@@ -45,6 +45,9 @@ task tagLatestArchImage(type: Exec) {
     enabled = !project.version.contains("SNAPSHOT")
         && !project.version.contains("alpha") \
         && !project.version.contains("beta") \
+        || project.rootProject.properties['docker.testRegistry'] \
+            && project.rootProject.properties['docker.registry'] \
+            == project.rootProject.properties['docker.testRegistry']
 
     commandLine 'podman', 'tag', "${project.name}-arch:${project.version}",\
         "${project.name}-arch:latest"
@@ -70,6 +73,9 @@ task pushArchLatestImage(type: Exec) {
     enabled = !project.version.contains("SNAPSHOT")
         && !project.version.contains("alpha") \
         && !project.version.contains("beta") \
+        || project.rootProject.properties['docker.testRegistry'] \
+            && project.rootProject.properties['docker.registry'] \
+            == project.rootProject.properties['docker.testRegistry']
 
     commandLine 'podman', 'push', '--tls-verify=false', \
         "localhost/${project.name}-arch:${project.version}", \
@@ -91,6 +97,9 @@ task tagLatestAlpineImage(type: Exec) {
     enabled = !project.version.contains("SNAPSHOT")
         && !project.version.contains("alpha") \
         && !project.version.contains("beta") \
+        || project.rootProject.properties['docker.testRegistry'] \
+            && project.rootProject.properties['docker.registry'] \
+            == project.rootProject.properties['docker.testRegistry']
 
     commandLine 'podman', 'tag', "${project.name}-alpine:${project.version}",\
         "${project.name}-alpine:latest"
@@ -116,6 +125,9 @@ task pushAlpineLatestImage(type: Exec) {
     enabled = !project.version.contains("SNAPSHOT")
         && !project.version.contains("alpha") \
         && !project.version.contains("beta") \
+        || project.rootProject.properties['docker.testRegistry'] \
+            && project.rootProject.properties['docker.registry'] \
+            == project.rootProject.properties['docker.testRegistry']
 
     commandLine 'podman', 'push', '--tls-verify=false', \
         "localhost/${project.name}-alpine:${project.version}", \

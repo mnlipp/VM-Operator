@@ -60,6 +60,9 @@ task tagLatestImage(type: Exec) {
     enabled = !project.version.contains("SNAPSHOT")
         && !project.version.contains("alpha") \
         && !project.version.contains("beta") \
+        || project.rootProject.properties['docker.testRegistry'] \
+            && project.rootProject.properties['docker.registry'] \
+            == project.rootProject.properties['docker.testRegistry']
 
     commandLine 'podman', 'tag', "${project.name}:${project.version}",\
         "${project.name}:latest"
@@ -85,6 +88,9 @@ task pushLatestImage(type: Exec) {
     enabled = !project.version.contains("SNAPSHOT")
         && !project.version.contains("alpha") \
         && !project.version.contains("beta") \
+        || project.rootProject.properties['docker.testRegistry'] \
+            && project.rootProject.properties['docker.registry'] \
+            == project.rootProject.properties['docker.testRegistry']
 
     commandLine 'podman', 'push', '--tls-verify=false', \
         "localhost/${project.name}:${project.version}", \
