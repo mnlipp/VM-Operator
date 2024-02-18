@@ -209,6 +209,15 @@ public class Reconciler extends Component {
     private DynamicKubernetesObject patchCr(DynamicKubernetesObject vmDef) {
         var json = vmDef.getRaw().deepCopy();
         // Adjust cdromImage path
+        adjustCdRomPaths(json);
+
+        // Adjust cloud-init data
+        adjustCloudInitData(json);
+
+        return new DynamicKubernetesObject(json);
+    }
+
+    private void adjustCdRomPaths(JsonObject json) {
         var disks
             = GsonPtr.to(json).to("spec", "vm", "disks").get(JsonArray.class);
         for (var disk : disks) {
@@ -233,7 +242,23 @@ public class Reconciler extends Component {
                 logger.warning(() -> "Invalid CDROM image: " + image);
             }
         }
-        return new DynamicKubernetesObject(json);
+    }
+
+    private void adjustCloudInitData(JsonObject json) {
+        var spec = GsonPtr.to(json).to("spec").get(JsonObject.class);
+        if (!spec.has("cloudInit")) {
+            return;
+        }
+        var metaData = GsonPtr.to(spec).to("cloudInit", "metaData");
+        if (metaData.getAsString("instance-id").isEmpty()) {
+            metaData.set("instance-id",
+                GsonPtr.to(json).getAsString("metadata", "resourceVersion")
+                    .map(s -> "v" + s).orElse("v1"));
+        }
+        if (metaData.getAsString("local-hostname").isEmpty()) {
+            metaData.set("local-hostname",
+                GsonPtr.to(json).getAsString("metadata", "name").get());
+        }
     }
 
     @SuppressWarnings("PMD.CognitiveComplexity")
@@ -300,5 +325,4 @@ public class Reconciler extends Component {
         });
         return model;
     }
-
 }
