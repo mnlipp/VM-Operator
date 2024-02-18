@@ -134,7 +134,7 @@ that have the same major release number are guaranteed to be compatible.
 
 ## Generating cloud-init data
 
-*Since: 2.3.0* 
+*Since: 2.2.0* 
 
 The optional object `.spec.cloudInit` with sub-objects `.cloudInit.metaData`
 and `.cloudInit.userData` can be used to provide data for
