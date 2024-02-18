@@ -134,7 +134,7 @@ that have the same major release number are guaranteed to be compatible.
 
 ## Generating cloud-init data
 
-*Added in version 2.3* 
+*Since: 2.3.0* 
 
 The optional object `.spec.cloudInit` with sub-objects `.cloudInit.metaData`
 and `.cloudInit.userData` can be used to provide data for
@@ -147,6 +147,12 @@ If `.metaData.instance-id` is not defined, the controller automatically
 generates it from the CRD's `resourceVersion`. If `.metaData.local-hostname`
 is not defined, the controller adds this property using the value from
 `metadata.name`.
+
+Note that there is no schema definition available for `.userData`.
+Whatever is defined in the CRD is copied to the corresponding
+cloud-init file without any checks. (The introductory comment
+`#cloud-config` required in that file is generated automatically by
+the runner.)
 
 ## Further reading
 
