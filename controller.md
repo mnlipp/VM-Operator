@@ -132,6 +132,22 @@ second one based on Alpine (`ghcr.io/mnlipp/org.jdrupes.vmoperator.runner.qemu-a
 Starting with release 1.0, all versions of runner images and managers 
 that have the same major release number are guaranteed to be compatible.
 
+## Generating cloud-init data
+
+*Added in version 2.3* 
+
+The optional object `.spec.cloudInit` with sub-objects `.cloudInit.metaData`
+and `.cloudInit.userData` can be used to provide data for
+[cloud-init](https://cloudinit.readthedocs.io/en/latest/index.html).
+The data from the CRD will be made available to the VM by the runner
+as a vfat formatted disk (see the description of 
+[NoCloud](https://cloudinit.readthedocs.io/en/latest/reference/datasources/nocloud.html)).
+
+If `.metaData.instance-id` is not defined, the controller automatically
+generates it from the CRD's `resourceVersion`. If `.metaData.local-hostname`
+is not defined, the controller adds this property using the value from
+`metadata.name`.
+
 ## Further reading
 
 For a detailed description of the available configuration options see the
