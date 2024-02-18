@@ -965,6 +965,21 @@ spec:
                       additionalProperties:
                         type: string
                         nullable: true
+                cloudInit:
+                  type: object
+                  description: >-
+                    Provides data for generating a cloud-init ISO
+                    image that is attached to the VM.
+                  properties:
+                    metaData:
+                      description: Copied to cloud-init's meta-data file.
+                      type: object
+                      additionalProperties:
+                        type: string
+                    userData:
+                      description: Copied to cloud-init's user-data file.
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
                 vm:
                   type: object
                   description: Defines the VM.

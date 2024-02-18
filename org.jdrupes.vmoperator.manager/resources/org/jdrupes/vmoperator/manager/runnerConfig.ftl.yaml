@@ -44,7 +44,22 @@ data:
       <#if cr.spec.runnerTemplate?? && cr.spec.runnerTemplate.update?? >
       updateTemplate: ${ cr.spec.runnerTemplate.update.asBoolean?c }
       </#if>
-    
+
+      # Forward the cloud-init data if provided
+      <#if cr.spec.cloudInit??>    
+      cloudInit:
+        <#if cr.spec.cloudInit.metaData??>
+        metaData: ${ cr.spec.cloudInit.metaData.toString() }
+        <#else>
+        metaData: {}
+        </#if>
+        <#if cr.spec.cloudInit.userData??>
+        userData: ${ cr.spec.cloudInit.userData.toString() }
+        <#else>
+        userData: {}
+        </#if>
+      </#if>
+      
       # Define the VM (required)
       vm:
         # The VM's name (required)

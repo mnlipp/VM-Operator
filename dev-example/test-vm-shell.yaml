@@ -1,0 +1,30 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: test-vm-shell
+  namespace: vmop-dev
+spec:
+  volumes:
+    - name: test-vm-system-disk
+      persistentVolumeClaim:
+        claimName: system-disk-test-vm-0
+    - name: vmop-image-repository
+      persistentVolumeClaim:
+        claimName: vmop-image-repository
+  containers:
+    - name: test-vm-shell
+      image: archlinux/archlinux
+      args:
+        - bash
+      imagePullPolicy: Always
+      stdin: true
+      stdinOnce: true
+      tty: true
+      volumeDevices:
+        - name: test-vm-system-disk
+          devicePath: /dev/test-vm-system-disk
+      volumeMounts:
+        - name: vmop-image-repository
+          mountPath: /var/local/vmop-image-repository
+      securityContext:
+        privileged: true
