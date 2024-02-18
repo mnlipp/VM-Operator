@@ -36,7 +36,7 @@ public class TimeSeries {
     /**
      * Instantiates a new time series.
      *
-     * @param series the number of series
+     * @param period the period
      */
     public TimeSeries(Duration period) {
         this.period = period;
