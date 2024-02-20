@@ -35,7 +35,8 @@ task buildArchImage(type: Exec) {
     dependsOn installDist
     inputs.files 'src/org/jdrupes/vmoperator/runner/qemu/Containerfile.arch'
     
-    commandLine 'podman', 'build', '-t', "${project.name}-arch:${project.version}",\
+    commandLine 'podman', 'build', '--pull',
+        '-t', "${project.name}-arch:${project.version}",\
         '-f', 'src/org/jdrupes/vmoperator/runner/qemu/Containerfile.arch', '.'
 }
 
@@ -87,7 +88,8 @@ task buildAlpineImage(type: Exec) {
     dependsOn installDist
     inputs.files 'src/org/jdrupes/vmoperator/runner/qemu/Containerfile.alpine'
     
-    commandLine 'podman', 'build', '-t', "${project.name}-alpine:${project.version}",\
+    commandLine 'podman', 'build', '--pull',
+        '-t', "${project.name}-alpine:${project.version}",\
         '-f', 'src/org/jdrupes/vmoperator/runner/qemu/Containerfile.alpine', '.'
 }
 

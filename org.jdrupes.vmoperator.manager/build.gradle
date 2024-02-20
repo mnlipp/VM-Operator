@@ -50,7 +50,8 @@ task buildImage(type: Exec) {
     dependsOn installDist
     inputs.files 'src/org/jdrupes/vmoperator/manager/Containerfile'
     
-    commandLine 'podman', 'build', '-t', "${project.name}:${project.version}",\
+    commandLine 'podman', 'build', '--pull',
+        '-t', "${project.name}:${project.version}",\
         '-f', 'src/org/jdrupes/vmoperator/manager/Containerfile', '.'
 }
 
