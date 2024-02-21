@@ -34,9 +34,12 @@
   #     ...
   #   "userData":
   #     ...
+  #   "networkConfig":
+  #     ...
   # 
   # If .metaData.instance-id is missing, an id is generated from the
-  # config file's modification timestamp.   
+  # config file's modification timestamp. .userData and .networkConfig
+  # are optional.    
 
   # Define the VM (required)
   "vm":

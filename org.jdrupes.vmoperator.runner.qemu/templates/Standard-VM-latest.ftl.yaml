@@ -23,6 +23,9 @@
       mformat -C -f 1440 -v CIDATA -i ${ runtimeDir }/cloud-init.img
       && mcopy -i ${ runtimeDir }/cloud-init.img
       ${ dataDir }/cloud-init/meta-data ${ dataDir }/cloud-init/user-data ::
+      && if [ -r ${ dataDir }/cloud-init/network-config ]; then
+      mcopy -i ${ runtimeDir }/cloud-init.img 
+      ${ dataDir }/cloud-init/network-config :: ; fi
 
 "qemu":
   # Candidate paths for the executable 

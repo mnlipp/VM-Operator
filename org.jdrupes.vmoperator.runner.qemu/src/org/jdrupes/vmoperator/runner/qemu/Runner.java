@@ -503,6 +503,13 @@ public class Runner extends Component {
                     config.cloudInit.userData);
             }
             userOut.close();
+            if (config.cloudInit.networkConfig != null) {
+                var networkConfig = Files.newBufferedWriter(
+                    cloudInitDir.resolve("network-config"));
+                yamlMapper.writer().writeValue(networkConfig,
+                    config.cloudInit.networkConfig);
+                networkConfig.close();
+            }
             startProcess(cloudInitImgDefinition);
         } catch (IOException e) {
             logger.log(Level.SEVERE, e,

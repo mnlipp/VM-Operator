@@ -88,6 +88,8 @@ public class Configuration implements Dto {
         public Map<String, Object> metaData;
         @SuppressWarnings("PMD.UseConcurrentHashMap")
         public Map<String, Object> userData;
+        @SuppressWarnings("PMD.UseConcurrentHashMap")
+        public Map<String, Object> networkConfig;
     }
 
     /**
