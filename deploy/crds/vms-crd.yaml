@@ -980,6 +980,10 @@ spec:
                       description: Copied to cloud-init's user-data file.
                       type: object
                       x-kubernetes-preserve-unknown-fields: true
+                    networkConfig:
+                      description: Copied to cloud-init's network-config file.
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
                 vm:
                   type: object
                   description: Defines the VM.

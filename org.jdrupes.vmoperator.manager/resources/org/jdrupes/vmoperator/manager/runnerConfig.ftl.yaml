@@ -58,6 +58,9 @@ data:
         <#else>
         userData: {}
         </#if>
+        <#if cr.spec.cloudInit.networkConfig??>
+        networkConfig: ${ cr.spec.cloudInit.networkConfig.toString() }
+        </#if>
       </#if>
       
       # Define the VM (required)
