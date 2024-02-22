@@ -27,7 +27,7 @@ spec:
   
     networks:
     - tap:
-        mac: "00:16:3e:33:58:10"
+        mac: "00:50:56:33:58:10"
     disks:
     - volumeClaimTemplate:
         metadata:
