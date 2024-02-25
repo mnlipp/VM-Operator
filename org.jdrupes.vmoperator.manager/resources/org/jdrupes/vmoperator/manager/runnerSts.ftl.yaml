@@ -23,6 +23,8 @@ spec:
       app.kubernetes.io/name: ${ constants.APP_NAME }
       app.kubernetes.io/instance: ${ cr.metadata.name.asString }
   replicas: ${ (cr.spec.vm.state.asString == "Running")?then(1, 0) }
+  updateStrategy: 
+    type: OnDelete
   template:
     metadata:
       namespace: ${ cr.metadata.namespace.asString }
