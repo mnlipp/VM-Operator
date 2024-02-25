@@ -23,6 +23,7 @@ spec:
 
   vm:
     state: Running
+    guestShutdownStops: false
     maximumCpus: 4
     currentCpus: 2
     maximumRam: 8Gi
@@ -58,8 +59,14 @@ spec:
 The central resource created by the controller is a 
 [stateful set](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
 with the same name as the VM (metadata.name). Its number of replicas is
-set to 1 if `spec.vm.state` is "Running" (default is "Stopped" which sets replicas
-to 0).
+set to 1 if `spec.vm.state` is "Running" (default is "Stopped" which sets 
+replicas to 0).
+
+Property `guestShutdownStops` (since 2.2.0) controls the effect of a
+shutdown initiated by the guest. If set to `false` (default) a new pod
+is automatically created by the stateful set controller and the VM thus
+restarted. If set to `true`, the runner sets `spec.vm.state` to "Stopped"
+before terminating and by this prevents the creation of a new pod.
 
 ## Defining the basics
 
