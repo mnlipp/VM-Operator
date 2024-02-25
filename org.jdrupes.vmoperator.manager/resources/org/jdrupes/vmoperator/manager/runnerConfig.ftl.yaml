@@ -63,6 +63,8 @@ data:
         </#if>
       </#if>
       
+      guestShutdownStops: ${ cr.spec.guestShutdownStops!false?string('true', 'false') }
+      
       # Define the VM (required)
       vm:
         # The VM's name (required)

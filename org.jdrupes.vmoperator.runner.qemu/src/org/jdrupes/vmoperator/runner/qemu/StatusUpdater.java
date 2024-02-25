@@ -78,6 +78,7 @@ public class StatusUpdater extends Component {
     private DynamicKubernetesApi vmCrApi;
     private EventsV1Api evtsApi;
     private long observedGeneration;
+    private boolean guestShutdownStops;
     private boolean shutdownByGuest;
 
     /**
@@ -217,6 +218,9 @@ public class StatusUpdater extends Component {
     @Handler
     public void onRunnerConfigurationUpdate(RunnerConfigurationUpdate event)
             throws ApiException {
+        guestShutdownStops = event.configuration().guestShutdownStops;
+
+        // Remainder applies only if we have a connection to k8s.
         if (vmCrApi == null) {
             return;
         }
@@ -274,7 +278,8 @@ public class StatusUpdater extends Component {
 
         // Maybe stop VM
         if (event.state() == State.TERMINATING && !event.failed()
-            && shutdownByGuest) {
+            && guestShutdownStops && shutdownByGuest) {
+            logger.info(() -> "Stopping VM because of shutdown by guest.");
             PatchOptions patchOpts = new PatchOptions();
             patchOpts.setFieldManager("kubernetes-java-kubectl-apply");
             var res = vmCrApi.patch(namespace, vmName,

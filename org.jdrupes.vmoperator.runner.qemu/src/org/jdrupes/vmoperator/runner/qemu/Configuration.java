@@ -76,6 +76,9 @@ public class Configuration implements Dto {
     /** Optional cloud-init data. */
     public CloudInit cloudInit;
 
+    /** If guest shutdown changes CRD .vm.state to "Stopped". */
+    public boolean guestShutdownStops;
+
     /** The vm. */
     @SuppressWarnings("PMD.ShortVariable")
     public Vm vm;

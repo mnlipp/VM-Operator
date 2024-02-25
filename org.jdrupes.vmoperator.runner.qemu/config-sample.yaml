@@ -41,6 +41,11 @@
   # config file's modification timestamp. .userData and .networkConfig
   # are optional.    
 
+  # Whether a guest initiated shutdown event patches the state
+  # property in the CRD.  
+  # "guestShutdownStops":
+  #   false
+
   # Define the VM (required)
   "vm":
     # The VM's name (required)
