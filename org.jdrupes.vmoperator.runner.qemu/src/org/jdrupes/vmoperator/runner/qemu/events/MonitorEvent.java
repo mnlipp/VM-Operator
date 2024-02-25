@@ -28,11 +28,13 @@ import org.jgrapes.core.Event;
  */
 public class MonitorEvent extends Event<Void> {
 
+    private static final String EVENT_DATA = "data";
+
     /**
      * The kind of monitor event.
      */
     public enum Kind {
-        READY, POWERDOWN, DEVICE_TRAY_MOVED, BALLOON_CHANGE
+        READY, POWERDOWN, DEVICE_TRAY_MOVED, BALLOON_CHANGE, SHUTDOWN
     }
 
     private final Kind kind;
@@ -47,20 +49,23 @@ public class MonitorEvent extends Event<Void> {
     @SuppressWarnings("PMD.TooFewBranchesForASwitchStatement")
     public static Optional<MonitorEvent> from(JsonNode response) {
         try {
-            var kind
-                = MonitorEvent.Kind.valueOf(response.get("event").asText());
+            var kind = MonitorEvent.Kind
+                .valueOf(response.get("event").asText());
             switch (kind) {
             case POWERDOWN:
                 return Optional.of(new PowerdownEvent(kind, null));
             case DEVICE_TRAY_MOVED:
                 return Optional
-                    .of(new TrayMovedEvent(kind, response.get("data")));
+                    .of(new TrayMovedEvent(kind, response.get(EVENT_DATA)));
             case BALLOON_CHANGE:
+                return Optional.of(
+                    new BalloonChangeEvent(kind, response.get(EVENT_DATA)));
+            case SHUTDOWN:
                 return Optional
-                    .of(new BalloonChangeEvent(kind, response.get("data")));
+                    .of(new ShutdownEvent(kind, response.get(EVENT_DATA)));
             default:
                 return Optional
-                    .of(new MonitorEvent(kind, response.get("data")));
+                    .of(new MonitorEvent(kind, response.get(EVENT_DATA)));
             }
         } catch (IllegalArgumentException e) {
             return Optional.empty();

@@ -12,6 +12,7 @@ rules:
   verbs:
   - list
   - get
+  - patch
 - apiGroups:
   - vmoperator.jdrupes.org
   resources:

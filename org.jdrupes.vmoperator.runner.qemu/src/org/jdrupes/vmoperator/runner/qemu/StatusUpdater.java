@@ -21,6 +21,7 @@ package org.jdrupes.vmoperator.runner.qemu;
 import com.google.gson.JsonObject;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.custom.Quantity.Format;
+import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.ApisApi;
 import io.kubernetes.client.openapi.apis.CustomObjectsApi;
@@ -32,6 +33,7 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
+import io.kubernetes.client.util.generic.options.PatchOptions;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
@@ -52,6 +54,7 @@ import org.jdrupes.vmoperator.runner.qemu.events.HotpluggableCpuStatus;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerConfigurationUpdate;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;
+import org.jdrupes.vmoperator.runner.qemu.events.ShutdownEvent;
 import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
@@ -75,6 +78,7 @@ public class StatusUpdater extends Component {
     private DynamicKubernetesApi vmCrApi;
     private EventsV1Api evtsApi;
     private long observedGeneration;
+    private boolean shutdownByGuest;
 
     /**
      * Instantiates a new status updater.
@@ -268,6 +272,22 @@ public class StatusUpdater extends Component {
             return status;
         }).throwsApiException();
 
+        // Maybe stop VM
+        if (event.state() == State.TERMINATING && !event.failed()
+            && shutdownByGuest) {
+            PatchOptions patchOpts = new PatchOptions();
+            patchOpts.setFieldManager("kubernetes-java-kubectl-apply");
+            var res = vmCrApi.patch(namespace, vmName,
+                V1Patch.PATCH_FORMAT_JSON_PATCH,
+                new V1Patch("[{\"op\": \"replace\", \"path\": \"/spec/vm/state"
+                    + "\", \"value\": \"Stopped\"}]"),
+                patchOpts);
+            if (!res.isSuccess()) {
+                logger.warning(
+                    () -> "Cannot patch pod annotations: " + res.getStatus());
+            }
+        }
+
         // Log event
         var evt = new EventsV1Event().kind("Event")
             .metadata(new V1ObjectMeta().namespace(namespace)
@@ -343,5 +363,16 @@ public class StatusUpdater extends Component {
             status.addProperty("cpus", event.usedCpus().size());
             return status;
         }).throwsApiException();
+    }
+
+    /**
+     * On shutdown.
+     *
+     * @param event the event
+     * @throws ApiException the api exception
+     */
+    @Handler
+    public void onShutdown(ShutdownEvent event) throws ApiException {
+        shutdownByGuest = event.byGuest();
     }
 }

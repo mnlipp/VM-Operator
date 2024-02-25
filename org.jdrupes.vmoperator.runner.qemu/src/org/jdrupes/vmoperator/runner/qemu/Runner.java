@@ -640,11 +640,23 @@ public class Runner extends Component {
                 return;
             }
             if (procDef.equals(qemuDefinition) && state == State.RUNNING) {
-                rep.fire(new Stop());
+                rep.fire(new Exit(event.exitValue()));
             }
             logger.info(() -> "Process " + procDef.name
                 + " has exited with value " + event.exitValue());
         });
+    }
+
+    /**
+     * On exit.
+     *
+     * @param event the event
+     */
+    @Handler(priority = 10_001)
+    public void onExit(Exit event) {
+        if (exitStatus == 0) {
+            exitStatus = event.exitStatus();
+        }
     }
 
     /**
@@ -656,7 +668,7 @@ public class Runner extends Component {
     public void onStopFirst(Stop event) {
         state = State.TERMINATING;
         rep.fire(new RunnerStateChange(state, "VmTerminating",
-            "The VM is being shut down"));
+            "The VM is being shut down", exitStatus != 0));
     }
 
     /**
@@ -669,16 +681,6 @@ public class Runner extends Component {
         state = State.STOPPED;
         rep.fire(new RunnerStateChange(state, "VmStopped",
             "The VM has been shut down"));
-    }
-
-    /**
-     * On exit.
-     *
-     * @param event the event
-     */
-    @Handler
-    public void onExit(Exit event) {
-        exitStatus = event.exitStatus();
     }
 
     private void shutdown() {

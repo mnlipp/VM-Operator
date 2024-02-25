@@ -25,6 +25,7 @@ import org.jgrapes.core.Event;
 /**
  * The Class RunnerStateChange.
  */
+@SuppressWarnings("PMD.DataClass")
 public class RunnerStateChange extends Event<Void> {
 
     /**
@@ -37,17 +38,36 @@ public class RunnerStateChange extends Event<Void> {
     private final State state;
     private final String reason;
     private final String message;
+    private final boolean failed;
 
     /**
      * Instantiates a new runner state change.
      *
+     * @param state the state
+     * @param reason the reason
+     * @param message the message
      * @param channels the channels
      */
     public RunnerStateChange(State state, String reason, String message,
             Channel... channels) {
+        this(state, reason, message, false, channels);
+    }
+
+    /**
+     * Instantiates a new runner state change.
+     *
+     * @param state the state
+     * @param reason the reason
+     * @param message the message
+     * @param failed the failed
+     * @param channels the channels
+     */
+    public RunnerStateChange(State state, String reason, String message,
+            boolean failed, Channel... channels) {
         super(channels);
         this.state = state;
         this.reason = reason;
+        this.failed = failed;
         this.message = message;
     }
 
@@ -78,11 +98,23 @@ public class RunnerStateChange extends Event<Void> {
         return message;
     }
 
+    /**
+     * Checks if is failed.
+     *
+     * @return the failed
+     */
+    public boolean failed() {
+        return failed;
+    }
+
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
         builder.append(Components.objectName(this))
             .append(" [").append(state).append(": ").append(reason);
+        if (failed) {
+            builder.append(" (failed)");
+        }
         if (channels() != null) {
             builder.append(", channels=");
             builder.append(Channel.toString(channels()));
