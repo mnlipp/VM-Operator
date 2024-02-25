@@ -56,6 +56,8 @@ spec:
         port: 5910
 ```
 
+## Pod management 
+
 The central resource created by the controller is a 
 [stateful set](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
 with the same name as the VM (metadata.name). Its number of replicas is
