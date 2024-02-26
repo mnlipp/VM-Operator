@@ -21,7 +21,7 @@ package org.jdrupes.vmoperator.runner.qemu.events;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Signals the processing of the {@link QmpShutdown} event.
+ * Signals the reception of a SHUTDOWN event.
  */
 public class ShutdownEvent extends MonitorEvent {
 
