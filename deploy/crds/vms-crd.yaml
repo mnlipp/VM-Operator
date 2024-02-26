@@ -933,6 +933,12 @@ spec:
                     update:
                       type: boolean
                       default: true
+                guestShutdownStops:
+                  description: >-
+                    If true, sets the VM's state to "Stopped" when
+                    the VM terminates due to a shutdown by the guest.
+                  type: boolean
+                  default: false
                 loadBalancerService:
                   description: >-
                     Data to be merged with the loadBalancerService
@@ -999,12 +1005,6 @@ spec:
                       type: string
                       enum: [ "Stopped", "Running" ]
                       default: "Stopped"
-                    guestShutdownStops:
-                      description: >-
-                        If true, sets the state to "Stopped" when
-                        the VM terminates due to a shutdown by the guest.
-                      type: boolean
-                      default: false
                     machineUuid:
                       description: >-
                         The machine's uuid. If none is specified, a uuid 

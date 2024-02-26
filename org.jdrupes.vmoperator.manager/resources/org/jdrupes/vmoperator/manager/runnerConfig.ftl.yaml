@@ -45,6 +45,9 @@ data:
       updateTemplate: ${ cr.spec.runnerTemplate.update.asBoolean?c }
       </#if>
 
+      # Whether a shutdown initiated by the guest stops the pod deployment
+      guestShutdownStops: ${ cr.spec.guestShutdownStops!false?c }
+      
       # Forward the cloud-init data if provided
       <#if cr.spec.cloudInit??>    
       cloudInit:
@@ -62,8 +65,6 @@ data:
         networkConfig: ${ cr.spec.cloudInit.networkConfig.toString() }
         </#if>
       </#if>
-      
-      guestShutdownStops: ${ cr.spec.vm.guestShutdownStops!false?c }
       
       # Define the VM (required)
       vm:
