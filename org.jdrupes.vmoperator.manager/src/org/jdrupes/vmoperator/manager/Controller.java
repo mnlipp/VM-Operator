@@ -88,6 +88,7 @@ public class Controller extends Component {
         super(componentChannel);
         // Prepare component tree
         attach(new VmWatcher(channel()));
+        attach(new DisplaySecretsWatcher(channel()));
         attach(new Reconciler(channel()));
     }
 

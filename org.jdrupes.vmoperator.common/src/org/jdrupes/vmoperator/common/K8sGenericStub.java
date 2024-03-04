@@ -18,21 +18,22 @@
 
 package org.jdrupes.vmoperator.common;
 
-import com.google.gson.Gson;
 import io.kubernetes.client.Discovery.APIResource;
 import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.common.KubernetesListObject;
 import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.custom.V1Patch;
-import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.Strings;
 import io.kubernetes.client.util.generic.GenericKubernetesApi;
+import io.kubernetes.client.util.generic.options.GetOptions;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import io.kubernetes.client.util.generic.options.PatchOptions;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -74,8 +75,7 @@ public class K8sGenericStub<O extends KubernetesObject,
      * @return the stub if the object exists
      * @throws ApiException the api exception
      */
-    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
-        "PMD.AvoidInstantiatingObjectsInLoops" })
+    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop" })
     public static <O extends KubernetesObject, L extends KubernetesListObject,
             R extends K8sGenericStub<O, L>>
             R get(Class<O> objectClass, Class<L> objectListClass,
@@ -109,13 +109,12 @@ public class K8sGenericStub<O extends KubernetesObject,
      * @throws ApiException the api exception
      */
     @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
-        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })
+        "PMD.UseObjectForClearerAPI" })
     public static <O extends KubernetesObject, L extends KubernetesListObject,
             R extends K8sGenericStub<O, L>>
             R get(Class<O> objectClass, Class<L> objectListClass,
                     K8sClient client, APIResource context, String namespace,
-                    String name, GenericSupplier<O, L, R> provider)
-                    throws ApiException {
+                    String name, GenericSupplier<O, L, R> provider) {
         return provider.get(objectClass, objectListClass, client,
             context, namespace, name);
     }
@@ -174,15 +173,26 @@ public class K8sGenericStub<O extends KubernetesObject,
                     K8sClient client, APIResource context, String namespace,
                     ListOptions options, SpecificSupplier<O, L, R> provider)
                     throws ApiException {
-        var api = new GenericKubernetesApi<>(objectClass, objectListClass,
-            context.getGroup(), context.getPreferredVersion(),
-            context.getResourcePlural(), client);
-        var objs = api.list(namespace, options).throwsApiException();
         var result = new ArrayList<R>();
-        for (var item : objs.getObject().getItems()) {
-            result.add(
-                provider.get(client, namespace, item.getMetadata().getName()));
+        for (var version : candidateVersions(context)) {
+            @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+            var api = new GenericKubernetesApi<>(objectClass, objectListClass,
+                context.getGroup(), version, context.getResourcePlural(),
+                client);
+            var objs = api.list(namespace, options).throwsApiException();
+            for (var item : objs.getObject().getItems()) {
+                result.add(
+                    provider.get(client, namespace,
+                        item.getMetadata().getName()));
+            }
         }
+        return result;
+    }
+
+    private static List<String> candidateVersions(APIResource context) {
+        var result = new LinkedList<>(context.getVersions());
+        result.remove(context.getPreferredVersion());
+        result.add(0, context.getPreferredVersion());
         return result;
     }
 
@@ -196,35 +206,35 @@ public class K8sGenericStub<O extends KubernetesObject,
      * @param namespace the namespace
      * @param name the name
      */
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     protected K8sGenericStub(Class<O> objectClass, Class<L> objectListClass,
             K8sClient client, APIResource context, String namespace,
             String name) {
         this.client = client;
         group = context.getGroup();
-        version = context.getPreferredVersion();
         kind = context.getKind();
         plural = context.getResourcePlural();
         this.namespace = namespace;
         this.name = name;
 
-        Gson gson = client.getJSON().getGson();
-        if (!checkAdapters(client)) {
-            client.getJSON().setGson(gson.newBuilder()
-                .registerTypeAdapterFactory(
-                    new K8sDynamicModelTypeAdapterFactory())
-                .create());
+        // Bind version
+        var foundVersion = context.getPreferredVersion();
+        GenericKubernetesApi<O, L> testApi = null;
+        GetOptions mdOpts
+            = new GetOptions().isPartialObjectMetadataRequest(true);
+        for (var version : candidateVersions(context)) {
+            testApi = new GenericKubernetesApi<>(objectClass,
+                objectListClass, group, version, plural, client);
+            if (testApi.get(namespace, name, mdOpts)
+                .isSuccess()) {
+                foundVersion = version;
+                break;
+            }
         }
-        api = new GenericKubernetesApi<>(objectClass,
-            objectListClass, group, version, plural, client);
-    }
-
-    private boolean checkAdapters(ApiClient client) {
-        return K8sDynamicModelTypeAdapterFactory.K8sDynamicModelCreator.class
-            .equals(client.getJSON().getGson().getAdapter(K8sDynamicModel.class)
-                .getClass())
-            && K8sDynamicModelTypeAdapterFactory.K8sDynamicModelsCreator.class
-                .equals(client.getJSON().getGson()
-                    .getAdapter(K8sDynamicModels.class).getClass());
+        version = foundVersion;
+        api = Optional.ofNullable(testApi)
+            .orElseGet(() -> new GenericKubernetesApi<>(objectClass,
+                objectListClass, group, version, plural, client));
     }
 
     /**

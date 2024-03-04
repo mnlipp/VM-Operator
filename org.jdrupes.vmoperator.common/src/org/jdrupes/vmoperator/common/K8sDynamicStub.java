@@ -18,8 +18,10 @@
 
 package org.jdrupes.vmoperator.common;
 
+import com.google.gson.Gson;
 import io.kubernetes.client.Discovery.APIResource;
 import io.kubernetes.client.apimachinery.GroupVersionKind;
+import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import java.io.Reader;
 
@@ -47,6 +49,24 @@ public class K8sDynamicStub
             Class<K8sDynamicModels> objectListClass, K8sClient client,
             APIResource context, String namespace, String name) {
         super(objectClass, objectListClass, client, context, namespace, name);
+
+        // Make sure that we have an adapter for our type
+        Gson gson = client.getJSON().getGson();
+        if (!checkAdapters(client)) {
+            client.getJSON().setGson(gson.newBuilder()
+                .registerTypeAdapterFactory(
+                    new K8sDynamicModelTypeAdapterFactory())
+                .create());
+        }
+    }
+
+    private boolean checkAdapters(ApiClient client) {
+        return K8sDynamicModelTypeAdapterFactory.K8sDynamicModelCreator.class
+            .equals(client.getJSON().getGson().getAdapter(K8sDynamicModel.class)
+                .getClass())
+            && K8sDynamicModelTypeAdapterFactory.K8sDynamicModelsCreator.class
+                .equals(client.getJSON().getGson()
+                    .getAdapter(K8sDynamicModels.class).getClass());
     }
 
     /**
@@ -83,8 +103,7 @@ public class K8sDynamicStub
     @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
         "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })
     public static K8sDynamicStub get(K8sClient client,
-            APIResource context, String namespace, String name)
-            throws ApiException {
+            APIResource context, String namespace, String name) {
         return K8sGenericStub.get(K8sDynamicModel.class, K8sDynamicModels.class,
             client, context, namespace, name, K8sDynamicStub::new);
     }
