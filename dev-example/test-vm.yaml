@@ -13,11 +13,16 @@ spec:
     requests:
       cpu: 1
       memory: 2Gi
-  
+
+  loadBalancerService:
+    labels:
+      test2: null
+      test3: added
+    
   guestShutdownStops: true
   
   cloudInit: {}
-    
+  
   vm:
     # state: Running
     bootMenu: yes
