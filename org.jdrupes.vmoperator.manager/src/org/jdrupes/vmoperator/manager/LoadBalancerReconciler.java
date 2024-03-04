@@ -29,7 +29,6 @@ import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import io.kubernetes.client.util.generic.dynamic.Dynamics;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Logger;
@@ -79,18 +78,24 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
             Map<String, Object> model, VmChannel channel)
             throws IOException, TemplateException, ApiException {
         // Check if to be generated
-        @SuppressWarnings({ "unchecked", "PMD.AvoidDuplicateLiterals" })
-        var lbs = Optional.of(model)
+        @SuppressWarnings({ "PMD.AvoidDuplicateLiterals", "unchecked" })
+        var lbsDef = Optional.of(model)
             .map(m -> (Map<String, Object>) m.get("reconciler"))
             .map(c -> c.get(LOAD_BALANCER_SERVICE)).orElse(Boolean.FALSE);
-        if (lbs instanceof Boolean isOn && !isOn) {
-            return;
-        }
-        if (!(lbs instanceof Map)) {
+        if (!(lbsDef instanceof Map) && !(lbsDef instanceof Boolean)) {
             logger.warning(() -> "\"" + LOAD_BALANCER_SERVICE
                 + "\" in configuration must be boolean or mapping but is "
-                + lbs.getClass() + ".");
+                + lbsDef.getClass() + ".");
             return;
+        }
+        if (lbsDef instanceof Boolean isOn && !isOn) {
+            return;
+        }
+        JsonObject cfgMeta = new JsonObject();
+        if (lbsDef instanceof Map) {
+            var json = channel.client().getJSON();
+            cfgMeta
+                = json.deserialize(json.serialize(lbsDef), JsonObject.class);
         }
 
         // Combine template and data and parse result
@@ -101,7 +106,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         // https://github.com/kubernetes-client/java/issues/2741
         var svcDef = Dynamics.newFromYaml(
             new Yaml(new SafeConstructor(new LoaderOptions())), out.toString());
-        mergeMetadata(svcDef, lbs, channel);
+        mergeMetadata(svcDef, cfgMeta, event.vmDefinition());
 
         // Apply
         DynamicKubernetesApi svcApi = new DynamicKubernetesApi("", "v1",
@@ -109,20 +114,10 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         K8s.apply(svcApi, svcDef, svcDef.getRaw().toString());
     }
 
-    @SuppressWarnings("unchecked")
     private void mergeMetadata(DynamicKubernetesObject svcDef,
-            Object lbsConfig, VmChannel channel) {
-        // Get metadata from config
-        Map<String, Object> asmData = Collections.emptyMap();
-        if (lbsConfig instanceof Map config) {
-            asmData = (Map<String, Object>) config;
-        }
-        var json = channel.client().getJSON();
-        JsonObject cfgMeta
-            = json.deserialize(json.serialize(asmData), JsonObject.class);
-
+            JsonObject cfgMeta, DynamicKubernetesObject vmDefinition) {
         // Get metadata from VM definition
-        var vmMeta = GsonPtr.to(channel.vmDefinition().getRaw()).to("spec")
+        var vmMeta = GsonPtr.to(vmDefinition.getRaw()).to("spec")
             .get(JsonObject.class, LOAD_BALANCER_SERVICE)
             .map(JsonObject::deepCopy).orElseGet(() -> new JsonObject());
 
