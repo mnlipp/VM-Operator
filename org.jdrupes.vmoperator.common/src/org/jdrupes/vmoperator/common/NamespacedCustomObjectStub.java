@@ -19,6 +19,7 @@
 package org.jdrupes.vmoperator.common;
 
 import com.google.gson.JsonObject;
+import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
@@ -26,6 +27,7 @@ import io.kubernetes.client.openapi.apis.ApisApi;
 import io.kubernetes.client.openapi.apis.CustomObjectsApi;
 import io.kubernetes.client.openapi.models.V1APIGroup;
 import io.kubernetes.client.openapi.models.V1GroupVersionForDiscovery;
+import io.kubernetes.client.util.Strings;
 import io.kubernetes.client.util.generic.GenericKubernetesApi;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesListObject;
@@ -116,11 +118,12 @@ public class NamespacedCustomObjectStub {
     }
 
     /**
-     * Get a namespaced custom object stub.
+     * Get a namespaced custom object stub. If the version in parameter
+     * `gvk` is an empty string, the stub refers to the first object with
+     * matching group and kind. 
      *
      * @param client the client
-     * @param group the group
-     * @param kind the kind
+     * @param gvk the group, version and kind
      * @param namespace the namespace
      * @param name the name
      * @return the dynamic kubernetes api
@@ -129,26 +132,47 @@ public class NamespacedCustomObjectStub {
     @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
         "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })
     public static Optional<NamespacedCustomObjectStub>
-            get(ApiClient client, String group, String kind,
+            get(ApiClient client, GroupVersionKind gvk,
                     String namespace, String name) throws ApiException {
-        var apis = new ApisApi(client).getAPIVersions();
-        var crdVersions = apis.getGroups().stream()
-            .filter(g -> g.getName().equals(group)).findFirst()
-            .map(V1APIGroup::getVersions).stream().flatMap(l -> l.stream())
-            .map(V1GroupVersionForDiscovery::getVersion).toList();
         var coa = new CustomObjectsApi(client);
-        for (var crdVersion : crdVersions) {
-            var crdApiRes = coa.getAPIResources(group, crdVersion)
-                .getResources().stream().filter(r -> kind.equals(r.getKind()))
-                .findFirst();
-            if (crdApiRes.isEmpty()) {
-                continue;
+        var group = gvk.getGroup();
+        var kind = gvk.getKind();
+        String plural = null;
+        if (Strings.isNullOrEmpty(gvk.getVersion())) {
+            var apis = new ApisApi(client).getAPIVersions();
+            var versions = apis.getGroups().stream()
+                .filter(g -> g.getName().equals(group)).findFirst()
+                .map(V1APIGroup::getVersions).stream().flatMap(l -> l.stream())
+                .map(V1GroupVersionForDiscovery::getVersion).toList();
+            for (var version : versions) {
+                var crdApiRes = coa.getAPIResources(group, version)
+                    .getResources().stream()
+                    .filter(r -> kind.equals(r.getKind()))
+                    .findFirst();
+                if (crdApiRes.isPresent()) {
+                    gvk = new GroupVersionKind(group, version, kind);
+                    // Shortcut, avoid calling this twice
+                    plural = crdApiRes.get().getName();
+                    break;
+                }
             }
-            return Optional
-                .of(new NamespacedCustomObjectStub(coa, group, crdVersion,
-                    namespace, crdApiRes.get().getName(), name));
         }
-        return Optional.empty();
+        if (Strings.isNullOrEmpty(gvk.getVersion())) {
+            return Optional.empty();
+        }
+        if (Strings.isNullOrEmpty(plural)) {
+            var crdApiRes
+                = coa.getAPIResources(gvk.getGroup(), gvk.getVersion())
+                    .getResources().stream()
+                    .filter(r -> kind.equals(r.getKind())).findFirst();
+            if (crdApiRes.isEmpty()) {
+                return Optional.empty();
+            }
+            plural = crdApiRes.get().getName();
+        }
+        return Optional
+            .of(new NamespacedCustomObjectStub(coa, gvk.getGroup(),
+                gvk.getVersion(), namespace, plural, name));
     }
 
     /**
@@ -157,7 +181,7 @@ public class NamespacedCustomObjectStub {
      * @return the dynamic kubernetes object
      * @throws ApiException the api exception
      */
-    public DynamicKubernetesObject object() throws ApiException {
+    public DynamicKubernetesObject state() throws ApiException {
         var call = api.getNamespacedCustomObjectCall(group, version,
             namespace, plural, name, null);
         var data = api.getApiClient().<JsonObject> execute(call,
@@ -190,7 +214,7 @@ public class NamespacedCustomObjectStub {
     public KubernetesApiResponse<DynamicKubernetesObject>
             updateStatus(Function<DynamicKubernetesObject, Object> status)
                     throws ApiException {
-        return updateStatus(object(), status);
+        return updateStatus(state(), status);
     }
 
     /**

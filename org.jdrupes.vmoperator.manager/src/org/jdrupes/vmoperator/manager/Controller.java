@@ -18,6 +18,7 @@
 
 package org.jdrupes.vmoperator.manager;
 
+import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
@@ -29,7 +30,7 @@ import java.nio.file.Path;
 import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
-import org.jdrupes.vmoperator.common.K8s;
+import org.jdrupes.vmoperator.common.NamespacedCustomObjectStub;
 import org.jdrupes.vmoperator.manager.events.Exit;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
@@ -160,15 +161,16 @@ public class Controller extends Component {
      * @throws IOException Signals that an I/O exception has occurred.
      */
     @Handler
-    public void onModigyVm(ModifyVm event) throws ApiException, IOException {
+    public void onModifyVm(ModifyVm event) throws ApiException, IOException {
         patchVmSpec(event.name(), event.path(), event.value());
     }
 
     private void patchVmSpec(String name, String path, Object value)
             throws ApiException, IOException {
-        var crApi = K8s.crApi(Config.defaultClient(), VM_OP_GROUP,
-            VM_OP_KIND_VM, namespace, name);
-        if (crApi.isEmpty()) {
+        var vmObj = NamespacedCustomObjectStub.get(Config.defaultClient(),
+            new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM), namespace,
+            name);
+        if (vmObj.isEmpty()) {
             logger.warning(() -> "Trying to patch " + namespace + "/" + name
                 + " which does not exist.");
             return;
@@ -180,8 +182,7 @@ public class Controller extends Component {
         String valueAsText = value instanceof String
             ? "\"" + value + "\""
             : value.toString();
-        var res = crApi.get().patch(namespace, name,
-            V1Patch.PATCH_FORMAT_JSON_PATCH,
+        var res = vmObj.get().patch(V1Patch.PATCH_FORMAT_JSON_PATCH,
             new V1Patch("[{\"op\": \"replace\", \"path\": \"/spec/vm/"
                 + path + "\", \"value\": " + valueAsText + "}]"),
             patchOpts);
@@ -189,6 +190,5 @@ public class Controller extends Component {
             logger.warning(
                 () -> "Cannot patch pod annotations: " + res.getStatus());
         }
-
     }
 }

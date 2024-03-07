@@ -19,6 +19,7 @@
 package org.jdrupes.vmoperator.runner.qemu;
 
 import com.google.gson.JsonObject;
+import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.custom.Quantity.Format;
 import io.kubernetes.client.custom.V1Patch;
@@ -158,11 +159,12 @@ public class StatusUpdater extends Component {
             return;
         }
         try {
-            vmStub = NamespacedCustomObjectStub.get(apiClient, VM_OP_GROUP,
-                VM_OP_KIND_VM, namespace, vmName).orElse(null);
+            vmStub = NamespacedCustomObjectStub.get(apiClient,
+                new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
+                namespace, vmName).orElse(null);
             if (vmStub != null) {
                 observedGeneration
-                    = vmStub.object().getMetadata().getGeneration();
+                    = vmStub.state().getMetadata().getGeneration();
             }
         } catch (ApiException e) {
             logger.log(Level.SEVERE, e,
@@ -189,7 +191,7 @@ public class StatusUpdater extends Component {
         }
         // A change of the runner configuration is typically caused
         // by a new version of the CR. So we observe the new CR.
-        var vmObj = vmStub.object();
+        var vmObj = vmStub.state();
         if (vmObj.getMetadata().getGeneration() == observedGeneration) {
             return;
         }
@@ -216,7 +218,7 @@ public class StatusUpdater extends Component {
         if (vmStub == null) {
             return;
         }
-        var vmObj = vmStub.object();
+        var vmObj = vmStub.state();
         vmStub.updateStatus(vmObj, from -> {
             JsonObject status = K8s.status(from);
             status.getAsJsonArray("conditions").asList().stream()

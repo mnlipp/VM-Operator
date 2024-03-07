@@ -1,6 +1,6 @@
 /*
  * VM-Operator
- * Copyright (C) 2023 Michael N. Lipp
+ * Copyright (C) 2023,2024 Michael N. Lipp
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,6 +21,8 @@ package org.jdrupes.vmoperator.manager;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
+import io.kubernetes.client.apimachinery.GroupVersion;
+import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.ApisApi;
@@ -49,6 +51,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import org.jdrupes.vmoperator.common.K8s;
+import org.jdrupes.vmoperator.common.NamespacedCustomObjectStub;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
@@ -269,8 +272,8 @@ public class VmWatcher extends Component {
     }
 
     private void handleVmDefinitionChange(V1APIResource vmsCrd,
-            Watch.Response<V1Namespace> vmDefStub) {
-        V1ObjectMeta metadata = vmDefStub.object.getMetadata();
+            Watch.Response<V1Namespace> vmDefRef) throws ApiException {
+        V1ObjectMeta metadata = vmDefRef.object.getMetadata();
         VmChannel channel = channels.computeIfAbsent(metadata.getName(),
             k -> {
                 try {
@@ -287,24 +290,23 @@ public class VmWatcher extends Component {
         }
 
         // Get full definition and associate with channel as backup
-        var apiVersion = K8s.version(vmDefStub.object.getApiVersion());
-        DynamicKubernetesApi vmCrApi = new DynamicKubernetesApi(VM_OP_GROUP,
-            apiVersion, vmsCrd.getName(), channel.client());
-        var curVmDef = K8s.get(vmCrApi, metadata);
-        curVmDef.ifPresent(def -> {
-            // Augment with "dynamic" data and associate with channel
-            addDynamicData(channel.client(), def);
-            channel.setVmDefinition(def);
-        });
-
-        // Get eventual definition to use
-        var vmDef = curVmDef.orElse(channel.vmDefinition());
+        @SuppressWarnings("PMD.ShortVariable")
+        var gv = GroupVersion.parse(vmDefRef.object.getApiVersion());
+        var vmObj = NamespacedCustomObjectStub.get(channel.client(),
+            new GroupVersionKind(gv.getGroup(), gv.getVersion(), VM_OP_KIND_VM),
+            metadata.getNamespace(), metadata.getName());
+        DynamicKubernetesObject vmDef = channel.vmDefinition();
+        if (vmObj.isPresent()) {
+            vmDef = vmObj.get().state();
+            addDynamicData(channel.client(), vmDef);
+            channel.setVmDefinition(vmDef);
+        }
 
         // Create and fire event
         channel.pipeline().fire(new VmDefChanged(VmDefChanged.Type
-            .valueOf(vmDefStub.type),
+            .valueOf(vmDefRef.type),
             channel
-                .setGeneration(vmDefStub.object.getMetadata().getGeneration()),
+                .setGeneration(vmDefRef.object.getMetadata().getGeneration()),
             vmsCrd, vmDef), channel);
     }
 
