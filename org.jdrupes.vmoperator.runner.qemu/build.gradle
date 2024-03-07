@@ -16,7 +16,7 @@ dependencies {
     implementation project(':org.jdrupes.vmoperator.common')
 
     implementation 'commons-cli:commons-cli:1.5.0'
-    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:[2.15.1,3]'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:[2.16.1]'
 
     runtimeOnly 'org.slf4j:slf4j-jdk14:[2.0.7,3)'
 }

@@ -18,6 +18,7 @@
 
 package org.jdrupes.vmoperator.common;
 
+import com.google.gson.JsonObject;
 import io.kubernetes.client.common.KubernetesListObject;
 import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.custom.V1Patch;
@@ -35,12 +36,18 @@ import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimList;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodList;
+import io.kubernetes.client.util.PatchUtils;
 import io.kubernetes.client.util.generic.GenericKubernetesApi;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
+import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesListObject;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import io.kubernetes.client.util.generic.options.DeleteOptions;
 import io.kubernetes.client.util.generic.options.PatchOptions;
+import io.kubernetes.client.util.generic.options.UpdateOptions;
+
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * Helpers for K8s API.
@@ -107,18 +114,19 @@ public class K8s {
      * @return the dynamic kubernetes api
      * @throws ApiException the api exception
      */
+    @Deprecated
     @SuppressWarnings("PMD.UseObjectForClearerAPI")
     public static Optional<DynamicKubernetesApi> crApi(ApiClient client,
             String group, String kind, String namespace, String name)
             throws ApiException {
-        var apis = new ApisApi(client).getAPIVersions();
+        var apis = new ApisApi(client).getAPIVersions().execute();
         var crdVersions = apis.getGroups().stream()
             .filter(g -> g.getName().equals(group)).findFirst()
             .map(V1APIGroup::getVersions).stream().flatMap(l -> l.stream())
             .map(V1GroupVersionForDiscovery::getVersion).toList();
         var coa = new CustomObjectsApi(client);
         for (var crdVersion : crdVersions) {
-            var crdApiRes = coa.getAPIResources(group, crdVersion)
+            var crdApiRes = coa.getAPIResources(group, crdVersion).execute()
                 .getResources().stream().filter(r -> kind.equals(r.getKind()))
                 .findFirst();
             if (crdApiRes.isEmpty()) {
@@ -131,6 +139,120 @@ public class K8s {
             if (customResource.isSuccess()) {
                 return Optional.of(crApi);
             }
+        }
+        return Optional.empty();
+    }
+
+    public static JsonObject status(DynamicKubernetesObject object) {
+        return object.getRaw().getAsJsonObject("status");
+    }
+
+    /**
+     * Describes a namespaced custom object. This class combines
+     * all information required to invoke one of the 
+     * {@link CustomObjectsApi}'s methods for namespaced custom objects.
+     */
+    public static class NamespacedCustomObject {
+        private final CustomObjectsApi api;
+        private final String group;
+        private final String version;
+        private final String namespace;
+        private final String plural;
+        private final String name;
+        private final GenericKubernetesApi<DynamicKubernetesObject,
+                DynamicKubernetesListObject> gkApi;
+
+        public NamespacedCustomObject(CustomObjectsApi api,
+                String group, String version, String namespace, String plural,
+                String name) {
+            this.api = api;
+            this.group = group;
+            this.version = version;
+            this.namespace = namespace;
+            this.plural = plural;
+            this.name = name;
+            gkApi = new GenericKubernetesApi<>(DynamicKubernetesObject.class,
+                DynamicKubernetesListObject.class, group, version, plural, api);
+        }
+
+        public DynamicKubernetesObject get() throws ApiException {
+            var call = api.getNamespacedCustomObject(group, version, namespace,
+                plural, name).buildCall(null);
+            var data = api.getApiClient().<JsonObject> execute(call,
+                JsonObject.class).getData();
+            return new DynamicKubernetesObject(data);
+        }
+
+        public KubernetesApiResponse<DynamicKubernetesObject>
+                updateStatus(DynamicKubernetesObject object,
+                        Function<DynamicKubernetesObject, Object> status)
+                        throws ApiException {
+            return null; // gkApi.updateStatus(object,
+                         // status).throwsApiException();
+        }
+
+        public KubernetesApiResponse<DynamicKubernetesObject>
+                updateStatus(Function<DynamicKubernetesObject, Object> status)
+                        throws ApiException {
+            var object = get();
+            return updateStatus(object, status);
+        }
+
+        public KubernetesApiResponse<DynamicKubernetesObject> patch(
+                String patchType, V1Patch patch,
+                PatchOptions options) throws ApiException {
+            Object res = PatchUtils.patch(CustomObjectsApi.class,
+                () -> api.patchNamespacedCustomObject(group, version, namespace,
+                    plural, name, patch).buildCall(null),
+                patchType, api.getApiClient());
+//            Object res = api
+//                .patchNamespacedCustomObject(group, version, namespace, plural,
+//                    name, patch)
+//                .execute();
+            return null;
+//            return gkApi.patch(namespace, name, patchType, patch, options)
+//                .throwsApiException();
+        }
+
+        public KubernetesApiResponse<DynamicKubernetesObject>
+                patch(String patchType, V1Patch patch) throws ApiException {
+            PatchOptions opts = new PatchOptions();
+            return patch(patchType, patch, opts);
+        }
+    }
+
+    /**
+     * Get a namespaced custom object.
+     *
+     * @param client the client
+     * @param group the group
+     * @param kind the kind
+     * @param namespace the namespace
+     * @param name the name
+     * @return the dynamic kubernetes api
+     * @throws ApiException the api exception
+     */
+    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
+        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })
+    public static Optional<NamespacedCustomObject>
+            getCustomObject(ApiClient client, String group, String kind,
+                    String namespace, String name) throws ApiException {
+        var apis = new ApisApi(client).getAPIVersions().execute();
+        var crdVersions = apis.getGroups().stream()
+            .filter(g -> g.getName().equals(group)).findFirst()
+            .map(V1APIGroup::getVersions).stream().flatMap(l -> l.stream())
+            .map(V1GroupVersionForDiscovery::getVersion).toList();
+        var coa = new CustomObjectsApi(client);
+        for (var crdVersion : crdVersions) {
+            var crdApiRes = coa.getAPIResources(group, crdVersion).execute()
+                .getResources().stream().filter(r -> kind.equals(r.getKind()))
+                .findFirst();
+            if (crdApiRes.isEmpty()) {
+                continue;
+            }
+            return Optional
+                .of(new NamespacedCustomObject(coa, group, crdVersion,
+                    namespace, crdApiRes.get().getName(), name));
         }
         return Optional.empty();
     }

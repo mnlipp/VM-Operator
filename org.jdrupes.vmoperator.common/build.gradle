@@ -10,5 +10,5 @@ plugins {
 
 dependencies {
     api project(':org.jdrupes.vmoperator.util')
-    api 'io.kubernetes:client-java:[18.0.0,19)'
+    api 'io.kubernetes:client-java:[20.0.0,21)'
 }

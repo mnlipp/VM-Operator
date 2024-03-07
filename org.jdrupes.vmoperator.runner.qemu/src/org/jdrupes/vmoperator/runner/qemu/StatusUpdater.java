@@ -1,6 +1,6 @@
 /*
  * VM-Operator
- * Copyright (C) 2023 Michael N. Lipp
+ * Copyright (C) 2023,2024 Michael N. Lipp
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,16 +22,12 @@ import com.google.gson.JsonObject;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.custom.Quantity.Format;
 import io.kubernetes.client.custom.V1Patch;
+import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.apis.ApisApi;
-import io.kubernetes.client.openapi.apis.CustomObjectsApi;
 import io.kubernetes.client.openapi.apis.EventsV1Api;
 import io.kubernetes.client.openapi.models.EventsV1Event;
-import io.kubernetes.client.openapi.models.V1APIGroup;
-import io.kubernetes.client.openapi.models.V1GroupVersionForDiscovery;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Config;
-import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import io.kubernetes.client.util.generic.options.PatchOptions;
 import java.io.IOException;
@@ -48,6 +44,7 @@ import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.common.K8s;
+import org.jdrupes.vmoperator.common.K8s.NamespacedCustomObject;
 import org.jdrupes.vmoperator.runner.qemu.events.BalloonChangeEvent;
 import org.jdrupes.vmoperator.runner.qemu.events.Exit;
 import org.jdrupes.vmoperator.runner.qemu.events.HotpluggableCpuStatus;
@@ -75,11 +72,12 @@ public class StatusUpdater extends Component {
 
     private String namespace;
     private String vmName;
-    private DynamicKubernetesApi vmCrApi;
+    private ApiClient apiClient;
     private EventsV1Api evtsApi;
     private long observedGeneration;
     private boolean guestShutdownStops;
     private boolean shutdownByGuest;
+    private NamespacedCustomObject vmStub;
 
     /**
      * Instantiates a new status updater.
@@ -88,6 +86,16 @@ public class StatusUpdater extends Component {
      */
     public StatusUpdater(Channel componentChannel) {
         super(componentChannel);
+        try {
+            apiClient = Config.defaultClient();
+            io.kubernetes.client.openapi.Configuration
+                .setDefaultApiClient(apiClient);
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, e,
+                () -> "Cannot access events API, terminating.");
+            fire(new Exit(1));
+        }
+
     }
 
     /**
@@ -154,59 +162,16 @@ public class StatusUpdater extends Component {
             return;
         }
         try {
-            initVmCrApi(event);
-        } catch (IOException | ApiException e) {
+            vmStub = K8s.getCustomObject(apiClient, VM_OP_GROUP, VM_OP_KIND_VM,
+                namespace, vmName).orElse(null);
+            observedGeneration = vmStub.get().getMetadata().getGeneration();
+        } catch (ApiException e) {
             logger.log(Level.SEVERE, e,
-                () -> "Cannot access VM's CR, terminating.");
+                () -> "Cannot access VM object, terminating.");
             event.cancel(true);
             fire(new Exit(1));
         }
-        try {
-            evtsApi = new EventsV1Api(Config.defaultClient());
-        } catch (IOException e) {
-            logger.log(Level.SEVERE, e,
-                () -> "Cannot access events API, terminating.");
-            event.cancel(true);
-            fire(new Exit(1));
-        }
-    }
-
-    private void initVmCrApi(Start event) throws IOException, ApiException {
-        var client = Config.defaultClient();
-        var apis = new ApisApi(client).getAPIVersions();
-        var crdVersions = apis.getGroups().stream()
-            .filter(g -> g.getName().equals(VM_OP_GROUP)).findFirst()
-            .map(V1APIGroup::getVersions).stream().flatMap(l -> l.stream())
-            .map(V1GroupVersionForDiscovery::getVersion).toList();
-        var coa = new CustomObjectsApi(client);
-        for (var crdVersion : crdVersions) {
-            var crdApiRes = coa.getAPIResources(VM_OP_GROUP,
-                crdVersion).getResources().stream()
-                .filter(r -> VM_OP_KIND_VM.equals(r.getKind())).findFirst();
-            if (crdApiRes.isEmpty()) {
-                continue;
-            }
-            @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
-            var crApi = new DynamicKubernetesApi(VM_OP_GROUP,
-                crdVersion, crdApiRes.get().getName(), client);
-            var vmCr = crApi.get(namespace, vmName);
-            if (vmCr.isSuccess()) {
-                vmCrApi = crApi;
-                observedGeneration
-                    = vmCr.getObject().getMetadata().getGeneration();
-                break;
-            }
-        }
-        if (vmCrApi == null) {
-            logger.severe(() -> "Cannot find VM's CR, terminating.");
-            event.cancel(true);
-            fire(new Exit(1));
-        }
-    }
-
-    @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-    private JsonObject currentStatus(DynamicKubernetesObject vmCr) {
-        return vmCr.getRaw().getAsJsonObject("status").deepCopy();
+        evtsApi = new EventsV1Api(apiClient);
     }
 
     /**
@@ -221,18 +186,17 @@ public class StatusUpdater extends Component {
         guestShutdownStops = event.configuration().guestShutdownStops;
 
         // Remainder applies only if we have a connection to k8s.
-        if (vmCrApi == null) {
+        if (vmStub == null) {
             return;
         }
         // A change of the runner configuration is typically caused
         // by a new version of the CR. So we observe the new CR.
-        var vmCr = vmCrApi.get(namespace, vmName).throwsApiException()
-            .getObject();
-        if (vmCr.getMetadata().getGeneration() == observedGeneration) {
+        var vmObj = vmStub.get();
+        if (vmObj.getMetadata().getGeneration() == observedGeneration) {
             return;
         }
-        vmCrApi.updateStatus(vmCr, from -> {
-            JsonObject status = currentStatus(from);
+        vmStub.updateStatus(vmObj, from -> {
+            JsonObject status = K8s.status(from);
             status.getAsJsonArray("conditions").asList().stream()
                 .map(cond -> (JsonObject) cond).filter(cond -> "Running"
                     .equals(cond.get("type").getAsString()))
@@ -251,30 +215,35 @@ public class StatusUpdater extends Component {
     @Handler
     public void onRunnerStateChanged(RunnerStateChange event)
             throws ApiException {
-        if (vmCrApi == null) {
+        if (vmStub == null) {
             return;
         }
-        var vmCr = vmCrApi.get(namespace, vmName).throwsApiException()
-            .getObject();
-        vmCrApi.updateStatus(vmCr, from -> {
-            JsonObject status = currentStatus(from);
-            status.getAsJsonArray("conditions").asList().stream()
-                .map(cond -> (JsonObject) cond)
-                .forEach(cond -> {
-                    if ("Running".equals(cond.get("type").getAsString())) {
-                        updateRunningCondition(event, from, cond);
-                    }
-                });
-            if (event.state() == State.STARTING) {
-                status.addProperty("ram", GsonPtr.to(from.getRaw())
-                    .getAsString("spec", "vm", "maximumRam").orElse("0"));
-                status.addProperty("cpus", 1);
-            } else if (event.state() == State.STOPPED) {
-                status.addProperty("ram", "0");
-                status.addProperty("cpus", 0);
-            }
-            return status;
-        }).throwsApiException();
+        var vmCr = vmStub.get();
+        PatchOptions patchOpts1 = new PatchOptions();
+        patchOpts1.setFieldManager("kubernetes-java-kubectl-apply");
+        var res1 = vmStub.patch(V1Patch.PATCH_FORMAT_JSON_PATCH,
+            new V1Patch("[{\"op\": \"replace\", \"path\": \"/status/ram"
+                + "\", \"value\": \"42\"}]"),
+            patchOpts1);
+//        vmStub.updateStatus(vmCr, from -> {
+//            JsonObject status = K8s.status(from);
+//            status.getAsJsonArray("conditions").asList().stream()
+//                .map(cond -> (JsonObject) cond)
+//                .forEach(cond -> {
+//                    if ("Running".equals(cond.get("type").getAsString())) {
+//                        updateRunningCondition(event, from, cond);
+//                    }
+//                });
+//            if (event.state() == State.STARTING) {
+//                status.addProperty("ram", GsonPtr.to(from.getRaw())
+//                    .getAsString("spec", "vm", "maximumRam").orElse("0"));
+//                status.addProperty("cpus", 1);
+//            } else if (event.state() == State.STOPPED) {
+//                status.addProperty("ram", "0");
+//                status.addProperty("cpus", 0);
+//            }
+//            return status;
+//        });
 
         // Maybe stop VM
         if (event.state() == State.TERMINATING && !event.failed()
@@ -282,8 +251,7 @@ public class StatusUpdater extends Component {
             logger.info(() -> "Stopping VM because of shutdown by guest.");
             PatchOptions patchOpts = new PatchOptions();
             patchOpts.setFieldManager("kubernetes-java-kubectl-apply");
-            var res = vmCrApi.patch(namespace, vmName,
-                V1Patch.PATCH_FORMAT_JSON_PATCH,
+            var res = vmStub.patch(V1Patch.PATCH_FORMAT_JSON_PATCH,
                 new V1Patch("[{\"op\": \"replace\", \"path\": \"/spec/vm/state"
                     + "\", \"value\": \"Stopped\"}]"),
                 patchOpts);
@@ -303,7 +271,7 @@ public class StatusUpdater extends Component {
             .regarding(K8s.objectReference(vmCr))
             .action("StatusUpdate").reason(event.reason())
             .note(event.message());
-        evtsApi.createNamespacedEvent(namespace, evt, null, null, null, null);
+        evtsApi.createNamespacedEvent(namespace, evt);
     }
 
     private void updateRunningCondition(RunnerStateChange event,
@@ -336,18 +304,16 @@ public class StatusUpdater extends Component {
      */
     @Handler
     public void onBallonChange(BalloonChangeEvent event) throws ApiException {
-        if (vmCrApi == null) {
+        if (vmStub == null) {
             return;
         }
-        var vmCr = vmCrApi.get(namespace, vmName).throwsApiException()
-            .getObject();
-        vmCrApi.updateStatus(vmCr, from -> {
-            JsonObject status = currentStatus(from);
+        vmStub.updateStatus(from -> {
+            JsonObject status = K8s.status(from);
             status.addProperty("ram",
                 new Quantity(new BigDecimal(event.size()), Format.BINARY_SI)
                     .toSuffixedString());
             return status;
-        }).throwsApiException();
+        });
     }
 
     /**
@@ -358,16 +324,14 @@ public class StatusUpdater extends Component {
      */
     @Handler
     public void onCpuChange(HotpluggableCpuStatus event) throws ApiException {
-        if (vmCrApi == null) {
+        if (vmStub == null) {
             return;
         }
-        var vmCr = vmCrApi.get(namespace, vmName).throwsApiException()
-            .getObject();
-        vmCrApi.updateStatus(vmCr, from -> {
-            JsonObject status = currentStatus(from);
+        vmStub.updateStatus(from -> {
+            JsonObject status = K8s.status(from);
             status.addProperty("cpus", event.usedCpus().size());
             return status;
-        }).throwsApiException();
+        });
     }
 
     /**
