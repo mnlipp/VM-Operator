@@ -26,6 +26,8 @@ import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.ApisApi;
 import io.kubernetes.client.openapi.apis.CustomObjectsApi;
+import io.kubernetes.client.openapi.apis.EventsV1Api;
+import io.kubernetes.client.openapi.models.EventsV1Event;
 import io.kubernetes.client.openapi.models.V1APIGroup;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1ConfigMapList;
@@ -36,18 +38,14 @@ import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimList;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodList;
-import io.kubernetes.client.util.PatchUtils;
+import io.kubernetes.client.util.Strings;
 import io.kubernetes.client.util.generic.GenericKubernetesApi;
-import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
-import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesListObject;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import io.kubernetes.client.util.generic.options.DeleteOptions;
 import io.kubernetes.client.util.generic.options.PatchOptions;
-import io.kubernetes.client.util.generic.options.UpdateOptions;
-
+import java.time.OffsetDateTime;
 import java.util.Optional;
-import java.util.function.Function;
 
 /**
  * Helpers for K8s API.
@@ -119,14 +117,14 @@ public class K8s {
     public static Optional<DynamicKubernetesApi> crApi(ApiClient client,
             String group, String kind, String namespace, String name)
             throws ApiException {
-        var apis = new ApisApi(client).getAPIVersions().execute();
+        var apis = new ApisApi(client).getAPIVersions();
         var crdVersions = apis.getGroups().stream()
             .filter(g -> g.getName().equals(group)).findFirst()
             .map(V1APIGroup::getVersions).stream().flatMap(l -> l.stream())
             .map(V1GroupVersionForDiscovery::getVersion).toList();
         var coa = new CustomObjectsApi(client);
         for (var crdVersion : crdVersions) {
-            var crdApiRes = coa.getAPIResources(group, crdVersion).execute()
+            var crdApiRes = coa.getAPIResources(group, crdVersion)
                 .getResources().stream().filter(r -> kind.equals(r.getKind()))
                 .findFirst();
             if (crdApiRes.isEmpty()) {
@@ -143,118 +141,15 @@ public class K8s {
         return Optional.empty();
     }
 
+    /**
+     * Convenience method for getting the status from a
+     * {@link DynamicKubernetesObject}. 
+     *
+     * @param object the object
+     * @return the JSON object describing the status
+     */
     public static JsonObject status(DynamicKubernetesObject object) {
         return object.getRaw().getAsJsonObject("status");
-    }
-
-    /**
-     * Describes a namespaced custom object. This class combines
-     * all information required to invoke one of the 
-     * {@link CustomObjectsApi}'s methods for namespaced custom objects.
-     */
-    public static class NamespacedCustomObject {
-        private final CustomObjectsApi api;
-        private final String group;
-        private final String version;
-        private final String namespace;
-        private final String plural;
-        private final String name;
-        private final GenericKubernetesApi<DynamicKubernetesObject,
-                DynamicKubernetesListObject> gkApi;
-
-        public NamespacedCustomObject(CustomObjectsApi api,
-                String group, String version, String namespace, String plural,
-                String name) {
-            this.api = api;
-            this.group = group;
-            this.version = version;
-            this.namespace = namespace;
-            this.plural = plural;
-            this.name = name;
-            gkApi = new GenericKubernetesApi<>(DynamicKubernetesObject.class,
-                DynamicKubernetesListObject.class, group, version, plural, api);
-        }
-
-        public DynamicKubernetesObject get() throws ApiException {
-            var call = api.getNamespacedCustomObject(group, version, namespace,
-                plural, name).buildCall(null);
-            var data = api.getApiClient().<JsonObject> execute(call,
-                JsonObject.class).getData();
-            return new DynamicKubernetesObject(data);
-        }
-
-        public KubernetesApiResponse<DynamicKubernetesObject>
-                updateStatus(DynamicKubernetesObject object,
-                        Function<DynamicKubernetesObject, Object> status)
-                        throws ApiException {
-            return null; // gkApi.updateStatus(object,
-                         // status).throwsApiException();
-        }
-
-        public KubernetesApiResponse<DynamicKubernetesObject>
-                updateStatus(Function<DynamicKubernetesObject, Object> status)
-                        throws ApiException {
-            var object = get();
-            return updateStatus(object, status);
-        }
-
-        public KubernetesApiResponse<DynamicKubernetesObject> patch(
-                String patchType, V1Patch patch,
-                PatchOptions options) throws ApiException {
-            Object res = PatchUtils.patch(CustomObjectsApi.class,
-                () -> api.patchNamespacedCustomObject(group, version, namespace,
-                    plural, name, patch).buildCall(null),
-                patchType, api.getApiClient());
-//            Object res = api
-//                .patchNamespacedCustomObject(group, version, namespace, plural,
-//                    name, patch)
-//                .execute();
-            return null;
-//            return gkApi.patch(namespace, name, patchType, patch, options)
-//                .throwsApiException();
-        }
-
-        public KubernetesApiResponse<DynamicKubernetesObject>
-                patch(String patchType, V1Patch patch) throws ApiException {
-            PatchOptions opts = new PatchOptions();
-            return patch(patchType, patch, opts);
-        }
-    }
-
-    /**
-     * Get a namespaced custom object.
-     *
-     * @param client the client
-     * @param group the group
-     * @param kind the kind
-     * @param namespace the namespace
-     * @param name the name
-     * @return the dynamic kubernetes api
-     * @throws ApiException the api exception
-     */
-    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
-        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })
-    public static Optional<NamespacedCustomObject>
-            getCustomObject(ApiClient client, String group, String kind,
-                    String namespace, String name) throws ApiException {
-        var apis = new ApisApi(client).getAPIVersions().execute();
-        var crdVersions = apis.getGroups().stream()
-            .filter(g -> g.getName().equals(group)).findFirst()
-            .map(V1APIGroup::getVersions).stream().flatMap(l -> l.stream())
-            .map(V1GroupVersionForDiscovery::getVersion).toList();
-        var coa = new CustomObjectsApi(client);
-        for (var crdVersion : crdVersions) {
-            var crdApiRes = coa.getAPIResources(group, crdVersion).execute()
-                .getResources().stream().filter(r -> kind.equals(r.getKind()))
-                .findFirst();
-            if (crdApiRes.isEmpty()) {
-                continue;
-            }
-            return Optional
-                .of(new NamespacedCustomObject(coa, group, crdVersion,
-                    namespace, crdApiRes.get().getName(), name));
-        }
-        return Optional.empty();
     }
 
     /**
@@ -342,5 +237,55 @@ public class K8s {
             .name(object.getMetadata().getName())
             .resourceVersion(object.getMetadata().getResourceVersion())
             .uid(object.getMetadata().getUid());
+    }
+
+    /**
+     * Creates an event related to the object, adding reasonable defaults.
+     * 
+     *   * If `kind` is not set, it is set to "Event".
+     *   * If `metadata.namespace` is not set, it is set 
+     *     to the object's namespace.
+     *   * If neither `metadata.name` nor `matadata.generateName` are set,
+     *     set `generateName` to the object's name with a dash appended.
+     *   * If `reportingInstance` is not set, set it to the object's name.
+     *   * If `eventTime` is not set, set it to now.
+     *   * If `type` is not set, set it to "Normal"
+     *   * If `regarding` is not set, set it to the given object.
+     *
+     * @param event the event
+     * @throws ApiException 
+     */
+    @SuppressWarnings("PMD.NPathComplexity")
+    public static void createEvent(ApiClient client,
+            DynamicKubernetesObject object, EventsV1Event event)
+            throws ApiException {
+        if (Strings.isNullOrEmpty(event.getKind())) {
+            event.kind("Event");
+        }
+        if (event.getMetadata() == null) {
+            event.metadata(new V1ObjectMeta());
+        }
+        if (Strings.isNullOrEmpty(event.getMetadata().getNamespace())) {
+            event.getMetadata().namespace(object.getMetadata().getNamespace());
+        }
+        if (Strings.isNullOrEmpty(event.getMetadata().getName())
+            && Strings.isNullOrEmpty(event.getMetadata().getGenerateName())) {
+            event.getMetadata()
+                .generateName(object.getMetadata().getName() + "-");
+        }
+        if (Strings.isNullOrEmpty(event.getReportingInstance())) {
+            event.reportingInstance(object.getMetadata().getName());
+        }
+        if (event.getEventTime() == null) {
+            event.eventTime(OffsetDateTime.now());
+        }
+        if (Strings.isNullOrEmpty(event.getType())) {
+            event.type("Normal");
+        }
+        if (event.getRegarding() == null) {
+            event.regarding(objectReference(object));
+        }
+        new EventsV1Api(client).createNamespacedEvent(
+            object.getMetadata().getNamespace(), event, null, null, null, null);
     }
 }

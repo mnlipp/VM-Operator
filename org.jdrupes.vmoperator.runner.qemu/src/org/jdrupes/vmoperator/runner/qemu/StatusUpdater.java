@@ -24,9 +24,7 @@ import io.kubernetes.client.custom.Quantity.Format;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.apis.EventsV1Api;
 import io.kubernetes.client.openapi.models.EventsV1Event;
-import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import io.kubernetes.client.util.generic.options.PatchOptions;
@@ -35,7 +33,6 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -44,7 +41,7 @@ import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.common.K8s;
-import org.jdrupes.vmoperator.common.K8s.NamespacedCustomObject;
+import org.jdrupes.vmoperator.common.NamespacedCustomObjectStub;
 import org.jdrupes.vmoperator.runner.qemu.events.BalloonChangeEvent;
 import org.jdrupes.vmoperator.runner.qemu.events.Exit;
 import org.jdrupes.vmoperator.runner.qemu.events.HotpluggableCpuStatus;
@@ -73,11 +70,10 @@ public class StatusUpdater extends Component {
     private String namespace;
     private String vmName;
     private ApiClient apiClient;
-    private EventsV1Api evtsApi;
     private long observedGeneration;
     private boolean guestShutdownStops;
     private boolean shutdownByGuest;
-    private NamespacedCustomObject vmStub;
+    private NamespacedCustomObjectStub vmStub;
 
     /**
      * Instantiates a new status updater.
@@ -162,16 +158,18 @@ public class StatusUpdater extends Component {
             return;
         }
         try {
-            vmStub = K8s.getCustomObject(apiClient, VM_OP_GROUP, VM_OP_KIND_VM,
-                namespace, vmName).orElse(null);
-            observedGeneration = vmStub.get().getMetadata().getGeneration();
+            vmStub = NamespacedCustomObjectStub.get(apiClient, VM_OP_GROUP,
+                VM_OP_KIND_VM, namespace, vmName).orElse(null);
+            if (vmStub != null) {
+                observedGeneration
+                    = vmStub.object().getMetadata().getGeneration();
+            }
         } catch (ApiException e) {
             logger.log(Level.SEVERE, e,
                 () -> "Cannot access VM object, terminating.");
             event.cancel(true);
             fire(new Exit(1));
         }
-        evtsApi = new EventsV1Api(apiClient);
     }
 
     /**
@@ -191,7 +189,7 @@ public class StatusUpdater extends Component {
         }
         // A change of the runner configuration is typically caused
         // by a new version of the CR. So we observe the new CR.
-        var vmObj = vmStub.get();
+        var vmObj = vmStub.object();
         if (vmObj.getMetadata().getGeneration() == observedGeneration) {
             return;
         }
@@ -218,32 +216,26 @@ public class StatusUpdater extends Component {
         if (vmStub == null) {
             return;
         }
-        var vmCr = vmStub.get();
-        PatchOptions patchOpts1 = new PatchOptions();
-        patchOpts1.setFieldManager("kubernetes-java-kubectl-apply");
-        var res1 = vmStub.patch(V1Patch.PATCH_FORMAT_JSON_PATCH,
-            new V1Patch("[{\"op\": \"replace\", \"path\": \"/status/ram"
-                + "\", \"value\": \"42\"}]"),
-            patchOpts1);
-//        vmStub.updateStatus(vmCr, from -> {
-//            JsonObject status = K8s.status(from);
-//            status.getAsJsonArray("conditions").asList().stream()
-//                .map(cond -> (JsonObject) cond)
-//                .forEach(cond -> {
-//                    if ("Running".equals(cond.get("type").getAsString())) {
-//                        updateRunningCondition(event, from, cond);
-//                    }
-//                });
-//            if (event.state() == State.STARTING) {
-//                status.addProperty("ram", GsonPtr.to(from.getRaw())
-//                    .getAsString("spec", "vm", "maximumRam").orElse("0"));
-//                status.addProperty("cpus", 1);
-//            } else if (event.state() == State.STOPPED) {
-//                status.addProperty("ram", "0");
-//                status.addProperty("cpus", 0);
-//            }
-//            return status;
-//        });
+        var vmObj = vmStub.object();
+        vmStub.updateStatus(vmObj, from -> {
+            JsonObject status = K8s.status(from);
+            status.getAsJsonArray("conditions").asList().stream()
+                .map(cond -> (JsonObject) cond)
+                .forEach(cond -> {
+                    if ("Running".equals(cond.get("type").getAsString())) {
+                        updateRunningCondition(event, from, cond);
+                    }
+                });
+            if (event.state() == State.STARTING) {
+                status.addProperty("ram", GsonPtr.to(from.getRaw())
+                    .getAsString("spec", "vm", "maximumRam").orElse("0"));
+                status.addProperty("cpus", 1);
+            } else if (event.state() == State.STOPPED) {
+                status.addProperty("ram", "0");
+                status.addProperty("cpus", 0);
+            }
+            return status;
+        });
 
         // Maybe stop VM
         if (event.state() == State.TERMINATING && !event.failed()
@@ -262,16 +254,11 @@ public class StatusUpdater extends Component {
         }
 
         // Log event
-        var evt = new EventsV1Event().kind("Event")
-            .metadata(new V1ObjectMeta().namespace(namespace)
-                .generateName("vmrunner-"))
+        var evt = new EventsV1Event()
             .reportingController(VM_OP_GROUP + "/" + APP_NAME)
-            .reportingInstance(vmCr.getMetadata().getName())
-            .eventTime(OffsetDateTime.now()).type("Normal")
-            .regarding(K8s.objectReference(vmCr))
             .action("StatusUpdate").reason(event.reason())
             .note(event.message());
-        evtsApi.createNamespacedEvent(namespace, evt);
+        K8s.createEvent(apiClient, vmObj, evt);
     }
 
     private void updateRunningCondition(RunnerStateChange event,
