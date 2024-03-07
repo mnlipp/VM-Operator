@@ -35,10 +35,6 @@ patches:
             "/Reconciler":
               runnerData:
                 storageClassName: null
-              loadBalancerService:
-                labels:
-                  test1: aValue
-                  test2: toBeRemoved
           "/GuiSocketServer":
             port: 8888
           "/GuiHttpServer":
