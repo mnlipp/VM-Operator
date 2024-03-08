@@ -18,19 +18,14 @@
 
 package org.jdrupes.vmoperator.common;
 
-import com.google.gson.JsonObject;
+import io.kubernetes.client.Discovery;
 import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.apis.ApisApi;
-import io.kubernetes.client.openapi.apis.CustomObjectsApi;
-import io.kubernetes.client.openapi.models.V1APIGroup;
-import io.kubernetes.client.openapi.models.V1GroupVersionForDiscovery;
 import io.kubernetes.client.util.Strings;
-import io.kubernetes.client.util.generic.GenericKubernetesApi;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
-import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesListObject;
+import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import io.kubernetes.client.util.generic.options.PatchOptions;
 import java.util.Optional;
@@ -40,36 +35,31 @@ import java.util.function.Function;
  * A stub for namespaced custom objects.
  */
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
-public class NamespacedCustomObjectStub {
-    private final CustomObjectsApi api;
+public class K8sObjectStub {
+    private final DynamicKubernetesApi api;
     private final String group;
     private final String version;
     private final String namespace;
     private final String plural;
     private final String name;
-    private final GenericKubernetesApi<DynamicKubernetesObject,
-            DynamicKubernetesListObject> gkApi;
 
     /**
      * Instantiates a new namespaced custom object stub.
      *
-     * @param api the api
      * @param group the group
      * @param version the version
      * @param namespace the namespace
      * @param plural the plural
      * @param name the name
      */
-    protected NamespacedCustomObjectStub(CustomObjectsApi api, String group,
+    protected K8sObjectStub(ApiClient client, String group,
             String version, String namespace, String plural, String name) {
-        this.api = api;
         this.group = group;
         this.version = version;
         this.namespace = namespace;
         this.plural = plural;
         this.name = name;
-        gkApi = new GenericKubernetesApi<>(DynamicKubernetesObject.class,
-            DynamicKubernetesListObject.class, group, version, plural, api);
+        api = new DynamicKubernetesApi(group, version, plural, client);
     }
 
     /**
@@ -131,48 +121,27 @@ public class NamespacedCustomObjectStub {
      */
     @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
         "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })
-    public static Optional<NamespacedCustomObjectStub>
+    public static Optional<K8sObjectStub>
             get(ApiClient client, GroupVersionKind gvk,
                     String namespace, String name) throws ApiException {
-        var coa = new CustomObjectsApi(client);
         var group = gvk.getGroup();
         var kind = gvk.getKind();
-        String plural = null;
-        if (Strings.isNullOrEmpty(gvk.getVersion())) {
-            var apis = new ApisApi(client).getAPIVersions();
-            var versions = apis.getGroups().stream()
-                .filter(g -> g.getName().equals(group)).findFirst()
-                .map(V1APIGroup::getVersions).stream().flatMap(l -> l.stream())
-                .map(V1GroupVersionForDiscovery::getVersion).toList();
-            for (var version : versions) {
-                var crdApiRes = coa.getAPIResources(group, version)
-                    .getResources().stream()
-                    .filter(r -> kind.equals(r.getKind()))
-                    .findFirst();
-                if (crdApiRes.isPresent()) {
-                    gvk = new GroupVersionKind(group, version, kind);
-                    // Shortcut, avoid calling this twice
-                    plural = crdApiRes.get().getName();
-                    break;
-                }
-            }
-        }
-        if (Strings.isNullOrEmpty(gvk.getVersion())) {
+        var version = gvk.getVersion();
+        var apiMatch = new Discovery(client).findAll().stream()
+            .filter(r -> r.getGroup().equals(group) && r.getKind().equals(kind)
+                && (Strings.isNullOrEmpty(version)
+                    || r.getVersions().contains(version)))
+            .findFirst();
+        if (apiMatch.isEmpty()) {
             return Optional.empty();
         }
-        if (Strings.isNullOrEmpty(plural)) {
-            var crdApiRes
-                = coa.getAPIResources(gvk.getGroup(), gvk.getVersion())
-                    .getResources().stream()
-                    .filter(r -> kind.equals(r.getKind())).findFirst();
-            if (crdApiRes.isEmpty()) {
-                return Optional.empty();
-            }
-            plural = crdApiRes.get().getName();
-        }
+        var apiRes = apiMatch.get();
+        var finalVersion = Strings.isNullOrEmpty(version)
+            ? apiRes.getVersions().get(0)
+            : version;
         return Optional
-            .of(new NamespacedCustomObjectStub(coa, gvk.getGroup(),
-                gvk.getVersion(), namespace, plural, name));
+            .of(new K8sObjectStub(client, group, finalVersion,
+                namespace, apiRes.getResourcePlural(), name));
     }
 
     /**
@@ -182,11 +151,8 @@ public class NamespacedCustomObjectStub {
      * @throws ApiException the api exception
      */
     public DynamicKubernetesObject state() throws ApiException {
-        var call = api.getNamespacedCustomObjectCall(group, version,
-            namespace, plural, name, null);
-        var data = api.getApiClient().<JsonObject> execute(call,
-            JsonObject.class).getData();
-        return new DynamicKubernetesObject(data);
+        var response = api.get(namespace, name).throwsApiException();
+        return response.getObject();
     }
 
     /**
@@ -201,7 +167,7 @@ public class NamespacedCustomObjectStub {
             updateStatus(DynamicKubernetesObject object,
                     Function<DynamicKubernetesObject, Object> status)
                     throws ApiException {
-        return gkApi.updateStatus(object, status).throwsApiException();
+        return api.updateStatus(object, status).throwsApiException();
     }
 
     /**
@@ -229,7 +195,7 @@ public class NamespacedCustomObjectStub {
     public KubernetesApiResponse<DynamicKubernetesObject> patch(
             String patchType, V1Patch patch, PatchOptions options)
             throws ApiException {
-        return gkApi.patch(namespace, name, patchType, patch, options)
+        return api.patch(namespace, name, patchType, patch, options)
             .throwsApiException();
     }
 

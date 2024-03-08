@@ -42,7 +42,7 @@ import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.common.K8s;
-import org.jdrupes.vmoperator.common.NamespacedCustomObjectStub;
+import org.jdrupes.vmoperator.common.K8sObjectStub;
 import org.jdrupes.vmoperator.runner.qemu.events.BalloonChangeEvent;
 import org.jdrupes.vmoperator.runner.qemu.events.Exit;
 import org.jdrupes.vmoperator.runner.qemu.events.HotpluggableCpuStatus;
@@ -74,7 +74,7 @@ public class StatusUpdater extends Component {
     private long observedGeneration;
     private boolean guestShutdownStops;
     private boolean shutdownByGuest;
-    private NamespacedCustomObjectStub vmStub;
+    private K8sObjectStub vmStub;
 
     /**
      * Instantiates a new status updater.
@@ -159,7 +159,7 @@ public class StatusUpdater extends Component {
             return;
         }
         try {
-            vmStub = NamespacedCustomObjectStub.get(apiClient,
+            vmStub = K8sObjectStub.get(apiClient,
                 new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
                 namespace, vmName).orElse(null);
             if (vmStub != null) {

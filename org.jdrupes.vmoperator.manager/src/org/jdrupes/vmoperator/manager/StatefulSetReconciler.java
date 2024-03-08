@@ -20,16 +20,16 @@ package org.jdrupes.vmoperator.manager;
 
 import freemarker.template.Configuration;
 import freemarker.template.TemplateException;
+import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
 import io.kubernetes.client.util.generic.dynamic.Dynamics;
 import io.kubernetes.client.util.generic.options.PatchOptions;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
 import java.util.logging.Logger;
-import org.jdrupes.vmoperator.common.K8s;
+import org.jdrupes.vmoperator.common.K8sObjectStub;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.util.GsonPtr;
@@ -68,8 +68,6 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
     public void reconcile(VmDefChanged event, Map<String, Object> model,
             VmChannel channel)
             throws IOException, TemplateException, ApiException {
-        DynamicKubernetesApi stsApi = new DynamicKubernetesApi("apps", "v1",
-            "statefulsets", channel.client());
         var metadata = event.vmDefinition().getMetadata();
 
         // Combine template and data and parse result
@@ -83,23 +81,25 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 
         // If exists apply changes only when transitioning state
         // or not running.
-        var existing = K8s.get(stsApi, metadata);
-        if (existing.isPresent()) {
-            var current = GsonPtr.to(existing.get().getRaw())
+        var stsObj = K8sObjectStub.get(channel.client(),
+            new GroupVersionKind("apps", "v1", "StatefulSet"),
+            metadata.getNamespace(), metadata.getName());
+        if (stsObj.isPresent()) {
+            var current = GsonPtr.to(stsObj.get().state().getRaw())
                 .to("spec").getAsInt("replicas").orElse(1);
             var desired = GsonPtr.to(stsDef.getRaw())
                 .to("spec").getAsInt("replicas").orElse(1);
             if (current == 1 && desired == 1) {
                 return;
             }
+
         }
 
         // Do apply changes
         PatchOptions opts = new PatchOptions();
         opts.setForce(true);
         opts.setFieldManager("kubernetes-java-kubectl-apply");
-        stsApi.patch(stsDef.getMetadata().getNamespace(),
-            stsDef.getMetadata().getName(), V1Patch.PATCH_FORMAT_APPLY_YAML,
+        stsObj.get().patch(V1Patch.PATCH_FORMAT_APPLY_YAML,
             new V1Patch(channel.client().getJSON().serialize(stsDef)),
             opts).throwsApiException();
     }
