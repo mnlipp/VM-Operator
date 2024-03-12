@@ -151,8 +151,8 @@
 <span class="source-line-no">138</span><span id="line-138">     * @param object the object</span>
 <span class="source-line-no">139</span><span id="line-139">     * @return the JSON object describing the status</span>
 <span class="source-line-no">140</span><span id="line-140">     */</span>
-<span class="source-line-no">141</span><span id="line-141">    public static JsonObject status(DynamicKubernetesObject object) {</span>
-<span class="source-line-no">142</span><span id="line-142">        return object.getRaw().getAsJsonObject("status");</span>
+<span class="source-line-no">141</span><span id="line-141">    public static JsonObject status(K8sObjectState state) {</span>
+<span class="source-line-no">142</span><span id="line-142">        return state.data().getAsJsonObject("status");</span>
 <span class="source-line-no">143</span><span id="line-143">    }</span>
 <span class="source-line-no">144</span><span id="line-144"></span>
 <span class="source-line-no">145</span><span id="line-145">    /**</span>
@@ -234,7 +234,7 @@
 <span class="source-line-no">221</span><span id="line-221">     * @return the v 1 object reference</span>
 <span class="source-line-no">222</span><span id="line-222">     */</span>
 <span class="source-line-no">223</span><span id="line-223">    public static V1ObjectReference</span>
-<span class="source-line-no">224</span><span id="line-224">            objectReference(DynamicKubernetesObject object) {</span>
+<span class="source-line-no">224</span><span id="line-224">            objectReference(KubernetesObject object) {</span>
 <span class="source-line-no">225</span><span id="line-225">        return new V1ObjectReference().apiVersion(object.getApiVersion())</span>
 <span class="source-line-no">226</span><span id="line-226">            .kind(object.getKind())</span>
 <span class="source-line-no">227</span><span id="line-227">            .namespace(object.getMetadata().getNamespace())</span>
@@ -261,7 +261,7 @@
 <span class="source-line-no">248</span><span id="line-248">     */</span>
 <span class="source-line-no">249</span><span id="line-249">    @SuppressWarnings("PMD.NPathComplexity")</span>
 <span class="source-line-no">250</span><span id="line-250">    public static void createEvent(ApiClient client,</span>
-<span class="source-line-no">251</span><span id="line-251">            DynamicKubernetesObject object, EventsV1Event event)</span>
+<span class="source-line-no">251</span><span id="line-251">            KubernetesObject object, EventsV1Event event)</span>
 <span class="source-line-no">252</span><span id="line-252">            throws ApiException {</span>
 <span class="source-line-no">253</span><span id="line-253">        if (Strings.isNullOrEmpty(event.getKind())) {</span>
 <span class="source-line-no">254</span><span id="line-254">            event.kind("Event");</span>

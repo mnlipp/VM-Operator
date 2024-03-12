@@ -98,7 +98,7 @@
 <span class="source-line-no">085</span><span id="line-85">            new GroupVersionKind("apps", "v1", "StatefulSet"),</span>
 <span class="source-line-no">086</span><span id="line-86">            metadata.getNamespace(), metadata.getName());</span>
 <span class="source-line-no">087</span><span id="line-87">        if (stsObj.isPresent()) {</span>
-<span class="source-line-no">088</span><span id="line-88">            var current = GsonPtr.to(stsObj.get().state().getRaw())</span>
+<span class="source-line-no">088</span><span id="line-88">            var current = GsonPtr.to(stsObj.get().state().data())</span>
 <span class="source-line-no">089</span><span id="line-89">                .to("spec").getAsInt("replicas").orElse(1);</span>
 <span class="source-line-no">090</span><span id="line-90">            var desired = GsonPtr.to(stsDef.getRaw())</span>
 <span class="source-line-no">091</span><span id="line-91">                .to("spec").getAsInt("replicas").orElse(1);</span>
