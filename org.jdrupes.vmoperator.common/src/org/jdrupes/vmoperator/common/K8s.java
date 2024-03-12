@@ -138,8 +138,8 @@ public class K8s {
      * @param object the object
      * @return the JSON object describing the status
      */
-    public static JsonObject status(DynamicKubernetesObject object) {
-        return object.getRaw().getAsJsonObject("status");
+    public static JsonObject status(K8sObjectState state) {
+        return state.data().getAsJsonObject("status");
     }
 
     /**
@@ -221,7 +221,7 @@ public class K8s {
      * @return the v 1 object reference
      */
     public static V1ObjectReference
-            objectReference(DynamicKubernetesObject object) {
+            objectReference(KubernetesObject object) {
         return new V1ObjectReference().apiVersion(object.getApiVersion())
             .kind(object.getKind())
             .namespace(object.getMetadata().getNamespace())
@@ -248,7 +248,7 @@ public class K8s {
      */
     @SuppressWarnings("PMD.NPathComplexity")
     public static void createEvent(ApiClient client,
-            DynamicKubernetesObject object, EventsV1Event event)
+            KubernetesObject object, EventsV1Event event)
             throws ApiException {
         if (Strings.isNullOrEmpty(event.getKind())) {
             event.kind("Event");

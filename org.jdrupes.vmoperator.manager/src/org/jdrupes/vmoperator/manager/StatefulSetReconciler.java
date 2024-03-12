@@ -85,7 +85,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
             new GroupVersionKind("apps", "v1", "StatefulSet"),
             metadata.getNamespace(), metadata.getName());
         if (stsObj.isPresent()) {
-            var current = GsonPtr.to(stsObj.get().state().getRaw())
+            var current = GsonPtr.to(stsObj.get().state().data())
                 .to("spec").getAsInt("replicas").orElse(1);
             var desired = GsonPtr.to(stsDef.getRaw())
                 .to("spec").getAsInt("replicas").orElse(1);

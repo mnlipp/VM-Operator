@@ -27,7 +27,6 @@ import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.EventsV1Event;
 import io.kubernetes.client.util.Config;
-import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import io.kubernetes.client.util.generic.options.PatchOptions;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -42,6 +41,7 @@ import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.common.K8s;
+import org.jdrupes.vmoperator.common.K8sObjectState;
 import org.jdrupes.vmoperator.common.K8sObjectStub;
 import org.jdrupes.vmoperator.runner.qemu.events.BalloonChangeEvent;
 import org.jdrupes.vmoperator.runner.qemu.events.Exit;
@@ -192,7 +192,7 @@ public class StatusUpdater extends Component {
         // A change of the runner configuration is typically caused
         // by a new version of the CR. So we observe the new CR.
         var vmObj = vmStub.state();
-        if (vmObj.getMetadata().getGeneration() == observedGeneration) {
+        if (vmObj.metadata().getGeneration() == observedGeneration) {
             return;
         }
         vmStub.updateStatus(vmObj, from -> {
@@ -218,8 +218,8 @@ public class StatusUpdater extends Component {
         if (vmStub == null) {
             return;
         }
-        var vmObj = vmStub.state();
-        vmStub.updateStatus(vmObj, from -> {
+        var vmState = vmStub.state();
+        vmStub.updateStatus(vmState, from -> {
             JsonObject status = K8s.status(from);
             status.getAsJsonArray("conditions").asList().stream()
                 .map(cond -> (JsonObject) cond)
@@ -229,7 +229,7 @@ public class StatusUpdater extends Component {
                     }
                 });
             if (event.state() == State.STARTING) {
-                status.addProperty("ram", GsonPtr.to(from.getRaw())
+                status.addProperty("ram", GsonPtr.to(from.data())
                     .getAsString("spec", "vm", "maximumRam").orElse("0"));
                 status.addProperty("cpus", 1);
             } else if (event.state() == State.STOPPED) {
@@ -260,11 +260,11 @@ public class StatusUpdater extends Component {
             .reportingController(VM_OP_GROUP + "/" + APP_NAME)
             .action("StatusUpdate").reason(event.reason())
             .note(event.message());
-        K8s.createEvent(apiClient, vmObj, evt);
+        K8s.createEvent(apiClient, vmState, evt);
     }
 
     private void updateRunningCondition(RunnerStateChange event,
-            DynamicKubernetesObject from, JsonObject cond) {
+            K8sObjectState from, JsonObject cond) {
         boolean reportedRunning
             = "True".equals(cond.get("status").getAsString());
         if (RUNNING_STATES.contains(event.state())

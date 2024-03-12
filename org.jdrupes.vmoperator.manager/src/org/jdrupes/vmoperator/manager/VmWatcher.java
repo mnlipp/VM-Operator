@@ -35,7 +35,6 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
-import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -51,6 +50,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import org.jdrupes.vmoperator.common.K8s;
+import org.jdrupes.vmoperator.common.K8sObjectState;
 import org.jdrupes.vmoperator.common.K8sObjectStub;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM;
@@ -295,7 +295,7 @@ public class VmWatcher extends Component {
         var vmObj = K8sObjectStub.get(channel.client(),
             new GroupVersionKind(gv.getGroup(), gv.getVersion(), VM_OP_KIND_VM),
             metadata.getNamespace(), metadata.getName());
-        DynamicKubernetesObject vmDef = channel.vmDefinition();
+        K8sObjectState vmDef = channel.vmDefinition();
         if (vmObj.isPresent()) {
             vmDef = vmObj.get().state();
             addDynamicData(channel.client(), vmDef);
@@ -310,9 +310,8 @@ public class VmWatcher extends Component {
             vmsCrd, vmDef), channel);
     }
 
-    private void addDynamicData(ApiClient client,
-            DynamicKubernetesObject vmDef) {
-        var rootNode = GsonPtr.to(vmDef.getRaw()).get(JsonObject.class);
+    private void addDynamicData(ApiClient client, K8sObjectState vmState) {
+        var rootNode = GsonPtr.to(vmState.data()).get(JsonObject.class);
         rootNode.addProperty("nodeName", "");
 
         // VM definition status changes before the pod terminates.
@@ -331,7 +330,7 @@ public class VmWatcher extends Component {
         var podSearch = new ListOptions();
         podSearch.setLabelSelector("app.kubernetes.io/name=" + APP_NAME
             + ",app.kubernetes.io/component=" + APP_NAME
-            + ",app.kubernetes.io/instance=" + vmDef.getMetadata().getName());
+            + ",app.kubernetes.io/instance=" + vmState.getMetadata().getName());
         var podList = K8s.podApi(client).list(namespaceToWatch, podSearch);
         podList.getObject().getItems().stream().forEach(pod -> {
             rootNode.addProperty("nodeName", pod.getSpec().getNodeName());

@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.jdrupes.vmoperator.common.Convertions;
+import org.jdrupes.vmoperator.common.K8sObjectState;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged.Type;
@@ -206,8 +207,8 @@ public class Reconciler extends Component {
         lbReconciler.reconcile(event, model, channel);
     }
 
-    private DynamicKubernetesObject patchCr(DynamicKubernetesObject vmDef) {
-        var json = vmDef.getRaw().deepCopy();
+    private DynamicKubernetesObject patchCr(K8sObjectState vmDef) {
+        var json = vmDef.data().deepCopy();
         // Adjust cdromImage path
         adjustCdRomPaths(json);
 

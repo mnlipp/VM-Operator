@@ -220,7 +220,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
     private DynamicKubernetesObject convertQuantities(VmDefChanged event) {
         // Clone and remove managed fields
         var vmDef = new DynamicKubernetesObject(
-            event.vmDefinition().getRaw().deepCopy());
+            event.vmDefinition().data().deepCopy());
         GsonPtr.to(vmDef.getRaw()).to("metadata").get(JsonObject.class)
             .remove("managedFields");
 

@@ -18,15 +18,15 @@
 
 package org.jdrupes.vmoperator.common;
 
+import com.google.gson.Gson;
 import io.kubernetes.client.Discovery;
 import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.Strings;
+import io.kubernetes.client.util.generic.GenericKubernetesApi;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
-import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
-import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import io.kubernetes.client.util.generic.options.PatchOptions;
 import java.util.Optional;
 import java.util.function.Function;
@@ -36,30 +36,49 @@ import java.util.function.Function;
  */
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class K8sObjectStub {
-    private final DynamicKubernetesApi api;
+    private final GenericKubernetesApi<K8sObjectState, K8sObjectStates> api;
     private final String group;
     private final String version;
-    private final String namespace;
+    private final String kind;
     private final String plural;
+    private final String namespace;
     private final String name;
 
     /**
      * Instantiates a new namespaced custom object stub.
-     *
      * @param group the group
      * @param version the version
-     * @param namespace the namespace
      * @param plural the plural
+     * @param namespace the namespace
      * @param name the name
      */
-    protected K8sObjectStub(ApiClient client, String group,
-            String version, String namespace, String plural, String name) {
+    protected K8sObjectStub(ApiClient client, String group, String version,
+            String kind, String plural, String namespace, String name) {
         this.group = group;
         this.version = version;
-        this.namespace = namespace;
+        this.kind = kind;
         this.plural = plural;
+        this.namespace = namespace;
         this.name = name;
-        api = new DynamicKubernetesApi(group, version, plural, client);
+
+        Gson gson = client.getJSON().getGson();
+        if (!checkAdapters(client)) {
+            client.getJSON().setGson(gson.newBuilder()
+                .registerTypeAdapterFactory(
+                    new K8sObjectStateTypeAdapterFactory())
+                .create());
+        }
+        api = new GenericKubernetesApi<>(K8sObjectState.class,
+            K8sObjectStates.class, group, version, plural, client);
+    }
+
+    private boolean checkAdapters(ApiClient client) {
+        return K8sObjectStateTypeAdapterFactory.K8sObjectStateCreator.class
+            .equals(client.getJSON().getGson().getAdapter(K8sObjectState.class)
+                .getClass())
+            && K8sObjectStateTypeAdapterFactory.K8sObjectStatesCreator.class
+                .equals(client.getJSON().getGson()
+                    .getAdapter(K8sObjectStates.class).getClass());
     }
 
     /**
@@ -81,12 +100,12 @@ public class K8sObjectStub {
     }
 
     /**
-     * Gets the namespace.
+     * Gets the kind.
      *
-     * @return the namespace
+     * @return the kind
      */
-    public String namespace() {
-        return namespace;
+    public String kind() {
+        return kind;
     }
 
     /**
@@ -96,6 +115,15 @@ public class K8sObjectStub {
      */
     public String plural() {
         return plural;
+    }
+
+    /**
+     * Gets the namespace.
+     *
+     * @return the namespace
+     */
+    public String namespace() {
+        return namespace;
     }
 
     /**
@@ -116,7 +144,7 @@ public class K8sObjectStub {
      * @param gvk the group, version and kind
      * @param namespace the namespace
      * @param name the name
-     * @return the dynamic kubernetes api
+     * @return the stub if the object exists
      * @throws ApiException the api exception
      */
     @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
@@ -140,17 +168,17 @@ public class K8sObjectStub {
             ? apiRes.getVersions().get(0)
             : version;
         return Optional
-            .of(new K8sObjectStub(client, group, finalVersion,
-                namespace, apiRes.getResourcePlural(), name));
+            .of(new K8sObjectStub(client, group, finalVersion, apiRes.getKind(),
+                apiRes.getResourcePlural(), namespace, name));
     }
 
     /**
      * Retrieves and returns the current state of the object.
      *
-     * @return the dynamic kubernetes object
+     * @return the object's state
      * @throws ApiException the api exception
      */
-    public DynamicKubernetesObject state() throws ApiException {
+    public K8sObjectState state() throws ApiException {
         var response = api.get(namespace, name).throwsApiException();
         return response.getObject();
     }
@@ -163,9 +191,9 @@ public class K8sObjectStub {
      * @return the kubernetes api response
      * @throws ApiException the api exception
      */
-    public KubernetesApiResponse<DynamicKubernetesObject>
-            updateStatus(DynamicKubernetesObject object,
-                    Function<DynamicKubernetesObject, Object> status)
+    public KubernetesApiResponse<K8sObjectState>
+            updateStatus(K8sObjectState object,
+                    Function<K8sObjectState, Object> status)
                     throws ApiException {
         return api.updateStatus(object, status).throwsApiException();
     }
@@ -177,10 +205,11 @@ public class K8sObjectStub {
      * @return the kubernetes api response
      * @throws ApiException the api exception
      */
-    public KubernetesApiResponse<DynamicKubernetesObject>
-            updateStatus(Function<DynamicKubernetesObject, Object> status)
+    public KubernetesApiResponse<K8sObjectState>
+            updateStatus(Function<K8sObjectState, Object> status)
                     throws ApiException {
-        return updateStatus(state(), status);
+        return updateStatus(
+            api.get(namespace, name).throwsApiException().getObject(), status);
     }
 
     /**
@@ -192,7 +221,7 @@ public class K8sObjectStub {
      * @return the kubernetes api response
      * @throws ApiException the api exception
      */
-    public KubernetesApiResponse<DynamicKubernetesObject> patch(
+    public KubernetesApiResponse<K8sObjectState> patch(
             String patchType, V1Patch patch, PatchOptions options)
             throws ApiException {
         return api.patch(namespace, name, patchType, patch, options)
@@ -207,7 +236,7 @@ public class K8sObjectStub {
      * @return the kubernetes api response
      * @throws ApiException the api exception
      */
-    public KubernetesApiResponse<DynamicKubernetesObject>
+    public KubernetesApiResponse<K8sObjectState>
             patch(String patchType, V1Patch patch) throws ApiException {
         PatchOptions opts = new PatchOptions();
         return patch(patchType, patch, opts);
