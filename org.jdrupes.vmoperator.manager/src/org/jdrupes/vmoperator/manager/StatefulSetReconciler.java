@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
 import java.util.logging.Logger;
-import org.jdrupes.vmoperator.common.K8sObjectStub;
+import org.jdrupes.vmoperator.common.K8sDynamicStub;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.util.GsonPtr;
@@ -81,7 +81,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 
         // If exists apply changes only when transitioning state
         // or not running.
-        var stsObj = K8sObjectStub.get(channel.client(),
+        var stsObj = K8sDynamicStub.get(channel.client(),
             new GroupVersionKind("apps", "v1", "StatefulSet"),
             metadata.getNamespace(), metadata.getName());
         if (stsObj.isPresent()) {
@@ -92,7 +92,6 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
             if (current == 1 && desired == 1) {
                 return;
             }
-
         }
 
         // Do apply changes

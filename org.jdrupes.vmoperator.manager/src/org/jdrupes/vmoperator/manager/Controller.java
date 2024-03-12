@@ -30,7 +30,7 @@ import java.nio.file.Path;
 import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
-import org.jdrupes.vmoperator.common.K8sObjectStub;
+import org.jdrupes.vmoperator.common.K8sDynamicStub;
 import org.jdrupes.vmoperator.manager.events.Exit;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
@@ -167,7 +167,7 @@ public class Controller extends Component {
 
     private void patchVmSpec(String name, String path, Object value)
             throws ApiException, IOException {
-        var vmObj = K8sObjectStub.get(Config.defaultClient(),
+        var vmObj = K8sDynamicStub.get(Config.defaultClient(),
             new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM), namespace,
             name);
         if (vmObj.isEmpty()) {

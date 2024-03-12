@@ -50,8 +50,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import org.jdrupes.vmoperator.common.K8s;
+import org.jdrupes.vmoperator.common.K8sDynamicStub;
 import org.jdrupes.vmoperator.common.K8sObjectState;
-import org.jdrupes.vmoperator.common.K8sObjectStub;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
@@ -292,7 +292,7 @@ public class VmWatcher extends Component {
         // Get full definition and associate with channel as backup
         @SuppressWarnings("PMD.ShortVariable")
         var gv = GroupVersion.parse(vmDefRef.object.getApiVersion());
-        var vmObj = K8sObjectStub.get(channel.client(),
+        var vmObj = K8sDynamicStub.get(channel.client(),
             new GroupVersionKind(gv.getGroup(), gv.getVersion(), VM_OP_KIND_VM),
             metadata.getNamespace(), metadata.getName());
         K8sObjectState vmDef = channel.vmDefinition();

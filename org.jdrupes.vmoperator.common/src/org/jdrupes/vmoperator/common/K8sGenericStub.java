@@ -21,6 +21,8 @@ package org.jdrupes.vmoperator.common;
 import com.google.gson.Gson;
 import io.kubernetes.client.Discovery;
 import io.kubernetes.client.apimachinery.GroupVersionKind;
+import io.kubernetes.client.common.KubernetesListObject;
+import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
@@ -33,10 +35,14 @@ import java.util.function.Function;
 
 /**
  * A stub for namespaced custom objects.
+ *
+ * @param <O> the generic type
+ * @param <L> the generic type
  */
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
-public class K8sObjectStub {
-    private final GenericKubernetesApi<K8sObjectState, K8sObjectStates> api;
+public class K8sGenericStub<O extends KubernetesObject,
+        L extends KubernetesListObject> {
+    private final GenericKubernetesApi<O, L> api;
     private final String group;
     private final String version;
     private final String kind;
@@ -52,8 +58,9 @@ public class K8sObjectStub {
      * @param namespace the namespace
      * @param name the name
      */
-    protected K8sObjectStub(ApiClient client, String group, String version,
-            String kind, String plural, String namespace, String name) {
+    protected K8sGenericStub(Class<O> objectClass, Class<L> objectListClass,
+            ApiClient client, String group, String version, String kind,
+            String plural, String namespace, String name) {
         this.group = group;
         this.version = version;
         this.kind = kind;
@@ -68,8 +75,8 @@ public class K8sObjectStub {
                     new K8sObjectStateTypeAdapterFactory())
                 .create());
         }
-        api = new GenericKubernetesApi<>(K8sObjectState.class,
-            K8sObjectStates.class, group, version, plural, client);
+        api = new GenericKubernetesApi<>(objectClass,
+            objectListClass, group, version, plural, client);
     }
 
     private boolean checkAdapters(ApiClient client) {
@@ -136,22 +143,31 @@ public class K8sObjectStub {
     }
 
     /**
-     * Get a namespaced custom object stub. If the version in parameter
+     * Get a namespaced object stub. If the version in parameter
      * `gvk` is an empty string, the stub refers to the first object with
      * matching group and kind. 
      *
+     * @param <O> the generic type
+     * @param <L> the generic type
+     * @param <R> the generic type
+     * @param objectClass the object class
+     * @param objectListClass the object list class
      * @param client the client
      * @param gvk the group, version and kind
      * @param namespace the namespace
      * @param name the name
+     * @param provider the provider
      * @return the stub if the object exists
      * @throws ApiException the api exception
      */
     @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
         "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })
-    public static Optional<K8sObjectStub>
-            get(ApiClient client, GroupVersionKind gvk,
-                    String namespace, String name) throws ApiException {
+    public static <O extends KubernetesObject, L extends KubernetesListObject,
+            R extends K8sGenericStub<O, L>>
+            Optional<R> get(Class<O> objectClass, Class<L> objectListClass,
+                    ApiClient client, GroupVersionKind gvk, String namespace,
+                    String name, StubSupplier<O, L, R> provider)
+                    throws ApiException {
         var group = gvk.getGroup();
         var kind = gvk.getKind();
         var version = gvk.getVersion();
@@ -168,7 +184,8 @@ public class K8sObjectStub {
             ? apiRes.getVersions().get(0)
             : version;
         return Optional
-            .of(new K8sObjectStub(client, group, finalVersion, apiRes.getKind(),
+            .of(provider.get(objectClass, objectListClass,
+                client, group, finalVersion, apiRes.getKind(),
                 apiRes.getResourcePlural(), namespace, name));
     }
 
@@ -178,7 +195,7 @@ public class K8sObjectStub {
      * @return the object's state
      * @throws ApiException the api exception
      */
-    public K8sObjectState state() throws ApiException {
+    public O state() throws ApiException {
         var response = api.get(namespace, name).throwsApiException();
         return response.getObject();
     }
@@ -191,10 +208,8 @@ public class K8sObjectStub {
      * @return the kubernetes api response
      * @throws ApiException the api exception
      */
-    public KubernetesApiResponse<K8sObjectState>
-            updateStatus(K8sObjectState object,
-                    Function<K8sObjectState, Object> status)
-                    throws ApiException {
+    public KubernetesApiResponse<O> updateStatus(O object,
+            Function<O, Object> status) throws ApiException {
         return api.updateStatus(object, status).throwsApiException();
     }
 
@@ -205,9 +220,8 @@ public class K8sObjectStub {
      * @return the kubernetes api response
      * @throws ApiException the api exception
      */
-    public KubernetesApiResponse<K8sObjectState>
-            updateStatus(Function<K8sObjectState, Object> status)
-                    throws ApiException {
+    public KubernetesApiResponse<O> updateStatus(Function<O, Object> status)
+            throws ApiException {
         return updateStatus(
             api.get(namespace, name).throwsApiException().getObject(), status);
     }
@@ -221,9 +235,8 @@ public class K8sObjectStub {
      * @return the kubernetes api response
      * @throws ApiException the api exception
      */
-    public KubernetesApiResponse<K8sObjectState> patch(
-            String patchType, V1Patch patch, PatchOptions options)
-            throws ApiException {
+    public KubernetesApiResponse<O> patch(String patchType, V1Patch patch,
+            PatchOptions options) throws ApiException {
         return api.patch(namespace, name, patchType, patch, options)
             .throwsApiException();
     }
@@ -236,9 +249,39 @@ public class K8sObjectStub {
      * @return the kubernetes api response
      * @throws ApiException the api exception
      */
-    public KubernetesApiResponse<K8sObjectState>
+    public KubernetesApiResponse<O>
             patch(String patchType, V1Patch patch) throws ApiException {
         PatchOptions opts = new PatchOptions();
         return patch(patchType, patch, opts);
+    }
+
+    /**
+     * A supplier for Stubs.
+     *
+     * @param <O> the object type
+     * @param <L> the object list type
+     * @param <R> the result type
+     */
+    public interface StubSupplier<O extends KubernetesObject,
+            L extends KubernetesListObject, R extends K8sGenericStub<O, L>> {
+
+        /**
+         * Gets the stub.
+         *
+         * @param objectClass the object class
+         * @param objectListClass the object list class
+         * @param client the client
+         * @param group the group
+         * @param version the version
+         * @param kind the kind
+         * @param plural the plural
+         * @param namespace the namespace
+         * @param name the name
+         * @return the r
+         */
+        @SuppressWarnings("PMD.UseObjectForClearerAPI")
+        R get(Class<O> objectClass, Class<L> objectListClass,
+                ApiClient client, String group, String version, String kind,
+                String plural, String namespace, String name);
     }
 }
