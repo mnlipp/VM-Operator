@@ -42,7 +42,7 @@
 <span class="source-line-no">029</span><span id="line-29">import java.io.StringWriter;</span>
 <span class="source-line-no">030</span><span id="line-30">import java.util.Map;</span>
 <span class="source-line-no">031</span><span id="line-31">import java.util.logging.Logger;</span>
-<span class="source-line-no">032</span><span id="line-32">import org.jdrupes.vmoperator.common.K8sObjectStub;</span>
+<span class="source-line-no">032</span><span id="line-32">import org.jdrupes.vmoperator.common.K8sDynamicStub;</span>
 <span class="source-line-no">033</span><span id="line-33">import org.jdrupes.vmoperator.manager.events.VmChannel;</span>
 <span class="source-line-no">034</span><span id="line-34">import org.jdrupes.vmoperator.manager.events.VmDefChanged;</span>
 <span class="source-line-no">035</span><span id="line-35">import org.jdrupes.vmoperator.util.GsonPtr;</span>
@@ -94,7 +94,7 @@
 <span class="source-line-no">081</span><span id="line-81"></span>
 <span class="source-line-no">082</span><span id="line-82">        // If exists apply changes only when transitioning state</span>
 <span class="source-line-no">083</span><span id="line-83">        // or not running.</span>
-<span class="source-line-no">084</span><span id="line-84">        var stsObj = K8sObjectStub.get(channel.client(),</span>
+<span class="source-line-no">084</span><span id="line-84">        var stsObj = K8sDynamicStub.get(channel.client(),</span>
 <span class="source-line-no">085</span><span id="line-85">            new GroupVersionKind("apps", "v1", "StatefulSet"),</span>
 <span class="source-line-no">086</span><span id="line-86">            metadata.getNamespace(), metadata.getName());</span>
 <span class="source-line-no">087</span><span id="line-87">        if (stsObj.isPresent()) {</span>
@@ -105,19 +105,18 @@
 <span class="source-line-no">092</span><span id="line-92">            if (current == 1 &amp;&amp; desired == 1) {</span>
 <span class="source-line-no">093</span><span id="line-93">                return;</span>
 <span class="source-line-no">094</span><span id="line-94">            }</span>
-<span class="source-line-no">095</span><span id="line-95"></span>
-<span class="source-line-no">096</span><span id="line-96">        }</span>
-<span class="source-line-no">097</span><span id="line-97"></span>
-<span class="source-line-no">098</span><span id="line-98">        // Do apply changes</span>
-<span class="source-line-no">099</span><span id="line-99">        PatchOptions opts = new PatchOptions();</span>
-<span class="source-line-no">100</span><span id="line-100">        opts.setForce(true);</span>
-<span class="source-line-no">101</span><span id="line-101">        opts.setFieldManager("kubernetes-java-kubectl-apply");</span>
-<span class="source-line-no">102</span><span id="line-102">        stsObj.get().patch(V1Patch.PATCH_FORMAT_APPLY_YAML,</span>
-<span class="source-line-no">103</span><span id="line-103">            new V1Patch(channel.client().getJSON().serialize(stsDef)),</span>
-<span class="source-line-no">104</span><span id="line-104">            opts).throwsApiException();</span>
-<span class="source-line-no">105</span><span id="line-105">    }</span>
-<span class="source-line-no">106</span><span id="line-106"></span>
-<span class="source-line-no">107</span><span id="line-107">}</span>
+<span class="source-line-no">095</span><span id="line-95">        }</span>
+<span class="source-line-no">096</span><span id="line-96"></span>
+<span class="source-line-no">097</span><span id="line-97">        // Do apply changes</span>
+<span class="source-line-no">098</span><span id="line-98">        PatchOptions opts = new PatchOptions();</span>
+<span class="source-line-no">099</span><span id="line-99">        opts.setForce(true);</span>
+<span class="source-line-no">100</span><span id="line-100">        opts.setFieldManager("kubernetes-java-kubectl-apply");</span>
+<span class="source-line-no">101</span><span id="line-101">        stsObj.get().patch(V1Patch.PATCH_FORMAT_APPLY_YAML,</span>
+<span class="source-line-no">102</span><span id="line-102">            new V1Patch(channel.client().getJSON().serialize(stsDef)),</span>
+<span class="source-line-no">103</span><span id="line-103">            opts).throwsApiException();</span>
+<span class="source-line-no">104</span><span id="line-104">    }</span>
+<span class="source-line-no">105</span><span id="line-105"></span>
+<span class="source-line-no">106</span><span id="line-106">}</span>
 
 
 

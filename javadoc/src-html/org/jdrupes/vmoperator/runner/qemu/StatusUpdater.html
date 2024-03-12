@@ -54,8 +54,8 @@
 <span class="source-line-no">041</span><span id="line-41">import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;</span>
 <span class="source-line-no">042</span><span id="line-42">import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;</span>
 <span class="source-line-no">043</span><span id="line-43">import org.jdrupes.vmoperator.common.K8s;</span>
-<span class="source-line-no">044</span><span id="line-44">import org.jdrupes.vmoperator.common.K8sObjectState;</span>
-<span class="source-line-no">045</span><span id="line-45">import org.jdrupes.vmoperator.common.K8sObjectStub;</span>
+<span class="source-line-no">044</span><span id="line-44">import org.jdrupes.vmoperator.common.K8sDynamicStub;</span>
+<span class="source-line-no">045</span><span id="line-45">import org.jdrupes.vmoperator.common.K8sObjectState;</span>
 <span class="source-line-no">046</span><span id="line-46">import org.jdrupes.vmoperator.runner.qemu.events.BalloonChangeEvent;</span>
 <span class="source-line-no">047</span><span id="line-47">import org.jdrupes.vmoperator.runner.qemu.events.Exit;</span>
 <span class="source-line-no">048</span><span id="line-48">import org.jdrupes.vmoperator.runner.qemu.events.HotpluggableCpuStatus;</span>
@@ -87,7 +87,7 @@
 <span class="source-line-no">074</span><span id="line-74">    private long observedGeneration;</span>
 <span class="source-line-no">075</span><span id="line-75">    private boolean guestShutdownStops;</span>
 <span class="source-line-no">076</span><span id="line-76">    private boolean shutdownByGuest;</span>
-<span class="source-line-no">077</span><span id="line-77">    private K8sObjectStub vmStub;</span>
+<span class="source-line-no">077</span><span id="line-77">    private K8sDynamicStub vmStub;</span>
 <span class="source-line-no">078</span><span id="line-78"></span>
 <span class="source-line-no">079</span><span id="line-79">    /**</span>
 <span class="source-line-no">080</span><span id="line-80">     * Instantiates a new status updater.</span>
@@ -172,7 +172,7 @@
 <span class="source-line-no">159</span><span id="line-159">            return;</span>
 <span class="source-line-no">160</span><span id="line-160">        }</span>
 <span class="source-line-no">161</span><span id="line-161">        try {</span>
-<span class="source-line-no">162</span><span id="line-162">            vmStub = K8sObjectStub.get(apiClient,</span>
+<span class="source-line-no">162</span><span id="line-162">            vmStub = K8sDynamicStub.get(apiClient,</span>
 <span class="source-line-no">163</span><span id="line-163">                new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),</span>
 <span class="source-line-no">164</span><span id="line-164">                namespace, vmName).orElse(null);</span>
 <span class="source-line-no">165</span><span id="line-165">            if (vmStub != null) {</span>

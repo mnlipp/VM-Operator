@@ -63,8 +63,8 @@
 <span class="source-line-no">050</span><span id="line-50">import java.util.logging.Level;</span>
 <span class="source-line-no">051</span><span id="line-51">import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;</span>
 <span class="source-line-no">052</span><span id="line-52">import org.jdrupes.vmoperator.common.K8s;</span>
-<span class="source-line-no">053</span><span id="line-53">import org.jdrupes.vmoperator.common.K8sObjectState;</span>
-<span class="source-line-no">054</span><span id="line-54">import org.jdrupes.vmoperator.common.K8sObjectStub;</span>
+<span class="source-line-no">053</span><span id="line-53">import org.jdrupes.vmoperator.common.K8sDynamicStub;</span>
+<span class="source-line-no">054</span><span id="line-54">import org.jdrupes.vmoperator.common.K8sObjectState;</span>
 <span class="source-line-no">055</span><span id="line-55">import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;</span>
 <span class="source-line-no">056</span><span id="line-56">import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM;</span>
 <span class="source-line-no">057</span><span id="line-57">import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;</span>
@@ -305,7 +305,7 @@
 <span class="source-line-no">292</span><span id="line-292">        // Get full definition and associate with channel as backup</span>
 <span class="source-line-no">293</span><span id="line-293">        @SuppressWarnings("PMD.ShortVariable")</span>
 <span class="source-line-no">294</span><span id="line-294">        var gv = GroupVersion.parse(vmDefRef.object.getApiVersion());</span>
-<span class="source-line-no">295</span><span id="line-295">        var vmObj = K8sObjectStub.get(channel.client(),</span>
+<span class="source-line-no">295</span><span id="line-295">        var vmObj = K8sDynamicStub.get(channel.client(),</span>
 <span class="source-line-no">296</span><span id="line-296">            new GroupVersionKind(gv.getGroup(), gv.getVersion(), VM_OP_KIND_VM),</span>
 <span class="source-line-no">297</span><span id="line-297">            metadata.getNamespace(), metadata.getName());</span>
 <span class="source-line-no">298</span><span id="line-298">        K8sObjectState vmDef = channel.vmDefinition();</span>

@@ -43,7 +43,7 @@
 <span class="source-line-no">030</span><span id="line-30">import java.util.logging.Level;</span>
 <span class="source-line-no">031</span><span id="line-31">import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;</span>
 <span class="source-line-no">032</span><span id="line-32">import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;</span>
-<span class="source-line-no">033</span><span id="line-33">import org.jdrupes.vmoperator.common.K8sObjectStub;</span>
+<span class="source-line-no">033</span><span id="line-33">import org.jdrupes.vmoperator.common.K8sDynamicStub;</span>
 <span class="source-line-no">034</span><span id="line-34">import org.jdrupes.vmoperator.manager.events.Exit;</span>
 <span class="source-line-no">035</span><span id="line-35">import org.jdrupes.vmoperator.manager.events.ModifyVm;</span>
 <span class="source-line-no">036</span><span id="line-36">import org.jdrupes.vmoperator.manager.events.VmDefChanged;</span>
@@ -180,7 +180,7 @@
 <span class="source-line-no">167</span><span id="line-167"></span>
 <span class="source-line-no">168</span><span id="line-168">    private void patchVmSpec(String name, String path, Object value)</span>
 <span class="source-line-no">169</span><span id="line-169">            throws ApiException, IOException {</span>
-<span class="source-line-no">170</span><span id="line-170">        var vmObj = K8sObjectStub.get(Config.defaultClient(),</span>
+<span class="source-line-no">170</span><span id="line-170">        var vmObj = K8sDynamicStub.get(Config.defaultClient(),</span>
 <span class="source-line-no">171</span><span id="line-171">            new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM), namespace,</span>
 <span class="source-line-no">172</span><span id="line-172">            name);</span>
 <span class="source-line-no">173</span><span id="line-173">        if (vmObj.isEmpty()) {</span>
