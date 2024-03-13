@@ -63,8 +63,8 @@
 <span class="source-line-no">050</span><span id="line-50">import java.util.logging.Level;</span>
 <span class="source-line-no">051</span><span id="line-51">import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;</span>
 <span class="source-line-no">052</span><span id="line-52">import org.jdrupes.vmoperator.common.K8s;</span>
-<span class="source-line-no">053</span><span id="line-53">import org.jdrupes.vmoperator.common.K8sDynamicStub;</span>
-<span class="source-line-no">054</span><span id="line-54">import org.jdrupes.vmoperator.common.K8sObjectState;</span>
+<span class="source-line-no">053</span><span id="line-53">import org.jdrupes.vmoperator.common.K8sDynamicModel;</span>
+<span class="source-line-no">054</span><span id="line-54">import org.jdrupes.vmoperator.common.K8sDynamicStub;</span>
 <span class="source-line-no">055</span><span id="line-55">import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;</span>
 <span class="source-line-no">056</span><span id="line-56">import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM;</span>
 <span class="source-line-no">057</span><span id="line-57">import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;</span>
@@ -308,7 +308,7 @@
 <span class="source-line-no">295</span><span id="line-295">        var vmObj = K8sDynamicStub.get(channel.client(),</span>
 <span class="source-line-no">296</span><span id="line-296">            new GroupVersionKind(gv.getGroup(), gv.getVersion(), VM_OP_KIND_VM),</span>
 <span class="source-line-no">297</span><span id="line-297">            metadata.getNamespace(), metadata.getName());</span>
-<span class="source-line-no">298</span><span id="line-298">        K8sObjectState vmDef = channel.vmDefinition();</span>
+<span class="source-line-no">298</span><span id="line-298">        K8sDynamicModel vmDef = channel.vmDefinition();</span>
 <span class="source-line-no">299</span><span id="line-299">        if (vmObj.isPresent()) {</span>
 <span class="source-line-no">300</span><span id="line-300">            vmDef = vmObj.get().state();</span>
 <span class="source-line-no">301</span><span id="line-301">            addDynamicData(channel.client(), vmDef);</span>
@@ -323,7 +323,7 @@
 <span class="source-line-no">310</span><span id="line-310">            vmsCrd, vmDef), channel);</span>
 <span class="source-line-no">311</span><span id="line-311">    }</span>
 <span class="source-line-no">312</span><span id="line-312"></span>
-<span class="source-line-no">313</span><span id="line-313">    private void addDynamicData(ApiClient client, K8sObjectState vmState) {</span>
+<span class="source-line-no">313</span><span id="line-313">    private void addDynamicData(ApiClient client, K8sDynamicModel vmState) {</span>
 <span class="source-line-no">314</span><span id="line-314">        var rootNode = GsonPtr.to(vmState.data()).get(JsonObject.class);</span>
 <span class="source-line-no">315</span><span id="line-315">        rootNode.addProperty("nodeName", "");</span>
 <span class="source-line-no">316</span><span id="line-316"></span>

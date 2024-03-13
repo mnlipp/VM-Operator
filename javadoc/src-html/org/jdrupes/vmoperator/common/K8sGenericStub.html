@@ -85,7 +85,7 @@
 <span class="source-line-no">072</span><span id="line-72">        if (!checkAdapters(client)) {</span>
 <span class="source-line-no">073</span><span id="line-73">            client.getJSON().setGson(gson.newBuilder()</span>
 <span class="source-line-no">074</span><span id="line-74">                .registerTypeAdapterFactory(</span>
-<span class="source-line-no">075</span><span id="line-75">                    new K8sObjectStateTypeAdapterFactory())</span>
+<span class="source-line-no">075</span><span id="line-75">                    new K8sDynamicModelTypeAdapterFactory())</span>
 <span class="source-line-no">076</span><span id="line-76">                .create());</span>
 <span class="source-line-no">077</span><span id="line-77">        }</span>
 <span class="source-line-no">078</span><span id="line-78">        api = new GenericKubernetesApi&lt;&gt;(objectClass,</span>
@@ -93,12 +93,12 @@
 <span class="source-line-no">080</span><span id="line-80">    }</span>
 <span class="source-line-no">081</span><span id="line-81"></span>
 <span class="source-line-no">082</span><span id="line-82">    private boolean checkAdapters(ApiClient client) {</span>
-<span class="source-line-no">083</span><span id="line-83">        return K8sObjectStateTypeAdapterFactory.K8sObjectStateCreator.class</span>
-<span class="source-line-no">084</span><span id="line-84">            .equals(client.getJSON().getGson().getAdapter(K8sObjectState.class)</span>
+<span class="source-line-no">083</span><span id="line-83">        return K8sDynamicModelTypeAdapterFactory.K8sDynamicModelCreator.class</span>
+<span class="source-line-no">084</span><span id="line-84">            .equals(client.getJSON().getGson().getAdapter(K8sDynamicModel.class)</span>
 <span class="source-line-no">085</span><span id="line-85">                .getClass())</span>
-<span class="source-line-no">086</span><span id="line-86">            &amp;&amp; K8sObjectStateTypeAdapterFactory.K8sObjectStatesCreator.class</span>
+<span class="source-line-no">086</span><span id="line-86">            &amp;&amp; K8sDynamicModelTypeAdapterFactory.K8sDynamicModelsCreator.class</span>
 <span class="source-line-no">087</span><span id="line-87">                .equals(client.getJSON().getGson()</span>
-<span class="source-line-no">088</span><span id="line-88">                    .getAdapter(K8sObjectStates.class).getClass());</span>
+<span class="source-line-no">088</span><span id="line-88">                    .getAdapter(K8sDynamicModels.class).getClass());</span>
 <span class="source-line-no">089</span><span id="line-89">    }</span>
 <span class="source-line-no">090</span><span id="line-90"></span>
 <span class="source-line-no">091</span><span id="line-91">    /**</span>
@@ -279,7 +279,7 @@
 <span class="source-line-no">266</span><span id="line-266">            L extends KubernetesListObject, R extends K8sGenericStub&lt;O, L&gt;&gt; {</span>
 <span class="source-line-no">267</span><span id="line-267"></span>
 <span class="source-line-no">268</span><span id="line-268">        /**</span>
-<span class="source-line-no">269</span><span id="line-269">         * Gets the stub.</span>
+<span class="source-line-no">269</span><span id="line-269">         * Gets a new stub.</span>
 <span class="source-line-no">270</span><span id="line-270">         *</span>
 <span class="source-line-no">271</span><span id="line-271">         * @param objectClass the object class</span>
 <span class="source-line-no">272</span><span id="line-272">         * @param objectListClass the object list class</span>
