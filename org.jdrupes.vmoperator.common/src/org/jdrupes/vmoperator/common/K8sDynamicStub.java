@@ -28,7 +28,7 @@ import java.util.Optional;
  */
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class K8sDynamicStub
-        extends K8sGenericStub<K8sObjectState, K8sObjectStates> {
+        extends K8sGenericStub<K8sDynamicModel, K8sDynamicModels> {
 
     /**
      * Instantiates a new dynamic stub.
@@ -43,8 +43,8 @@ public class K8sDynamicStub
      * @param namespace the namespace
      * @param name the name
      */
-    protected K8sDynamicStub(Class<K8sObjectState> objectClass,
-            Class<K8sObjectStates> objectListClass, ApiClient client,
+    protected K8sDynamicStub(Class<K8sDynamicModel> objectClass,
+            Class<K8sDynamicModels> objectListClass, ApiClient client,
             String group, String version, String kind, String plural,
             String namespace, String name) {
         super(objectClass, objectListClass, client, group, version, kind,
@@ -68,7 +68,7 @@ public class K8sDynamicStub
     public static Optional<K8sDynamicStub> get(ApiClient client,
             GroupVersionKind gvk, String namespace, String name)
             throws ApiException {
-        return K8sGenericStub.get(K8sObjectState.class, K8sObjectStates.class,
+        return K8sGenericStub.get(K8sDynamicModel.class, K8sDynamicModels.class,
             client, gvk, namespace, name, K8sDynamicStub::new);
     }
 }

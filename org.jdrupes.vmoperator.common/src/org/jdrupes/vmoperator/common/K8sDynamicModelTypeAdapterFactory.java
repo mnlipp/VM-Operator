@@ -31,9 +31,9 @@ import java.lang.reflect.Type;
 
 // TODO: Auto-generated Javadoc
 /**
- * A factory for creating K8sObjectStates objects.
+ * A factory for creating K8sDynamicModel(s) objects.
  */
-public class K8sObjectStateTypeAdapterFactory implements TypeAdapterFactory {
+public class K8sDynamicModelTypeAdapterFactory implements TypeAdapterFactory {
 
     /**
      * Creates a type adapter for the given type.
@@ -46,21 +46,21 @@ public class K8sObjectStateTypeAdapterFactory implements TypeAdapterFactory {
      */
     @SuppressWarnings("unchecked")
     public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> typeToken) {
-        if (TypeToken.get(K8sObjectState.class).equals(typeToken)) {
-            return (TypeAdapter<T>) (new K8sObjectStateCreator(gson));
+        if (TypeToken.get(K8sDynamicModel.class).equals(typeToken)) {
+            return (TypeAdapter<T>) (new K8sDynamicModelCreator(gson));
         }
-        if (TypeToken.get(K8sObjectStates.class).equals(typeToken)) {
-            return (TypeAdapter<T>) (new K8sObjectStatesCreator(gson));
+        if (TypeToken.get(K8sDynamicModels.class).equals(typeToken)) {
+            return (TypeAdapter<T>) (new K8sDynamicModelsCreator(gson));
         }
         return null;
     }
 
     /**
-     * The Class K8sObjectStateCreator.
+     * The Class K8sDynamicModelCreator.
      */
-    /* default */ class K8sObjectStateCreator
-            extends TypeAdapter<K8sObjectState>
-            implements InstanceCreator<K8sObjectState> {
+    /* default */ class K8sDynamicModelCreator
+            extends TypeAdapter<K8sDynamicModel>
+            implements InstanceCreator<K8sDynamicModel> {
         private final Gson delegate;
 
         /**
@@ -68,35 +68,35 @@ public class K8sObjectStateTypeAdapterFactory implements TypeAdapterFactory {
          *
          * @param delegate the delegate
          */
-        public K8sObjectStateCreator(Gson delegate) {
+        public K8sDynamicModelCreator(Gson delegate) {
             this.delegate = delegate;
         }
 
         @Override
-        public K8sObjectState createInstance(Type type) {
-            return new K8sObjectState(delegate, null);
+        public K8sDynamicModel createInstance(Type type) {
+            return new K8sDynamicModel(delegate, null);
         }
 
         @Override
-        public void write(JsonWriter jsonWriter, K8sObjectState state)
+        public void write(JsonWriter jsonWriter, K8sDynamicModel state)
                 throws IOException {
             jsonWriter.jsonValue(delegate.toJson(state.data()));
         }
 
         @Override
-        public K8sObjectState read(JsonReader jsonReader)
+        public K8sDynamicModel read(JsonReader jsonReader)
                 throws IOException {
-            return new K8sObjectState(delegate,
+            return new K8sDynamicModel(delegate,
                 delegate.fromJson(jsonReader, JsonObject.class));
         }
     }
 
     /**
-     * The Class K8sObjectStatesCreator.
+     * The Class K8sDynamicModelsCreator.
      */
-    /* default */class K8sObjectStatesCreator
-            extends TypeAdapter<K8sObjectStates>
-            implements InstanceCreator<K8sObjectStates> {
+    /* default */class K8sDynamicModelsCreator
+            extends TypeAdapter<K8sDynamicModels>
+            implements InstanceCreator<K8sDynamicModels> {
 
         private final Gson delegate;
 
@@ -105,25 +105,25 @@ public class K8sObjectStateTypeAdapterFactory implements TypeAdapterFactory {
          *
          * @param delegate the delegate
          */
-        public K8sObjectStatesCreator(Gson delegate) {
+        public K8sDynamicModelsCreator(Gson delegate) {
             this.delegate = delegate;
         }
 
         @Override
-        public K8sObjectStates createInstance(Type type) {
-            return new K8sObjectStates(delegate, null);
+        public K8sDynamicModels createInstance(Type type) {
+            return new K8sDynamicModels(delegate, null);
         }
 
         @Override
-        public void write(JsonWriter jsonWriter, K8sObjectStates states)
+        public void write(JsonWriter jsonWriter, K8sDynamicModels states)
                 throws IOException {
             jsonWriter.jsonValue(delegate.toJson(states.data()));
         }
 
         @Override
-        public K8sObjectStates read(JsonReader jsonReader)
+        public K8sDynamicModels read(JsonReader jsonReader)
                 throws IOException {
-            return new K8sObjectStates(delegate,
+            return new K8sDynamicModels(delegate,
                 delegate.fromJson(jsonReader, JsonObject.class));
         }
     }

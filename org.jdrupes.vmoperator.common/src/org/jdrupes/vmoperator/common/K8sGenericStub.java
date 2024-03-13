@@ -72,7 +72,7 @@ public class K8sGenericStub<O extends KubernetesObject,
         if (!checkAdapters(client)) {
             client.getJSON().setGson(gson.newBuilder()
                 .registerTypeAdapterFactory(
-                    new K8sObjectStateTypeAdapterFactory())
+                    new K8sDynamicModelTypeAdapterFactory())
                 .create());
         }
         api = new GenericKubernetesApi<>(objectClass,
@@ -80,12 +80,12 @@ public class K8sGenericStub<O extends KubernetesObject,
     }
 
     private boolean checkAdapters(ApiClient client) {
-        return K8sObjectStateTypeAdapterFactory.K8sObjectStateCreator.class
-            .equals(client.getJSON().getGson().getAdapter(K8sObjectState.class)
+        return K8sDynamicModelTypeAdapterFactory.K8sDynamicModelCreator.class
+            .equals(client.getJSON().getGson().getAdapter(K8sDynamicModel.class)
                 .getClass())
-            && K8sObjectStateTypeAdapterFactory.K8sObjectStatesCreator.class
+            && K8sDynamicModelTypeAdapterFactory.K8sDynamicModelsCreator.class
                 .equals(client.getJSON().getGson()
-                    .getAdapter(K8sObjectStates.class).getClass());
+                    .getAdapter(K8sDynamicModels.class).getClass());
     }
 
     /**
@@ -266,7 +266,7 @@ public class K8sGenericStub<O extends KubernetesObject,
             L extends KubernetesListObject, R extends K8sGenericStub<O, L>> {
 
         /**
-         * Gets the stub.
+         * Gets a new stub.
          *
          * @param objectClass the object class
          * @param objectListClass the object list class

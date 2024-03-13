@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Logger;
 import org.jdrupes.vmoperator.common.K8s;
-import org.jdrupes.vmoperator.common.K8sObjectState;
+import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.util.GsonPtr;
@@ -116,7 +116,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
     }
 
     private void mergeMetadata(DynamicKubernetesObject svcDef,
-            JsonObject cfgMeta, K8sObjectState vmDefinition) {
+            JsonObject cfgMeta, K8sDynamicModel vmDefinition) {
         // Get metadata from VM definition
         var vmMeta = GsonPtr.to(vmDefinition.data()).to("spec")
             .get(JsonObject.class, LOAD_BALANCER_SERVICE)

@@ -41,8 +41,8 @@ import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.common.K8s;
+import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
-import org.jdrupes.vmoperator.common.K8sObjectState;
 import org.jdrupes.vmoperator.runner.qemu.events.BalloonChangeEvent;
 import org.jdrupes.vmoperator.runner.qemu.events.Exit;
 import org.jdrupes.vmoperator.runner.qemu.events.HotpluggableCpuStatus;
@@ -264,7 +264,7 @@ public class StatusUpdater extends Component {
     }
 
     private void updateRunningCondition(RunnerStateChange event,
-            K8sObjectState from, JsonObject cond) {
+            K8sDynamicModel from, JsonObject cond) {
         boolean reportedRunning
             = "True".equals(cond.get("status").getAsString());
         if (RUNNING_STATES.contains(event.state())

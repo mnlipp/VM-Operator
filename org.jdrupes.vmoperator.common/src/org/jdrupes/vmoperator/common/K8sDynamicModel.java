@@ -24,51 +24,63 @@ import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 
 /**
- * Represents a Kubernetes object's state.
+ * Represents a Kubernetes object using a JSON data structure.
+ * Some information that is common to all Kubernetes objects,
+ * notably the metadata, is made available through the methods
+ * defined by {@link KubernetesObject}.
  */
 @SuppressWarnings("PMD.DataClass")
-public class K8sObjectState implements KubernetesObject {
+public class K8sDynamicModel implements KubernetesObject {
 
-    private final String apiVersion;
-    private final String kind;
     private final V1ObjectMeta metadata;
     private final JsonObject data;
 
     /**
-     * Instantiates a new object state from the JSON representation.
+     * Instantiates a new model from the JSON representation.
      *
-     * @param delegate the gson instance to use for lazy metadata object creation
-     * @param json the json
+     * @param delegate the gson instance to use for extracting structured data
+     * @param json the JSON
      */
-    public K8sObjectState(Gson delegate, JsonObject json) {
+    public K8sDynamicModel(Gson delegate, JsonObject json) {
         this.data = json;
         metadata = delegate.fromJson(data.get("metadata"), V1ObjectMeta.class);
-        apiVersion = data.get("apiVersion").getAsString();
-        kind = data.get("kind").getAsString();
     }
 
     @Override
     public String getApiVersion() {
-        return apiVersion;
+        return apiVersion();
+    }
+
+    /**
+     * Gets the API version. (Abbreviated method name for convenience.)
+     *
+     * @return the API version
+     */
+    public String apiVersion() {
+        return data.get("apiVersion").getAsString();
     }
 
     @Override
     public String getKind() {
-        return kind;
+        return kind();
     }
 
     /**
-     * Gets the metadata.
+     * Gets the kind. (Abbreviated method name for convenience.)
      *
-     * @return the metadata
+     * @return the kind
      */
+    public String kind() {
+        return data.get("kind").getAsString();
+    }
+
     @Override
     public V1ObjectMeta getMetadata() {
         return metadata;
     }
 
     /**
-     * Gets the metadata.
+     * Gets the metadata. (Abbreviated method name for convenience.)
      *
      * @return the metadata
      */

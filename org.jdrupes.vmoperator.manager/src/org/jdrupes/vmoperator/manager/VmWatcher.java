@@ -50,8 +50,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import org.jdrupes.vmoperator.common.K8s;
+import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
-import org.jdrupes.vmoperator.common.K8sObjectState;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
@@ -295,7 +295,7 @@ public class VmWatcher extends Component {
         var vmObj = K8sDynamicStub.get(channel.client(),
             new GroupVersionKind(gv.getGroup(), gv.getVersion(), VM_OP_KIND_VM),
             metadata.getNamespace(), metadata.getName());
-        K8sObjectState vmDef = channel.vmDefinition();
+        K8sDynamicModel vmDef = channel.vmDefinition();
         if (vmObj.isPresent()) {
             vmDef = vmObj.get().state();
             addDynamicData(channel.client(), vmDef);
@@ -310,7 +310,7 @@ public class VmWatcher extends Component {
             vmsCrd, vmDef), channel);
     }
 
-    private void addDynamicData(ApiClient client, K8sObjectState vmState) {
+    private void addDynamicData(ApiClient client, K8sDynamicModel vmState) {
         var rootNode = GsonPtr.to(vmState.data()).get(JsonObject.class);
         rootNode.addProperty("nodeName", "");
 

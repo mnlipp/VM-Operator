@@ -138,7 +138,7 @@ public class K8s {
      * @param object the object
      * @return the JSON object describing the status
      */
-    public static JsonObject status(K8sObjectState state) {
+    public static JsonObject status(K8sDynamicModel state) {
         return state.data().getAsJsonObject("status");
     }
 

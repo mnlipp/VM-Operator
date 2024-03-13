@@ -29,36 +29,59 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Represents a list of Kubernetes objects states.
+ * Represents a list of Kubernetes object each of which is
+ * represented using a JSON data structure.
+ * Some information that is common to all Kubernetes objects,
+ * notably the metadata, is made available through the methods
+ * defined by {@link KubernetesListObject}.
  */
-public class K8sObjectStates implements KubernetesListObject {
+public class K8sDynamicModels implements KubernetesListObject {
 
     private final JsonObject data;
     private final V1ListMeta metadata;
-    private final List<K8sObjectState> items;
+    private final List<K8sDynamicModel> items;
 
     /**
-     * Initialize the object states using the given JSON data.
+     * Initialize the object list using the given JSON data.
      *
-     * @param delegate the delegate
+     * @param delegate the gson instance to use for extracting structured data
      * @param data the data
      */
-    public K8sObjectStates(Gson delegate, JsonObject data) {
+    public K8sDynamicModels(Gson delegate, JsonObject data) {
         this.data = data;
         metadata = delegate.fromJson(data.get("metadata"), V1ListMeta.class);
         items = new ArrayList<>();
         for (JsonElement e : data.get("items").getAsJsonArray()) {
-            items.add(new K8sObjectState(delegate, e.getAsJsonObject()));
+            items.add(new K8sDynamicModel(delegate, e.getAsJsonObject()));
         }
     }
 
+    @Override
+    public String getApiVersion() {
+        return apiVersion();
+    }
+
     /**
-     * Returns the JSON representation of this object.
+     * Gets the API version. (Abbreviated method name for convenience.)
      *
-     * @return the json object
+     * @return the API version
      */
-    public JsonObject data() {
-        return data;
+    public String apiVersion() {
+        return data.get("apiVersion").getAsString();
+    }
+
+    @Override
+    public String getKind() {
+        return kind();
+    }
+
+    /**
+     * Gets the kind. (Abbreviated method name for convenience.)
+     *
+     * @return the kind
+     */
+    public String kind() {
+        return data.get("kind").getAsString();
     }
 
     @Override
@@ -66,18 +89,26 @@ public class K8sObjectStates implements KubernetesListObject {
         return metadata;
     }
 
-    @Override
-    public String getApiVersion() {
-        return this.data.get("apiVersion").getAsString();
+    /**
+     * Gets the metadata. (Abbreviated method name for convenience.)
+     *
+     * @return the metadata
+     */
+    public V1ListMeta metadata() {
+        return metadata;
+    }
+
+    /**
+     * Returns the JSON representation of this object.
+     *
+     * @return the JOSN representation
+     */
+    public JsonObject data() {
+        return data;
     }
 
     @Override
-    public String getKind() {
-        return this.data.get("kind").getAsString();
-    }
-
-    @Override
-    public List<K8sObjectState> getItems() {
+    public List<K8sDynamicModel> getItems() {
         return items;
     }
 
@@ -87,7 +118,7 @@ public class K8sObjectStates implements KubernetesListObject {
      * @param apiVersion the new api version
      */
     public void setApiVersion(String apiVersion) {
-        this.data.addProperty("apiVersion", apiVersion);
+        data.addProperty("apiVersion", apiVersion);
     }
 
     /**
@@ -96,7 +127,7 @@ public class K8sObjectStates implements KubernetesListObject {
      * @param kind the new kind
      */
     public void setKind(String kind) {
-        this.data.addProperty("kind", kind);
+        data.addProperty("kind", kind);
     }
 
     /**
@@ -105,7 +136,7 @@ public class K8sObjectStates implements KubernetesListObject {
      * @param objectMeta the new metadata
      */
     public void setMetadata(V1ListMeta objectMeta) {
-        this.data.add("metadata",
+        data.add("metadata",
             Configuration.getDefaultApiClient().getJSON().getGson()
                 .toJsonTree(objectMeta));
     }
@@ -126,7 +157,7 @@ public class K8sObjectStates implements KubernetesListObject {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        K8sObjectStates other = (K8sObjectStates) obj;
+        K8sDynamicModels other = (K8sDynamicModels) obj;
         return Objects.equals(data, other.data);
     }
 }
