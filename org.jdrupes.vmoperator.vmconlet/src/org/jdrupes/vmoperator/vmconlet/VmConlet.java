@@ -25,7 +25,6 @@ import freemarker.template.Template;
 import freemarker.template.TemplateNotFoundException;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.custom.Quantity.Format;
-import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -38,6 +37,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.jdrupes.json.JsonBeanDecoder;
 import org.jdrupes.json.JsonDecodeException;
+import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
@@ -46,7 +46,6 @@ import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Event;
 import org.jgrapes.core.Manager;
-import org.jgrapes.core.NamedChannel;
 import org.jgrapes.core.annotation.Handler;
 import org.jgrapes.webconsole.base.Conlet.RenderMode;
 import org.jgrapes.webconsole.base.ConletBaseModel;
@@ -70,7 +69,9 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
 
     private static final Set<RenderMode> MODES = RenderMode.asSet(
         RenderMode.Preview, RenderMode.View);
-    private final Map<String, DynamicKubernetesObject> vmInfos
+    private final Map<String, K8sDynamicModel> vmInfos
+        = new ConcurrentHashMap<>();
+    private final Map<String, VmChannel> vmChannels
         = new ConcurrentHashMap<>();
     private final TimeSeries summarySeries = new TimeSeries(Duration.ofDays(1));
     private Summary cachedSummary;
@@ -162,7 +163,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
         }
         if (sendVmInfos) {
             for (var vmInfo : vmInfos.values()) {
-                var def = JsonBeanDecoder.create(vmInfo.getRaw().toString())
+                var def = JsonBeanDecoder.create(vmInfo.data().toString())
                     .readObject();
                 channel.respond(new NotifyConletView(type(),
                     conletId, "updateVm", def));
@@ -185,9 +186,10 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
         "PMD.AvoidInstantiatingObjectsInLoops", "PMD.AvoidDuplicateLiterals" })
     public void onVmDefChanged(VmDefChanged event, VmChannel channel)
             throws JsonDecodeException, IOException {
+        var vmName = event.vmDefinition().getMetadata().getName();
         if (event.type() == Type.DELETED) {
-            var vmName = event.vmDefinition().getMetadata().getName();
             vmInfos.remove(vmName);
+            vmChannels.remove(vmName);
             for (var entry : conletIdsByConsoleConnection().entrySet()) {
                 for (String conletId : entry.getValue()) {
                     entry.getKey().respond(new NotifyConletView(type(),
@@ -195,8 +197,11 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
                 }
             }
         } else {
-            var vmDef = convertQuantities(event);
-            var def = JsonBeanDecoder.create(vmDef.getRaw().toString())
+            var vmDef = new K8sDynamicModel(channel.client().getJSON()
+                .getGson(), convertQuantities(event.vmDefinition().data()));
+            vmInfos.put(vmName, vmDef);
+            vmChannels.put(vmName, channel);
+            var def = JsonBeanDecoder.create(vmDef.data().toString())
                 .readObject();
             for (var entry : conletIdsByConsoleConnection().entrySet()) {
                 for (String conletId : entry.getValue()) {
@@ -217,28 +222,25 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
     }
 
     @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-    private DynamicKubernetesObject convertQuantities(VmDefChanged event) {
+    private JsonObject convertQuantities(JsonObject vmDef) {
         // Clone and remove managed fields
-        var vmDef = new DynamicKubernetesObject(
-            event.vmDefinition().getRaw().deepCopy());
-        GsonPtr.to(vmDef.getRaw()).to("metadata").get(JsonObject.class)
+        var json = vmDef.deepCopy();
+        GsonPtr.to(json).to("metadata").get(JsonObject.class)
             .remove("managedFields");
 
         // Convert RAM sizes to unitless numbers
-        var vmSpec = GsonPtr.to(vmDef.getRaw()).to("spec", "vm");
+        var vmSpec = GsonPtr.to(json).to("spec", "vm");
         vmSpec.set("maximumRam", Quantity.fromString(
             vmSpec.getAsString("maximumRam").orElse("0")).getNumber()
             .toBigInteger());
         vmSpec.set("currentRam", Quantity.fromString(
             vmSpec.getAsString("currentRam").orElse("0")).getNumber()
             .toBigInteger());
-        var status = GsonPtr.to(vmDef.getRaw()).to("status");
+        var status = GsonPtr.to(json).to("status");
         status.set("ram", Quantity.fromString(
             status.getAsString("ram").orElse("0")).getNumber()
             .toBigInteger());
-        String vmName = event.vmDefinition().getMetadata().getName();
-        vmInfos.put(vmName, vmDef);
-        return vmDef;
+        return json;
     }
 
     /**
@@ -323,7 +325,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
         Summary summary = new Summary();
         for (var vmDef : vmInfos.values()) {
             summary.totalVms += 1;
-            var status = GsonPtr.to(vmDef.getRaw()).to("status");
+            var status = GsonPtr.to(vmDef.data()).to("status");
             summary.usedCpus += status.getAsInt("cpus").orElse(0);
             summary.usedRam = summary.usedRam.add(status.getAsString("ram")
                 .map(BigInteger::new).orElse(BigInteger.ZERO));
@@ -346,25 +348,28 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
             ConsoleConnection channel, VmsModel conletState)
             throws Exception {
         event.stop();
+        var vmName = event.params().asString(0);
+        var vmChannel = vmChannels.get(vmName);
+        if (vmChannel == null) {
+            return;
+        }
         switch (event.method()) {
         case "start":
-            fire(new ModifyVm(event.params().asString(0), "state", "Running",
-                new NamedChannel("manager")));
+            fire(new ModifyVm(vmName, "state", "Running", vmChannel));
             break;
         case "stop":
-            fire(new ModifyVm(event.params().asString(0), "state", "Stopped",
-                new NamedChannel("manager")));
+            fire(new ModifyVm(vmName, "state", "Stopped", vmChannel));
             break;
         case "cpus":
-            fire(new ModifyVm(event.params().asString(0), "currentCpus",
+            fire(new ModifyVm(vmName, "currentCpus",
                 new BigDecimal(event.params().asDouble(1)).toBigInteger(),
-                new NamedChannel("manager")));
+                vmChannel));
             break;
         case "ram":
-            fire(new ModifyVm(event.params().asString(0), "currentRam",
+            fire(new ModifyVm(vmName, "currentRam",
                 new Quantity(new BigDecimal(event.params().asDouble(1)),
                     Format.BINARY_SI).toSuffixedString(),
-                new NamedChannel("manager")));
+                vmChannel));
             break;
         default:// ignore
             break;

@@ -1,6 +1,6 @@
 /*
  * VM-Operator
- * Copyright (C) 2023 Michael N. Lipp
+ * Copyright (C) 2023,2024 Michael N. Lipp
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,6 +21,8 @@ package org.jdrupes.vmoperator.manager;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
+import io.kubernetes.client.apimachinery.GroupVersion;
+import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.ApisApi;
@@ -33,7 +35,6 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
-import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -48,7 +49,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
-import org.jdrupes.vmoperator.common.K8s;
+import org.jdrupes.vmoperator.common.K8sClient;
+import org.jdrupes.vmoperator.common.K8sDynamicModel;
+import org.jdrupes.vmoperator.common.K8sDynamicStub;
+import org.jdrupes.vmoperator.common.K8sV1PodStub;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
@@ -68,7 +72,7 @@ import org.jgrapes.util.events.ConfigurationUpdate;
 /**
  * Watches for changes of VM definitions.
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
+@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.ExcessiveImports" })
 public class VmWatcher extends Component {
 
     private String namespaceToWatch;
@@ -269,13 +273,13 @@ public class VmWatcher extends Component {
     }
 
     private void handleVmDefinitionChange(V1APIResource vmsCrd,
-            Watch.Response<V1Namespace> vmDefStub) {
-        V1ObjectMeta metadata = vmDefStub.object.getMetadata();
+            Watch.Response<V1Namespace> vmDefRef) throws ApiException {
+        V1ObjectMeta metadata = vmDefRef.object.getMetadata();
         VmChannel channel = channels.computeIfAbsent(metadata.getName(),
             k -> {
                 try {
                     return new VmChannel(channel(), newEventPipeline(),
-                        Config.defaultClient());
+                        new K8sClient());
                 } catch (IOException e) {
                     logger.log(Level.SEVERE, e, () -> "Failed to create client"
                         + " for handling changes: " + e.getMessage());
@@ -287,30 +291,27 @@ public class VmWatcher extends Component {
         }
 
         // Get full definition and associate with channel as backup
-        var apiVersion = K8s.version(vmDefStub.object.getApiVersion());
-        DynamicKubernetesApi vmCrApi = new DynamicKubernetesApi(VM_OP_GROUP,
-            apiVersion, vmsCrd.getName(), channel.client());
-        var curVmDef = K8s.get(vmCrApi, metadata);
-        curVmDef.ifPresent(def -> {
-            // Augment with "dynamic" data and associate with channel
-            addDynamicData(channel.client(), def);
-            channel.setVmDefinition(def);
+        @SuppressWarnings("PMD.ShortVariable")
+        var gv = GroupVersion.parse(vmDefRef.object.getApiVersion());
+        var vmStub = K8sDynamicStub.get(channel.client(),
+            new GroupVersionKind(gv.getGroup(), gv.getVersion(), VM_OP_KIND_VM),
+            metadata.getNamespace(), metadata.getName());
+        vmStub.model().ifPresent(vmDef -> {
+            addDynamicData(channel.client(), vmDef);
+            channel.setVmDefinition(vmDef);
+
+            // Create and fire event
+            channel.pipeline().fire(new VmDefChanged(VmDefChanged.Type
+                .valueOf(vmDefRef.type),
+                channel
+                    .setGeneration(
+                        vmDefRef.object.getMetadata().getGeneration()),
+                vmsCrd, vmDef), channel);
         });
-
-        // Get eventual definition to use
-        var vmDef = curVmDef.orElse(channel.vmDefinition());
-
-        // Create and fire event
-        channel.pipeline().fire(new VmDefChanged(VmDefChanged.Type
-            .valueOf(vmDefStub.type),
-            channel
-                .setGeneration(vmDefStub.object.getMetadata().getGeneration()),
-            vmsCrd, vmDef), channel);
     }
 
-    private void addDynamicData(ApiClient client,
-            DynamicKubernetesObject vmDef) {
-        var rootNode = GsonPtr.to(vmDef.getRaw()).get(JsonObject.class);
+    private void addDynamicData(K8sClient client, K8sDynamicModel vmState) {
+        var rootNode = GsonPtr.to(vmState.data()).get(JsonObject.class);
         rootNode.addProperty("nodeName", "");
 
         // VM definition status changes before the pod terminates.
@@ -329,11 +330,18 @@ public class VmWatcher extends Component {
         var podSearch = new ListOptions();
         podSearch.setLabelSelector("app.kubernetes.io/name=" + APP_NAME
             + ",app.kubernetes.io/component=" + APP_NAME
-            + ",app.kubernetes.io/instance=" + vmDef.getMetadata().getName());
-        var podList = K8s.podApi(client).list(namespaceToWatch, podSearch);
-        podList.getObject().getItems().stream().forEach(pod -> {
-            rootNode.addProperty("nodeName", pod.getSpec().getNodeName());
-        });
+            + ",app.kubernetes.io/instance=" + vmState.getMetadata().getName());
+        try {
+            var podList
+                = K8sV1PodStub.list(client, namespaceToWatch, podSearch);
+            for (var podStub : podList) {
+                rootNode.addProperty("nodeName",
+                    podStub.model().get().getSpec().getNodeName());
+            }
+        } catch (ApiException e) {
+            logger.log(Level.WARNING, e,
+                () -> "Cannot access node information: " + e.getMessage());
+        }
     }
 
     /**

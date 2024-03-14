@@ -13,11 +13,11 @@ spec:
     requests:
       cpu: 1
       memory: 2Gi
-  
+
   guestShutdownStops: true
   
   cloudInit: {}
-    
+  
   vm:
     # state: Running
     bootMenu: yes

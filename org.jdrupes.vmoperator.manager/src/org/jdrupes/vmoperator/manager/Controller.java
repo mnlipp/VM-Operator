@@ -18,20 +18,21 @@
 
 package org.jdrupes.vmoperator.manager;
 
+import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
-import io.kubernetes.client.util.Config;
-import io.kubernetes.client.util.generic.options.PatchOptions;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
-import org.jdrupes.vmoperator.common.K8s;
+import org.jdrupes.vmoperator.common.K8sClient;
+import org.jdrupes.vmoperator.common.K8sDynamicStub;
 import org.jdrupes.vmoperator.manager.events.Exit;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
+import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
@@ -160,35 +161,30 @@ public class Controller extends Component {
      * @throws IOException Signals that an I/O exception has occurred.
      */
     @Handler
-    public void onModigyVm(ModifyVm event) throws ApiException, IOException {
-        patchVmSpec(event.name(), event.path(), event.value());
+    public void onModifyVm(ModifyVm event, VmChannel channel)
+            throws ApiException, IOException {
+        patchVmSpec(channel.client(), event.name(), event.path(),
+            event.value());
     }
 
-    private void patchVmSpec(String name, String path, Object value)
+    private void patchVmSpec(K8sClient client, String name, String path,
+            Object value)
             throws ApiException, IOException {
-        var crApi = K8s.crApi(Config.defaultClient(), VM_OP_GROUP,
-            VM_OP_KIND_VM, namespace, name);
-        if (crApi.isEmpty()) {
-            logger.warning(() -> "Trying to patch " + namespace + "/" + name
-                + " which does not exist.");
-            return;
-        }
+        var vmStub = K8sDynamicStub.get(client,
+            new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM), namespace,
+            name);
 
         // Patch running
-        PatchOptions patchOpts = new PatchOptions();
-        patchOpts.setFieldManager("kubernetes-java-kubectl-apply");
         String valueAsText = value instanceof String
             ? "\"" + value + "\""
             : value.toString();
-        var res = crApi.get().patch(namespace, name,
-            V1Patch.PATCH_FORMAT_JSON_PATCH,
+        var res = vmStub.patch(V1Patch.PATCH_FORMAT_JSON_PATCH,
             new V1Patch("[{\"op\": \"replace\", \"path\": \"/spec/vm/"
                 + path + "\", \"value\": " + valueAsText + "}]"),
-            patchOpts);
-        if (!res.isSuccess()) {
+            client.defaultPatchOptions());
+        if (!res.isPresent()) {
             logger.warning(
-                () -> "Cannot patch pod annotations: " + res.getStatus());
+                () -> "Cannot patch pod annotations for " + vmStub.name());
         }
-
     }
 }

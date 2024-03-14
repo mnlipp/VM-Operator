@@ -19,7 +19,7 @@
 package org.jdrupes.vmoperator.manager.events;
 
 import io.kubernetes.client.openapi.models.V1APIResource;
-import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
+import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Components;
 import org.jgrapes.core.Event;
@@ -44,7 +44,7 @@ public class VmDefChanged extends Event<Void> {
     private final Type type;
     private final boolean specChanged;
     private final V1APIResource crd;
-    private final DynamicKubernetesObject vmDef;
+    private final K8sDynamicModel vmDef;
 
     /**
      * Instantiates a new VM changed event.
@@ -55,7 +55,7 @@ public class VmDefChanged extends Event<Void> {
      * @param vmDefinition the VM definition
      */
     public VmDefChanged(Type type, boolean specChanged, V1APIResource crd,
-            DynamicKubernetesObject vmDefinition) {
+            K8sDynamicModel vmDefinition) {
         this.type = type;
         this.specChanged = specChanged;
         this.crd = crd;
@@ -92,7 +92,7 @@ public class VmDefChanged extends Event<Void> {
      *
      * @return the object.
      */
-    public DynamicKubernetesObject vmDefinition() {
+    public K8sDynamicModel vmDefinition() {
         return vmDef;
     }
 

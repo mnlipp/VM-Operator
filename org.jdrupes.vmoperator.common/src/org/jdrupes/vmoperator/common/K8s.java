@@ -1,6 +1,6 @@
 /*
  * VM-Operator
- * Copyright (C) 2023 Michael N. Lipp
+ * Copyright (C) 2023,2024 Michael N. Lipp
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,29 +18,31 @@
 
 package org.jdrupes.vmoperator.common;
 
+import com.google.gson.JsonObject;
+import io.kubernetes.client.Discovery;
+import io.kubernetes.client.Discovery.APIResource;
 import io.kubernetes.client.common.KubernetesListObject;
 import io.kubernetes.client.common.KubernetesObject;
+import io.kubernetes.client.common.KubernetesType;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.apis.ApisApi;
-import io.kubernetes.client.openapi.apis.CustomObjectsApi;
-import io.kubernetes.client.openapi.models.V1APIGroup;
-import io.kubernetes.client.openapi.models.V1ConfigMap;
-import io.kubernetes.client.openapi.models.V1ConfigMapList;
-import io.kubernetes.client.openapi.models.V1GroupVersionForDiscovery;
+import io.kubernetes.client.openapi.apis.EventsV1Api;
+import io.kubernetes.client.openapi.models.EventsV1Event;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1ObjectReference;
-import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
-import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimList;
-import io.kubernetes.client.openapi.models.V1Pod;
-import io.kubernetes.client.openapi.models.V1PodList;
+import io.kubernetes.client.util.Strings;
 import io.kubernetes.client.util.generic.GenericKubernetesApi;
-import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
-import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
-import io.kubernetes.client.util.generic.options.DeleteOptions;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import io.kubernetes.client.util.generic.options.PatchOptions;
+import java.io.Reader;
+import java.net.HttpURLConnection;
+import java.time.OffsetDateTime;
+import java.util.Map;
 import java.util.Optional;
+import org.yaml.snakeyaml.LoaderOptions;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 /**
  * Helpers for K8s API.
@@ -50,89 +52,80 @@ import java.util.Optional;
 public class K8s {
 
     /**
-     * Given a groupVersion, returns only the version.
+     * Returns the result from an API call as {@link Optional} if the
+     * call was successful. Returns an empty `Optional` if the status
+     * code is 404 (not found). Else throws an exception.
      *
-     * @param groupVersion the group version
-     * @return the string
+     * @param <T> the generic type
+     * @param response the response
+     * @return the optional
+     * @throws ApiException the API exception
      */
-    public static String version(String groupVersion) {
-        return groupVersion.substring(groupVersion.lastIndexOf('/') + 1);
+    public static <T extends KubernetesType> Optional<T>
+            optional(KubernetesApiResponse<T> response) throws ApiException {
+        if (response.isSuccess()) {
+            return Optional.of(response.getObject());
+        }
+        if (response.getHttpStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
+            return Optional.empty();
+        }
+        response.throwsApiException();
+        // Never reached
+        return Optional.empty();
     }
 
     /**
-     * Get PVC API.
-     *
-     * @param client the client
-     * @return the generic kubernetes api
-     */
-    public static GenericKubernetesApi<V1PersistentVolumeClaim,
-            V1PersistentVolumeClaimList> pvcApi(ApiClient client) {
-        return new GenericKubernetesApi<>(V1PersistentVolumeClaim.class,
-            V1PersistentVolumeClaimList.class, "", "v1",
-            "persistentvolumeclaims", client);
-    }
-
-    /**
-     * Get config map API.
-     *
-     * @param client the client
-     * @return the generic kubernetes api
-     */
-    public static GenericKubernetesApi<V1ConfigMap,
-            V1ConfigMapList> cmApi(ApiClient client) {
-        return new GenericKubernetesApi<>(V1ConfigMap.class,
-            V1ConfigMapList.class, "", "v1", "configmaps", client);
-    }
-
-    /**
-     * Get pod API.
+     * Convert Yaml to Json.
      *
      * @param client the client
-     * @return the generic kubernetes api
+     * @param yaml the yaml
+     * @return the json element
      */
-    public static GenericKubernetesApi<V1Pod, V1PodList>
-            podApi(ApiClient client) {
-        return new GenericKubernetesApi<>(V1Pod.class, V1PodList.class, "",
-            "v1", "pods", client);
+    public static JsonObject yamlToJson(ApiClient client, Reader yaml) {
+        // Avoid Yaml.load due to
+        // https://github.com/kubernetes-client/java/issues/2741
+        @SuppressWarnings("PMD.UseConcurrentHashMap")
+        Map<String, Object> yamlData
+            = new Yaml(new SafeConstructor(new LoaderOptions())).load(yaml);
+
+        // There's no short-cut from Java (collections) to Gson
+        var gson = client.getJSON().getGson();
+        var jsonText = gson.toJson(yamlData);
+        return gson.fromJson(jsonText, JsonObject.class);
     }
 
     /**
-     * Get the API for a custom resource.
+     * Lookup the specified API resource. If the version is `null` or
+     * empty, the preferred version in the result is the default
+     * returned from the server.
      *
      * @param client the client
      * @param group the group
+     * @param version the version
      * @param kind the kind
-     * @param namespace the namespace
-     * @param name the name
-     * @return the dynamic kubernetes api
+     * @return the optional
      * @throws ApiException the api exception
      */
-    @SuppressWarnings("PMD.UseObjectForClearerAPI")
-    public static Optional<DynamicKubernetesApi> crApi(ApiClient client,
-            String group, String kind, String namespace, String name)
-            throws ApiException {
-        var apis = new ApisApi(client).getAPIVersions();
-        var crdVersions = apis.getGroups().stream()
-            .filter(g -> g.getName().equals(group)).findFirst()
-            .map(V1APIGroup::getVersions).stream().flatMap(l -> l.stream())
-            .map(V1GroupVersionForDiscovery::getVersion).toList();
-        var coa = new CustomObjectsApi(client);
-        for (var crdVersion : crdVersions) {
-            var crdApiRes = coa.getAPIResources(group, crdVersion)
-                .getResources().stream().filter(r -> kind.equals(r.getKind()))
-                .findFirst();
-            if (crdApiRes.isEmpty()) {
-                continue;
-            }
-            @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
-            var crApi = new DynamicKubernetesApi(group,
-                crdVersion, crdApiRes.get().getName(), client);
-            var customResource = crApi.get(namespace, name);
-            if (customResource.isSuccess()) {
-                return Optional.of(crApi);
-            }
+    public static Optional<APIResource> context(ApiClient client,
+            String group, String version, String kind) throws ApiException {
+        var apiMatch = new Discovery(client).findAll().stream()
+            .filter(r -> r.getGroup().equals(group) && r.getKind().equals(kind)
+                && (Strings.isNullOrEmpty(version)
+                    || r.getVersions().contains(version)))
+            .findFirst();
+        if (apiMatch.isEmpty()) {
+            return Optional.empty();
         }
-        return Optional.empty();
+        var apiRes = apiMatch.get();
+        if (!Strings.isNullOrEmpty(version)) {
+            if (!apiRes.getVersions().contains(version)) {
+                return Optional.empty();
+            }
+            apiRes = new APIResource(apiRes.getGroup(), apiRes.getVersions(),
+                version, apiRes.getKind(), apiRes.getNamespaced(),
+                apiRes.getResourcePlural(), apiRes.getResourceSingular());
+        }
+        return Optional.of(apiRes);
     }
 
     /**
@@ -144,6 +137,7 @@ public class K8s {
      * @param meta the meta
      * @return the object
      */
+    @Deprecated
     public static <T extends KubernetesObject, LT extends KubernetesListObject>
             Optional<T>
             get(GenericKubernetesApi<T, LT> api, V1ObjectMeta meta) {
@@ -152,36 +146,6 @@ public class K8s {
             return Optional.of(response.getObject());
         }
         return Optional.empty();
-    }
-
-    /**
-     * Delete an object.
-     *
-     * @param <T> the generic type
-     * @param <LT> the generic type
-     * @param api the api
-     * @param object the object
-     */
-    public static <T extends KubernetesObject, LT extends KubernetesListObject>
-            void delete(GenericKubernetesApi<T, LT> api, T object)
-                    throws ApiException {
-        api.delete(object.getMetadata().getNamespace(),
-            object.getMetadata().getName()).throwsApiException();
-    }
-
-    /**
-     * Delete an object.
-     *
-     * @param <T> the generic type
-     * @param <LT> the generic type
-     * @param api the api
-     * @param object the object
-     */
-    public static <T extends KubernetesObject, LT extends KubernetesListObject>
-            void delete(GenericKubernetesApi<T, LT> api, T object,
-                    DeleteOptions options) throws ApiException {
-        api.delete(object.getMetadata().getNamespace(),
-            object.getMetadata().getName(), options).throwsApiException();
     }
 
     /**
@@ -213,12 +177,62 @@ public class K8s {
      * @return the v 1 object reference
      */
     public static V1ObjectReference
-            objectReference(DynamicKubernetesObject object) {
+            objectReference(KubernetesObject object) {
         return new V1ObjectReference().apiVersion(object.getApiVersion())
             .kind(object.getKind())
             .namespace(object.getMetadata().getNamespace())
             .name(object.getMetadata().getName())
             .resourceVersion(object.getMetadata().getResourceVersion())
             .uid(object.getMetadata().getUid());
+    }
+
+    /**
+     * Creates an event related to the object, adding reasonable defaults.
+     * 
+     *   * If `kind` is not set, it is set to "Event".
+     *   * If `metadata.namespace` is not set, it is set 
+     *     to the object's namespace.
+     *   * If neither `metadata.name` nor `matadata.generateName` are set,
+     *     set `generateName` to the object's name with a dash appended.
+     *   * If `reportingInstance` is not set, set it to the object's name.
+     *   * If `eventTime` is not set, set it to now.
+     *   * If `type` is not set, set it to "Normal"
+     *   * If `regarding` is not set, set it to the given object.
+     *
+     * @param event the event
+     * @throws ApiException 
+     */
+    @SuppressWarnings("PMD.NPathComplexity")
+    public static void createEvent(ApiClient client,
+            KubernetesObject object, EventsV1Event event)
+            throws ApiException {
+        if (Strings.isNullOrEmpty(event.getKind())) {
+            event.kind("Event");
+        }
+        if (event.getMetadata() == null) {
+            event.metadata(new V1ObjectMeta());
+        }
+        if (Strings.isNullOrEmpty(event.getMetadata().getNamespace())) {
+            event.getMetadata().namespace(object.getMetadata().getNamespace());
+        }
+        if (Strings.isNullOrEmpty(event.getMetadata().getName())
+            && Strings.isNullOrEmpty(event.getMetadata().getGenerateName())) {
+            event.getMetadata()
+                .generateName(object.getMetadata().getName() + "-");
+        }
+        if (Strings.isNullOrEmpty(event.getReportingInstance())) {
+            event.reportingInstance(object.getMetadata().getName());
+        }
+        if (event.getEventTime() == null) {
+            event.eventTime(OffsetDateTime.now());
+        }
+        if (Strings.isNullOrEmpty(event.getType())) {
+            event.type("Normal");
+        }
+        if (event.getRegarding() == null) {
+            event.regarding(objectReference(object));
+        }
+        new EventsV1Api(client).createNamespacedEvent(
+            object.getMetadata().getNamespace(), event, null, null, null, null);
     }
 }
