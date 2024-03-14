@@ -34,7 +34,6 @@ import io.kubernetes.client.openapi.models.V1ObjectReference;
 import io.kubernetes.client.util.Strings;
 import io.kubernetes.client.util.generic.GenericKubernetesApi;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
-import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import io.kubernetes.client.util.generic.options.DeleteOptions;
 import io.kubernetes.client.util.generic.options.PatchOptions;
 import java.io.Reader;
@@ -128,17 +127,6 @@ public class K8s {
                 apiRes.getResourcePlural(), apiRes.getResourceSingular());
         }
         return Optional.of(apiRes);
-    }
-
-    /**
-     * Convenience method for getting the status from a
-     * {@link DynamicKubernetesObject}. 
-     *
-     * @param object the object
-     * @return the JSON object describing the status
-     */
-    public static JsonObject status(K8sDynamicModel state) {
-        return state.data().getAsJsonObject("status");
     }
 
     /**

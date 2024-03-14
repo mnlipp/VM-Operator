@@ -97,6 +97,15 @@ public class K8sDynamicModel implements KubernetesObject {
         return data;
     }
 
+    /**
+     * Convenience method for getting the status. 
+     *
+     * @return the JSON object describing the status
+     */
+    public JsonObject status() {
+        return data.getAsJsonObject("status");
+    }
+
     @Override
     public String toString() {
         return data.toString();

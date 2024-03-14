@@ -195,7 +195,7 @@ public class StatusUpdater extends Component {
             return;
         }
         vmStub.updateStatus(vmDef.get(), from -> {
-            JsonObject status = K8s.status(from);
+            JsonObject status = from.status();
             status.getAsJsonArray("conditions").asList().stream()
                 .map(cond -> (JsonObject) cond).filter(cond -> "Running"
                     .equals(cond.get("type").getAsString()))
@@ -220,7 +220,7 @@ public class StatusUpdater extends Component {
             return;
         }
         vmStub.updateStatus(vmDef, from -> {
-            JsonObject status = K8s.status(from);
+            JsonObject status = from.status();
             status.getAsJsonArray("conditions").asList().stream()
                 .map(cond -> (JsonObject) cond)
                 .forEach(cond -> {
@@ -295,7 +295,7 @@ public class StatusUpdater extends Component {
             return;
         }
         vmStub.updateStatus(from -> {
-            JsonObject status = K8s.status(from);
+            JsonObject status = from.status();
             status.addProperty("ram",
                 new Quantity(new BigDecimal(event.size()), Format.BINARY_SI)
                     .toSuffixedString());
@@ -315,7 +315,7 @@ public class StatusUpdater extends Component {
             return;
         }
         vmStub.updateStatus(from -> {
-            JsonObject status = K8s.status(from);
+            JsonObject status = from.status();
             status.addProperty("cpus", event.usedCpus().size());
             return status;
         });
