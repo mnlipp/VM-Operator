@@ -34,7 +34,6 @@ import io.kubernetes.client.openapi.models.V1ObjectReference;
 import io.kubernetes.client.util.Strings;
 import io.kubernetes.client.util.generic.GenericKubernetesApi;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
-import io.kubernetes.client.util.generic.options.DeleteOptions;
 import io.kubernetes.client.util.generic.options.PatchOptions;
 import java.io.Reader;
 import java.net.HttpURLConnection;
@@ -147,36 +146,6 @@ public class K8s {
             return Optional.of(response.getObject());
         }
         return Optional.empty();
-    }
-
-    /**
-     * Delete an object.
-     *
-     * @param <T> the generic type
-     * @param <LT> the generic type
-     * @param api the api
-     * @param object the object
-     */
-    public static <T extends KubernetesObject, LT extends KubernetesListObject>
-            void delete(GenericKubernetesApi<T, LT> api, T object)
-                    throws ApiException {
-        api.delete(object.getMetadata().getNamespace(),
-            object.getMetadata().getName()).throwsApiException();
-    }
-
-    /**
-     * Delete an object.
-     *
-     * @param <T> the generic type
-     * @param <LT> the generic type
-     * @param api the api
-     * @param object the object
-     */
-    public static <T extends KubernetesObject, LT extends KubernetesListObject>
-            void delete(GenericKubernetesApi<T, LT> api, T object,
-                    DeleteOptions options) throws ApiException {
-        api.delete(object.getMetadata().getNamespace(),
-            object.getMetadata().getName(), options).throwsApiException();
     }
 
     /**
