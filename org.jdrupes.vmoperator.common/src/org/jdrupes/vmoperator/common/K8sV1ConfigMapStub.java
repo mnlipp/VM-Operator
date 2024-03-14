@@ -37,11 +37,24 @@ public class K8sV1ConfigMapStub
      * @param namespace the namespace
      * @param name the name
      */
-    public K8sV1ConfigMapStub(K8sClient client, String namespace,
+    protected K8sV1ConfigMapStub(K8sClient client, String namespace,
             String name) {
         super(V1ConfigMap.class, V1ConfigMapList.class, client,
             new APIResource("", List.of("v1"), "v1", "ConfigMap", true,
                 "configmaps", "configmap"),
             namespace, name);
+    }
+
+    /**
+     * Gets the stub for the given namespace and name.
+     *
+     * @param client the client
+     * @param namespace the namespace
+     * @param name the name
+     * @return the config map stub
+     */
+    public static K8sV1ConfigMapStub get(K8sClient client, String namespace,
+            String name) {
+        return new K8sV1ConfigMapStub(client, namespace, name);
     }
 }

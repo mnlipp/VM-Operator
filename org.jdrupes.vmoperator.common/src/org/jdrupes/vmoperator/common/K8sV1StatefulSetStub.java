@@ -37,11 +37,24 @@ public class K8sV1StatefulSetStub
      * @param namespace the namespace
      * @param name the name
      */
-    public K8sV1StatefulSetStub(K8sClient client, String namespace,
+    protected K8sV1StatefulSetStub(K8sClient client, String namespace,
             String name) {
         super(V1StatefulSet.class, V1StatefulSetList.class, client,
             new APIResource("apps", List.of("v1"), "v1", "StatefulSet", true,
                 "statefulsets", "statefulset"),
             namespace, name);
+    }
+
+    /**
+     * Gets the stub for the given namespace and name.
+     *
+     * @param client the client
+     * @param namespace the namespace
+     * @param name the name
+     * @return the stateful set stub
+     */
+    public static K8sV1StatefulSetStub get(K8sClient client, String namespace,
+            String name) {
+        return new K8sV1StatefulSetStub(client, namespace, name);
     }
 }

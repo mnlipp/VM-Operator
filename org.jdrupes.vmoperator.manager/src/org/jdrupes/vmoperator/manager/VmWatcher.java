@@ -49,10 +49,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
-import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
+import org.jdrupes.vmoperator.common.K8sV1PodStub;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
@@ -310,7 +310,7 @@ public class VmWatcher extends Component {
         });
     }
 
-    private void addDynamicData(ApiClient client, K8sDynamicModel vmState) {
+    private void addDynamicData(K8sClient client, K8sDynamicModel vmState) {
         var rootNode = GsonPtr.to(vmState.data()).get(JsonObject.class);
         rootNode.addProperty("nodeName", "");
 
@@ -331,10 +331,17 @@ public class VmWatcher extends Component {
         podSearch.setLabelSelector("app.kubernetes.io/name=" + APP_NAME
             + ",app.kubernetes.io/component=" + APP_NAME
             + ",app.kubernetes.io/instance=" + vmState.getMetadata().getName());
-        var podList = K8s.podApi(client).list(namespaceToWatch, podSearch);
-        podList.getObject().getItems().stream().forEach(pod -> {
-            rootNode.addProperty("nodeName", pod.getSpec().getNodeName());
-        });
+        try {
+            var podList
+                = K8sV1PodStub.list(client, namespaceToWatch, podSearch);
+            for (var podStub : podList) {
+                rootNode.addProperty("nodeName",
+                    podStub.model().get().getSpec().getNodeName());
+            }
+        } catch (ApiException e) {
+            logger.log(Level.WARNING, e,
+                () -> "Cannot access node information: " + e.getMessage());
+        }
     }
 
     /**

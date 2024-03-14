@@ -80,7 +80,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 
         // If exists apply changes only when transitioning state
         // or not running.
-        var stsStub = new K8sV1StatefulSetStub(channel.client(),
+        var stsStub = K8sV1StatefulSetStub.get(channel.client(),
             metadata.getNamespace(), metadata.getName());
         stsStub.model().ifPresent(sts -> {
             var current = sts.getSpec().getReplicas();

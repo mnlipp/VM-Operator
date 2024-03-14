@@ -1,6 +1,6 @@
 /*
  * VM-Operator
- * Copyright (C) 2023 Michael N. Lipp
+ * Copyright (C) 2023,2024 Michael N. Lipp
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -31,8 +31,6 @@ import io.kubernetes.client.openapi.apis.EventsV1Api;
 import io.kubernetes.client.openapi.models.EventsV1Event;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1ObjectReference;
-import io.kubernetes.client.openapi.models.V1Pod;
-import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.util.Strings;
 import io.kubernetes.client.util.generic.GenericKubernetesApi;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
@@ -54,18 +52,6 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 @SuppressWarnings({ "PMD.ShortClassName", "PMD.UseUtilityClass",
     "PMD.DataflowAnomalyAnalysis" })
 public class K8s {
-
-    /**
-     * Get pod API.
-     *
-     * @param client the client
-     * @return the generic kubernetes api
-     */
-    public static GenericKubernetesApi<V1Pod, V1PodList>
-            podApi(ApiClient client) {
-        return new GenericKubernetesApi<>(V1Pod.class, V1PodList.class, "",
-            "v1", "pods", client);
-    }
 
     /**
      * Returns the result from an API call as {@link Optional} if the

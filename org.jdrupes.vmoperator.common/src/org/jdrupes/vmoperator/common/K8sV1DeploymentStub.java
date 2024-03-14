@@ -40,12 +40,25 @@ public class K8sV1DeploymentStub
      * @param namespace the namespace
      * @param name the name
      */
-    public K8sV1DeploymentStub(K8sClient client, String namespace,
+    protected K8sV1DeploymentStub(K8sClient client, String namespace,
             String name) {
         super(V1Deployment.class, V1DeploymentList.class, client,
             new APIResource("apps", List.of("v1"), "v1", "Pod", true,
                 "deployments", "deployment"),
             namespace, name);
+    }
+
+    /**
+     * Gets the stub for the given namespace and name.
+     *
+     * @param client the client
+     * @param namespace the namespace
+     * @param name the name
+     * @return the deployment stub
+     */
+    public static K8sV1DeploymentStub get(K8sClient client, String namespace,
+            String name) {
+        return new K8sV1DeploymentStub(client, namespace, name);
     }
 
     /**
