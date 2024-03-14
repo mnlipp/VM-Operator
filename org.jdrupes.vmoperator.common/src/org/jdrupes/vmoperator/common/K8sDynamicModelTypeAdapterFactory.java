@@ -29,7 +29,6 @@ import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.lang.reflect.Type;
 
-// TODO: Auto-generated Javadoc
 /**
  * A factory for creating K8sDynamicModel(s) objects.
  */

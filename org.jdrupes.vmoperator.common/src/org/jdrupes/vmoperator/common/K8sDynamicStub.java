@@ -24,7 +24,10 @@ import io.kubernetes.client.openapi.ApiException;
 import java.io.Reader;
 
 /**
- * A stub for namespaced custom objects.
+ * A stub for namespaced custom objects. It uses a dynamic model
+ * (see {@link K8sDynamicModel}) for representing the object's
+ * state and can therefore be used for any kind of object, especially
+ * custom objects.
  */
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class K8sDynamicStub
@@ -71,7 +74,7 @@ public class K8sDynamicStub
      * Get a dynamic object stub.
      *
      * @param client the client
-     * @param gvk the group, version and kind
+     * @param context the context
      * @param namespace the namespace
      * @param name the name
      * @return the stub if the object exists

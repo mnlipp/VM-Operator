@@ -37,7 +37,9 @@ import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * A stub for namespaced custom objects.
+ * A stub for namespaced custom objects. This stub provides the
+ * functions common to all Kubernetes objects, but uses variables
+ * for all types. This class should be used as base class only.
  *
  * @param <O> the generic type
  * @param <L> the generic type
@@ -56,8 +58,8 @@ public class K8sGenericStub<O extends KubernetesObject,
 
     /**
      * Get a namespaced object stub. If the version in parameter
-     * `gvk` is an empty string, the stub refers to the first object with
-     * matching group and kind. 
+     * `gvk` is an empty string, the stub refers to the first object 
+     * found with matching group and kind. 
      *
      * @param <O> the object type
      * @param <L> the object list type
@@ -186,9 +188,11 @@ public class K8sGenericStub<O extends KubernetesObject,
 
     /**
      * Instantiates a new namespaced custom object stub.
-     * @param group the group
-     * @param version the version
-     * @param plural the plural
+     *
+     * @param objectClass the object class
+     * @param objectListClass the object list class
+     * @param client the client
+     * @param context the context
      * @param namespace the namespace
      * @param name the name
      */
@@ -396,10 +400,7 @@ public class K8sGenericStub<O extends KubernetesObject,
         /**
          * Gets a new stub.
          *
-         * @param objectClass the object class
-         * @param objectListClass the object list class
          * @param client the client
-         * @param context the API resource
          * @param namespace the namespace
          * @param name the name
          * @return the result

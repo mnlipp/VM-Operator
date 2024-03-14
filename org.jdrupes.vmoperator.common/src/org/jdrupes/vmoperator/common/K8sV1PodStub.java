@@ -63,16 +63,9 @@ public class K8sV1PodStub extends K8sGenericStub<V1Pod, V1PodList> {
      * Get the stubs for the objects in the given namespace that match
      * the criteria from the given options.
      *
-     * @param <O> the object type
-     * @param <L> the object list type
-     * @param <R> the stub type
-     * @param objectClass the object class
-     * @param objectListClass the object list class
      * @param client the client
-     * @param context the context
      * @param namespace the namespace
      * @param options the options
-     * @param provider the provider
      * @return the collection
      * @throws ApiException the api exception
      */

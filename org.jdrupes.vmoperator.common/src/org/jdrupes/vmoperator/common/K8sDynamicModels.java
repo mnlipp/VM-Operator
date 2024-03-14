@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Represents a list of Kubernetes object each of which is
+ * Represents a list of Kubernetes objects each of which is
  * represented using a JSON data structure.
  * Some information that is common to all Kubernetes objects,
  * notably the metadata, is made available through the methods
