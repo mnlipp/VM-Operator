@@ -93,7 +93,7 @@
 <span class="source-line-no">080</span><span id="line-80"></span>
 <span class="source-line-no">081</span><span id="line-81">        // If exists apply changes only when transitioning state</span>
 <span class="source-line-no">082</span><span id="line-82">        // or not running.</span>
-<span class="source-line-no">083</span><span id="line-83">        var stsStub = new K8sV1StatefulSetStub(channel.client(),</span>
+<span class="source-line-no">083</span><span id="line-83">        var stsStub = K8sV1StatefulSetStub.get(channel.client(),</span>
 <span class="source-line-no">084</span><span id="line-84">            metadata.getNamespace(), metadata.getName());</span>
 <span class="source-line-no">085</span><span id="line-85">        stsStub.model().ifPresent(sts -&gt; {</span>
 <span class="source-line-no">086</span><span id="line-86">            var current = sts.getSpec().getReplicas();</span>

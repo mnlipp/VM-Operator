@@ -62,10 +62,10 @@
 <span class="source-line-no">049</span><span id="line-49">import java.util.concurrent.ConcurrentHashMap;</span>
 <span class="source-line-no">050</span><span id="line-50">import java.util.logging.Level;</span>
 <span class="source-line-no">051</span><span id="line-51">import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;</span>
-<span class="source-line-no">052</span><span id="line-52">import org.jdrupes.vmoperator.common.K8s;</span>
-<span class="source-line-no">053</span><span id="line-53">import org.jdrupes.vmoperator.common.K8sClient;</span>
-<span class="source-line-no">054</span><span id="line-54">import org.jdrupes.vmoperator.common.K8sDynamicModel;</span>
-<span class="source-line-no">055</span><span id="line-55">import org.jdrupes.vmoperator.common.K8sDynamicStub;</span>
+<span class="source-line-no">052</span><span id="line-52">import org.jdrupes.vmoperator.common.K8sClient;</span>
+<span class="source-line-no">053</span><span id="line-53">import org.jdrupes.vmoperator.common.K8sDynamicModel;</span>
+<span class="source-line-no">054</span><span id="line-54">import org.jdrupes.vmoperator.common.K8sDynamicStub;</span>
+<span class="source-line-no">055</span><span id="line-55">import org.jdrupes.vmoperator.common.K8sV1PodStub;</span>
 <span class="source-line-no">056</span><span id="line-56">import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;</span>
 <span class="source-line-no">057</span><span id="line-57">import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM;</span>
 <span class="source-line-no">058</span><span id="line-58">import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;</span>
@@ -323,7 +323,7 @@
 <span class="source-line-no">310</span><span id="line-310">        });</span>
 <span class="source-line-no">311</span><span id="line-311">    }</span>
 <span class="source-line-no">312</span><span id="line-312"></span>
-<span class="source-line-no">313</span><span id="line-313">    private void addDynamicData(ApiClient client, K8sDynamicModel vmState) {</span>
+<span class="source-line-no">313</span><span id="line-313">    private void addDynamicData(K8sClient client, K8sDynamicModel vmState) {</span>
 <span class="source-line-no">314</span><span id="line-314">        var rootNode = GsonPtr.to(vmState.data()).get(JsonObject.class);</span>
 <span class="source-line-no">315</span><span id="line-315">        rootNode.addProperty("nodeName", "");</span>
 <span class="source-line-no">316</span><span id="line-316"></span>
@@ -344,26 +344,33 @@
 <span class="source-line-no">331</span><span id="line-331">        podSearch.setLabelSelector("app.kubernetes.io/name=" + APP_NAME</span>
 <span class="source-line-no">332</span><span id="line-332">            + ",app.kubernetes.io/component=" + APP_NAME</span>
 <span class="source-line-no">333</span><span id="line-333">            + ",app.kubernetes.io/instance=" + vmState.getMetadata().getName());</span>
-<span class="source-line-no">334</span><span id="line-334">        var podList = K8s.podApi(client).list(namespaceToWatch, podSearch);</span>
-<span class="source-line-no">335</span><span id="line-335">        podList.getObject().getItems().stream().forEach(pod -&gt; {</span>
-<span class="source-line-no">336</span><span id="line-336">            rootNode.addProperty("nodeName", pod.getSpec().getNodeName());</span>
-<span class="source-line-no">337</span><span id="line-337">        });</span>
-<span class="source-line-no">338</span><span id="line-338">    }</span>
-<span class="source-line-no">339</span><span id="line-339"></span>
-<span class="source-line-no">340</span><span id="line-340">    /**</span>
-<span class="source-line-no">341</span><span id="line-341">     * Remove VM channel when VM is deleted.</span>
-<span class="source-line-no">342</span><span id="line-342">     *</span>
-<span class="source-line-no">343</span><span id="line-343">     * @param event the event</span>
-<span class="source-line-no">344</span><span id="line-344">     * @param channel the channel</span>
-<span class="source-line-no">345</span><span id="line-345">     */</span>
-<span class="source-line-no">346</span><span id="line-346">    @Handler(priority = -10_000)</span>
-<span class="source-line-no">347</span><span id="line-347">    public void onVmDefChanged(VmDefChanged event, VmChannel channel) {</span>
-<span class="source-line-no">348</span><span id="line-348">        if (event.type() == Type.DELETED) {</span>
-<span class="source-line-no">349</span><span id="line-349">            channels.remove(event.vmDefinition().getMetadata().getName());</span>
-<span class="source-line-no">350</span><span id="line-350">        }</span>
-<span class="source-line-no">351</span><span id="line-351">    }</span>
-<span class="source-line-no">352</span><span id="line-352"></span>
-<span class="source-line-no">353</span><span id="line-353">}</span>
+<span class="source-line-no">334</span><span id="line-334">        try {</span>
+<span class="source-line-no">335</span><span id="line-335">            var podList</span>
+<span class="source-line-no">336</span><span id="line-336">                = K8sV1PodStub.list(client, namespaceToWatch, podSearch);</span>
+<span class="source-line-no">337</span><span id="line-337">            for (var podStub : podList) {</span>
+<span class="source-line-no">338</span><span id="line-338">                rootNode.addProperty("nodeName",</span>
+<span class="source-line-no">339</span><span id="line-339">                    podStub.model().get().getSpec().getNodeName());</span>
+<span class="source-line-no">340</span><span id="line-340">            }</span>
+<span class="source-line-no">341</span><span id="line-341">        } catch (ApiException e) {</span>
+<span class="source-line-no">342</span><span id="line-342">            logger.log(Level.WARNING, e,</span>
+<span class="source-line-no">343</span><span id="line-343">                () -&gt; "Cannot access node information: " + e.getMessage());</span>
+<span class="source-line-no">344</span><span id="line-344">        }</span>
+<span class="source-line-no">345</span><span id="line-345">    }</span>
+<span class="source-line-no">346</span><span id="line-346"></span>
+<span class="source-line-no">347</span><span id="line-347">    /**</span>
+<span class="source-line-no">348</span><span id="line-348">     * Remove VM channel when VM is deleted.</span>
+<span class="source-line-no">349</span><span id="line-349">     *</span>
+<span class="source-line-no">350</span><span id="line-350">     * @param event the event</span>
+<span class="source-line-no">351</span><span id="line-351">     * @param channel the channel</span>
+<span class="source-line-no">352</span><span id="line-352">     */</span>
+<span class="source-line-no">353</span><span id="line-353">    @Handler(priority = -10_000)</span>
+<span class="source-line-no">354</span><span id="line-354">    public void onVmDefChanged(VmDefChanged event, VmChannel channel) {</span>
+<span class="source-line-no">355</span><span id="line-355">        if (event.type() == Type.DELETED) {</span>
+<span class="source-line-no">356</span><span id="line-356">            channels.remove(event.vmDefinition().getMetadata().getName());</span>
+<span class="source-line-no">357</span><span id="line-357">        }</span>
+<span class="source-line-no">358</span><span id="line-358">    }</span>
+<span class="source-line-no">359</span><span id="line-359"></span>
+<span class="source-line-no">360</span><span id="line-360">}</span>
 
 
 
