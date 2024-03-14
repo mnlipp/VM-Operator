@@ -38,19 +38,19 @@
 <span class="source-line-no">025</span><span id="line-25">import freemarker.template.TemplateNotFoundException;</span>
 <span class="source-line-no">026</span><span id="line-26">import io.kubernetes.client.custom.Quantity;</span>
 <span class="source-line-no">027</span><span id="line-27">import io.kubernetes.client.custom.Quantity.Format;</span>
-<span class="source-line-no">028</span><span id="line-28">import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;</span>
-<span class="source-line-no">029</span><span id="line-29">import java.io.IOException;</span>
-<span class="source-line-no">030</span><span id="line-30">import java.math.BigDecimal;</span>
-<span class="source-line-no">031</span><span id="line-31">import java.math.BigInteger;</span>
-<span class="source-line-no">032</span><span id="line-32">import java.time.Duration;</span>
-<span class="source-line-no">033</span><span id="line-33">import java.time.Instant;</span>
-<span class="source-line-no">034</span><span id="line-34">import java.util.HashSet;</span>
-<span class="source-line-no">035</span><span id="line-35">import java.util.Map;</span>
-<span class="source-line-no">036</span><span id="line-36">import java.util.Optional;</span>
-<span class="source-line-no">037</span><span id="line-37">import java.util.Set;</span>
-<span class="source-line-no">038</span><span id="line-38">import java.util.concurrent.ConcurrentHashMap;</span>
-<span class="source-line-no">039</span><span id="line-39">import org.jdrupes.json.JsonBeanDecoder;</span>
-<span class="source-line-no">040</span><span id="line-40">import org.jdrupes.json.JsonDecodeException;</span>
+<span class="source-line-no">028</span><span id="line-28">import java.io.IOException;</span>
+<span class="source-line-no">029</span><span id="line-29">import java.math.BigDecimal;</span>
+<span class="source-line-no">030</span><span id="line-30">import java.math.BigInteger;</span>
+<span class="source-line-no">031</span><span id="line-31">import java.time.Duration;</span>
+<span class="source-line-no">032</span><span id="line-32">import java.time.Instant;</span>
+<span class="source-line-no">033</span><span id="line-33">import java.util.HashSet;</span>
+<span class="source-line-no">034</span><span id="line-34">import java.util.Map;</span>
+<span class="source-line-no">035</span><span id="line-35">import java.util.Optional;</span>
+<span class="source-line-no">036</span><span id="line-36">import java.util.Set;</span>
+<span class="source-line-no">037</span><span id="line-37">import java.util.concurrent.ConcurrentHashMap;</span>
+<span class="source-line-no">038</span><span id="line-38">import org.jdrupes.json.JsonBeanDecoder;</span>
+<span class="source-line-no">039</span><span id="line-39">import org.jdrupes.json.JsonDecodeException;</span>
+<span class="source-line-no">040</span><span id="line-40">import org.jdrupes.vmoperator.common.K8sDynamicModel;</span>
 <span class="source-line-no">041</span><span id="line-41">import org.jdrupes.vmoperator.manager.events.ModifyVm;</span>
 <span class="source-line-no">042</span><span id="line-42">import org.jdrupes.vmoperator.manager.events.VmChannel;</span>
 <span class="source-line-no">043</span><span id="line-43">import org.jdrupes.vmoperator.manager.events.VmDefChanged;</span>
@@ -59,353 +59,358 @@
 <span class="source-line-no">046</span><span id="line-46">import org.jgrapes.core.Channel;</span>
 <span class="source-line-no">047</span><span id="line-47">import org.jgrapes.core.Event;</span>
 <span class="source-line-no">048</span><span id="line-48">import org.jgrapes.core.Manager;</span>
-<span class="source-line-no">049</span><span id="line-49">import org.jgrapes.core.NamedChannel;</span>
-<span class="source-line-no">050</span><span id="line-50">import org.jgrapes.core.annotation.Handler;</span>
-<span class="source-line-no">051</span><span id="line-51">import org.jgrapes.webconsole.base.Conlet.RenderMode;</span>
-<span class="source-line-no">052</span><span id="line-52">import org.jgrapes.webconsole.base.ConletBaseModel;</span>
-<span class="source-line-no">053</span><span id="line-53">import org.jgrapes.webconsole.base.ConsoleConnection;</span>
-<span class="source-line-no">054</span><span id="line-54">import org.jgrapes.webconsole.base.events.AddConletRequest;</span>
-<span class="source-line-no">055</span><span id="line-55">import org.jgrapes.webconsole.base.events.AddConletType;</span>
-<span class="source-line-no">056</span><span id="line-56">import org.jgrapes.webconsole.base.events.AddPageResources.ScriptResource;</span>
-<span class="source-line-no">057</span><span id="line-57">import org.jgrapes.webconsole.base.events.ConsoleReady;</span>
-<span class="source-line-no">058</span><span id="line-58">import org.jgrapes.webconsole.base.events.NotifyConletModel;</span>
-<span class="source-line-no">059</span><span id="line-59">import org.jgrapes.webconsole.base.events.NotifyConletView;</span>
-<span class="source-line-no">060</span><span id="line-60">import org.jgrapes.webconsole.base.events.RenderConlet;</span>
-<span class="source-line-no">061</span><span id="line-61">import org.jgrapes.webconsole.base.events.RenderConletRequestBase;</span>
-<span class="source-line-no">062</span><span id="line-62">import org.jgrapes.webconsole.base.events.SetLocale;</span>
-<span class="source-line-no">063</span><span id="line-63">import org.jgrapes.webconsole.base.freemarker.FreeMarkerConlet;</span>
-<span class="source-line-no">064</span><span id="line-64"></span>
-<span class="source-line-no">065</span><span id="line-65">/**</span>
-<span class="source-line-no">066</span><span id="line-66"> * The Class VmConlet.</span>
-<span class="source-line-no">067</span><span id="line-67"> */</span>
-<span class="source-line-no">068</span><span id="line-68">@SuppressWarnings("PMD.DataflowAnomalyAnalysis")</span>
-<span class="source-line-no">069</span><span id="line-69">public class VmConlet extends FreeMarkerConlet&lt;VmConlet.VmsModel&gt; {</span>
-<span class="source-line-no">070</span><span id="line-70"></span>
-<span class="source-line-no">071</span><span id="line-71">    private static final Set&lt;RenderMode&gt; MODES = RenderMode.asSet(</span>
-<span class="source-line-no">072</span><span id="line-72">        RenderMode.Preview, RenderMode.View);</span>
-<span class="source-line-no">073</span><span id="line-73">    private final Map&lt;String, DynamicKubernetesObject&gt; vmInfos</span>
-<span class="source-line-no">074</span><span id="line-74">        = new ConcurrentHashMap&lt;&gt;();</span>
-<span class="source-line-no">075</span><span id="line-75">    private final TimeSeries summarySeries = new TimeSeries(Duration.ofDays(1));</span>
-<span class="source-line-no">076</span><span id="line-76">    private Summary cachedSummary;</span>
-<span class="source-line-no">077</span><span id="line-77"></span>
-<span class="source-line-no">078</span><span id="line-78">    /**</span>
-<span class="source-line-no">079</span><span id="line-79">     * The periodically generated update event.</span>
-<span class="source-line-no">080</span><span id="line-80">     */</span>
-<span class="source-line-no">081</span><span id="line-81">    public static class Update extends Event&lt;Void&gt; {</span>
-<span class="source-line-no">082</span><span id="line-82">    }</span>
-<span class="source-line-no">083</span><span id="line-83"></span>
-<span class="source-line-no">084</span><span id="line-84">    /**</span>
-<span class="source-line-no">085</span><span id="line-85">     * Creates a new component with its channel set to the given channel.</span>
-<span class="source-line-no">086</span><span id="line-86">     * </span>
-<span class="source-line-no">087</span><span id="line-87">     * @param componentChannel the channel that the component's handlers listen</span>
-<span class="source-line-no">088</span><span id="line-88">     * on by default and that {@link Manager#fire(Event, Channel...)}</span>
-<span class="source-line-no">089</span><span id="line-89">     * sends the event to</span>
-<span class="source-line-no">090</span><span id="line-90">     */</span>
-<span class="source-line-no">091</span><span id="line-91">    public VmConlet(Channel componentChannel) {</span>
-<span class="source-line-no">092</span><span id="line-92">        super(componentChannel);</span>
-<span class="source-line-no">093</span><span id="line-93">        setPeriodicRefresh(Duration.ofMinutes(1), () -&gt; new Update());</span>
-<span class="source-line-no">094</span><span id="line-94">    }</span>
-<span class="source-line-no">095</span><span id="line-95"></span>
-<span class="source-line-no">096</span><span id="line-96">    /**</span>
-<span class="source-line-no">097</span><span id="line-97">     * On {@link ConsoleReady}, fire the {@link AddConletType}.</span>
-<span class="source-line-no">098</span><span id="line-98">     *</span>
-<span class="source-line-no">099</span><span id="line-99">     * @param event the event</span>
-<span class="source-line-no">100</span><span id="line-100">     * @param channel the channel</span>
-<span class="source-line-no">101</span><span id="line-101">     * @throws TemplateNotFoundException the template not found exception</span>
-<span class="source-line-no">102</span><span id="line-102">     * @throws MalformedTemplateNameException the malformed template name</span>
-<span class="source-line-no">103</span><span id="line-103">     *             exception</span>
-<span class="source-line-no">104</span><span id="line-104">     * @throws ParseException the parse exception</span>
-<span class="source-line-no">105</span><span id="line-105">     * @throws IOException Signals that an I/O exception has occurred.</span>
-<span class="source-line-no">106</span><span id="line-106">     */</span>
-<span class="source-line-no">107</span><span id="line-107">    @Handler</span>
-<span class="source-line-no">108</span><span id="line-108">    public void onConsoleReady(ConsoleReady event, ConsoleConnection channel)</span>
-<span class="source-line-no">109</span><span id="line-109">            throws TemplateNotFoundException, MalformedTemplateNameException,</span>
-<span class="source-line-no">110</span><span id="line-110">            ParseException, IOException {</span>
-<span class="source-line-no">111</span><span id="line-111">        // Add conlet resources to page</span>
-<span class="source-line-no">112</span><span id="line-112">        channel.respond(new AddConletType(type())</span>
-<span class="source-line-no">113</span><span id="line-113">            .setDisplayNames(</span>
-<span class="source-line-no">114</span><span id="line-114">                localizations(channel.supportedLocales(), "conletName"))</span>
-<span class="source-line-no">115</span><span id="line-115">            .addRenderMode(RenderMode.Preview)</span>
-<span class="source-line-no">116</span><span id="line-116">            .addScript(new ScriptResource().setScriptType("module")</span>
-<span class="source-line-no">117</span><span id="line-117">                .setScriptUri(event.renderSupport().conletResource(</span>
-<span class="source-line-no">118</span><span id="line-118">                    type(), "VmConlet-functions.js"))));</span>
-<span class="source-line-no">119</span><span id="line-119">    }</span>
-<span class="source-line-no">120</span><span id="line-120"></span>
-<span class="source-line-no">121</span><span id="line-121">    @Override</span>
-<span class="source-line-no">122</span><span id="line-122">    protected Optional&lt;VmsModel&gt; createNewState(AddConletRequest event,</span>
-<span class="source-line-no">123</span><span id="line-123">            ConsoleConnection connection, String conletId) throws Exception {</span>
-<span class="source-line-no">124</span><span id="line-124">        return Optional.of(new VmsModel(conletId));</span>
-<span class="source-line-no">125</span><span id="line-125">    }</span>
-<span class="source-line-no">126</span><span id="line-126"></span>
-<span class="source-line-no">127</span><span id="line-127">    @Override</span>
-<span class="source-line-no">128</span><span id="line-128">    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")</span>
-<span class="source-line-no">129</span><span id="line-129">    protected Set&lt;RenderMode&gt; doRenderConlet(RenderConletRequestBase&lt;?&gt; event,</span>
-<span class="source-line-no">130</span><span id="line-130">            ConsoleConnection channel, String conletId, VmsModel conletState)</span>
-<span class="source-line-no">131</span><span id="line-131">            throws Exception {</span>
-<span class="source-line-no">132</span><span id="line-132">        Set&lt;RenderMode&gt; renderedAs = new HashSet&lt;&gt;();</span>
-<span class="source-line-no">133</span><span id="line-133">        boolean sendVmInfos = false;</span>
-<span class="source-line-no">134</span><span id="line-134">        if (event.renderAs().contains(RenderMode.Preview)) {</span>
-<span class="source-line-no">135</span><span id="line-135">            Template tpl</span>
-<span class="source-line-no">136</span><span id="line-136">                = freemarkerConfig().getTemplate("VmConlet-preview.ftl.html");</span>
-<span class="source-line-no">137</span><span id="line-137">            channel.respond(new RenderConlet(type(), conletId,</span>
-<span class="source-line-no">138</span><span id="line-138">                processTemplate(event, tpl,</span>
-<span class="source-line-no">139</span><span id="line-139">                    fmModel(event, channel, conletId, conletState)))</span>
-<span class="source-line-no">140</span><span id="line-140">                        .setRenderAs(</span>
-<span class="source-line-no">141</span><span id="line-141">                            RenderMode.Preview.addModifiers(event.renderAs()))</span>
-<span class="source-line-no">142</span><span id="line-142">                        .setSupportedModes(MODES));</span>
-<span class="source-line-no">143</span><span id="line-143">            renderedAs.add(RenderMode.View);</span>
-<span class="source-line-no">144</span><span id="line-144">            channel.respond(new NotifyConletView(type(),</span>
-<span class="source-line-no">145</span><span id="line-145">                conletId, "summarySeries", summarySeries.entries()));</span>
-<span class="source-line-no">146</span><span id="line-146">            var summary = evaluateSummary(false);</span>
-<span class="source-line-no">147</span><span id="line-147">            channel.respond(new NotifyConletView(type(),</span>
-<span class="source-line-no">148</span><span id="line-148">                conletId, "updateSummary", summary));</span>
-<span class="source-line-no">149</span><span id="line-149">            sendVmInfos = true;</span>
-<span class="source-line-no">150</span><span id="line-150">        }</span>
-<span class="source-line-no">151</span><span id="line-151">        if (event.renderAs().contains(RenderMode.View)) {</span>
-<span class="source-line-no">152</span><span id="line-152">            Template tpl</span>
-<span class="source-line-no">153</span><span id="line-153">                = freemarkerConfig().getTemplate("VmConlet-view.ftl.html");</span>
-<span class="source-line-no">154</span><span id="line-154">            channel.respond(new RenderConlet(type(), conletId,</span>
-<span class="source-line-no">155</span><span id="line-155">                processTemplate(event, tpl,</span>
-<span class="source-line-no">156</span><span id="line-156">                    fmModel(event, channel, conletId, conletState)))</span>
-<span class="source-line-no">157</span><span id="line-157">                        .setRenderAs(</span>
-<span class="source-line-no">158</span><span id="line-158">                            RenderMode.View.addModifiers(event.renderAs()))</span>
-<span class="source-line-no">159</span><span id="line-159">                        .setSupportedModes(MODES));</span>
-<span class="source-line-no">160</span><span id="line-160">            renderedAs.add(RenderMode.View);</span>
-<span class="source-line-no">161</span><span id="line-161">            sendVmInfos = true;</span>
-<span class="source-line-no">162</span><span id="line-162">        }</span>
-<span class="source-line-no">163</span><span id="line-163">        if (sendVmInfos) {</span>
-<span class="source-line-no">164</span><span id="line-164">            for (var vmInfo : vmInfos.values()) {</span>
-<span class="source-line-no">165</span><span id="line-165">                var def = JsonBeanDecoder.create(vmInfo.getRaw().toString())</span>
-<span class="source-line-no">166</span><span id="line-166">                    .readObject();</span>
-<span class="source-line-no">167</span><span id="line-167">                channel.respond(new NotifyConletView(type(),</span>
-<span class="source-line-no">168</span><span id="line-168">                    conletId, "updateVm", def));</span>
-<span class="source-line-no">169</span><span id="line-169">            }</span>
-<span class="source-line-no">170</span><span id="line-170">        }</span>
-<span class="source-line-no">171</span><span id="line-171"></span>
-<span class="source-line-no">172</span><span id="line-172">        return renderedAs;</span>
-<span class="source-line-no">173</span><span id="line-173">    }</span>
-<span class="source-line-no">174</span><span id="line-174"></span>
-<span class="source-line-no">175</span><span id="line-175">    /**</span>
-<span class="source-line-no">176</span><span id="line-176">     * Track the VM definitions.</span>
-<span class="source-line-no">177</span><span id="line-177">     *</span>
-<span class="source-line-no">178</span><span id="line-178">     * @param event the event</span>
-<span class="source-line-no">179</span><span id="line-179">     * @param channel the channel</span>
-<span class="source-line-no">180</span><span id="line-180">     * @throws JsonDecodeException the json decode exception</span>
-<span class="source-line-no">181</span><span id="line-181">     * @throws IOException </span>
-<span class="source-line-no">182</span><span id="line-182">     */</span>
-<span class="source-line-no">183</span><span id="line-183">    @Handler(namedChannels = "manager")</span>
-<span class="source-line-no">184</span><span id="line-184">    @SuppressWarnings({ "PMD.ConfusingTernary", "PMD.CognitiveComplexity",</span>
-<span class="source-line-no">185</span><span id="line-185">        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.AvoidDuplicateLiterals" })</span>
-<span class="source-line-no">186</span><span id="line-186">    public void onVmDefChanged(VmDefChanged event, VmChannel channel)</span>
-<span class="source-line-no">187</span><span id="line-187">            throws JsonDecodeException, IOException {</span>
-<span class="source-line-no">188</span><span id="line-188">        if (event.type() == Type.DELETED) {</span>
-<span class="source-line-no">189</span><span id="line-189">            var vmName = event.vmDefinition().getMetadata().getName();</span>
-<span class="source-line-no">190</span><span id="line-190">            vmInfos.remove(vmName);</span>
-<span class="source-line-no">191</span><span id="line-191">            for (var entry : conletIdsByConsoleConnection().entrySet()) {</span>
-<span class="source-line-no">192</span><span id="line-192">                for (String conletId : entry.getValue()) {</span>
-<span class="source-line-no">193</span><span id="line-193">                    entry.getKey().respond(new NotifyConletView(type(),</span>
-<span class="source-line-no">194</span><span id="line-194">                        conletId, "removeVm", vmName));</span>
-<span class="source-line-no">195</span><span id="line-195">                }</span>
-<span class="source-line-no">196</span><span id="line-196">            }</span>
-<span class="source-line-no">197</span><span id="line-197">        } else {</span>
-<span class="source-line-no">198</span><span id="line-198">            var vmDef = convertQuantities(event);</span>
-<span class="source-line-no">199</span><span id="line-199">            var def = JsonBeanDecoder.create(vmDef.getRaw().toString())</span>
-<span class="source-line-no">200</span><span id="line-200">                .readObject();</span>
-<span class="source-line-no">201</span><span id="line-201">            for (var entry : conletIdsByConsoleConnection().entrySet()) {</span>
-<span class="source-line-no">202</span><span id="line-202">                for (String conletId : entry.getValue()) {</span>
-<span class="source-line-no">203</span><span id="line-203">                    entry.getKey().respond(new NotifyConletView(type(),</span>
-<span class="source-line-no">204</span><span id="line-204">                        conletId, "updateVm", def));</span>
-<span class="source-line-no">205</span><span id="line-205">                }</span>
-<span class="source-line-no">206</span><span id="line-206">            }</span>
-<span class="source-line-no">207</span><span id="line-207">        }</span>
-<span class="source-line-no">208</span><span id="line-208"></span>
-<span class="source-line-no">209</span><span id="line-209">        var summary = evaluateSummary(true);</span>
-<span class="source-line-no">210</span><span id="line-210">        summarySeries.add(Instant.now(), summary.usedCpus, summary.usedRam);</span>
-<span class="source-line-no">211</span><span id="line-211">        for (var entry : conletIdsByConsoleConnection().entrySet()) {</span>
-<span class="source-line-no">212</span><span id="line-212">            for (String conletId : entry.getValue()) {</span>
-<span class="source-line-no">213</span><span id="line-213">                entry.getKey().respond(new NotifyConletView(type(),</span>
-<span class="source-line-no">214</span><span id="line-214">                    conletId, "updateSummary", summary));</span>
-<span class="source-line-no">215</span><span id="line-215">            }</span>
-<span class="source-line-no">216</span><span id="line-216">        }</span>
-<span class="source-line-no">217</span><span id="line-217">    }</span>
-<span class="source-line-no">218</span><span id="line-218"></span>
-<span class="source-line-no">219</span><span id="line-219">    @SuppressWarnings("PMD.AvoidDuplicateLiterals")</span>
-<span class="source-line-no">220</span><span id="line-220">    private DynamicKubernetesObject convertQuantities(VmDefChanged event) {</span>
-<span class="source-line-no">221</span><span id="line-221">        // Clone and remove managed fields</span>
-<span class="source-line-no">222</span><span id="line-222">        var vmDef = new DynamicKubernetesObject(</span>
-<span class="source-line-no">223</span><span id="line-223">            event.vmDefinition().data().deepCopy());</span>
-<span class="source-line-no">224</span><span id="line-224">        GsonPtr.to(vmDef.getRaw()).to("metadata").get(JsonObject.class)</span>
-<span class="source-line-no">225</span><span id="line-225">            .remove("managedFields");</span>
-<span class="source-line-no">226</span><span id="line-226"></span>
-<span class="source-line-no">227</span><span id="line-227">        // Convert RAM sizes to unitless numbers</span>
-<span class="source-line-no">228</span><span id="line-228">        var vmSpec = GsonPtr.to(vmDef.getRaw()).to("spec", "vm");</span>
-<span class="source-line-no">229</span><span id="line-229">        vmSpec.set("maximumRam", Quantity.fromString(</span>
-<span class="source-line-no">230</span><span id="line-230">            vmSpec.getAsString("maximumRam").orElse("0")).getNumber()</span>
-<span class="source-line-no">231</span><span id="line-231">            .toBigInteger());</span>
-<span class="source-line-no">232</span><span id="line-232">        vmSpec.set("currentRam", Quantity.fromString(</span>
-<span class="source-line-no">233</span><span id="line-233">            vmSpec.getAsString("currentRam").orElse("0")).getNumber()</span>
-<span class="source-line-no">234</span><span id="line-234">            .toBigInteger());</span>
-<span class="source-line-no">235</span><span id="line-235">        var status = GsonPtr.to(vmDef.getRaw()).to("status");</span>
-<span class="source-line-no">236</span><span id="line-236">        status.set("ram", Quantity.fromString(</span>
-<span class="source-line-no">237</span><span id="line-237">            status.getAsString("ram").orElse("0")).getNumber()</span>
+<span class="source-line-no">049</span><span id="line-49">import org.jgrapes.core.annotation.Handler;</span>
+<span class="source-line-no">050</span><span id="line-50">import org.jgrapes.webconsole.base.Conlet.RenderMode;</span>
+<span class="source-line-no">051</span><span id="line-51">import org.jgrapes.webconsole.base.ConletBaseModel;</span>
+<span class="source-line-no">052</span><span id="line-52">import org.jgrapes.webconsole.base.ConsoleConnection;</span>
+<span class="source-line-no">053</span><span id="line-53">import org.jgrapes.webconsole.base.events.AddConletRequest;</span>
+<span class="source-line-no">054</span><span id="line-54">import org.jgrapes.webconsole.base.events.AddConletType;</span>
+<span class="source-line-no">055</span><span id="line-55">import org.jgrapes.webconsole.base.events.AddPageResources.ScriptResource;</span>
+<span class="source-line-no">056</span><span id="line-56">import org.jgrapes.webconsole.base.events.ConsoleReady;</span>
+<span class="source-line-no">057</span><span id="line-57">import org.jgrapes.webconsole.base.events.NotifyConletModel;</span>
+<span class="source-line-no">058</span><span id="line-58">import org.jgrapes.webconsole.base.events.NotifyConletView;</span>
+<span class="source-line-no">059</span><span id="line-59">import org.jgrapes.webconsole.base.events.RenderConlet;</span>
+<span class="source-line-no">060</span><span id="line-60">import org.jgrapes.webconsole.base.events.RenderConletRequestBase;</span>
+<span class="source-line-no">061</span><span id="line-61">import org.jgrapes.webconsole.base.events.SetLocale;</span>
+<span class="source-line-no">062</span><span id="line-62">import org.jgrapes.webconsole.base.freemarker.FreeMarkerConlet;</span>
+<span class="source-line-no">063</span><span id="line-63"></span>
+<span class="source-line-no">064</span><span id="line-64">/**</span>
+<span class="source-line-no">065</span><span id="line-65"> * The Class VmConlet.</span>
+<span class="source-line-no">066</span><span id="line-66"> */</span>
+<span class="source-line-no">067</span><span id="line-67">@SuppressWarnings("PMD.DataflowAnomalyAnalysis")</span>
+<span class="source-line-no">068</span><span id="line-68">public class VmConlet extends FreeMarkerConlet&lt;VmConlet.VmsModel&gt; {</span>
+<span class="source-line-no">069</span><span id="line-69"></span>
+<span class="source-line-no">070</span><span id="line-70">    private static final Set&lt;RenderMode&gt; MODES = RenderMode.asSet(</span>
+<span class="source-line-no">071</span><span id="line-71">        RenderMode.Preview, RenderMode.View);</span>
+<span class="source-line-no">072</span><span id="line-72">    private final Map&lt;String, K8sDynamicModel&gt; vmInfos</span>
+<span class="source-line-no">073</span><span id="line-73">        = new ConcurrentHashMap&lt;&gt;();</span>
+<span class="source-line-no">074</span><span id="line-74">    private final Map&lt;String, VmChannel&gt; vmChannels</span>
+<span class="source-line-no">075</span><span id="line-75">        = new ConcurrentHashMap&lt;&gt;();</span>
+<span class="source-line-no">076</span><span id="line-76">    private final TimeSeries summarySeries = new TimeSeries(Duration.ofDays(1));</span>
+<span class="source-line-no">077</span><span id="line-77">    private Summary cachedSummary;</span>
+<span class="source-line-no">078</span><span id="line-78"></span>
+<span class="source-line-no">079</span><span id="line-79">    /**</span>
+<span class="source-line-no">080</span><span id="line-80">     * The periodically generated update event.</span>
+<span class="source-line-no">081</span><span id="line-81">     */</span>
+<span class="source-line-no">082</span><span id="line-82">    public static class Update extends Event&lt;Void&gt; {</span>
+<span class="source-line-no">083</span><span id="line-83">    }</span>
+<span class="source-line-no">084</span><span id="line-84"></span>
+<span class="source-line-no">085</span><span id="line-85">    /**</span>
+<span class="source-line-no">086</span><span id="line-86">     * Creates a new component with its channel set to the given channel.</span>
+<span class="source-line-no">087</span><span id="line-87">     * </span>
+<span class="source-line-no">088</span><span id="line-88">     * @param componentChannel the channel that the component's handlers listen</span>
+<span class="source-line-no">089</span><span id="line-89">     * on by default and that {@link Manager#fire(Event, Channel...)}</span>
+<span class="source-line-no">090</span><span id="line-90">     * sends the event to</span>
+<span class="source-line-no">091</span><span id="line-91">     */</span>
+<span class="source-line-no">092</span><span id="line-92">    public VmConlet(Channel componentChannel) {</span>
+<span class="source-line-no">093</span><span id="line-93">        super(componentChannel);</span>
+<span class="source-line-no">094</span><span id="line-94">        setPeriodicRefresh(Duration.ofMinutes(1), () -&gt; new Update());</span>
+<span class="source-line-no">095</span><span id="line-95">    }</span>
+<span class="source-line-no">096</span><span id="line-96"></span>
+<span class="source-line-no">097</span><span id="line-97">    /**</span>
+<span class="source-line-no">098</span><span id="line-98">     * On {@link ConsoleReady}, fire the {@link AddConletType}.</span>
+<span class="source-line-no">099</span><span id="line-99">     *</span>
+<span class="source-line-no">100</span><span id="line-100">     * @param event the event</span>
+<span class="source-line-no">101</span><span id="line-101">     * @param channel the channel</span>
+<span class="source-line-no">102</span><span id="line-102">     * @throws TemplateNotFoundException the template not found exception</span>
+<span class="source-line-no">103</span><span id="line-103">     * @throws MalformedTemplateNameException the malformed template name</span>
+<span class="source-line-no">104</span><span id="line-104">     *             exception</span>
+<span class="source-line-no">105</span><span id="line-105">     * @throws ParseException the parse exception</span>
+<span class="source-line-no">106</span><span id="line-106">     * @throws IOException Signals that an I/O exception has occurred.</span>
+<span class="source-line-no">107</span><span id="line-107">     */</span>
+<span class="source-line-no">108</span><span id="line-108">    @Handler</span>
+<span class="source-line-no">109</span><span id="line-109">    public void onConsoleReady(ConsoleReady event, ConsoleConnection channel)</span>
+<span class="source-line-no">110</span><span id="line-110">            throws TemplateNotFoundException, MalformedTemplateNameException,</span>
+<span class="source-line-no">111</span><span id="line-111">            ParseException, IOException {</span>
+<span class="source-line-no">112</span><span id="line-112">        // Add conlet resources to page</span>
+<span class="source-line-no">113</span><span id="line-113">        channel.respond(new AddConletType(type())</span>
+<span class="source-line-no">114</span><span id="line-114">            .setDisplayNames(</span>
+<span class="source-line-no">115</span><span id="line-115">                localizations(channel.supportedLocales(), "conletName"))</span>
+<span class="source-line-no">116</span><span id="line-116">            .addRenderMode(RenderMode.Preview)</span>
+<span class="source-line-no">117</span><span id="line-117">            .addScript(new ScriptResource().setScriptType("module")</span>
+<span class="source-line-no">118</span><span id="line-118">                .setScriptUri(event.renderSupport().conletResource(</span>
+<span class="source-line-no">119</span><span id="line-119">                    type(), "VmConlet-functions.js"))));</span>
+<span class="source-line-no">120</span><span id="line-120">    }</span>
+<span class="source-line-no">121</span><span id="line-121"></span>
+<span class="source-line-no">122</span><span id="line-122">    @Override</span>
+<span class="source-line-no">123</span><span id="line-123">    protected Optional&lt;VmsModel&gt; createNewState(AddConletRequest event,</span>
+<span class="source-line-no">124</span><span id="line-124">            ConsoleConnection connection, String conletId) throws Exception {</span>
+<span class="source-line-no">125</span><span id="line-125">        return Optional.of(new VmsModel(conletId));</span>
+<span class="source-line-no">126</span><span id="line-126">    }</span>
+<span class="source-line-no">127</span><span id="line-127"></span>
+<span class="source-line-no">128</span><span id="line-128">    @Override</span>
+<span class="source-line-no">129</span><span id="line-129">    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")</span>
+<span class="source-line-no">130</span><span id="line-130">    protected Set&lt;RenderMode&gt; doRenderConlet(RenderConletRequestBase&lt;?&gt; event,</span>
+<span class="source-line-no">131</span><span id="line-131">            ConsoleConnection channel, String conletId, VmsModel conletState)</span>
+<span class="source-line-no">132</span><span id="line-132">            throws Exception {</span>
+<span class="source-line-no">133</span><span id="line-133">        Set&lt;RenderMode&gt; renderedAs = new HashSet&lt;&gt;();</span>
+<span class="source-line-no">134</span><span id="line-134">        boolean sendVmInfos = false;</span>
+<span class="source-line-no">135</span><span id="line-135">        if (event.renderAs().contains(RenderMode.Preview)) {</span>
+<span class="source-line-no">136</span><span id="line-136">            Template tpl</span>
+<span class="source-line-no">137</span><span id="line-137">                = freemarkerConfig().getTemplate("VmConlet-preview.ftl.html");</span>
+<span class="source-line-no">138</span><span id="line-138">            channel.respond(new RenderConlet(type(), conletId,</span>
+<span class="source-line-no">139</span><span id="line-139">                processTemplate(event, tpl,</span>
+<span class="source-line-no">140</span><span id="line-140">                    fmModel(event, channel, conletId, conletState)))</span>
+<span class="source-line-no">141</span><span id="line-141">                        .setRenderAs(</span>
+<span class="source-line-no">142</span><span id="line-142">                            RenderMode.Preview.addModifiers(event.renderAs()))</span>
+<span class="source-line-no">143</span><span id="line-143">                        .setSupportedModes(MODES));</span>
+<span class="source-line-no">144</span><span id="line-144">            renderedAs.add(RenderMode.View);</span>
+<span class="source-line-no">145</span><span id="line-145">            channel.respond(new NotifyConletView(type(),</span>
+<span class="source-line-no">146</span><span id="line-146">                conletId, "summarySeries", summarySeries.entries()));</span>
+<span class="source-line-no">147</span><span id="line-147">            var summary = evaluateSummary(false);</span>
+<span class="source-line-no">148</span><span id="line-148">            channel.respond(new NotifyConletView(type(),</span>
+<span class="source-line-no">149</span><span id="line-149">                conletId, "updateSummary", summary));</span>
+<span class="source-line-no">150</span><span id="line-150">            sendVmInfos = true;</span>
+<span class="source-line-no">151</span><span id="line-151">        }</span>
+<span class="source-line-no">152</span><span id="line-152">        if (event.renderAs().contains(RenderMode.View)) {</span>
+<span class="source-line-no">153</span><span id="line-153">            Template tpl</span>
+<span class="source-line-no">154</span><span id="line-154">                = freemarkerConfig().getTemplate("VmConlet-view.ftl.html");</span>
+<span class="source-line-no">155</span><span id="line-155">            channel.respond(new RenderConlet(type(), conletId,</span>
+<span class="source-line-no">156</span><span id="line-156">                processTemplate(event, tpl,</span>
+<span class="source-line-no">157</span><span id="line-157">                    fmModel(event, channel, conletId, conletState)))</span>
+<span class="source-line-no">158</span><span id="line-158">                        .setRenderAs(</span>
+<span class="source-line-no">159</span><span id="line-159">                            RenderMode.View.addModifiers(event.renderAs()))</span>
+<span class="source-line-no">160</span><span id="line-160">                        .setSupportedModes(MODES));</span>
+<span class="source-line-no">161</span><span id="line-161">            renderedAs.add(RenderMode.View);</span>
+<span class="source-line-no">162</span><span id="line-162">            sendVmInfos = true;</span>
+<span class="source-line-no">163</span><span id="line-163">        }</span>
+<span class="source-line-no">164</span><span id="line-164">        if (sendVmInfos) {</span>
+<span class="source-line-no">165</span><span id="line-165">            for (var vmInfo : vmInfos.values()) {</span>
+<span class="source-line-no">166</span><span id="line-166">                var def = JsonBeanDecoder.create(vmInfo.data().toString())</span>
+<span class="source-line-no">167</span><span id="line-167">                    .readObject();</span>
+<span class="source-line-no">168</span><span id="line-168">                channel.respond(new NotifyConletView(type(),</span>
+<span class="source-line-no">169</span><span id="line-169">                    conletId, "updateVm", def));</span>
+<span class="source-line-no">170</span><span id="line-170">            }</span>
+<span class="source-line-no">171</span><span id="line-171">        }</span>
+<span class="source-line-no">172</span><span id="line-172"></span>
+<span class="source-line-no">173</span><span id="line-173">        return renderedAs;</span>
+<span class="source-line-no">174</span><span id="line-174">    }</span>
+<span class="source-line-no">175</span><span id="line-175"></span>
+<span class="source-line-no">176</span><span id="line-176">    /**</span>
+<span class="source-line-no">177</span><span id="line-177">     * Track the VM definitions.</span>
+<span class="source-line-no">178</span><span id="line-178">     *</span>
+<span class="source-line-no">179</span><span id="line-179">     * @param event the event</span>
+<span class="source-line-no">180</span><span id="line-180">     * @param channel the channel</span>
+<span class="source-line-no">181</span><span id="line-181">     * @throws JsonDecodeException the json decode exception</span>
+<span class="source-line-no">182</span><span id="line-182">     * @throws IOException </span>
+<span class="source-line-no">183</span><span id="line-183">     */</span>
+<span class="source-line-no">184</span><span id="line-184">    @Handler(namedChannels = "manager")</span>
+<span class="source-line-no">185</span><span id="line-185">    @SuppressWarnings({ "PMD.ConfusingTernary", "PMD.CognitiveComplexity",</span>
+<span class="source-line-no">186</span><span id="line-186">        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.AvoidDuplicateLiterals" })</span>
+<span class="source-line-no">187</span><span id="line-187">    public void onVmDefChanged(VmDefChanged event, VmChannel channel)</span>
+<span class="source-line-no">188</span><span id="line-188">            throws JsonDecodeException, IOException {</span>
+<span class="source-line-no">189</span><span id="line-189">        var vmName = event.vmDefinition().getMetadata().getName();</span>
+<span class="source-line-no">190</span><span id="line-190">        if (event.type() == Type.DELETED) {</span>
+<span class="source-line-no">191</span><span id="line-191">            vmInfos.remove(vmName);</span>
+<span class="source-line-no">192</span><span id="line-192">            vmChannels.remove(vmName);</span>
+<span class="source-line-no">193</span><span id="line-193">            for (var entry : conletIdsByConsoleConnection().entrySet()) {</span>
+<span class="source-line-no">194</span><span id="line-194">                for (String conletId : entry.getValue()) {</span>
+<span class="source-line-no">195</span><span id="line-195">                    entry.getKey().respond(new NotifyConletView(type(),</span>
+<span class="source-line-no">196</span><span id="line-196">                        conletId, "removeVm", vmName));</span>
+<span class="source-line-no">197</span><span id="line-197">                }</span>
+<span class="source-line-no">198</span><span id="line-198">            }</span>
+<span class="source-line-no">199</span><span id="line-199">        } else {</span>
+<span class="source-line-no">200</span><span id="line-200">            var vmDef = new K8sDynamicModel(channel.client().getJSON()</span>
+<span class="source-line-no">201</span><span id="line-201">                .getGson(), convertQuantities(event.vmDefinition().data()));</span>
+<span class="source-line-no">202</span><span id="line-202">            vmInfos.put(vmName, vmDef);</span>
+<span class="source-line-no">203</span><span id="line-203">            vmChannels.put(vmName, channel);</span>
+<span class="source-line-no">204</span><span id="line-204">            var def = JsonBeanDecoder.create(vmDef.data().toString())</span>
+<span class="source-line-no">205</span><span id="line-205">                .readObject();</span>
+<span class="source-line-no">206</span><span id="line-206">            for (var entry : conletIdsByConsoleConnection().entrySet()) {</span>
+<span class="source-line-no">207</span><span id="line-207">                for (String conletId : entry.getValue()) {</span>
+<span class="source-line-no">208</span><span id="line-208">                    entry.getKey().respond(new NotifyConletView(type(),</span>
+<span class="source-line-no">209</span><span id="line-209">                        conletId, "updateVm", def));</span>
+<span class="source-line-no">210</span><span id="line-210">                }</span>
+<span class="source-line-no">211</span><span id="line-211">            }</span>
+<span class="source-line-no">212</span><span id="line-212">        }</span>
+<span class="source-line-no">213</span><span id="line-213"></span>
+<span class="source-line-no">214</span><span id="line-214">        var summary = evaluateSummary(true);</span>
+<span class="source-line-no">215</span><span id="line-215">        summarySeries.add(Instant.now(), summary.usedCpus, summary.usedRam);</span>
+<span class="source-line-no">216</span><span id="line-216">        for (var entry : conletIdsByConsoleConnection().entrySet()) {</span>
+<span class="source-line-no">217</span><span id="line-217">            for (String conletId : entry.getValue()) {</span>
+<span class="source-line-no">218</span><span id="line-218">                entry.getKey().respond(new NotifyConletView(type(),</span>
+<span class="source-line-no">219</span><span id="line-219">                    conletId, "updateSummary", summary));</span>
+<span class="source-line-no">220</span><span id="line-220">            }</span>
+<span class="source-line-no">221</span><span id="line-221">        }</span>
+<span class="source-line-no">222</span><span id="line-222">    }</span>
+<span class="source-line-no">223</span><span id="line-223"></span>
+<span class="source-line-no">224</span><span id="line-224">    @SuppressWarnings("PMD.AvoidDuplicateLiterals")</span>
+<span class="source-line-no">225</span><span id="line-225">    private JsonObject convertQuantities(JsonObject vmDef) {</span>
+<span class="source-line-no">226</span><span id="line-226">        // Clone and remove managed fields</span>
+<span class="source-line-no">227</span><span id="line-227">        var json = vmDef.deepCopy();</span>
+<span class="source-line-no">228</span><span id="line-228">        GsonPtr.to(json).to("metadata").get(JsonObject.class)</span>
+<span class="source-line-no">229</span><span id="line-229">            .remove("managedFields");</span>
+<span class="source-line-no">230</span><span id="line-230"></span>
+<span class="source-line-no">231</span><span id="line-231">        // Convert RAM sizes to unitless numbers</span>
+<span class="source-line-no">232</span><span id="line-232">        var vmSpec = GsonPtr.to(json).to("spec", "vm");</span>
+<span class="source-line-no">233</span><span id="line-233">        vmSpec.set("maximumRam", Quantity.fromString(</span>
+<span class="source-line-no">234</span><span id="line-234">            vmSpec.getAsString("maximumRam").orElse("0")).getNumber()</span>
+<span class="source-line-no">235</span><span id="line-235">            .toBigInteger());</span>
+<span class="source-line-no">236</span><span id="line-236">        vmSpec.set("currentRam", Quantity.fromString(</span>
+<span class="source-line-no">237</span><span id="line-237">            vmSpec.getAsString("currentRam").orElse("0")).getNumber()</span>
 <span class="source-line-no">238</span><span id="line-238">            .toBigInteger());</span>
-<span class="source-line-no">239</span><span id="line-239">        String vmName = event.vmDefinition().getMetadata().getName();</span>
-<span class="source-line-no">240</span><span id="line-240">        vmInfos.put(vmName, vmDef);</span>
-<span class="source-line-no">241</span><span id="line-241">        return vmDef;</span>
-<span class="source-line-no">242</span><span id="line-242">    }</span>
-<span class="source-line-no">243</span><span id="line-243"></span>
-<span class="source-line-no">244</span><span id="line-244">    /**</span>
-<span class="source-line-no">245</span><span id="line-245">     * Handle the periodic update event by sending {@link NotifyConletView}</span>
-<span class="source-line-no">246</span><span id="line-246">     * events.</span>
-<span class="source-line-no">247</span><span id="line-247">     *</span>
-<span class="source-line-no">248</span><span id="line-248">     * @param event the event</span>
-<span class="source-line-no">249</span><span id="line-249">     * @param connection the console connection</span>
-<span class="source-line-no">250</span><span id="line-250">     */</span>
-<span class="source-line-no">251</span><span id="line-251">    @Handler</span>
-<span class="source-line-no">252</span><span id="line-252">    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")</span>
-<span class="source-line-no">253</span><span id="line-253">    public void onUpdate(Update event, ConsoleConnection connection) {</span>
-<span class="source-line-no">254</span><span id="line-254">        var summary = evaluateSummary(false);</span>
-<span class="source-line-no">255</span><span id="line-255">        summarySeries.add(Instant.now(), summary.usedCpus, summary.usedRam);</span>
-<span class="source-line-no">256</span><span id="line-256">        for (String conletId : conletIds(connection)) {</span>
-<span class="source-line-no">257</span><span id="line-257">            connection.respond(new NotifyConletView(type(),</span>
-<span class="source-line-no">258</span><span id="line-258">                conletId, "updateSummary", summary));</span>
-<span class="source-line-no">259</span><span id="line-259">        }</span>
-<span class="source-line-no">260</span><span id="line-260">    }</span>
-<span class="source-line-no">261</span><span id="line-261"></span>
-<span class="source-line-no">262</span><span id="line-262">    /**</span>
-<span class="source-line-no">263</span><span id="line-263">     * The Class Summary.</span>
-<span class="source-line-no">264</span><span id="line-264">     */</span>
-<span class="source-line-no">265</span><span id="line-265">    @SuppressWarnings("PMD.DataClass")</span>
-<span class="source-line-no">266</span><span id="line-266">    public static class Summary {</span>
-<span class="source-line-no">267</span><span id="line-267"></span>
-<span class="source-line-no">268</span><span id="line-268">        /** The total vms. */</span>
-<span class="source-line-no">269</span><span id="line-269">        public int totalVms;</span>
-<span class="source-line-no">270</span><span id="line-270"></span>
-<span class="source-line-no">271</span><span id="line-271">        /** The running vms. */</span>
-<span class="source-line-no">272</span><span id="line-272">        public int runningVms;</span>
-<span class="source-line-no">273</span><span id="line-273"></span>
-<span class="source-line-no">274</span><span id="line-274">        /** The used cpus. */</span>
-<span class="source-line-no">275</span><span id="line-275">        public int usedCpus;</span>
-<span class="source-line-no">276</span><span id="line-276"></span>
-<span class="source-line-no">277</span><span id="line-277">        /** The used ram. */</span>
-<span class="source-line-no">278</span><span id="line-278">        public BigInteger usedRam = BigInteger.ZERO;</span>
-<span class="source-line-no">279</span><span id="line-279"></span>
-<span class="source-line-no">280</span><span id="line-280">        /**</span>
-<span class="source-line-no">281</span><span id="line-281">         * Gets the total vms.</span>
-<span class="source-line-no">282</span><span id="line-282">         *</span>
-<span class="source-line-no">283</span><span id="line-283">         * @return the totalVms</span>
-<span class="source-line-no">284</span><span id="line-284">         */</span>
-<span class="source-line-no">285</span><span id="line-285">        public int getTotalVms() {</span>
-<span class="source-line-no">286</span><span id="line-286">            return totalVms;</span>
-<span class="source-line-no">287</span><span id="line-287">        }</span>
-<span class="source-line-no">288</span><span id="line-288"></span>
-<span class="source-line-no">289</span><span id="line-289">        /**</span>
-<span class="source-line-no">290</span><span id="line-290">         * Gets the running vms.</span>
-<span class="source-line-no">291</span><span id="line-291">         *</span>
-<span class="source-line-no">292</span><span id="line-292">         * @return the runningVms</span>
-<span class="source-line-no">293</span><span id="line-293">         */</span>
-<span class="source-line-no">294</span><span id="line-294">        public int getRunningVms() {</span>
-<span class="source-line-no">295</span><span id="line-295">            return runningVms;</span>
-<span class="source-line-no">296</span><span id="line-296">        }</span>
-<span class="source-line-no">297</span><span id="line-297"></span>
-<span class="source-line-no">298</span><span id="line-298">        /**</span>
-<span class="source-line-no">299</span><span id="line-299">         * Gets the used cpus.</span>
-<span class="source-line-no">300</span><span id="line-300">         *</span>
-<span class="source-line-no">301</span><span id="line-301">         * @return the usedCpus</span>
-<span class="source-line-no">302</span><span id="line-302">         */</span>
-<span class="source-line-no">303</span><span id="line-303">        public int getUsedCpus() {</span>
-<span class="source-line-no">304</span><span id="line-304">            return usedCpus;</span>
-<span class="source-line-no">305</span><span id="line-305">        }</span>
-<span class="source-line-no">306</span><span id="line-306"></span>
-<span class="source-line-no">307</span><span id="line-307">        /**</span>
-<span class="source-line-no">308</span><span id="line-308">         * Gets the used ram. Returned as String for Json rendering.</span>
-<span class="source-line-no">309</span><span id="line-309">         *</span>
-<span class="source-line-no">310</span><span id="line-310">         * @return the usedRam</span>
-<span class="source-line-no">311</span><span id="line-311">         */</span>
-<span class="source-line-no">312</span><span id="line-312">        public String getUsedRam() {</span>
-<span class="source-line-no">313</span><span id="line-313">            return usedRam.toString();</span>
-<span class="source-line-no">314</span><span id="line-314">        }</span>
-<span class="source-line-no">315</span><span id="line-315"></span>
-<span class="source-line-no">316</span><span id="line-316">    }</span>
+<span class="source-line-no">239</span><span id="line-239">        var status = GsonPtr.to(json).to("status");</span>
+<span class="source-line-no">240</span><span id="line-240">        status.set("ram", Quantity.fromString(</span>
+<span class="source-line-no">241</span><span id="line-241">            status.getAsString("ram").orElse("0")).getNumber()</span>
+<span class="source-line-no">242</span><span id="line-242">            .toBigInteger());</span>
+<span class="source-line-no">243</span><span id="line-243">        return json;</span>
+<span class="source-line-no">244</span><span id="line-244">    }</span>
+<span class="source-line-no">245</span><span id="line-245"></span>
+<span class="source-line-no">246</span><span id="line-246">    /**</span>
+<span class="source-line-no">247</span><span id="line-247">     * Handle the periodic update event by sending {@link NotifyConletView}</span>
+<span class="source-line-no">248</span><span id="line-248">     * events.</span>
+<span class="source-line-no">249</span><span id="line-249">     *</span>
+<span class="source-line-no">250</span><span id="line-250">     * @param event the event</span>
+<span class="source-line-no">251</span><span id="line-251">     * @param connection the console connection</span>
+<span class="source-line-no">252</span><span id="line-252">     */</span>
+<span class="source-line-no">253</span><span id="line-253">    @Handler</span>
+<span class="source-line-no">254</span><span id="line-254">    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")</span>
+<span class="source-line-no">255</span><span id="line-255">    public void onUpdate(Update event, ConsoleConnection connection) {</span>
+<span class="source-line-no">256</span><span id="line-256">        var summary = evaluateSummary(false);</span>
+<span class="source-line-no">257</span><span id="line-257">        summarySeries.add(Instant.now(), summary.usedCpus, summary.usedRam);</span>
+<span class="source-line-no">258</span><span id="line-258">        for (String conletId : conletIds(connection)) {</span>
+<span class="source-line-no">259</span><span id="line-259">            connection.respond(new NotifyConletView(type(),</span>
+<span class="source-line-no">260</span><span id="line-260">                conletId, "updateSummary", summary));</span>
+<span class="source-line-no">261</span><span id="line-261">        }</span>
+<span class="source-line-no">262</span><span id="line-262">    }</span>
+<span class="source-line-no">263</span><span id="line-263"></span>
+<span class="source-line-no">264</span><span id="line-264">    /**</span>
+<span class="source-line-no">265</span><span id="line-265">     * The Class Summary.</span>
+<span class="source-line-no">266</span><span id="line-266">     */</span>
+<span class="source-line-no">267</span><span id="line-267">    @SuppressWarnings("PMD.DataClass")</span>
+<span class="source-line-no">268</span><span id="line-268">    public static class Summary {</span>
+<span class="source-line-no">269</span><span id="line-269"></span>
+<span class="source-line-no">270</span><span id="line-270">        /** The total vms. */</span>
+<span class="source-line-no">271</span><span id="line-271">        public int totalVms;</span>
+<span class="source-line-no">272</span><span id="line-272"></span>
+<span class="source-line-no">273</span><span id="line-273">        /** The running vms. */</span>
+<span class="source-line-no">274</span><span id="line-274">        public int runningVms;</span>
+<span class="source-line-no">275</span><span id="line-275"></span>
+<span class="source-line-no">276</span><span id="line-276">        /** The used cpus. */</span>
+<span class="source-line-no">277</span><span id="line-277">        public int usedCpus;</span>
+<span class="source-line-no">278</span><span id="line-278"></span>
+<span class="source-line-no">279</span><span id="line-279">        /** The used ram. */</span>
+<span class="source-line-no">280</span><span id="line-280">        public BigInteger usedRam = BigInteger.ZERO;</span>
+<span class="source-line-no">281</span><span id="line-281"></span>
+<span class="source-line-no">282</span><span id="line-282">        /**</span>
+<span class="source-line-no">283</span><span id="line-283">         * Gets the total vms.</span>
+<span class="source-line-no">284</span><span id="line-284">         *</span>
+<span class="source-line-no">285</span><span id="line-285">         * @return the totalVms</span>
+<span class="source-line-no">286</span><span id="line-286">         */</span>
+<span class="source-line-no">287</span><span id="line-287">        public int getTotalVms() {</span>
+<span class="source-line-no">288</span><span id="line-288">            return totalVms;</span>
+<span class="source-line-no">289</span><span id="line-289">        }</span>
+<span class="source-line-no">290</span><span id="line-290"></span>
+<span class="source-line-no">291</span><span id="line-291">        /**</span>
+<span class="source-line-no">292</span><span id="line-292">         * Gets the running vms.</span>
+<span class="source-line-no">293</span><span id="line-293">         *</span>
+<span class="source-line-no">294</span><span id="line-294">         * @return the runningVms</span>
+<span class="source-line-no">295</span><span id="line-295">         */</span>
+<span class="source-line-no">296</span><span id="line-296">        public int getRunningVms() {</span>
+<span class="source-line-no">297</span><span id="line-297">            return runningVms;</span>
+<span class="source-line-no">298</span><span id="line-298">        }</span>
+<span class="source-line-no">299</span><span id="line-299"></span>
+<span class="source-line-no">300</span><span id="line-300">        /**</span>
+<span class="source-line-no">301</span><span id="line-301">         * Gets the used cpus.</span>
+<span class="source-line-no">302</span><span id="line-302">         *</span>
+<span class="source-line-no">303</span><span id="line-303">         * @return the usedCpus</span>
+<span class="source-line-no">304</span><span id="line-304">         */</span>
+<span class="source-line-no">305</span><span id="line-305">        public int getUsedCpus() {</span>
+<span class="source-line-no">306</span><span id="line-306">            return usedCpus;</span>
+<span class="source-line-no">307</span><span id="line-307">        }</span>
+<span class="source-line-no">308</span><span id="line-308"></span>
+<span class="source-line-no">309</span><span id="line-309">        /**</span>
+<span class="source-line-no">310</span><span id="line-310">         * Gets the used ram. Returned as String for Json rendering.</span>
+<span class="source-line-no">311</span><span id="line-311">         *</span>
+<span class="source-line-no">312</span><span id="line-312">         * @return the usedRam</span>
+<span class="source-line-no">313</span><span id="line-313">         */</span>
+<span class="source-line-no">314</span><span id="line-314">        public String getUsedRam() {</span>
+<span class="source-line-no">315</span><span id="line-315">            return usedRam.toString();</span>
+<span class="source-line-no">316</span><span id="line-316">        }</span>
 <span class="source-line-no">317</span><span id="line-317"></span>
-<span class="source-line-no">318</span><span id="line-318">    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")</span>
-<span class="source-line-no">319</span><span id="line-319">    private Summary evaluateSummary(boolean force) {</span>
-<span class="source-line-no">320</span><span id="line-320">        if (!force &amp;&amp; cachedSummary != null) {</span>
-<span class="source-line-no">321</span><span id="line-321">            return cachedSummary;</span>
-<span class="source-line-no">322</span><span id="line-322">        }</span>
-<span class="source-line-no">323</span><span id="line-323">        Summary summary = new Summary();</span>
-<span class="source-line-no">324</span><span id="line-324">        for (var vmDef : vmInfos.values()) {</span>
-<span class="source-line-no">325</span><span id="line-325">            summary.totalVms += 1;</span>
-<span class="source-line-no">326</span><span id="line-326">            var status = GsonPtr.to(vmDef.getRaw()).to("status");</span>
-<span class="source-line-no">327</span><span id="line-327">            summary.usedCpus += status.getAsInt("cpus").orElse(0);</span>
-<span class="source-line-no">328</span><span id="line-328">            summary.usedRam = summary.usedRam.add(status.getAsString("ram")</span>
-<span class="source-line-no">329</span><span id="line-329">                .map(BigInteger::new).orElse(BigInteger.ZERO));</span>
-<span class="source-line-no">330</span><span id="line-330">            for (var c : status.getAsListOf(JsonObject.class, "conditions")) {</span>
-<span class="source-line-no">331</span><span id="line-331">                if ("Running".equals(GsonPtr.to(c).getAsString("type")</span>
-<span class="source-line-no">332</span><span id="line-332">                    .orElse(null))</span>
-<span class="source-line-no">333</span><span id="line-333">                    &amp;&amp; "True".equals(GsonPtr.to(c).getAsString("status")</span>
-<span class="source-line-no">334</span><span id="line-334">                        .orElse(null))) {</span>
-<span class="source-line-no">335</span><span id="line-335">                    summary.runningVms += 1;</span>
-<span class="source-line-no">336</span><span id="line-336">                }</span>
-<span class="source-line-no">337</span><span id="line-337">            }</span>
-<span class="source-line-no">338</span><span id="line-338">        }</span>
-<span class="source-line-no">339</span><span id="line-339">        cachedSummary = summary;</span>
-<span class="source-line-no">340</span><span id="line-340">        return summary;</span>
-<span class="source-line-no">341</span><span id="line-341">    }</span>
-<span class="source-line-no">342</span><span id="line-342"></span>
-<span class="source-line-no">343</span><span id="line-343">    @Override</span>
-<span class="source-line-no">344</span><span id="line-344">    @SuppressWarnings("PMD.AvoidDecimalLiteralsInBigDecimalConstructor")</span>
-<span class="source-line-no">345</span><span id="line-345">    protected void doUpdateConletState(NotifyConletModel event,</span>
-<span class="source-line-no">346</span><span id="line-346">            ConsoleConnection channel, VmsModel conletState)</span>
-<span class="source-line-no">347</span><span id="line-347">            throws Exception {</span>
-<span class="source-line-no">348</span><span id="line-348">        event.stop();</span>
-<span class="source-line-no">349</span><span id="line-349">        switch (event.method()) {</span>
-<span class="source-line-no">350</span><span id="line-350">        case "start":</span>
-<span class="source-line-no">351</span><span id="line-351">            fire(new ModifyVm(event.params().asString(0), "state", "Running",</span>
-<span class="source-line-no">352</span><span id="line-352">                new NamedChannel("manager")));</span>
-<span class="source-line-no">353</span><span id="line-353">            break;</span>
-<span class="source-line-no">354</span><span id="line-354">        case "stop":</span>
-<span class="source-line-no">355</span><span id="line-355">            fire(new ModifyVm(event.params().asString(0), "state", "Stopped",</span>
-<span class="source-line-no">356</span><span id="line-356">                new NamedChannel("manager")));</span>
-<span class="source-line-no">357</span><span id="line-357">            break;</span>
-<span class="source-line-no">358</span><span id="line-358">        case "cpus":</span>
-<span class="source-line-no">359</span><span id="line-359">            fire(new ModifyVm(event.params().asString(0), "currentCpus",</span>
-<span class="source-line-no">360</span><span id="line-360">                new BigDecimal(event.params().asDouble(1)).toBigInteger(),</span>
-<span class="source-line-no">361</span><span id="line-361">                new NamedChannel("manager")));</span>
+<span class="source-line-no">318</span><span id="line-318">    }</span>
+<span class="source-line-no">319</span><span id="line-319"></span>
+<span class="source-line-no">320</span><span id="line-320">    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")</span>
+<span class="source-line-no">321</span><span id="line-321">    private Summary evaluateSummary(boolean force) {</span>
+<span class="source-line-no">322</span><span id="line-322">        if (!force &amp;&amp; cachedSummary != null) {</span>
+<span class="source-line-no">323</span><span id="line-323">            return cachedSummary;</span>
+<span class="source-line-no">324</span><span id="line-324">        }</span>
+<span class="source-line-no">325</span><span id="line-325">        Summary summary = new Summary();</span>
+<span class="source-line-no">326</span><span id="line-326">        for (var vmDef : vmInfos.values()) {</span>
+<span class="source-line-no">327</span><span id="line-327">            summary.totalVms += 1;</span>
+<span class="source-line-no">328</span><span id="line-328">            var status = GsonPtr.to(vmDef.data()).to("status");</span>
+<span class="source-line-no">329</span><span id="line-329">            summary.usedCpus += status.getAsInt("cpus").orElse(0);</span>
+<span class="source-line-no">330</span><span id="line-330">            summary.usedRam = summary.usedRam.add(status.getAsString("ram")</span>
+<span class="source-line-no">331</span><span id="line-331">                .map(BigInteger::new).orElse(BigInteger.ZERO));</span>
+<span class="source-line-no">332</span><span id="line-332">            for (var c : status.getAsListOf(JsonObject.class, "conditions")) {</span>
+<span class="source-line-no">333</span><span id="line-333">                if ("Running".equals(GsonPtr.to(c).getAsString("type")</span>
+<span class="source-line-no">334</span><span id="line-334">                    .orElse(null))</span>
+<span class="source-line-no">335</span><span id="line-335">                    &amp;&amp; "True".equals(GsonPtr.to(c).getAsString("status")</span>
+<span class="source-line-no">336</span><span id="line-336">                        .orElse(null))) {</span>
+<span class="source-line-no">337</span><span id="line-337">                    summary.runningVms += 1;</span>
+<span class="source-line-no">338</span><span id="line-338">                }</span>
+<span class="source-line-no">339</span><span id="line-339">            }</span>
+<span class="source-line-no">340</span><span id="line-340">        }</span>
+<span class="source-line-no">341</span><span id="line-341">        cachedSummary = summary;</span>
+<span class="source-line-no">342</span><span id="line-342">        return summary;</span>
+<span class="source-line-no">343</span><span id="line-343">    }</span>
+<span class="source-line-no">344</span><span id="line-344"></span>
+<span class="source-line-no">345</span><span id="line-345">    @Override</span>
+<span class="source-line-no">346</span><span id="line-346">    @SuppressWarnings("PMD.AvoidDecimalLiteralsInBigDecimalConstructor")</span>
+<span class="source-line-no">347</span><span id="line-347">    protected void doUpdateConletState(NotifyConletModel event,</span>
+<span class="source-line-no">348</span><span id="line-348">            ConsoleConnection channel, VmsModel conletState)</span>
+<span class="source-line-no">349</span><span id="line-349">            throws Exception {</span>
+<span class="source-line-no">350</span><span id="line-350">        event.stop();</span>
+<span class="source-line-no">351</span><span id="line-351">        var vmName = event.params().asString(0);</span>
+<span class="source-line-no">352</span><span id="line-352">        var vmChannel = vmChannels.get(vmName);</span>
+<span class="source-line-no">353</span><span id="line-353">        if (vmChannel == null) {</span>
+<span class="source-line-no">354</span><span id="line-354">            return;</span>
+<span class="source-line-no">355</span><span id="line-355">        }</span>
+<span class="source-line-no">356</span><span id="line-356">        switch (event.method()) {</span>
+<span class="source-line-no">357</span><span id="line-357">        case "start":</span>
+<span class="source-line-no">358</span><span id="line-358">            fire(new ModifyVm(vmName, "state", "Running", vmChannel));</span>
+<span class="source-line-no">359</span><span id="line-359">            break;</span>
+<span class="source-line-no">360</span><span id="line-360">        case "stop":</span>
+<span class="source-line-no">361</span><span id="line-361">            fire(new ModifyVm(vmName, "state", "Stopped", vmChannel));</span>
 <span class="source-line-no">362</span><span id="line-362">            break;</span>
-<span class="source-line-no">363</span><span id="line-363">        case "ram":</span>
-<span class="source-line-no">364</span><span id="line-364">            fire(new ModifyVm(event.params().asString(0), "currentRam",</span>
-<span class="source-line-no">365</span><span id="line-365">                new Quantity(new BigDecimal(event.params().asDouble(1)),</span>
-<span class="source-line-no">366</span><span id="line-366">                    Format.BINARY_SI).toSuffixedString(),</span>
-<span class="source-line-no">367</span><span id="line-367">                new NamedChannel("manager")));</span>
-<span class="source-line-no">368</span><span id="line-368">            break;</span>
-<span class="source-line-no">369</span><span id="line-369">        default:// ignore</span>
-<span class="source-line-no">370</span><span id="line-370">            break;</span>
-<span class="source-line-no">371</span><span id="line-371">        }</span>
-<span class="source-line-no">372</span><span id="line-372">    }</span>
-<span class="source-line-no">373</span><span id="line-373"></span>
-<span class="source-line-no">374</span><span id="line-374">    @Override</span>
-<span class="source-line-no">375</span><span id="line-375">    protected boolean doSetLocale(SetLocale event, ConsoleConnection channel,</span>
-<span class="source-line-no">376</span><span id="line-376">            String conletId) throws Exception {</span>
-<span class="source-line-no">377</span><span id="line-377">        return true;</span>
-<span class="source-line-no">378</span><span id="line-378">    }</span>
-<span class="source-line-no">379</span><span id="line-379"></span>
-<span class="source-line-no">380</span><span id="line-380">    /**</span>
-<span class="source-line-no">381</span><span id="line-381">     * The Class VmsModel.</span>
-<span class="source-line-no">382</span><span id="line-382">     */</span>
-<span class="source-line-no">383</span><span id="line-383">    public class VmsModel extends ConletBaseModel {</span>
+<span class="source-line-no">363</span><span id="line-363">        case "cpus":</span>
+<span class="source-line-no">364</span><span id="line-364">            fire(new ModifyVm(vmName, "currentCpus",</span>
+<span class="source-line-no">365</span><span id="line-365">                new BigDecimal(event.params().asDouble(1)).toBigInteger(),</span>
+<span class="source-line-no">366</span><span id="line-366">                vmChannel));</span>
+<span class="source-line-no">367</span><span id="line-367">            break;</span>
+<span class="source-line-no">368</span><span id="line-368">        case "ram":</span>
+<span class="source-line-no">369</span><span id="line-369">            fire(new ModifyVm(vmName, "currentRam",</span>
+<span class="source-line-no">370</span><span id="line-370">                new Quantity(new BigDecimal(event.params().asDouble(1)),</span>
+<span class="source-line-no">371</span><span id="line-371">                    Format.BINARY_SI).toSuffixedString(),</span>
+<span class="source-line-no">372</span><span id="line-372">                vmChannel));</span>
+<span class="source-line-no">373</span><span id="line-373">            break;</span>
+<span class="source-line-no">374</span><span id="line-374">        default:// ignore</span>
+<span class="source-line-no">375</span><span id="line-375">            break;</span>
+<span class="source-line-no">376</span><span id="line-376">        }</span>
+<span class="source-line-no">377</span><span id="line-377">    }</span>
+<span class="source-line-no">378</span><span id="line-378"></span>
+<span class="source-line-no">379</span><span id="line-379">    @Override</span>
+<span class="source-line-no">380</span><span id="line-380">    protected boolean doSetLocale(SetLocale event, ConsoleConnection channel,</span>
+<span class="source-line-no">381</span><span id="line-381">            String conletId) throws Exception {</span>
+<span class="source-line-no">382</span><span id="line-382">        return true;</span>
+<span class="source-line-no">383</span><span id="line-383">    }</span>
 <span class="source-line-no">384</span><span id="line-384"></span>
-<span class="source-line-no">385</span><span id="line-385">        /**</span>
-<span class="source-line-no">386</span><span id="line-386">         * Instantiates a new vms model.</span>
-<span class="source-line-no">387</span><span id="line-387">         *</span>
-<span class="source-line-no">388</span><span id="line-388">         * @param conletId the conlet id</span>
-<span class="source-line-no">389</span><span id="line-389">         */</span>
-<span class="source-line-no">390</span><span id="line-390">        public VmsModel(String conletId) {</span>
-<span class="source-line-no">391</span><span id="line-391">            super(conletId);</span>
-<span class="source-line-no">392</span><span id="line-392">        }</span>
-<span class="source-line-no">393</span><span id="line-393"></span>
-<span class="source-line-no">394</span><span id="line-394">    }</span>
-<span class="source-line-no">395</span><span id="line-395">}</span>
+<span class="source-line-no">385</span><span id="line-385">    /**</span>
+<span class="source-line-no">386</span><span id="line-386">     * The Class VmsModel.</span>
+<span class="source-line-no">387</span><span id="line-387">     */</span>
+<span class="source-line-no">388</span><span id="line-388">    public class VmsModel extends ConletBaseModel {</span>
+<span class="source-line-no">389</span><span id="line-389"></span>
+<span class="source-line-no">390</span><span id="line-390">        /**</span>
+<span class="source-line-no">391</span><span id="line-391">         * Instantiates a new vms model.</span>
+<span class="source-line-no">392</span><span id="line-392">         *</span>
+<span class="source-line-no">393</span><span id="line-393">         * @param conletId the conlet id</span>
+<span class="source-line-no">394</span><span id="line-394">         */</span>
+<span class="source-line-no">395</span><span id="line-395">        public VmsModel(String conletId) {</span>
+<span class="source-line-no">396</span><span id="line-396">            super(conletId);</span>
+<span class="source-line-no">397</span><span id="line-397">        }</span>
+<span class="source-line-no">398</span><span id="line-398"></span>
+<span class="source-line-no">399</span><span id="line-399">    }</span>
+<span class="source-line-no">400</span><span id="line-400">}</span>
 
 
 

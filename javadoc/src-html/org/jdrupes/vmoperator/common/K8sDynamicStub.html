@@ -31,10 +31,10 @@
 <span class="source-line-no">018</span><span id="line-18"></span>
 <span class="source-line-no">019</span><span id="line-19">package org.jdrupes.vmoperator.common;</span>
 <span class="source-line-no">020</span><span id="line-20"></span>
-<span class="source-line-no">021</span><span id="line-21">import io.kubernetes.client.apimachinery.GroupVersionKind;</span>
-<span class="source-line-no">022</span><span id="line-22">import io.kubernetes.client.openapi.ApiClient;</span>
+<span class="source-line-no">021</span><span id="line-21">import io.kubernetes.client.Discovery.APIResource;</span>
+<span class="source-line-no">022</span><span id="line-22">import io.kubernetes.client.apimachinery.GroupVersionKind;</span>
 <span class="source-line-no">023</span><span id="line-23">import io.kubernetes.client.openapi.ApiException;</span>
-<span class="source-line-no">024</span><span id="line-24">import java.util.Optional;</span>
+<span class="source-line-no">024</span><span id="line-24">import java.io.Reader;</span>
 <span class="source-line-no">025</span><span id="line-25"></span>
 <span class="source-line-no">026</span><span id="line-26">/**</span>
 <span class="source-line-no">027</span><span id="line-27"> * A stub for namespaced custom objects.</span>
@@ -49,42 +49,74 @@
 <span class="source-line-no">036</span><span id="line-36">     * @param objectClass the object class</span>
 <span class="source-line-no">037</span><span id="line-37">     * @param objectListClass the object list class</span>
 <span class="source-line-no">038</span><span id="line-38">     * @param client the client</span>
-<span class="source-line-no">039</span><span id="line-39">     * @param group the group</span>
-<span class="source-line-no">040</span><span id="line-40">     * @param version the version</span>
-<span class="source-line-no">041</span><span id="line-41">     * @param kind the kind</span>
-<span class="source-line-no">042</span><span id="line-42">     * @param plural the plural</span>
-<span class="source-line-no">043</span><span id="line-43">     * @param namespace the namespace</span>
-<span class="source-line-no">044</span><span id="line-44">     * @param name the name</span>
-<span class="source-line-no">045</span><span id="line-45">     */</span>
-<span class="source-line-no">046</span><span id="line-46">    protected K8sDynamicStub(Class&lt;K8sDynamicModel&gt; objectClass,</span>
-<span class="source-line-no">047</span><span id="line-47">            Class&lt;K8sDynamicModels&gt; objectListClass, ApiClient client,</span>
-<span class="source-line-no">048</span><span id="line-48">            String group, String version, String kind, String plural,</span>
-<span class="source-line-no">049</span><span id="line-49">            String namespace, String name) {</span>
-<span class="source-line-no">050</span><span id="line-50">        super(objectClass, objectListClass, client, group, version, kind,</span>
-<span class="source-line-no">051</span><span id="line-51">            plural, namespace, name);</span>
-<span class="source-line-no">052</span><span id="line-52">    }</span>
-<span class="source-line-no">053</span><span id="line-53"></span>
-<span class="source-line-no">054</span><span id="line-54">    /**</span>
-<span class="source-line-no">055</span><span id="line-55">     * Get a dynamic object stub. If the version in parameter</span>
-<span class="source-line-no">056</span><span id="line-56">     * `gvk` is an empty string, the stub refers to the first object with</span>
-<span class="source-line-no">057</span><span id="line-57">     * matching group and kind. </span>
-<span class="source-line-no">058</span><span id="line-58">     *</span>
-<span class="source-line-no">059</span><span id="line-59">     * @param client the client</span>
-<span class="source-line-no">060</span><span id="line-60">     * @param gvk the group, version and kind</span>
-<span class="source-line-no">061</span><span id="line-61">     * @param namespace the namespace</span>
-<span class="source-line-no">062</span><span id="line-62">     * @param name the name</span>
-<span class="source-line-no">063</span><span id="line-63">     * @return the stub if the object exists</span>
-<span class="source-line-no">064</span><span id="line-64">     * @throws ApiException the api exception</span>
-<span class="source-line-no">065</span><span id="line-65">     */</span>
-<span class="source-line-no">066</span><span id="line-66">    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",</span>
-<span class="source-line-no">067</span><span id="line-67">        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })</span>
-<span class="source-line-no">068</span><span id="line-68">    public static Optional&lt;K8sDynamicStub&gt; get(ApiClient client,</span>
-<span class="source-line-no">069</span><span id="line-69">            GroupVersionKind gvk, String namespace, String name)</span>
-<span class="source-line-no">070</span><span id="line-70">            throws ApiException {</span>
-<span class="source-line-no">071</span><span id="line-71">        return K8sGenericStub.get(K8sDynamicModel.class, K8sDynamicModels.class,</span>
-<span class="source-line-no">072</span><span id="line-72">            client, gvk, namespace, name, K8sDynamicStub::new);</span>
-<span class="source-line-no">073</span><span id="line-73">    }</span>
-<span class="source-line-no">074</span><span id="line-74">}</span>
+<span class="source-line-no">039</span><span id="line-39">     * @param context the context</span>
+<span class="source-line-no">040</span><span id="line-40">     * @param namespace the namespace</span>
+<span class="source-line-no">041</span><span id="line-41">     * @param name the name</span>
+<span class="source-line-no">042</span><span id="line-42">     */</span>
+<span class="source-line-no">043</span><span id="line-43">    public K8sDynamicStub(Class&lt;K8sDynamicModel&gt; objectClass,</span>
+<span class="source-line-no">044</span><span id="line-44">            Class&lt;K8sDynamicModels&gt; objectListClass, K8sClient client,</span>
+<span class="source-line-no">045</span><span id="line-45">            APIResource context, String namespace, String name) {</span>
+<span class="source-line-no">046</span><span id="line-46">        super(objectClass, objectListClass, client, context, namespace, name);</span>
+<span class="source-line-no">047</span><span id="line-47">    }</span>
+<span class="source-line-no">048</span><span id="line-48"></span>
+<span class="source-line-no">049</span><span id="line-49">    /**</span>
+<span class="source-line-no">050</span><span id="line-50">     * Get a dynamic object stub. If the version in parameter</span>
+<span class="source-line-no">051</span><span id="line-51">     * `gvk` is an empty string, the stub refers to the first object with</span>
+<span class="source-line-no">052</span><span id="line-52">     * matching group and kind. </span>
+<span class="source-line-no">053</span><span id="line-53">     *</span>
+<span class="source-line-no">054</span><span id="line-54">     * @param client the client</span>
+<span class="source-line-no">055</span><span id="line-55">     * @param gvk the group, version and kind</span>
+<span class="source-line-no">056</span><span id="line-56">     * @param namespace the namespace</span>
+<span class="source-line-no">057</span><span id="line-57">     * @param name the name</span>
+<span class="source-line-no">058</span><span id="line-58">     * @return the stub if the object exists</span>
+<span class="source-line-no">059</span><span id="line-59">     * @throws ApiException the api exception</span>
+<span class="source-line-no">060</span><span id="line-60">     */</span>
+<span class="source-line-no">061</span><span id="line-61">    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",</span>
+<span class="source-line-no">062</span><span id="line-62">        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })</span>
+<span class="source-line-no">063</span><span id="line-63">    public static K8sDynamicStub get(K8sClient client,</span>
+<span class="source-line-no">064</span><span id="line-64">            GroupVersionKind gvk, String namespace, String name)</span>
+<span class="source-line-no">065</span><span id="line-65">            throws ApiException {</span>
+<span class="source-line-no">066</span><span id="line-66">        return K8sGenericStub.get(K8sDynamicModel.class, K8sDynamicModels.class,</span>
+<span class="source-line-no">067</span><span id="line-67">            client, gvk, namespace, name, K8sDynamicStub::new);</span>
+<span class="source-line-no">068</span><span id="line-68">    }</span>
+<span class="source-line-no">069</span><span id="line-69"></span>
+<span class="source-line-no">070</span><span id="line-70">    /**</span>
+<span class="source-line-no">071</span><span id="line-71">     * Get a dynamic object stub.</span>
+<span class="source-line-no">072</span><span id="line-72">     *</span>
+<span class="source-line-no">073</span><span id="line-73">     * @param client the client</span>
+<span class="source-line-no">074</span><span id="line-74">     * @param gvk the group, version and kind</span>
+<span class="source-line-no">075</span><span id="line-75">     * @param namespace the namespace</span>
+<span class="source-line-no">076</span><span id="line-76">     * @param name the name</span>
+<span class="source-line-no">077</span><span id="line-77">     * @return the stub if the object exists</span>
+<span class="source-line-no">078</span><span id="line-78">     * @throws ApiException the api exception</span>
+<span class="source-line-no">079</span><span id="line-79">     */</span>
+<span class="source-line-no">080</span><span id="line-80">    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",</span>
+<span class="source-line-no">081</span><span id="line-81">        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })</span>
+<span class="source-line-no">082</span><span id="line-82">    public static K8sDynamicStub get(K8sClient client,</span>
+<span class="source-line-no">083</span><span id="line-83">            APIResource context, String namespace, String name)</span>
+<span class="source-line-no">084</span><span id="line-84">            throws ApiException {</span>
+<span class="source-line-no">085</span><span id="line-85">        return K8sGenericStub.get(K8sDynamicModel.class, K8sDynamicModels.class,</span>
+<span class="source-line-no">086</span><span id="line-86">            client, context, namespace, name, K8sDynamicStub::new);</span>
+<span class="source-line-no">087</span><span id="line-87">    }</span>
+<span class="source-line-no">088</span><span id="line-88"></span>
+<span class="source-line-no">089</span><span id="line-89">    /**</span>
+<span class="source-line-no">090</span><span id="line-90">     * Creates a stub from yaml.</span>
+<span class="source-line-no">091</span><span id="line-91">     *</span>
+<span class="source-line-no">092</span><span id="line-92">     * @param client the client</span>
+<span class="source-line-no">093</span><span id="line-93">     * @param context the context</span>
+<span class="source-line-no">094</span><span id="line-94">     * @param yaml the yaml</span>
+<span class="source-line-no">095</span><span id="line-95">     * @return the k 8 s dynamic stub</span>
+<span class="source-line-no">096</span><span id="line-96">     * @throws ApiException the api exception</span>
+<span class="source-line-no">097</span><span id="line-97">     */</span>
+<span class="source-line-no">098</span><span id="line-98">    public static K8sDynamicStub createFromYaml(K8sClient client,</span>
+<span class="source-line-no">099</span><span id="line-99">            APIResource context, Reader yaml) throws ApiException {</span>
+<span class="source-line-no">100</span><span id="line-100">        var model = new K8sDynamicModel(client.getJSON().getGson(),</span>
+<span class="source-line-no">101</span><span id="line-101">            K8s.yamlToJson(client, yaml));</span>
+<span class="source-line-no">102</span><span id="line-102">        return K8sGenericStub.create(K8sDynamicModel.class,</span>
+<span class="source-line-no">103</span><span id="line-103">            K8sDynamicModels.class, client, context, model,</span>
+<span class="source-line-no">104</span><span id="line-104">            K8sDynamicStub::new);</span>
+<span class="source-line-no">105</span><span id="line-105">    }</span>
+<span class="source-line-no">106</span><span id="line-106">}</span>
 
 
 

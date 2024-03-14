@@ -32,52 +32,52 @@
 <span class="source-line-no">019</span><span id="line-19">package org.jdrupes.vmoperator.common;</span>
 <span class="source-line-no">020</span><span id="line-20"></span>
 <span class="source-line-no">021</span><span id="line-21">import com.google.gson.Gson;</span>
-<span class="source-line-no">022</span><span id="line-22">import io.kubernetes.client.Discovery;</span>
+<span class="source-line-no">022</span><span id="line-22">import io.kubernetes.client.Discovery.APIResource;</span>
 <span class="source-line-no">023</span><span id="line-23">import io.kubernetes.client.apimachinery.GroupVersionKind;</span>
 <span class="source-line-no">024</span><span id="line-24">import io.kubernetes.client.common.KubernetesListObject;</span>
 <span class="source-line-no">025</span><span id="line-25">import io.kubernetes.client.common.KubernetesObject;</span>
 <span class="source-line-no">026</span><span id="line-26">import io.kubernetes.client.custom.V1Patch;</span>
 <span class="source-line-no">027</span><span id="line-27">import io.kubernetes.client.openapi.ApiClient;</span>
 <span class="source-line-no">028</span><span id="line-28">import io.kubernetes.client.openapi.ApiException;</span>
-<span class="source-line-no">029</span><span id="line-29">import io.kubernetes.client.util.Strings;</span>
-<span class="source-line-no">030</span><span id="line-30">import io.kubernetes.client.util.generic.GenericKubernetesApi;</span>
-<span class="source-line-no">031</span><span id="line-31">import io.kubernetes.client.util.generic.KubernetesApiResponse;</span>
-<span class="source-line-no">032</span><span id="line-32">import io.kubernetes.client.util.generic.options.PatchOptions;</span>
-<span class="source-line-no">033</span><span id="line-33">import java.util.Optional;</span>
-<span class="source-line-no">034</span><span id="line-34">import java.util.function.Function;</span>
-<span class="source-line-no">035</span><span id="line-35"></span>
-<span class="source-line-no">036</span><span id="line-36">/**</span>
-<span class="source-line-no">037</span><span id="line-37"> * A stub for namespaced custom objects.</span>
-<span class="source-line-no">038</span><span id="line-38"> *</span>
-<span class="source-line-no">039</span><span id="line-39"> * @param &lt;O&gt; the generic type</span>
-<span class="source-line-no">040</span><span id="line-40"> * @param &lt;L&gt; the generic type</span>
-<span class="source-line-no">041</span><span id="line-41"> */</span>
-<span class="source-line-no">042</span><span id="line-42">@SuppressWarnings("PMD.DataflowAnomalyAnalysis")</span>
-<span class="source-line-no">043</span><span id="line-43">public class K8sGenericStub&lt;O extends KubernetesObject,</span>
-<span class="source-line-no">044</span><span id="line-44">        L extends KubernetesListObject&gt; {</span>
-<span class="source-line-no">045</span><span id="line-45">    private final GenericKubernetesApi&lt;O, L&gt; api;</span>
-<span class="source-line-no">046</span><span id="line-46">    private final String group;</span>
-<span class="source-line-no">047</span><span id="line-47">    private final String version;</span>
-<span class="source-line-no">048</span><span id="line-48">    private final String kind;</span>
-<span class="source-line-no">049</span><span id="line-49">    private final String plural;</span>
-<span class="source-line-no">050</span><span id="line-50">    private final String namespace;</span>
-<span class="source-line-no">051</span><span id="line-51">    private final String name;</span>
-<span class="source-line-no">052</span><span id="line-52"></span>
-<span class="source-line-no">053</span><span id="line-53">    /**</span>
-<span class="source-line-no">054</span><span id="line-54">     * Instantiates a new namespaced custom object stub.</span>
-<span class="source-line-no">055</span><span id="line-55">     * @param group the group</span>
-<span class="source-line-no">056</span><span id="line-56">     * @param version the version</span>
-<span class="source-line-no">057</span><span id="line-57">     * @param plural the plural</span>
-<span class="source-line-no">058</span><span id="line-58">     * @param namespace the namespace</span>
-<span class="source-line-no">059</span><span id="line-59">     * @param name the name</span>
-<span class="source-line-no">060</span><span id="line-60">     */</span>
-<span class="source-line-no">061</span><span id="line-61">    protected K8sGenericStub(Class&lt;O&gt; objectClass, Class&lt;L&gt; objectListClass,</span>
-<span class="source-line-no">062</span><span id="line-62">            ApiClient client, String group, String version, String kind,</span>
-<span class="source-line-no">063</span><span id="line-63">            String plural, String namespace, String name) {</span>
-<span class="source-line-no">064</span><span id="line-64">        this.group = group;</span>
-<span class="source-line-no">065</span><span id="line-65">        this.version = version;</span>
-<span class="source-line-no">066</span><span id="line-66">        this.kind = kind;</span>
-<span class="source-line-no">067</span><span id="line-67">        this.plural = plural;</span>
+<span class="source-line-no">029</span><span id="line-29">import io.kubernetes.client.util.generic.GenericKubernetesApi;</span>
+<span class="source-line-no">030</span><span id="line-30">import io.kubernetes.client.util.generic.options.PatchOptions;</span>
+<span class="source-line-no">031</span><span id="line-31">import java.util.Optional;</span>
+<span class="source-line-no">032</span><span id="line-32">import java.util.function.Function;</span>
+<span class="source-line-no">033</span><span id="line-33"></span>
+<span class="source-line-no">034</span><span id="line-34">/**</span>
+<span class="source-line-no">035</span><span id="line-35"> * A stub for namespaced custom objects.</span>
+<span class="source-line-no">036</span><span id="line-36"> *</span>
+<span class="source-line-no">037</span><span id="line-37"> * @param &lt;O&gt; the generic type</span>
+<span class="source-line-no">038</span><span id="line-38"> * @param &lt;L&gt; the generic type</span>
+<span class="source-line-no">039</span><span id="line-39"> */</span>
+<span class="source-line-no">040</span><span id="line-40">@SuppressWarnings("PMD.DataflowAnomalyAnalysis")</span>
+<span class="source-line-no">041</span><span id="line-41">public class K8sGenericStub&lt;O extends KubernetesObject,</span>
+<span class="source-line-no">042</span><span id="line-42">        L extends KubernetesListObject&gt; {</span>
+<span class="source-line-no">043</span><span id="line-43">    protected final K8sClient client;</span>
+<span class="source-line-no">044</span><span id="line-44">    private final GenericKubernetesApi&lt;O, L&gt; api;</span>
+<span class="source-line-no">045</span><span id="line-45">    protected final String group;</span>
+<span class="source-line-no">046</span><span id="line-46">    protected final String version;</span>
+<span class="source-line-no">047</span><span id="line-47">    protected final String kind;</span>
+<span class="source-line-no">048</span><span id="line-48">    protected final String plural;</span>
+<span class="source-line-no">049</span><span id="line-49">    protected final String namespace;</span>
+<span class="source-line-no">050</span><span id="line-50">    protected final String name;</span>
+<span class="source-line-no">051</span><span id="line-51"></span>
+<span class="source-line-no">052</span><span id="line-52">    /**</span>
+<span class="source-line-no">053</span><span id="line-53">     * Instantiates a new namespaced custom object stub.</span>
+<span class="source-line-no">054</span><span id="line-54">     * @param group the group</span>
+<span class="source-line-no">055</span><span id="line-55">     * @param version the version</span>
+<span class="source-line-no">056</span><span id="line-56">     * @param plural the plural</span>
+<span class="source-line-no">057</span><span id="line-57">     * @param namespace the namespace</span>
+<span class="source-line-no">058</span><span id="line-58">     * @param name the name</span>
+<span class="source-line-no">059</span><span id="line-59">     */</span>
+<span class="source-line-no">060</span><span id="line-60">    public K8sGenericStub(Class&lt;O&gt; objectClass, Class&lt;L&gt; objectListClass,</span>
+<span class="source-line-no">061</span><span id="line-61">            K8sClient client, APIResource context, String namespace,</span>
+<span class="source-line-no">062</span><span id="line-62">            String name) {</span>
+<span class="source-line-no">063</span><span id="line-63">        this.client = client;</span>
+<span class="source-line-no">064</span><span id="line-64">        group = context.getGroup();</span>
+<span class="source-line-no">065</span><span id="line-65">        version = context.getPreferredVersion();</span>
+<span class="source-line-no">066</span><span id="line-66">        kind = context.getKind();</span>
+<span class="source-line-no">067</span><span id="line-67">        plural = context.getResourcePlural();</span>
 <span class="source-line-no">068</span><span id="line-68">        this.namespace = namespace;</span>
 <span class="source-line-no">069</span><span id="line-69">        this.name = name;</span>
 <span class="source-line-no">070</span><span id="line-70"></span>
@@ -160,9 +160,9 @@
 <span class="source-line-no">147</span><span id="line-147">     * `gvk` is an empty string, the stub refers to the first object with</span>
 <span class="source-line-no">148</span><span id="line-148">     * matching group and kind. </span>
 <span class="source-line-no">149</span><span id="line-149">     *</span>
-<span class="source-line-no">150</span><span id="line-150">     * @param &lt;O&gt; the generic type</span>
-<span class="source-line-no">151</span><span id="line-151">     * @param &lt;L&gt; the generic type</span>
-<span class="source-line-no">152</span><span id="line-152">     * @param &lt;R&gt; the generic type</span>
+<span class="source-line-no">150</span><span id="line-150">     * @param &lt;O&gt; the object type</span>
+<span class="source-line-no">151</span><span id="line-151">     * @param &lt;L&gt; the object list type</span>
+<span class="source-line-no">152</span><span id="line-152">     * @param &lt;R&gt; the stub type</span>
 <span class="source-line-no">153</span><span id="line-153">     * @param objectClass the object class</span>
 <span class="source-line-no">154</span><span id="line-154">     * @param objectListClass the object list class</span>
 <span class="source-line-no">155</span><span id="line-155">     * @param client the client</span>
@@ -174,130 +174,183 @@
 <span class="source-line-no">161</span><span id="line-161">     * @throws ApiException the api exception</span>
 <span class="source-line-no">162</span><span id="line-162">     */</span>
 <span class="source-line-no">163</span><span id="line-163">    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",</span>
-<span class="source-line-no">164</span><span id="line-164">        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })</span>
+<span class="source-line-no">164</span><span id="line-164">        "PMD.AvoidInstantiatingObjectsInLoops" })</span>
 <span class="source-line-no">165</span><span id="line-165">    public static &lt;O extends KubernetesObject, L extends KubernetesListObject,</span>
 <span class="source-line-no">166</span><span id="line-166">            R extends K8sGenericStub&lt;O, L&gt;&gt;</span>
-<span class="source-line-no">167</span><span id="line-167">            Optional&lt;R&gt; get(Class&lt;O&gt; objectClass, Class&lt;L&gt; objectListClass,</span>
-<span class="source-line-no">168</span><span id="line-168">                    ApiClient client, GroupVersionKind gvk, String namespace,</span>
+<span class="source-line-no">167</span><span id="line-167">            R get(Class&lt;O&gt; objectClass, Class&lt;L&gt; objectListClass,</span>
+<span class="source-line-no">168</span><span id="line-168">                    K8sClient client, GroupVersionKind gvk, String namespace,</span>
 <span class="source-line-no">169</span><span id="line-169">                    String name, StubSupplier&lt;O, L, R&gt; provider)</span>
 <span class="source-line-no">170</span><span id="line-170">                    throws ApiException {</span>
-<span class="source-line-no">171</span><span id="line-171">        var group = gvk.getGroup();</span>
-<span class="source-line-no">172</span><span id="line-172">        var kind = gvk.getKind();</span>
-<span class="source-line-no">173</span><span id="line-173">        var version = gvk.getVersion();</span>
-<span class="source-line-no">174</span><span id="line-174">        var apiMatch = new Discovery(client).findAll().stream()</span>
-<span class="source-line-no">175</span><span id="line-175">            .filter(r -&gt; r.getGroup().equals(group) &amp;&amp; r.getKind().equals(kind)</span>
-<span class="source-line-no">176</span><span id="line-176">                &amp;&amp; (Strings.isNullOrEmpty(version)</span>
-<span class="source-line-no">177</span><span id="line-177">                    || r.getVersions().contains(version)))</span>
-<span class="source-line-no">178</span><span id="line-178">            .findFirst();</span>
-<span class="source-line-no">179</span><span id="line-179">        if (apiMatch.isEmpty()) {</span>
-<span class="source-line-no">180</span><span id="line-180">            return Optional.empty();</span>
-<span class="source-line-no">181</span><span id="line-181">        }</span>
-<span class="source-line-no">182</span><span id="line-182">        var apiRes = apiMatch.get();</span>
-<span class="source-line-no">183</span><span id="line-183">        var finalVersion = Strings.isNullOrEmpty(version)</span>
-<span class="source-line-no">184</span><span id="line-184">            ? apiRes.getVersions().get(0)</span>
-<span class="source-line-no">185</span><span id="line-185">            : version;</span>
-<span class="source-line-no">186</span><span id="line-186">        return Optional</span>
-<span class="source-line-no">187</span><span id="line-187">            .of(provider.get(objectClass, objectListClass,</span>
-<span class="source-line-no">188</span><span id="line-188">                client, group, finalVersion, apiRes.getKind(),</span>
-<span class="source-line-no">189</span><span id="line-189">                apiRes.getResourcePlural(), namespace, name));</span>
-<span class="source-line-no">190</span><span id="line-190">    }</span>
-<span class="source-line-no">191</span><span id="line-191"></span>
-<span class="source-line-no">192</span><span id="line-192">    /**</span>
-<span class="source-line-no">193</span><span id="line-193">     * Retrieves and returns the current state of the object.</span>
-<span class="source-line-no">194</span><span id="line-194">     *</span>
-<span class="source-line-no">195</span><span id="line-195">     * @return the object's state</span>
-<span class="source-line-no">196</span><span id="line-196">     * @throws ApiException the api exception</span>
-<span class="source-line-no">197</span><span id="line-197">     */</span>
-<span class="source-line-no">198</span><span id="line-198">    public O state() throws ApiException {</span>
-<span class="source-line-no">199</span><span id="line-199">        var response = api.get(namespace, name).throwsApiException();</span>
-<span class="source-line-no">200</span><span id="line-200">        return response.getObject();</span>
-<span class="source-line-no">201</span><span id="line-201">    }</span>
-<span class="source-line-no">202</span><span id="line-202"></span>
-<span class="source-line-no">203</span><span id="line-203">    /**</span>
-<span class="source-line-no">204</span><span id="line-204">     * Updates the object's status.</span>
-<span class="source-line-no">205</span><span id="line-205">     *</span>
-<span class="source-line-no">206</span><span id="line-206">     * @param object the current state of the object (passed to `status`)</span>
-<span class="source-line-no">207</span><span id="line-207">     * @param status function that returns the new status</span>
-<span class="source-line-no">208</span><span id="line-208">     * @return the kubernetes api response</span>
-<span class="source-line-no">209</span><span id="line-209">     * @throws ApiException the api exception</span>
-<span class="source-line-no">210</span><span id="line-210">     */</span>
-<span class="source-line-no">211</span><span id="line-211">    public KubernetesApiResponse&lt;O&gt; updateStatus(O object,</span>
-<span class="source-line-no">212</span><span id="line-212">            Function&lt;O, Object&gt; status) throws ApiException {</span>
-<span class="source-line-no">213</span><span id="line-213">        return api.updateStatus(object, status).throwsApiException();</span>
-<span class="source-line-no">214</span><span id="line-214">    }</span>
-<span class="source-line-no">215</span><span id="line-215"></span>
-<span class="source-line-no">216</span><span id="line-216">    /**</span>
-<span class="source-line-no">217</span><span id="line-217">     * Updates the status.</span>
-<span class="source-line-no">218</span><span id="line-218">     *</span>
-<span class="source-line-no">219</span><span id="line-219">     * @param status the status</span>
-<span class="source-line-no">220</span><span id="line-220">     * @return the kubernetes api response</span>
-<span class="source-line-no">221</span><span id="line-221">     * @throws ApiException the api exception</span>
-<span class="source-line-no">222</span><span id="line-222">     */</span>
-<span class="source-line-no">223</span><span id="line-223">    public KubernetesApiResponse&lt;O&gt; updateStatus(Function&lt;O, Object&gt; status)</span>
-<span class="source-line-no">224</span><span id="line-224">            throws ApiException {</span>
-<span class="source-line-no">225</span><span id="line-225">        return updateStatus(</span>
-<span class="source-line-no">226</span><span id="line-226">            api.get(namespace, name).throwsApiException().getObject(), status);</span>
-<span class="source-line-no">227</span><span id="line-227">    }</span>
-<span class="source-line-no">228</span><span id="line-228"></span>
-<span class="source-line-no">229</span><span id="line-229">    /**</span>
-<span class="source-line-no">230</span><span id="line-230">     * Patch the object.</span>
-<span class="source-line-no">231</span><span id="line-231">     *</span>
-<span class="source-line-no">232</span><span id="line-232">     * @param patchType the patch type</span>
-<span class="source-line-no">233</span><span id="line-233">     * @param patch the patch</span>
-<span class="source-line-no">234</span><span id="line-234">     * @param options the options</span>
-<span class="source-line-no">235</span><span id="line-235">     * @return the kubernetes api response</span>
-<span class="source-line-no">236</span><span id="line-236">     * @throws ApiException the api exception</span>
-<span class="source-line-no">237</span><span id="line-237">     */</span>
-<span class="source-line-no">238</span><span id="line-238">    public KubernetesApiResponse&lt;O&gt; patch(String patchType, V1Patch patch,</span>
-<span class="source-line-no">239</span><span id="line-239">            PatchOptions options) throws ApiException {</span>
-<span class="source-line-no">240</span><span id="line-240">        return api.patch(namespace, name, patchType, patch, options)</span>
-<span class="source-line-no">241</span><span id="line-241">            .throwsApiException();</span>
-<span class="source-line-no">242</span><span id="line-242">    }</span>
-<span class="source-line-no">243</span><span id="line-243"></span>
-<span class="source-line-no">244</span><span id="line-244">    /**</span>
-<span class="source-line-no">245</span><span id="line-245">     * Patch the object using default options.</span>
-<span class="source-line-no">246</span><span id="line-246">     *</span>
-<span class="source-line-no">247</span><span id="line-247">     * @param patchType the patch type</span>
-<span class="source-line-no">248</span><span id="line-248">     * @param patch the patch</span>
-<span class="source-line-no">249</span><span id="line-249">     * @return the kubernetes api response</span>
-<span class="source-line-no">250</span><span id="line-250">     * @throws ApiException the api exception</span>
-<span class="source-line-no">251</span><span id="line-251">     */</span>
-<span class="source-line-no">252</span><span id="line-252">    public KubernetesApiResponse&lt;O&gt;</span>
-<span class="source-line-no">253</span><span id="line-253">            patch(String patchType, V1Patch patch) throws ApiException {</span>
-<span class="source-line-no">254</span><span id="line-254">        PatchOptions opts = new PatchOptions();</span>
-<span class="source-line-no">255</span><span id="line-255">        return patch(patchType, patch, opts);</span>
-<span class="source-line-no">256</span><span id="line-256">    }</span>
-<span class="source-line-no">257</span><span id="line-257"></span>
-<span class="source-line-no">258</span><span id="line-258">    /**</span>
-<span class="source-line-no">259</span><span id="line-259">     * A supplier for Stubs.</span>
-<span class="source-line-no">260</span><span id="line-260">     *</span>
-<span class="source-line-no">261</span><span id="line-261">     * @param &lt;O&gt; the object type</span>
-<span class="source-line-no">262</span><span id="line-262">     * @param &lt;L&gt; the object list type</span>
-<span class="source-line-no">263</span><span id="line-263">     * @param &lt;R&gt; the result type</span>
-<span class="source-line-no">264</span><span id="line-264">     */</span>
-<span class="source-line-no">265</span><span id="line-265">    public interface StubSupplier&lt;O extends KubernetesObject,</span>
-<span class="source-line-no">266</span><span id="line-266">            L extends KubernetesListObject, R extends K8sGenericStub&lt;O, L&gt;&gt; {</span>
-<span class="source-line-no">267</span><span id="line-267"></span>
-<span class="source-line-no">268</span><span id="line-268">        /**</span>
-<span class="source-line-no">269</span><span id="line-269">         * Gets a new stub.</span>
-<span class="source-line-no">270</span><span id="line-270">         *</span>
-<span class="source-line-no">271</span><span id="line-271">         * @param objectClass the object class</span>
-<span class="source-line-no">272</span><span id="line-272">         * @param objectListClass the object list class</span>
-<span class="source-line-no">273</span><span id="line-273">         * @param client the client</span>
-<span class="source-line-no">274</span><span id="line-274">         * @param group the group</span>
-<span class="source-line-no">275</span><span id="line-275">         * @param version the version</span>
-<span class="source-line-no">276</span><span id="line-276">         * @param kind the kind</span>
-<span class="source-line-no">277</span><span id="line-277">         * @param plural the plural</span>
-<span class="source-line-no">278</span><span id="line-278">         * @param namespace the namespace</span>
-<span class="source-line-no">279</span><span id="line-279">         * @param name the name</span>
-<span class="source-line-no">280</span><span id="line-280">         * @return the r</span>
-<span class="source-line-no">281</span><span id="line-281">         */</span>
-<span class="source-line-no">282</span><span id="line-282">        @SuppressWarnings("PMD.UseObjectForClearerAPI")</span>
-<span class="source-line-no">283</span><span id="line-283">        R get(Class&lt;O&gt; objectClass, Class&lt;L&gt; objectListClass,</span>
-<span class="source-line-no">284</span><span id="line-284">                ApiClient client, String group, String version, String kind,</span>
-<span class="source-line-no">285</span><span id="line-285">                String plural, String namespace, String name);</span>
-<span class="source-line-no">286</span><span id="line-286">    }</span>
-<span class="source-line-no">287</span><span id="line-287">}</span>
+<span class="source-line-no">171</span><span id="line-171">        var context = K8s.context(client, gvk.getGroup(), gvk.getVersion(),</span>
+<span class="source-line-no">172</span><span id="line-172">            gvk.getKind());</span>
+<span class="source-line-no">173</span><span id="line-173">        if (context.isEmpty()) {</span>
+<span class="source-line-no">174</span><span id="line-174">            throw new ApiException("No known API for " + gvk.getGroup()</span>
+<span class="source-line-no">175</span><span id="line-175">                + "/" + gvk.getVersion() + " " + gvk.getKind());</span>
+<span class="source-line-no">176</span><span id="line-176">        }</span>
+<span class="source-line-no">177</span><span id="line-177">        return provider.get(objectClass, objectListClass, client, context.get(),</span>
+<span class="source-line-no">178</span><span id="line-178">            namespace, name);</span>
+<span class="source-line-no">179</span><span id="line-179">    }</span>
+<span class="source-line-no">180</span><span id="line-180"></span>
+<span class="source-line-no">181</span><span id="line-181">    /**</span>
+<span class="source-line-no">182</span><span id="line-182">     * Get a namespaced object stub.</span>
+<span class="source-line-no">183</span><span id="line-183">     *</span>
+<span class="source-line-no">184</span><span id="line-184">     * @param &lt;O&gt; the object type</span>
+<span class="source-line-no">185</span><span id="line-185">     * @param &lt;L&gt; the object list type</span>
+<span class="source-line-no">186</span><span id="line-186">     * @param &lt;R&gt; the stub type</span>
+<span class="source-line-no">187</span><span id="line-187">     * @param objectClass the object class</span>
+<span class="source-line-no">188</span><span id="line-188">     * @param objectListClass the object list class</span>
+<span class="source-line-no">189</span><span id="line-189">     * @param client the client</span>
+<span class="source-line-no">190</span><span id="line-190">     * @param context the context</span>
+<span class="source-line-no">191</span><span id="line-191">     * @param namespace the namespace</span>
+<span class="source-line-no">192</span><span id="line-192">     * @param name the name</span>
+<span class="source-line-no">193</span><span id="line-193">     * @param provider the provider</span>
+<span class="source-line-no">194</span><span id="line-194">     * @return the stub if the object exists</span>
+<span class="source-line-no">195</span><span id="line-195">     * @throws ApiException the api exception</span>
+<span class="source-line-no">196</span><span id="line-196">     */</span>
+<span class="source-line-no">197</span><span id="line-197">    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",</span>
+<span class="source-line-no">198</span><span id="line-198">        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })</span>
+<span class="source-line-no">199</span><span id="line-199">    public static &lt;O extends KubernetesObject, L extends KubernetesListObject,</span>
+<span class="source-line-no">200</span><span id="line-200">            R extends K8sGenericStub&lt;O, L&gt;&gt;</span>
+<span class="source-line-no">201</span><span id="line-201">            R get(Class&lt;O&gt; objectClass, Class&lt;L&gt; objectListClass,</span>
+<span class="source-line-no">202</span><span id="line-202">                    K8sClient client, APIResource context, String namespace,</span>
+<span class="source-line-no">203</span><span id="line-203">                    String name, StubSupplier&lt;O, L, R&gt; provider)</span>
+<span class="source-line-no">204</span><span id="line-204">                    throws ApiException {</span>
+<span class="source-line-no">205</span><span id="line-205">        return provider.get(objectClass, objectListClass, client,</span>
+<span class="source-line-no">206</span><span id="line-206">            context, namespace, name);</span>
+<span class="source-line-no">207</span><span id="line-207">    }</span>
+<span class="source-line-no">208</span><span id="line-208"></span>
+<span class="source-line-no">209</span><span id="line-209">    /**</span>
+<span class="source-line-no">210</span><span id="line-210">     * Get a namespaced object stub for a newly created object.</span>
+<span class="source-line-no">211</span><span id="line-211">     *</span>
+<span class="source-line-no">212</span><span id="line-212">     * @param &lt;O&gt; the object type</span>
+<span class="source-line-no">213</span><span id="line-213">     * @param &lt;L&gt; the object list type</span>
+<span class="source-line-no">214</span><span id="line-214">     * @param &lt;R&gt; the stub type</span>
+<span class="source-line-no">215</span><span id="line-215">     * @param objectClass the object class</span>
+<span class="source-line-no">216</span><span id="line-216">     * @param objectListClass the object list class</span>
+<span class="source-line-no">217</span><span id="line-217">     * @param client the client</span>
+<span class="source-line-no">218</span><span id="line-218">     * @param context the context</span>
+<span class="source-line-no">219</span><span id="line-219">     * @param model the model</span>
+<span class="source-line-no">220</span><span id="line-220">     * @param provider the provider</span>
+<span class="source-line-no">221</span><span id="line-221">     * @return the stub if the object exists</span>
+<span class="source-line-no">222</span><span id="line-222">     * @throws ApiException the api exception</span>
+<span class="source-line-no">223</span><span id="line-223">     */</span>
+<span class="source-line-no">224</span><span id="line-224">    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",</span>
+<span class="source-line-no">225</span><span id="line-225">        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })</span>
+<span class="source-line-no">226</span><span id="line-226">    public static &lt;O extends KubernetesObject, L extends KubernetesListObject,</span>
+<span class="source-line-no">227</span><span id="line-227">            R extends K8sGenericStub&lt;O, L&gt;&gt;</span>
+<span class="source-line-no">228</span><span id="line-228">            R create(Class&lt;O&gt; objectClass, Class&lt;L&gt; objectListClass,</span>
+<span class="source-line-no">229</span><span id="line-229">                    K8sClient client, APIResource context, O model,</span>
+<span class="source-line-no">230</span><span id="line-230">                    StubSupplier&lt;O, L, R&gt; provider) throws ApiException {</span>
+<span class="source-line-no">231</span><span id="line-231">        var api = new GenericKubernetesApi&lt;&gt;(objectClass, objectListClass,</span>
+<span class="source-line-no">232</span><span id="line-232">            context.getGroup(), context.getPreferredVersion(),</span>
+<span class="source-line-no">233</span><span id="line-233">            context.getResourcePlural(), client);</span>
+<span class="source-line-no">234</span><span id="line-234">        api.create(model).throwsApiException();</span>
+<span class="source-line-no">235</span><span id="line-235">        return provider.get(objectClass, objectListClass, client,</span>
+<span class="source-line-no">236</span><span id="line-236">            context, model.getMetadata().getNamespace(),</span>
+<span class="source-line-no">237</span><span id="line-237">            model.getMetadata().getName());</span>
+<span class="source-line-no">238</span><span id="line-238">    }</span>
+<span class="source-line-no">239</span><span id="line-239"></span>
+<span class="source-line-no">240</span><span id="line-240">    /**</span>
+<span class="source-line-no">241</span><span id="line-241">     * Delete the Kubernetes object.</span>
+<span class="source-line-no">242</span><span id="line-242">     *</span>
+<span class="source-line-no">243</span><span id="line-243">     * @throws ApiException the API exception</span>
+<span class="source-line-no">244</span><span id="line-244">     */</span>
+<span class="source-line-no">245</span><span id="line-245">    public void delete() throws ApiException {</span>
+<span class="source-line-no">246</span><span id="line-246">        api.delete(namespace, name).throwsApiException();</span>
+<span class="source-line-no">247</span><span id="line-247">    }</span>
+<span class="source-line-no">248</span><span id="line-248"></span>
+<span class="source-line-no">249</span><span id="line-249">    /**</span>
+<span class="source-line-no">250</span><span id="line-250">     * Retrieves and returns the current state of the object.</span>
+<span class="source-line-no">251</span><span id="line-251">     *</span>
+<span class="source-line-no">252</span><span id="line-252">     * @return the object's state</span>
+<span class="source-line-no">253</span><span id="line-253">     * @throws ApiException the api exception</span>
+<span class="source-line-no">254</span><span id="line-254">     */</span>
+<span class="source-line-no">255</span><span id="line-255">    public Optional&lt;O&gt; model() throws ApiException {</span>
+<span class="source-line-no">256</span><span id="line-256">        return K8s.optional(api.get(namespace, name));</span>
+<span class="source-line-no">257</span><span id="line-257">    }</span>
+<span class="source-line-no">258</span><span id="line-258"></span>
+<span class="source-line-no">259</span><span id="line-259">    /**</span>
+<span class="source-line-no">260</span><span id="line-260">     * Updates the object's status.</span>
+<span class="source-line-no">261</span><span id="line-261">     *</span>
+<span class="source-line-no">262</span><span id="line-262">     * @param object the current state of the object (passed to `status`)</span>
+<span class="source-line-no">263</span><span id="line-263">     * @param status function that returns the new status</span>
+<span class="source-line-no">264</span><span id="line-264">     * @return the updated model or empty if not successful</span>
+<span class="source-line-no">265</span><span id="line-265">     * @throws ApiException the api exception</span>
+<span class="source-line-no">266</span><span id="line-266">     */</span>
+<span class="source-line-no">267</span><span id="line-267">    public Optional&lt;O&gt; updateStatus(O object,</span>
+<span class="source-line-no">268</span><span id="line-268">            Function&lt;O, Object&gt; status) throws ApiException {</span>
+<span class="source-line-no">269</span><span id="line-269">        return K8s.optional(api.updateStatus(object, status));</span>
+<span class="source-line-no">270</span><span id="line-270">    }</span>
+<span class="source-line-no">271</span><span id="line-271"></span>
+<span class="source-line-no">272</span><span id="line-272">    /**</span>
+<span class="source-line-no">273</span><span id="line-273">     * Updates the status.</span>
+<span class="source-line-no">274</span><span id="line-274">     *</span>
+<span class="source-line-no">275</span><span id="line-275">     * @param status the status</span>
+<span class="source-line-no">276</span><span id="line-276">     * @return the kubernetes api response</span>
+<span class="source-line-no">277</span><span id="line-277">     * the updated model or empty if not successful</span>
+<span class="source-line-no">278</span><span id="line-278">     * @throws ApiException the api exception</span>
+<span class="source-line-no">279</span><span id="line-279">     */</span>
+<span class="source-line-no">280</span><span id="line-280">    public Optional&lt;O&gt; updateStatus(Function&lt;O, Object&gt; status)</span>
+<span class="source-line-no">281</span><span id="line-281">            throws ApiException {</span>
+<span class="source-line-no">282</span><span id="line-282">        return updateStatus(</span>
+<span class="source-line-no">283</span><span id="line-283">            api.get(namespace, name).throwsApiException().getObject(), status);</span>
+<span class="source-line-no">284</span><span id="line-284">    }</span>
+<span class="source-line-no">285</span><span id="line-285"></span>
+<span class="source-line-no">286</span><span id="line-286">    /**</span>
+<span class="source-line-no">287</span><span id="line-287">     * Patch the object.</span>
+<span class="source-line-no">288</span><span id="line-288">     *</span>
+<span class="source-line-no">289</span><span id="line-289">     * @param patchType the patch type</span>
+<span class="source-line-no">290</span><span id="line-290">     * @param patch the patch</span>
+<span class="source-line-no">291</span><span id="line-291">     * @param options the options</span>
+<span class="source-line-no">292</span><span id="line-292">     * @return the kubernetes api response</span>
+<span class="source-line-no">293</span><span id="line-293">     * @throws ApiException the api exception</span>
+<span class="source-line-no">294</span><span id="line-294">     */</span>
+<span class="source-line-no">295</span><span id="line-295">    public Optional&lt;O&gt; patch(String patchType, V1Patch patch,</span>
+<span class="source-line-no">296</span><span id="line-296">            PatchOptions options) throws ApiException {</span>
+<span class="source-line-no">297</span><span id="line-297">        return K8s</span>
+<span class="source-line-no">298</span><span id="line-298">            .optional(api.patch(namespace, name, patchType, patch, options));</span>
+<span class="source-line-no">299</span><span id="line-299">    }</span>
+<span class="source-line-no">300</span><span id="line-300"></span>
+<span class="source-line-no">301</span><span id="line-301">    /**</span>
+<span class="source-line-no">302</span><span id="line-302">     * Patch the object using default options.</span>
+<span class="source-line-no">303</span><span id="line-303">     *</span>
+<span class="source-line-no">304</span><span id="line-304">     * @param patchType the patch type</span>
+<span class="source-line-no">305</span><span id="line-305">     * @param patch the patch</span>
+<span class="source-line-no">306</span><span id="line-306">     * @return the kubernetes api response</span>
+<span class="source-line-no">307</span><span id="line-307">     * @throws ApiException the api exception</span>
+<span class="source-line-no">308</span><span id="line-308">     */</span>
+<span class="source-line-no">309</span><span id="line-309">    public Optional&lt;O&gt;</span>
+<span class="source-line-no">310</span><span id="line-310">            patch(String patchType, V1Patch patch) throws ApiException {</span>
+<span class="source-line-no">311</span><span id="line-311">        PatchOptions opts = new PatchOptions();</span>
+<span class="source-line-no">312</span><span id="line-312">        return patch(patchType, patch, opts);</span>
+<span class="source-line-no">313</span><span id="line-313">    }</span>
+<span class="source-line-no">314</span><span id="line-314"></span>
+<span class="source-line-no">315</span><span id="line-315">    /**</span>
+<span class="source-line-no">316</span><span id="line-316">     * A supplier for Stubs.</span>
+<span class="source-line-no">317</span><span id="line-317">     *</span>
+<span class="source-line-no">318</span><span id="line-318">     * @param &lt;O&gt; the object type</span>
+<span class="source-line-no">319</span><span id="line-319">     * @param &lt;L&gt; the object list type</span>
+<span class="source-line-no">320</span><span id="line-320">     * @param &lt;R&gt; the result type</span>
+<span class="source-line-no">321</span><span id="line-321">     */</span>
+<span class="source-line-no">322</span><span id="line-322">    public interface StubSupplier&lt;O extends KubernetesObject,</span>
+<span class="source-line-no">323</span><span id="line-323">            L extends KubernetesListObject, R extends K8sGenericStub&lt;O, L&gt;&gt; {</span>
+<span class="source-line-no">324</span><span id="line-324"></span>
+<span class="source-line-no">325</span><span id="line-325">        /**</span>
+<span class="source-line-no">326</span><span id="line-326">         * Gets a new stub.</span>
+<span class="source-line-no">327</span><span id="line-327">         *</span>
+<span class="source-line-no">328</span><span id="line-328">         * @param objectClass the object class</span>
+<span class="source-line-no">329</span><span id="line-329">         * @param objectListClass the object list class</span>
+<span class="source-line-no">330</span><span id="line-330">         * @param client the client</span>
+<span class="source-line-no">331</span><span id="line-331">         * @param context the API resource</span>
+<span class="source-line-no">332</span><span id="line-332">         * @param namespace the namespace</span>
+<span class="source-line-no">333</span><span id="line-333">         * @param name the name</span>
+<span class="source-line-no">334</span><span id="line-334">         * @return the result</span>
+<span class="source-line-no">335</span><span id="line-335">         */</span>
+<span class="source-line-no">336</span><span id="line-336">        @SuppressWarnings("PMD.UseObjectForClearerAPI")</span>
+<span class="source-line-no">337</span><span id="line-337">        R get(Class&lt;O&gt; objectClass, Class&lt;L&gt; objectListClass, K8sClient client,</span>
+<span class="source-line-no">338</span><span id="line-338">                APIResource context, String namespace, String name);</span>
+<span class="source-line-no">339</span><span id="line-339">    }</span>
+<span class="source-line-no">340</span><span id="line-340">}</span>
 
 
 
