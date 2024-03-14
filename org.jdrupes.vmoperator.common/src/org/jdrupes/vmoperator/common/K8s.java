@@ -19,33 +19,34 @@
 package org.jdrupes.vmoperator.common;
 
 import com.google.gson.JsonObject;
+import io.kubernetes.client.Discovery;
+import io.kubernetes.client.Discovery.APIResource;
 import io.kubernetes.client.common.KubernetesListObject;
 import io.kubernetes.client.common.KubernetesObject;
+import io.kubernetes.client.common.KubernetesType;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.apis.ApisApi;
-import io.kubernetes.client.openapi.apis.CustomObjectsApi;
 import io.kubernetes.client.openapi.apis.EventsV1Api;
 import io.kubernetes.client.openapi.models.EventsV1Event;
-import io.kubernetes.client.openapi.models.V1APIGroup;
-import io.kubernetes.client.openapi.models.V1ConfigMap;
-import io.kubernetes.client.openapi.models.V1ConfigMapList;
-import io.kubernetes.client.openapi.models.V1GroupVersionForDiscovery;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1ObjectReference;
-import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
-import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimList;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.util.Strings;
 import io.kubernetes.client.util.generic.GenericKubernetesApi;
-import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import io.kubernetes.client.util.generic.options.DeleteOptions;
 import io.kubernetes.client.util.generic.options.PatchOptions;
+import java.io.Reader;
+import java.net.HttpURLConnection;
 import java.time.OffsetDateTime;
+import java.util.Map;
 import java.util.Optional;
+import org.yaml.snakeyaml.LoaderOptions;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 /**
  * Helpers for K8s API.
@@ -53,31 +54,6 @@ import java.util.Optional;
 @SuppressWarnings({ "PMD.ShortClassName", "PMD.UseUtilityClass",
     "PMD.DataflowAnomalyAnalysis" })
 public class K8s {
-
-    /**
-     * Get PVC API.
-     *
-     * @param client the client
-     * @return the generic kubernetes api
-     */
-    public static GenericKubernetesApi<V1PersistentVolumeClaim,
-            V1PersistentVolumeClaimList> pvcApi(ApiClient client) {
-        return new GenericKubernetesApi<>(V1PersistentVolumeClaim.class,
-            V1PersistentVolumeClaimList.class, "", "v1",
-            "persistentvolumeclaims", client);
-    }
-
-    /**
-     * Get config map API.
-     *
-     * @param client the client
-     * @return the generic kubernetes api
-     */
-    public static GenericKubernetesApi<V1ConfigMap,
-            V1ConfigMapList> cmApi(ApiClient client) {
-        return new GenericKubernetesApi<>(V1ConfigMap.class,
-            V1ConfigMapList.class, "", "v1", "configmaps", client);
-    }
 
     /**
      * Get pod API.
@@ -92,43 +68,80 @@ public class K8s {
     }
 
     /**
-     * Get the API for a custom resource.
+     * Returns the result from an API call as {@link Optional} if the
+     * call was successful. Returns an empty `Optional` if the status
+     * code is 404 (not found). Else throws an exception.
+     *
+     * @param <T> the generic type
+     * @param response the response
+     * @return the optional
+     * @throws ApiException the API exception
+     */
+    public static <T extends KubernetesType> Optional<T>
+            optional(KubernetesApiResponse<T> response) throws ApiException {
+        if (response.isSuccess()) {
+            return Optional.of(response.getObject());
+        }
+        if (response.getHttpStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
+            return Optional.empty();
+        }
+        response.throwsApiException();
+        // Never reached
+        return Optional.empty();
+    }
+
+    /**
+     * Convert Yaml to Json.
+     *
+     * @param client the client
+     * @param yaml the yaml
+     * @return the json element
+     */
+    public static JsonObject yamlToJson(ApiClient client, Reader yaml) {
+        // Avoid Yaml.load due to
+        // https://github.com/kubernetes-client/java/issues/2741
+        @SuppressWarnings("PMD.UseConcurrentHashMap")
+        Map<String, Object> yamlData
+            = new Yaml(new SafeConstructor(new LoaderOptions())).load(yaml);
+
+        // There's no short-cut from Java (collections) to Gson
+        var gson = client.getJSON().getGson();
+        var jsonText = gson.toJson(yamlData);
+        return gson.fromJson(jsonText, JsonObject.class);
+    }
+
+    /**
+     * Lookup the specified API resource. If the version is `null` or
+     * empty, the preferred version in the result is the default
+     * returned from the server.
      *
      * @param client the client
      * @param group the group
+     * @param version the version
      * @param kind the kind
-     * @param namespace the namespace
-     * @param name the name
-     * @return the dynamic kubernetes api
+     * @return the optional
      * @throws ApiException the api exception
      */
-    @Deprecated
-    @SuppressWarnings("PMD.UseObjectForClearerAPI")
-    public static Optional<DynamicKubernetesApi> crApi(ApiClient client,
-            String group, String kind, String namespace, String name)
-            throws ApiException {
-        var apis = new ApisApi(client).getAPIVersions();
-        var crdVersions = apis.getGroups().stream()
-            .filter(g -> g.getName().equals(group)).findFirst()
-            .map(V1APIGroup::getVersions).stream().flatMap(l -> l.stream())
-            .map(V1GroupVersionForDiscovery::getVersion).toList();
-        var coa = new CustomObjectsApi(client);
-        for (var crdVersion : crdVersions) {
-            var crdApiRes = coa.getAPIResources(group, crdVersion)
-                .getResources().stream().filter(r -> kind.equals(r.getKind()))
-                .findFirst();
-            if (crdApiRes.isEmpty()) {
-                continue;
-            }
-            @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
-            var crApi = new DynamicKubernetesApi(group,
-                crdVersion, crdApiRes.get().getName(), client);
-            var customResource = crApi.get(namespace, name);
-            if (customResource.isSuccess()) {
-                return Optional.of(crApi);
-            }
+    public static Optional<APIResource> context(ApiClient client,
+            String group, String version, String kind) throws ApiException {
+        var apiMatch = new Discovery(client).findAll().stream()
+            .filter(r -> r.getGroup().equals(group) && r.getKind().equals(kind)
+                && (Strings.isNullOrEmpty(version)
+                    || r.getVersions().contains(version)))
+            .findFirst();
+        if (apiMatch.isEmpty()) {
+            return Optional.empty();
         }
-        return Optional.empty();
+        var apiRes = apiMatch.get();
+        if (!Strings.isNullOrEmpty(version)) {
+            if (!apiRes.getVersions().contains(version)) {
+                return Optional.empty();
+            }
+            apiRes = new APIResource(apiRes.getGroup(), apiRes.getVersions(),
+                version, apiRes.getKind(), apiRes.getNamespaced(),
+                apiRes.getResourcePlural(), apiRes.getResourceSingular());
+        }
+        return Optional.of(apiRes);
     }
 
     /**

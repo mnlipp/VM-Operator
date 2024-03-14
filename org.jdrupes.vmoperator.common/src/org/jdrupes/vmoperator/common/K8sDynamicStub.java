@@ -18,10 +18,10 @@
 
 package org.jdrupes.vmoperator.common;
 
+import io.kubernetes.client.Discovery.APIResource;
 import io.kubernetes.client.apimachinery.GroupVersionKind;
-import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
-import java.util.Optional;
+import java.io.Reader;
 
 /**
  * A stub for namespaced custom objects.
@@ -36,19 +36,14 @@ public class K8sDynamicStub
      * @param objectClass the object class
      * @param objectListClass the object list class
      * @param client the client
-     * @param group the group
-     * @param version the version
-     * @param kind the kind
-     * @param plural the plural
+     * @param context the context
      * @param namespace the namespace
      * @param name the name
      */
-    protected K8sDynamicStub(Class<K8sDynamicModel> objectClass,
-            Class<K8sDynamicModels> objectListClass, ApiClient client,
-            String group, String version, String kind, String plural,
-            String namespace, String name) {
-        super(objectClass, objectListClass, client, group, version, kind,
-            plural, namespace, name);
+    public K8sDynamicStub(Class<K8sDynamicModel> objectClass,
+            Class<K8sDynamicModels> objectListClass, K8sClient client,
+            APIResource context, String namespace, String name) {
+        super(objectClass, objectListClass, client, context, namespace, name);
     }
 
     /**
@@ -65,10 +60,47 @@ public class K8sDynamicStub
      */
     @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
         "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })
-    public static Optional<K8sDynamicStub> get(ApiClient client,
+    public static K8sDynamicStub get(K8sClient client,
             GroupVersionKind gvk, String namespace, String name)
             throws ApiException {
         return K8sGenericStub.get(K8sDynamicModel.class, K8sDynamicModels.class,
             client, gvk, namespace, name, K8sDynamicStub::new);
+    }
+
+    /**
+     * Get a dynamic object stub.
+     *
+     * @param client the client
+     * @param gvk the group, version and kind
+     * @param namespace the namespace
+     * @param name the name
+     * @return the stub if the object exists
+     * @throws ApiException the api exception
+     */
+    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
+        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })
+    public static K8sDynamicStub get(K8sClient client,
+            APIResource context, String namespace, String name)
+            throws ApiException {
+        return K8sGenericStub.get(K8sDynamicModel.class, K8sDynamicModels.class,
+            client, context, namespace, name, K8sDynamicStub::new);
+    }
+
+    /**
+     * Creates a stub from yaml.
+     *
+     * @param client the client
+     * @param context the context
+     * @param yaml the yaml
+     * @return the k 8 s dynamic stub
+     * @throws ApiException the api exception
+     */
+    public static K8sDynamicStub createFromYaml(K8sClient client,
+            APIResource context, Reader yaml) throws ApiException {
+        var model = new K8sDynamicModel(client.getJSON().getGson(),
+            K8s.yamlToJson(client, yaml));
+        return K8sGenericStub.create(K8sDynamicModel.class,
+            K8sDynamicModels.class, client, context, model,
+            K8sDynamicStub::new);
     }
 }

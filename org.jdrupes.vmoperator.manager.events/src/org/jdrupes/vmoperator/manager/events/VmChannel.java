@@ -18,7 +18,7 @@
 
 package org.jdrupes.vmoperator.manager.events;
 
-import io.kubernetes.client.openapi.ApiClient;
+import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.EventPipeline;
@@ -31,7 +31,7 @@ import org.jgrapes.core.Subchannel.DefaultSubchannel;
 public class VmChannel extends DefaultSubchannel {
 
     private final EventPipeline pipeline;
-    private final ApiClient client;
+    private final K8sClient client;
     private K8sDynamicModel vmDefinition;
     private long generation = -1;
 
@@ -43,7 +43,7 @@ public class VmChannel extends DefaultSubchannel {
      * @param client the client
      */
     public VmChannel(Channel mainChannel, EventPipeline pipeline,
-            ApiClient client) {
+            K8sClient client) {
         super(mainChannel);
         this.pipeline = pipeline;
         this.client = client;
@@ -109,7 +109,7 @@ public class VmChannel extends DefaultSubchannel {
      *
      * @return the API client
      */
-    public ApiClient client() {
+    public K8sClient client() {
         return client;
     }
 }

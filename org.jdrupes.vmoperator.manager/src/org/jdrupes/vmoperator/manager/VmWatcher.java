@@ -50,6 +50,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import org.jdrupes.vmoperator.common.K8s;
+import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
@@ -71,7 +72,7 @@ import org.jgrapes.util.events.ConfigurationUpdate;
 /**
  * Watches for changes of VM definitions.
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
+@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.ExcessiveImports" })
 public class VmWatcher extends Component {
 
     private String namespaceToWatch;
@@ -278,7 +279,7 @@ public class VmWatcher extends Component {
             k -> {
                 try {
                     return new VmChannel(channel(), newEventPipeline(),
-                        Config.defaultClient());
+                        new K8sClient());
                 } catch (IOException e) {
                     logger.log(Level.SEVERE, e, () -> "Failed to create client"
                         + " for handling changes: " + e.getMessage());
@@ -292,22 +293,21 @@ public class VmWatcher extends Component {
         // Get full definition and associate with channel as backup
         @SuppressWarnings("PMD.ShortVariable")
         var gv = GroupVersion.parse(vmDefRef.object.getApiVersion());
-        var vmObj = K8sDynamicStub.get(channel.client(),
+        var vmStub = K8sDynamicStub.get(channel.client(),
             new GroupVersionKind(gv.getGroup(), gv.getVersion(), VM_OP_KIND_VM),
             metadata.getNamespace(), metadata.getName());
-        K8sDynamicModel vmDef = channel.vmDefinition();
-        if (vmObj.isPresent()) {
-            vmDef = vmObj.get().state();
+        vmStub.model().ifPresent(vmDef -> {
             addDynamicData(channel.client(), vmDef);
             channel.setVmDefinition(vmDef);
-        }
 
-        // Create and fire event
-        channel.pipeline().fire(new VmDefChanged(VmDefChanged.Type
-            .valueOf(vmDefRef.type),
-            channel
-                .setGeneration(vmDefRef.object.getMetadata().getGeneration()),
-            vmsCrd, vmDef), channel);
+            // Create and fire event
+            channel.pipeline().fire(new VmDefChanged(VmDefChanged.Type
+                .valueOf(vmDefRef.type),
+                channel
+                    .setGeneration(
+                        vmDefRef.object.getMetadata().getGeneration()),
+                vmsCrd, vmDef), channel);
+        });
     }
 
     private void addDynamicData(ApiClient client, K8sDynamicModel vmState) {

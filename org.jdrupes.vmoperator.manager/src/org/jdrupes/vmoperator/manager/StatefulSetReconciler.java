@@ -20,7 +20,6 @@ package org.jdrupes.vmoperator.manager;
 
 import freemarker.template.Configuration;
 import freemarker.template.TemplateException;
-import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.generic.dynamic.Dynamics;
@@ -29,7 +28,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
 import java.util.logging.Logger;
-import org.jdrupes.vmoperator.common.K8sDynamicStub;
+import org.jdrupes.vmoperator.common.K8sV1StatefulSetStub;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.util.GsonPtr;
@@ -81,26 +80,27 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 
         // If exists apply changes only when transitioning state
         // or not running.
-        var stsObj = K8sDynamicStub.get(channel.client(),
-            new GroupVersionKind("apps", "v1", "StatefulSet"),
+        var stsStub = new K8sV1StatefulSetStub(channel.client(),
             metadata.getNamespace(), metadata.getName());
-        if (stsObj.isPresent()) {
-            var current = GsonPtr.to(stsObj.get().state().data())
-                .to("spec").getAsInt("replicas").orElse(1);
+        stsStub.model().ifPresent(sts -> {
+            var current = sts.getSpec().getReplicas();
             var desired = GsonPtr.to(stsDef.getRaw())
                 .to("spec").getAsInt("replicas").orElse(1);
             if (current == 1 && desired == 1) {
                 return;
             }
-        }
+        });
 
         // Do apply changes
         PatchOptions opts = new PatchOptions();
         opts.setForce(true);
         opts.setFieldManager("kubernetes-java-kubectl-apply");
-        stsObj.get().patch(V1Patch.PATCH_FORMAT_APPLY_YAML,
-            new V1Patch(channel.client().getJSON().serialize(stsDef)),
-            opts).throwsApiException();
+        if (stsStub.patch(V1Patch.PATCH_FORMAT_APPLY_YAML,
+            new V1Patch(channel.client().getJSON().serialize(stsDef)), opts)
+            .isEmpty()) {
+            logger.warning(
+                () -> "Could not patch stateful set for " + stsStub.name());
+        }
     }
 
 }

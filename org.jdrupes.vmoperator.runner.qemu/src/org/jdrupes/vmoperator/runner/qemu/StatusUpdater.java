@@ -23,11 +23,8 @@ import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.custom.Quantity.Format;
 import io.kubernetes.client.custom.V1Patch;
-import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.EventsV1Event;
-import io.kubernetes.client.util.Config;
-import io.kubernetes.client.util.generic.options.PatchOptions;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
@@ -41,6 +38,7 @@ import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.common.K8s;
+import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
 import org.jdrupes.vmoperator.runner.qemu.events.BalloonChangeEvent;
@@ -70,7 +68,7 @@ public class StatusUpdater extends Component {
 
     private String namespace;
     private String vmName;
-    private ApiClient apiClient;
+    private K8sClient apiClient;
     private long observedGeneration;
     private boolean guestShutdownStops;
     private boolean shutdownByGuest;
@@ -84,7 +82,7 @@ public class StatusUpdater extends Component {
     public StatusUpdater(Channel componentChannel) {
         super(componentChannel);
         try {
-            apiClient = Config.defaultClient();
+            apiClient = new K8sClient();
             io.kubernetes.client.openapi.Configuration
                 .setDefaultApiClient(apiClient);
         } catch (IOException e) {
@@ -161,11 +159,10 @@ public class StatusUpdater extends Component {
         try {
             vmStub = K8sDynamicStub.get(apiClient,
                 new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
-                namespace, vmName).orElse(null);
-            if (vmStub != null) {
-                observedGeneration
-                    = vmStub.state().getMetadata().getGeneration();
-            }
+                namespace, vmName);
+            vmStub.model().ifPresent(model -> {
+                observedGeneration = model.getMetadata().getGeneration();
+            });
         } catch (ApiException e) {
             logger.log(Level.SEVERE, e,
                 () -> "Cannot access VM object, terminating.");
@@ -189,13 +186,15 @@ public class StatusUpdater extends Component {
         if (vmStub == null) {
             return;
         }
+
         // A change of the runner configuration is typically caused
         // by a new version of the CR. So we observe the new CR.
-        var vmObj = vmStub.state();
-        if (vmObj.metadata().getGeneration() == observedGeneration) {
+        var vmDef = vmStub.model();
+        if (vmDef.isPresent()
+            && vmDef.get().metadata().getGeneration() == observedGeneration) {
             return;
         }
-        vmStub.updateStatus(vmObj, from -> {
+        vmStub.updateStatus(vmDef.get(), from -> {
             JsonObject status = K8s.status(from);
             status.getAsJsonArray("conditions").asList().stream()
                 .map(cond -> (JsonObject) cond).filter(cond -> "Running"
@@ -213,13 +212,14 @@ public class StatusUpdater extends Component {
      * @throws ApiException 
      */
     @Handler
+    @SuppressWarnings("PMD.AssignmentInOperand")
     public void onRunnerStateChanged(RunnerStateChange event)
             throws ApiException {
-        if (vmStub == null) {
+        K8sDynamicModel vmDef;
+        if (vmStub == null || (vmDef = vmStub.model().orElse(null)) == null) {
             return;
         }
-        var vmState = vmStub.state();
-        vmStub.updateStatus(vmState, from -> {
+        vmStub.updateStatus(vmDef, from -> {
             JsonObject status = K8s.status(from);
             status.getAsJsonArray("conditions").asList().stream()
                 .map(cond -> (JsonObject) cond)
@@ -243,15 +243,13 @@ public class StatusUpdater extends Component {
         if (event.state() == State.TERMINATING && !event.failed()
             && guestShutdownStops && shutdownByGuest) {
             logger.info(() -> "Stopping VM because of shutdown by guest.");
-            PatchOptions patchOpts = new PatchOptions();
-            patchOpts.setFieldManager("kubernetes-java-kubectl-apply");
             var res = vmStub.patch(V1Patch.PATCH_FORMAT_JSON_PATCH,
                 new V1Patch("[{\"op\": \"replace\", \"path\": \"/spec/vm/state"
                     + "\", \"value\": \"Stopped\"}]"),
-                patchOpts);
-            if (!res.isSuccess()) {
+                apiClient.defaultPatchOptions());
+            if (!res.isPresent()) {
                 logger.warning(
-                    () -> "Cannot patch pod annotations: " + res.getStatus());
+                    () -> "Cannot patch pod annotations for: " + vmStub.name());
             }
         }
 
@@ -260,7 +258,7 @@ public class StatusUpdater extends Component {
             .reportingController(VM_OP_GROUP + "/" + APP_NAME)
             .action("StatusUpdate").reason(event.reason())
             .note(event.message());
-        K8s.createEvent(apiClient, vmState, evt);
+        K8s.createEvent(apiClient, vmDef, evt);
     }
 
     private void updateRunningCondition(RunnerStateChange event,

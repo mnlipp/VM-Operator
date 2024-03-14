@@ -97,4 +97,9 @@ public class K8sDynamicModel implements KubernetesObject {
         return data;
     }
 
+    @Override
+    public String toString() {
+        return data.toString();
+    }
+
 }
