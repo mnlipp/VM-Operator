@@ -225,11 +225,13 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
                         channels.remove(r.object.getMetadata().getName());
                     }
                 }).onTerminated((o, t) -> {
-                    // Exception has been logged already
                     if (observerCounter.decrementAndGet() == 0) {
                         unregisterAsGenerator();
                     }
-                    fire(new Stop());
+                    // Exception has been logged already
+                    if (t != null) {
+                        fire(new Stop());
+                    }
                 }).start();
     }
 

@@ -73,7 +73,8 @@ public class K8sObserver<O extends KubernetesObject,
      * @return the stub if the object exists
      */
     @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
-        "PMD.UseObjectForClearerAPI", "PMD.AvoidCatchingThrowable" })
+        "PMD.UseObjectForClearerAPI", "PMD.AvoidCatchingThrowable",
+        "PMD.CognitiveComplexity" })
     public K8sObserver(Class<O> objectClass, Class<L> objectListClass,
             K8sClient client, APIResource context, String namespace,
             ListOptions options) {
@@ -92,7 +93,7 @@ public class K8sObserver<O extends KubernetesObject,
                     + " in " + namespace);
 
                 // Watch sometimes terminates without apparent reason.
-                while (true) {
+                while (!Thread.currentThread().isInterrupted()) {
                     Instant startedAt = Instant.now();
                     try {
                         @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
@@ -105,6 +106,9 @@ public class K8sObserver<O extends KubernetesObject,
                             + " (will retry): " + e.getMessage());
                         delayRestart(startedAt);
                     }
+                }
+                if (onTerminated != null) {
+                    onTerminated.accept(this, null);
                 }
             } catch (Throwable e) {
                 logger.log(Level.SEVERE, e, () -> "Probem watching: "
@@ -147,7 +151,8 @@ public class K8sObserver<O extends KubernetesObject,
     /**
      * Sets a function to invoke if the observer terminates. First argument
      * is this observer, the second is the throwable that caused the
-     * termination.
+     * abnormal termination or `null` if the observer was terminated
+     * by {@link #stop()}.
      *
      * @param onTerminated the on terminated
      * @return the observer
@@ -168,6 +173,16 @@ public class K8sObserver<O extends KubernetesObject,
             throw new IllegalStateException("No handler defined");
         }
         thread.start();
+        return this;
+    }
+
+    /**
+     * Stops the observer.
+     *
+     * @return the observer
+     */
+    public K8sObserver<O, L> stop() {
+        thread.interrupt();
         return this;
     }
 
