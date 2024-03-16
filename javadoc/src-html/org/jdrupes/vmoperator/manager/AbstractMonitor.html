@@ -186,8 +186,8 @@
 <span class="source-line-no">173</span><span id="line-173">    }</span>
 <span class="source-line-no">174</span><span id="line-174"></span>
 <span class="source-line-no">175</span><span id="line-175">    /**</span>
-<span class="source-line-no">176</span><span id="line-176">     * Handle the start event. Configures the namespace and invokes</span>
-<span class="source-line-no">177</span><span id="line-177">     * {@link #start()}.</span>
+<span class="source-line-no">176</span><span id="line-176">     * Handle the start event. Configures the namespace invokes</span>
+<span class="source-line-no">177</span><span id="line-177">     * {@link #prepareMonitoring()} and starts the observers.</span>
 <span class="source-line-no">178</span><span id="line-178">     *</span>
 <span class="source-line-no">179</span><span id="line-179">     * @param event the event</span>
 <span class="source-line-no">180</span><span id="line-180">     */</span>
@@ -262,7 +262,7 @@
 <span class="source-line-no">249</span><span id="line-249">     * Returns the {@link Channel} for the given name.</span>
 <span class="source-line-no">250</span><span id="line-250">     *</span>
 <span class="source-line-no">251</span><span id="line-251">     * @param name the name</span>
-<span class="source-line-no">252</span><span id="line-252">     * @param create whether to create the channel if it doesn't exist</span>
+<span class="source-line-no">252</span><span id="line-252">     * @param supplier used to create the channel if it doesn't exist </span>
 <span class="source-line-no">253</span><span id="line-253">     * @return the channel used for events related to the specified object</span>
 <span class="source-line-no">254</span><span id="line-254">     */</span>
 <span class="source-line-no">255</span><span id="line-255">    protected C channel(String name, Function&lt;String, C&gt; supplier) {</span>

@@ -56,54 +56,53 @@
 <span class="source-line-no">043</span><span id="line-43">     *</span>
 <span class="source-line-no">044</span><span id="line-44">     * @param type the type</span>
 <span class="source-line-no">045</span><span id="line-45">     * @param specChanged the spec part changed</span>
-<span class="source-line-no">046</span><span id="line-46">     * @param crd the crd</span>
-<span class="source-line-no">047</span><span id="line-47">     * @param vmDefinition the VM definition</span>
-<span class="source-line-no">048</span><span id="line-48">     */</span>
-<span class="source-line-no">049</span><span id="line-49">    public VmDefChanged(K8sObserver.ResponseType type, boolean specChanged,</span>
-<span class="source-line-no">050</span><span id="line-50">            K8sDynamicModel vmDefinition) {</span>
-<span class="source-line-no">051</span><span id="line-51">        this.type = type;</span>
-<span class="source-line-no">052</span><span id="line-52">        this.specChanged = specChanged;</span>
-<span class="source-line-no">053</span><span id="line-53">        this.vmDef = vmDefinition;</span>
-<span class="source-line-no">054</span><span id="line-54">    }</span>
-<span class="source-line-no">055</span><span id="line-55"></span>
-<span class="source-line-no">056</span><span id="line-56">    /**</span>
-<span class="source-line-no">057</span><span id="line-57">     * Returns the type.</span>
-<span class="source-line-no">058</span><span id="line-58">     *</span>
-<span class="source-line-no">059</span><span id="line-59">     * @return the type</span>
-<span class="source-line-no">060</span><span id="line-60">     */</span>
-<span class="source-line-no">061</span><span id="line-61">    public K8sObserver.ResponseType type() {</span>
-<span class="source-line-no">062</span><span id="line-62">        return type;</span>
-<span class="source-line-no">063</span><span id="line-63">    }</span>
-<span class="source-line-no">064</span><span id="line-64"></span>
-<span class="source-line-no">065</span><span id="line-65">    /**</span>
-<span class="source-line-no">066</span><span id="line-66">     * Indicates if the "spec" part changed.</span>
-<span class="source-line-no">067</span><span id="line-67">     */</span>
-<span class="source-line-no">068</span><span id="line-68">    public boolean specChanged() {</span>
-<span class="source-line-no">069</span><span id="line-69">        return specChanged;</span>
-<span class="source-line-no">070</span><span id="line-70">    }</span>
-<span class="source-line-no">071</span><span id="line-71"></span>
-<span class="source-line-no">072</span><span id="line-72">    /**</span>
-<span class="source-line-no">073</span><span id="line-73">     * Returns the object.</span>
-<span class="source-line-no">074</span><span id="line-74">     *</span>
-<span class="source-line-no">075</span><span id="line-75">     * @return the object.</span>
-<span class="source-line-no">076</span><span id="line-76">     */</span>
-<span class="source-line-no">077</span><span id="line-77">    public K8sDynamicModel vmDefinition() {</span>
-<span class="source-line-no">078</span><span id="line-78">        return vmDef;</span>
-<span class="source-line-no">079</span><span id="line-79">    }</span>
-<span class="source-line-no">080</span><span id="line-80"></span>
-<span class="source-line-no">081</span><span id="line-81">    @Override</span>
-<span class="source-line-no">082</span><span id="line-82">    public String toString() {</span>
-<span class="source-line-no">083</span><span id="line-83">        StringBuilder builder = new StringBuilder();</span>
-<span class="source-line-no">084</span><span id="line-84">        builder.append(Components.objectName(this)).append(" [")</span>
-<span class="source-line-no">085</span><span id="line-85">            .append(vmDef.getMetadata().getName()).append(' ').append(type);</span>
-<span class="source-line-no">086</span><span id="line-86">        if (channels() != null) {</span>
-<span class="source-line-no">087</span><span id="line-87">            builder.append(", channels=");</span>
-<span class="source-line-no">088</span><span id="line-88">            builder.append(Channel.toString(channels()));</span>
-<span class="source-line-no">089</span><span id="line-89">        }</span>
-<span class="source-line-no">090</span><span id="line-90">        builder.append(']');</span>
-<span class="source-line-no">091</span><span id="line-91">        return builder.toString();</span>
-<span class="source-line-no">092</span><span id="line-92">    }</span>
-<span class="source-line-no">093</span><span id="line-93">}</span>
+<span class="source-line-no">046</span><span id="line-46">     * @param vmDefinition the VM definition</span>
+<span class="source-line-no">047</span><span id="line-47">     */</span>
+<span class="source-line-no">048</span><span id="line-48">    public VmDefChanged(K8sObserver.ResponseType type, boolean specChanged,</span>
+<span class="source-line-no">049</span><span id="line-49">            K8sDynamicModel vmDefinition) {</span>
+<span class="source-line-no">050</span><span id="line-50">        this.type = type;</span>
+<span class="source-line-no">051</span><span id="line-51">        this.specChanged = specChanged;</span>
+<span class="source-line-no">052</span><span id="line-52">        this.vmDef = vmDefinition;</span>
+<span class="source-line-no">053</span><span id="line-53">    }</span>
+<span class="source-line-no">054</span><span id="line-54"></span>
+<span class="source-line-no">055</span><span id="line-55">    /**</span>
+<span class="source-line-no">056</span><span id="line-56">     * Returns the type.</span>
+<span class="source-line-no">057</span><span id="line-57">     *</span>
+<span class="source-line-no">058</span><span id="line-58">     * @return the type</span>
+<span class="source-line-no">059</span><span id="line-59">     */</span>
+<span class="source-line-no">060</span><span id="line-60">    public K8sObserver.ResponseType type() {</span>
+<span class="source-line-no">061</span><span id="line-61">        return type;</span>
+<span class="source-line-no">062</span><span id="line-62">    }</span>
+<span class="source-line-no">063</span><span id="line-63"></span>
+<span class="source-line-no">064</span><span id="line-64">    /**</span>
+<span class="source-line-no">065</span><span id="line-65">     * Indicates if the "spec" part changed.</span>
+<span class="source-line-no">066</span><span id="line-66">     */</span>
+<span class="source-line-no">067</span><span id="line-67">    public boolean specChanged() {</span>
+<span class="source-line-no">068</span><span id="line-68">        return specChanged;</span>
+<span class="source-line-no">069</span><span id="line-69">    }</span>
+<span class="source-line-no">070</span><span id="line-70"></span>
+<span class="source-line-no">071</span><span id="line-71">    /**</span>
+<span class="source-line-no">072</span><span id="line-72">     * Returns the object.</span>
+<span class="source-line-no">073</span><span id="line-73">     *</span>
+<span class="source-line-no">074</span><span id="line-74">     * @return the object.</span>
+<span class="source-line-no">075</span><span id="line-75">     */</span>
+<span class="source-line-no">076</span><span id="line-76">    public K8sDynamicModel vmDefinition() {</span>
+<span class="source-line-no">077</span><span id="line-77">        return vmDef;</span>
+<span class="source-line-no">078</span><span id="line-78">    }</span>
+<span class="source-line-no">079</span><span id="line-79"></span>
+<span class="source-line-no">080</span><span id="line-80">    @Override</span>
+<span class="source-line-no">081</span><span id="line-81">    public String toString() {</span>
+<span class="source-line-no">082</span><span id="line-82">        StringBuilder builder = new StringBuilder();</span>
+<span class="source-line-no">083</span><span id="line-83">        builder.append(Components.objectName(this)).append(" [")</span>
+<span class="source-line-no">084</span><span id="line-84">            .append(vmDef.getMetadata().getName()).append(' ').append(type);</span>
+<span class="source-line-no">085</span><span id="line-85">        if (channels() != null) {</span>
+<span class="source-line-no">086</span><span id="line-86">            builder.append(", channels=");</span>
+<span class="source-line-no">087</span><span id="line-87">            builder.append(Channel.toString(channels()));</span>
+<span class="source-line-no">088</span><span id="line-88">        }</span>
+<span class="source-line-no">089</span><span id="line-89">        builder.append(']');</span>
+<span class="source-line-no">090</span><span id="line-90">        return builder.toString();</span>
+<span class="source-line-no">091</span><span id="line-91">    }</span>
+<span class="source-line-no">092</span><span id="line-92">}</span>
 
 
 
