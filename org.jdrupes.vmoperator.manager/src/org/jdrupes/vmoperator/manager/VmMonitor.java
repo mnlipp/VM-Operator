@@ -125,13 +125,19 @@ public class VmMonitor
             // https://github.com/kubernetes-client/java/issues/3215
             vmDef = getModel(client, vmDef);
         }
-        if (vmDef.data() == null) {
+        if (vmDef.data() != null) {
+            // New data, augment and save
+            addDynamicData(channel.client(), vmDef);
+            channel.setVmDefinition(vmDef);
+        } else {
+            // Reuse cached
+            vmDef = channel.vmDefinition();
+        }
+        if (vmDef == null) {
             logger.warning(
                 () -> "Cannot get model for " + response.object.getMetadata());
             return;
         }
-        addDynamicData(channel.client(), vmDef);
-        channel.setVmDefinition(vmDef);
 
         // Create and fire event
         channel.pipeline()
