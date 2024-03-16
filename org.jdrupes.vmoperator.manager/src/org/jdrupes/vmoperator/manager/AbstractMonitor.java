@@ -173,8 +173,8 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
     }
 
     /**
-     * Handle the start event. Configures the namespace and invokes
-     * {@link #start()}.
+     * Handle the start event. Configures the namespace invokes
+     * {@link #prepareMonitoring()} and starts the observers.
      *
      * @param event the event
      */
@@ -249,7 +249,7 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
      * Returns the {@link Channel} for the given name.
      *
      * @param name the name
-     * @param create whether to create the channel if it doesn't exist
+     * @param supplier used to create the channel if it doesn't exist 
      * @return the channel used for events related to the specified object
      */
     protected C channel(String name, Function<String, C> supplier) {

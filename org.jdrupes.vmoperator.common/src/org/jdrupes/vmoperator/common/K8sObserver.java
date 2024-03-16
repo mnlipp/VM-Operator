@@ -32,7 +32,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * An observer that watches resources in a namespace.
+ * An observer that watches namespaced resources in a given context and
+ * invokes a handler on changes.
  *
  * @param <O> the object type for the context
  * @param <L> the object list type for the context
@@ -69,7 +70,6 @@ public class K8sObserver<O extends KubernetesObject,
      * @param context the context
      * @param namespace the namespace
      * @param options the options
-     * @param handler the handler
      * @return the stub if the object exists
      */
     @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",

@@ -43,7 +43,6 @@ public class VmDefChanged extends Event<Void> {
      *
      * @param type the type
      * @param specChanged the spec part changed
-     * @param crd the crd
      * @param vmDefinition the VM definition
      */
     public VmDefChanged(K8sObserver.ResponseType type, boolean specChanged,

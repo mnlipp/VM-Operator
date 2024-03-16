@@ -55,7 +55,11 @@ public class K8sGenericStub<O extends KubernetesObject,
     protected final String name;
 
     /**
-     * Instantiates a new namespaced custom object stub.
+     * Instantiates a new stub for the object specified. If the object
+     * exists in the context specified, the version (see
+     * {@link #version()} is bound to the existing object's version.
+     * Else the stub is dangling with the version set to the context's
+     * preferred version.
      *
      * @param objectClass the object class
      * @param objectListClass the object list class
