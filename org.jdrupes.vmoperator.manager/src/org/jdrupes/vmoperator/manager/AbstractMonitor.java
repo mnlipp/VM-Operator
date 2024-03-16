@@ -29,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.logging.Level;
 import org.jdrupes.vmoperator.common.K8s;
@@ -60,6 +61,7 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
     private APIResource context;
     private String namespace;
     private ListOptions options = new ListOptions();
+    private final AtomicInteger observerCounter = new AtomicInteger(0);
     @SuppressWarnings({ "PMD.FieldNamingConventions",
         "PMD.VariableNamingConventions" })
     private final Map<String, C> channels = new ConcurrentHashMap<>();
@@ -204,6 +206,7 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
             for (var version : context.getVersions()) {
                 createObserver(version);
             }
+            registerAsGenerator();
         } catch (IOException | ApiException e) {
             logger.log(Level.SEVERE, e,
                 () -> "Cannot watch VMs, terminating.");
@@ -213,6 +216,7 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
     }
 
     private void createObserver(String version) {
+        observerCounter.incrementAndGet();
         new K8sObserver<>(objectClass, objectListClass, client,
             K8s.preferred(context, version), namespace, options)
                 .handler((c, r) -> {
@@ -221,6 +225,10 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
                         channels.remove(r.object.getMetadata().getName());
                     }
                 }).onTerminated((o, t) -> {
+                    // Exception has been logged already
+                    if (observerCounter.decrementAndGet() == 0) {
+                        unregisterAsGenerator();
+                    }
                     fire(new Stop());
                 }).start();
     }
