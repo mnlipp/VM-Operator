@@ -50,151 +50,9 @@ public class K8sGenericStub<O extends KubernetesObject,
         L extends KubernetesListObject> {
     protected final K8sClient client;
     private final GenericKubernetesApi<O, L> api;
-    protected final String group;
-    protected final String version;
-    protected final String kind;
-    protected final String plural;
+    protected final APIResource context;
     protected final String namespace;
     protected final String name;
-
-    /**
-     * Get a namespaced object stub. If the version in parameter
-     * `gvk` is an empty string, the stub refers to the first object 
-     * found with matching group and kind. 
-     *
-     * @param <O> the object type
-     * @param <L> the object list type
-     * @param <R> the stub type
-     * @param objectClass the object class
-     * @param objectListClass the object list class
-     * @param client the client
-     * @param gvk the group, version and kind
-     * @param namespace the namespace
-     * @param name the name
-     * @param provider the provider
-     * @return the stub if the object exists
-     * @throws ApiException the api exception
-     */
-    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop" })
-    public static <O extends KubernetesObject, L extends KubernetesListObject,
-            R extends K8sGenericStub<O, L>>
-            R get(Class<O> objectClass, Class<L> objectListClass,
-                    K8sClient client, GroupVersionKind gvk, String namespace,
-                    String name, GenericSupplier<O, L, R> provider)
-                    throws ApiException {
-        var context = K8s.context(client, gvk.getGroup(), gvk.getVersion(),
-            gvk.getKind());
-        if (context.isEmpty()) {
-            throw new ApiException("No known API for " + gvk.getGroup()
-                + "/" + gvk.getVersion() + " " + gvk.getKind());
-        }
-        return provider.get(objectClass, objectListClass, client, context.get(),
-            namespace, name);
-    }
-
-    /**
-     * Get a namespaced object stub.
-     *
-     * @param <O> the object type
-     * @param <L> the object list type
-     * @param <R> the stub type
-     * @param objectClass the object class
-     * @param objectListClass the object list class
-     * @param client the client
-     * @param context the context
-     * @param namespace the namespace
-     * @param name the name
-     * @param provider the provider
-     * @return the stub if the object exists
-     * @throws ApiException the api exception
-     */
-    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
-        "PMD.UseObjectForClearerAPI" })
-    public static <O extends KubernetesObject, L extends KubernetesListObject,
-            R extends K8sGenericStub<O, L>>
-            R get(Class<O> objectClass, Class<L> objectListClass,
-                    K8sClient client, APIResource context, String namespace,
-                    String name, GenericSupplier<O, L, R> provider) {
-        return provider.get(objectClass, objectListClass, client,
-            context, namespace, name);
-    }
-
-    /**
-     * Get a namespaced object stub for a newly created object.
-     *
-     * @param <O> the object type
-     * @param <L> the object list type
-     * @param <R> the stub type
-     * @param objectClass the object class
-     * @param objectListClass the object list class
-     * @param client the client
-     * @param context the context
-     * @param model the model
-     * @param provider the provider
-     * @return the stub if the object exists
-     * @throws ApiException the api exception
-     */
-    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
-        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })
-    public static <O extends KubernetesObject, L extends KubernetesListObject,
-            R extends K8sGenericStub<O, L>>
-            R create(Class<O> objectClass, Class<L> objectListClass,
-                    K8sClient client, APIResource context, O model,
-                    GenericSupplier<O, L, R> provider) throws ApiException {
-        var api = new GenericKubernetesApi<>(objectClass, objectListClass,
-            context.getGroup(), context.getPreferredVersion(),
-            context.getResourcePlural(), client);
-        api.create(model).throwsApiException();
-        return provider.get(objectClass, objectListClass, client,
-            context, model.getMetadata().getNamespace(),
-            model.getMetadata().getName());
-    }
-
-    /**
-     * Get the stubs for the objects in the given namespace that match
-     * the criteria from the given options.
-     *
-     * @param <O> the object type
-     * @param <L> the object list type
-     * @param <R> the stub type
-     * @param objectClass the object class
-     * @param objectListClass the object list class
-     * @param client the client
-     * @param context the context
-     * @param namespace the namespace
-     * @param options the options
-     * @param provider the provider
-     * @return the collection
-     * @throws ApiException the api exception
-     */
-    public static <O extends KubernetesObject, L extends KubernetesListObject,
-            R extends K8sGenericStub<O, L>>
-            Collection<R> list(Class<O> objectClass, Class<L> objectListClass,
-                    K8sClient client, APIResource context, String namespace,
-                    ListOptions options, SpecificSupplier<O, L, R> provider)
-                    throws ApiException {
-        var result = new ArrayList<R>();
-        for (var version : candidateVersions(context)) {
-            @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
-            var api = new GenericKubernetesApi<>(objectClass, objectListClass,
-                context.getGroup(), version, context.getResourcePlural(),
-                client);
-            var objs = api.list(namespace, options).throwsApiException();
-            for (var item : objs.getObject().getItems()) {
-                result.add(
-                    provider.get(client, namespace,
-                        item.getMetadata().getName()));
-            }
-        }
-        return result;
-    }
-
-    private static List<String> candidateVersions(APIResource context) {
-        var result = new LinkedList<>(context.getVersions());
-        result.remove(context.getPreferredVersion());
-        result.add(0, context.getPreferredVersion());
-        return result;
-    }
 
     /**
      * Instantiates a new namespaced custom object stub.
@@ -211,9 +69,6 @@ public class K8sGenericStub<O extends KubernetesObject,
             K8sClient client, APIResource context, String namespace,
             String name) {
         this.client = client;
-        group = context.getGroup();
-        kind = context.getKind();
-        plural = context.getResourcePlural();
         this.namespace = namespace;
         this.name = name;
 
@@ -223,18 +78,33 @@ public class K8sGenericStub<O extends KubernetesObject,
         GetOptions mdOpts
             = new GetOptions().isPartialObjectMetadataRequest(true);
         for (var version : candidateVersions(context)) {
-            testApi = new GenericKubernetesApi<>(objectClass,
-                objectListClass, group, version, plural, client);
+            testApi = new GenericKubernetesApi<>(objectClass, objectListClass,
+                context.getGroup(), version, context.getResourcePlural(),
+                client);
             if (testApi.get(namespace, name, mdOpts)
                 .isSuccess()) {
                 foundVersion = version;
                 break;
             }
         }
-        version = foundVersion;
+        if (foundVersion.equals(context.getPreferredVersion())) {
+            this.context = context;
+        } else {
+            this.context = K8s.preferred(context, foundVersion);
+        }
+
         api = Optional.ofNullable(testApi)
             .orElseGet(() -> new GenericKubernetesApi<>(objectClass,
-                objectListClass, group, version, plural, client));
+                objectListClass, group(), version(), plural(), client));
+    }
+
+    /**
+     * Gets the context.
+     *
+     * @return the context
+     */
+    public APIResource context() {
+        return context;
     }
 
     /**
@@ -243,7 +113,7 @@ public class K8sGenericStub<O extends KubernetesObject,
      * @return the group
      */
     public String group() {
-        return group;
+        return context.getGroup();
     }
 
     /**
@@ -252,7 +122,7 @@ public class K8sGenericStub<O extends KubernetesObject,
      * @return the version
      */
     public String version() {
-        return version;
+        return context.getPreferredVersion();
     }
 
     /**
@@ -261,7 +131,7 @@ public class K8sGenericStub<O extends KubernetesObject,
      * @return the kind
      */
     public String kind() {
-        return kind;
+        return context.getKind();
     }
 
     /**
@@ -270,7 +140,7 @@ public class K8sGenericStub<O extends KubernetesObject,
      * @return the plural
      */
     public String plural() {
-        return plural;
+        return context.getResourcePlural();
     }
 
     /**
@@ -397,32 +267,149 @@ public class K8sGenericStub<O extends KubernetesObject,
                 APIResource context, String namespace, String name);
     }
 
-    /**
-     * A supplier for specific stubs.
-     *
-     * @param <O> the object type
-     * @param <L> the object list type
-     * @param <R> the result type
-     */
-    public interface SpecificSupplier<O extends KubernetesObject,
-            L extends KubernetesListObject, R extends K8sGenericStub<O, L>> {
-
-        /**
-         * Gets a new stub.
-         *
-         * @param client the client
-         * @param namespace the namespace
-         * @param name the name
-         * @return the result
-         */
-        R get(K8sClient client, String namespace, String name);
-    }
-
     @Override
     @SuppressWarnings("PMD.UseLocaleWithCaseConversions")
     public String toString() {
-        return (Strings.isNullOrEmpty(group) ? "" : group + "/")
-            + version.toUpperCase() + kind + " " + namespace + ":" + name;
+        return (Strings.isNullOrEmpty(group()) ? "" : group() + "/")
+            + version().toUpperCase() + kind() + " " + namespace + ":" + name;
+    }
+
+    /**
+     * Get a namespaced object stub. If the version in parameter
+     * `gvk` is an empty string, the stub refers to the first object 
+     * found with matching group and kind. 
+     *
+     * @param <O> the object type
+     * @param <L> the object list type
+     * @param <R> the stub type
+     * @param objectClass the object class
+     * @param objectListClass the object list class
+     * @param client the client
+     * @param gvk the group, version and kind
+     * @param namespace the namespace
+     * @param name the name
+     * @param provider the provider
+     * @return the stub if the object exists
+     * @throws ApiException the api exception
+     */
+    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop" })
+    public static <O extends KubernetesObject, L extends KubernetesListObject,
+            R extends K8sGenericStub<O, L>>
+            R get(Class<O> objectClass, Class<L> objectListClass,
+                    K8sClient client, GroupVersionKind gvk, String namespace,
+                    String name, GenericSupplier<O, L, R> provider)
+                    throws ApiException {
+        var context = K8s.context(client, gvk.getGroup(), gvk.getVersion(),
+            gvk.getKind());
+        if (context.isEmpty()) {
+            throw new ApiException("No known API for " + gvk.getGroup()
+                + "/" + gvk.getVersion() + " " + gvk.getKind());
+        }
+        return provider.get(objectClass, objectListClass, client, context.get(),
+            namespace, name);
+    }
+
+    /**
+     * Get a namespaced object stub.
+     *
+     * @param <O> the object type
+     * @param <L> the object list type
+     * @param <R> the stub type
+     * @param objectClass the object class
+     * @param objectListClass the object list class
+     * @param client the client
+     * @param context the context
+     * @param namespace the namespace
+     * @param name the name
+     * @param provider the provider
+     * @return the stub if the object exists
+     * @throws ApiException the api exception
+     */
+    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
+        "PMD.UseObjectForClearerAPI" })
+    public static <O extends KubernetesObject, L extends KubernetesListObject,
+            R extends K8sGenericStub<O, L>>
+            R get(Class<O> objectClass, Class<L> objectListClass,
+                    K8sClient client, APIResource context, String namespace,
+                    String name, GenericSupplier<O, L, R> provider) {
+        return provider.get(objectClass, objectListClass, client,
+            context, namespace, name);
+    }
+
+    /**
+     * Get a namespaced object stub for a newly created object.
+     *
+     * @param <O> the object type
+     * @param <L> the object list type
+     * @param <R> the stub type
+     * @param objectClass the object class
+     * @param objectListClass the object list class
+     * @param client the client
+     * @param context the context
+     * @param model the model
+     * @param provider the provider
+     * @return the stub if the object exists
+     * @throws ApiException the api exception
+     */
+    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
+        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })
+    public static <O extends KubernetesObject, L extends KubernetesListObject,
+            R extends K8sGenericStub<O, L>>
+            R create(Class<O> objectClass, Class<L> objectListClass,
+                    K8sClient client, APIResource context, O model,
+                    GenericSupplier<O, L, R> provider) throws ApiException {
+        var api = new GenericKubernetesApi<>(objectClass, objectListClass,
+            context.getGroup(), context.getPreferredVersion(),
+            context.getResourcePlural(), client);
+        api.create(model).throwsApiException();
+        return provider.get(objectClass, objectListClass, client,
+            context, model.getMetadata().getNamespace(),
+            model.getMetadata().getName());
+    }
+
+    /**
+     * Get the stubs for the objects in the given namespace that match
+     * the criteria from the given options.
+     *
+     * @param <O> the object type
+     * @param <L> the object list type
+     * @param <R> the stub type
+     * @param objectClass the object class
+     * @param objectListClass the object list class
+     * @param client the client
+     * @param context the context
+     * @param namespace the namespace
+     * @param options the options
+     * @param provider the provider
+     * @return the collection
+     * @throws ApiException the api exception
+     */
+    public static <O extends KubernetesObject, L extends KubernetesListObject,
+            R extends K8sGenericStub<O, L>>
+            Collection<R> list(Class<O> objectClass, Class<L> objectListClass,
+                    K8sClient client, APIResource context, String namespace,
+                    ListOptions options, GenericSupplier<O, L, R> provider)
+                    throws ApiException {
+        var result = new ArrayList<R>();
+        for (var version : candidateVersions(context)) {
+            @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+            var api = new GenericKubernetesApi<>(objectClass, objectListClass,
+                context.getGroup(), version, context.getResourcePlural(),
+                client);
+            var objs = api.list(namespace, options).throwsApiException();
+            for (var item : objs.getObject().getItems()) {
+                result.add(provider.get(objectClass, objectListClass, client,
+                    context, namespace, item.getMetadata().getName()));
+            }
+        }
+        return result;
+    }
+
+    private static List<String> candidateVersions(APIResource context) {
+        var result = new LinkedList<>(context.getVersions());
+        result.remove(context.getPreferredVersion());
+        result.add(0, context.getPreferredVersion());
+        return result;
     }
 
 }

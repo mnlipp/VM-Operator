@@ -30,6 +30,9 @@ import java.util.List;
 public class K8sV1ConfigMapStub
         extends K8sGenericStub<V1ConfigMap, V1ConfigMapList> {
 
+    public static final APIResource CONTEXT = new APIResource("", List.of("v1"),
+        "v1", "ConfigMap", true, "configmaps", "configmap");
+
     /**
      * Instantiates a new stub.
      *
@@ -40,9 +43,7 @@ public class K8sV1ConfigMapStub
     protected K8sV1ConfigMapStub(K8sClient client, String namespace,
             String name) {
         super(V1ConfigMap.class, V1ConfigMapList.class, client,
-            new APIResource("", List.of("v1"), "v1", "ConfigMap", true,
-                "configmaps", "configmap"),
-            namespace, name);
+            CONTEXT, namespace, name);
     }
 
     /**

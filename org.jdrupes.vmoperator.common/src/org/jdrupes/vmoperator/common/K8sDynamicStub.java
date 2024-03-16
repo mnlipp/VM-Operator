@@ -23,7 +23,9 @@ import io.kubernetes.client.Discovery.APIResource;
 import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.Reader;
+import java.util.Collection;
 
 /**
  * A stub for namespaced custom objects. It uses a dynamic model
@@ -125,4 +127,37 @@ public class K8sDynamicStub
             K8sDynamicModels.class, client, context, model,
             K8sDynamicStub::new);
     }
+
+    /**
+     * Get the stubs for the objects in the given namespace that match
+     * the criteria from the given options.
+     *
+     * @param client the client
+     * @param namespace the namespace
+     * @param options the options
+     * @return the collection
+     * @throws ApiException the api exception
+     */
+    public static Collection<K8sDynamicStub> list(K8sClient client,
+            APIResource context, String namespace, ListOptions options)
+            throws ApiException {
+        return K8sGenericStub.list(K8sDynamicModel.class,
+            K8sDynamicModels.class, client, context, namespace, options,
+            K8sDynamicStub::new);
+    }
+
+    /**
+     * Get the stubs for the objects in the given namespace.
+     *
+     * @param client the client
+     * @param namespace the namespace
+     * @return the collection
+     * @throws ApiException the api exception
+     */
+    public static Collection<K8sDynamicStub> list(K8sClient client,
+            APIResource context, String namespace)
+            throws ApiException {
+        return list(client, context, namespace, new ListOptions());
+    }
+
 }

@@ -44,6 +44,7 @@ import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 
+// TODO: Auto-generated Javadoc
 /**
  * Helpers for K8s API.
  */
@@ -72,6 +73,35 @@ public class K8s {
         response.throwsApiException();
         // Never reached
         return Optional.empty();
+    }
+
+    /**
+     * Returns a new context with the given version as preferred version.
+     *
+     * @param context the context
+     * @param version the version
+     * @return the API resource
+     */
+    public static APIResource preferred(APIResource context, String version) {
+        assert context.getVersions().contains(version);
+        return new APIResource(context.getGroup(),
+            context.getVersions(), version, context.getKind(),
+            context.getNamespaced(), context.getResourcePlural(),
+            context.getResourceSingular());
+    }
+
+    /**
+     * Return a string representation of the context (API resource).
+     *
+     * @param context the context
+     * @return the string
+     */
+    @SuppressWarnings("PMD.UseLocaleWithCaseConversions")
+    public static String toString(APIResource context) {
+        return (Strings.isNullOrEmpty(context.getGroup()) ? ""
+            : context.getGroup() + "/")
+            + context.getPreferredVersion().toUpperCase()
+            + context.getKind();
     }
 
     /**
@@ -156,6 +186,7 @@ public class K8s {
      * @param api the api
      * @param existing the existing
      * @param update the update
+     * @return the t
      * @throws ApiException the api exception
      */
     public static <T extends KubernetesObject, LT extends KubernetesListObject>
@@ -199,8 +230,10 @@ public class K8s {
      *   * If `type` is not set, set it to "Normal"
      *   * If `regarding` is not set, set it to the given object.
      *
+     * @param client the client
+     * @param object the object
      * @param event the event
-     * @throws ApiException 
+     * @throws ApiException the api exception
      */
     @SuppressWarnings("PMD.NPathComplexity")
     public static void createEvent(ApiClient client,

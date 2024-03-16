@@ -38,10 +38,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.jdrupes.json.JsonBeanDecoder;
 import org.jdrupes.json.JsonDecodeException;
 import org.jdrupes.vmoperator.common.K8sDynamicModel;
+import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
-import org.jdrupes.vmoperator.manager.events.VmDefChanged.Type;
 import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Event;
@@ -187,7 +187,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
     public void onVmDefChanged(VmDefChanged event, VmChannel channel)
             throws JsonDecodeException, IOException {
         var vmName = event.vmDefinition().getMetadata().getName();
-        if (event.type() == Type.DELETED) {
+        if (event.type() == K8sObserver.ResponseType.DELETED) {
             vmInfos.remove(vmName);
             vmChannels.remove(vmName);
             for (var entry : conletIdsByConsoleConnection().entrySet()) {

@@ -30,6 +30,11 @@ import java.util.List;
 public class K8sV1StatefulSetStub
         extends K8sGenericStub<V1StatefulSet, V1StatefulSetList> {
 
+    /** The stateful sets' context */
+    public static final APIResource CONTEXT
+        = new APIResource("apps", List.of("v1"), "v1", "StatefulSet", true,
+            "statefulsets", "statefulset");
+
     /**
      * Instantiates a new stub.
      *
@@ -39,9 +44,7 @@ public class K8sV1StatefulSetStub
      */
     protected K8sV1StatefulSetStub(K8sClient client, String namespace,
             String name) {
-        super(V1StatefulSet.class, V1StatefulSetList.class, client,
-            new APIResource("apps", List.of("v1"), "v1", "StatefulSet", true,
-                "statefulsets", "statefulset"),
+        super(V1StatefulSet.class, V1StatefulSetList.class, client, CONTEXT,
             namespace, name);
     }
 

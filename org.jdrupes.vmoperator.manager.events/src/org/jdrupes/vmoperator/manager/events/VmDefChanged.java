@@ -18,8 +18,8 @@
 
 package org.jdrupes.vmoperator.manager.events;
 
-import io.kubernetes.client.openapi.models.V1APIResource;
 import org.jdrupes.vmoperator.common.K8sDynamicModel;
+import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Components;
 import org.jgrapes.core.Event;
@@ -34,16 +34,8 @@ import org.jgrapes.core.Event;
 @SuppressWarnings("PMD.DataClass")
 public class VmDefChanged extends Event<Void> {
 
-    /**
-     * The type of change.
-     */
-    public enum Type {
-        ADDED, MODIFIED, DELETED
-    }
-
-    private final Type type;
+    private final K8sObserver.ResponseType type;
     private final boolean specChanged;
-    private final V1APIResource crd;
     private final K8sDynamicModel vmDef;
 
     /**
@@ -54,11 +46,10 @@ public class VmDefChanged extends Event<Void> {
      * @param crd the crd
      * @param vmDefinition the VM definition
      */
-    public VmDefChanged(Type type, boolean specChanged, V1APIResource crd,
+    public VmDefChanged(K8sObserver.ResponseType type, boolean specChanged,
             K8sDynamicModel vmDefinition) {
         this.type = type;
         this.specChanged = specChanged;
-        this.crd = crd;
         this.vmDef = vmDefinition;
     }
 
@@ -67,7 +58,7 @@ public class VmDefChanged extends Event<Void> {
      *
      * @return the type
      */
-    public Type type() {
+    public K8sObserver.ResponseType type() {
         return type;
     }
 
@@ -76,15 +67,6 @@ public class VmDefChanged extends Event<Void> {
      */
     public boolean specChanged() {
         return specChanged;
-    }
-
-    /**
-     * Returns the Crd.
-     *
-     * @return the v 1 API resource
-     */
-    public V1APIResource crd() {
-        return crd;
     }
 
     /**
