@@ -104,16 +104,7 @@ public class VmMonitor
     protected void handleChange(K8sClient client,
             Watch.Response<K8sDynamicModel> response) {
         V1ObjectMeta metadata = response.object.getMetadata();
-        VmChannel channel = channel(metadata.getName(), name -> {
-            try {
-                return new VmChannel(channel(), newEventPipeline(),
-                    new K8sClient());
-            } catch (IOException e) {
-                logger.log(Level.SEVERE, e, () -> "Failed to create client"
-                    + " for handling changes: " + e.getMessage());
-                return null;
-            }
-        });
+        VmChannel channel = channel(metadata.getName());
         if (channel == null) {
             return;
         }

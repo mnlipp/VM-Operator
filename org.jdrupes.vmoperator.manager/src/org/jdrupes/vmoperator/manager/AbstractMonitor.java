@@ -27,10 +27,7 @@ import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.logging.Level;
 import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.common.K8sClient;
@@ -62,9 +59,8 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
     private String namespace;
     private ListOptions options = new ListOptions();
     private final AtomicInteger observerCounter = new AtomicInteger(0);
-    @SuppressWarnings({ "PMD.FieldNamingConventions",
-        "PMD.VariableNamingConventions" })
-    private final Map<String, C> channels = new ConcurrentHashMap<>();
+    private ChannelManager<C> channelManager;
+    private boolean channelManagerMaster;
 
     /**
      * Initializes the instance.
@@ -159,6 +155,30 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
     }
 
     /**
+     * Returns the channel manager.
+     * 
+     * @return the context
+     */
+    public ChannelManager<C> channelManager() {
+        return channelManager;
+    }
+
+    /**
+     * Sets the channel manager.
+     *
+     * @param channelManager the channel manager
+     * @param master if this monitor is a master, i.e. removes channels
+     * from the manager
+     * @return the abstract monitor
+     */
+    public AbstractMonitor<O, L, C>
+            channelManager(ChannelManager<C> channelManager, boolean master) {
+        this.channelManager = channelManager;
+        this.channelManagerMaster = master;
+        return this;
+    }
+
+    /**
      * Looks for a key "namespace" in the configuration and, if found,
      * sets the namespace to its value.
      *
@@ -221,8 +241,9 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
             K8s.preferred(context, version), namespace, options)
                 .handler((c, r) -> {
                     handleChange(c, r);
-                    if (ResponseType.valueOf(r.type) == ResponseType.DELETED) {
-                        channels.remove(r.object.getMetadata().getName());
+                    if (ResponseType.valueOf(r.type) == ResponseType.DELETED
+                        && channelManagerMaster) {
+                        channelManager.remove(r.object.getMetadata().getName());
                     }
                 }).onTerminated((o, t) -> {
                     if (observerCounter.decrementAndGet() == 0) {
@@ -259,20 +280,9 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
      * Returns the {@link Channel} for the given name.
      *
      * @param name the name
-     * @param supplier used to create the channel if it doesn't exist 
-     * @return the channel used for events related to the specified object
-     */
-    protected C channel(String name, Function<String, C> supplier) {
-        return channels.computeIfAbsent(name, supplier);
-    }
-
-    /**
-     * Returns the {@link Channel} for the given name.
-     *
-     * @param name the name
      * @return the channel used for events related to the specified object
      */
     protected C channel(String name) {
-        return channels.get(name);
+        return channelManager.channel(name);
     }
 }

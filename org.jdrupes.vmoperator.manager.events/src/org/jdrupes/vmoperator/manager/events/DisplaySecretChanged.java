@@ -19,6 +19,7 @@
 package org.jdrupes.vmoperator.manager.events;
 
 import io.kubernetes.client.openapi.models.V1Secret;
+import org.jdrupes.vmoperator.common.K8sObserver.ResponseType;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Components;
 import org.jgrapes.core.Event;
@@ -29,14 +30,7 @@ import org.jgrapes.core.Event;
 @SuppressWarnings("PMD.DataClass")
 public class DisplaySecretChanged extends Event<Void> {
 
-    /**
-     * The type of change.
-     */
-    public enum Type {
-        ADDED, MODIFIED, DELETED
-    }
-
-    private final Type type;
+    private final ResponseType type;
     private final V1Secret secret;
 
     /**
@@ -45,7 +39,7 @@ public class DisplaySecretChanged extends Event<Void> {
      * @param type the type
      * @param secret the secret
      */
-    public DisplaySecretChanged(Type type, V1Secret secret) {
+    public DisplaySecretChanged(ResponseType type, V1Secret secret) {
         this.type = type;
         this.secret = secret;
     }
@@ -55,7 +49,7 @@ public class DisplaySecretChanged extends Event<Void> {
      *
      * @return the type
      */
-    public Type type() {
+    public ResponseType type() {
         return type;
     }
 
