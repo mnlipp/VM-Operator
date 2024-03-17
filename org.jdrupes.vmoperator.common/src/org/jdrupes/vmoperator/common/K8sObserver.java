@@ -70,7 +70,6 @@ public class K8sObserver<O extends KubernetesObject,
      * @param context the context
      * @param namespace the namespace
      * @param options the options
-     * @return the stub if the object exists
      */
     @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
         "PMD.UseObjectForClearerAPI", "PMD.AvoidCatchingThrowable",

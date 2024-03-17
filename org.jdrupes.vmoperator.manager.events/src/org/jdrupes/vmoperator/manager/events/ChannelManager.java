@@ -36,8 +36,8 @@ import org.jgrapes.core.Channel;
  * by a component that defines channels for housekeeping. It can be
  * shared between this component and another component, preferably
  * using the {@link #fixed()} view for the second component.
- * It can also be used to track the mapping using "add/remove" events
- * and the channels on which they are delivered. 
+ * Alternatively, it can also be used to track the mapping using
+ * "add/remove" events and the channels on which they are delivered. 
  *
  * @param <K> the key type
  * @param <C> the channel type
@@ -106,9 +106,7 @@ public class ChannelManager<K, C extends Channel, A> {
     }
 
     /**
-     * Instantiates a new channel manager. without a default supplier.
-     *
-     * @param supplier the supplier that creates new channels
+     * Instantiates a new channel manager without a default supplier.
      */
     public ChannelManager() {
         this(k -> null);
