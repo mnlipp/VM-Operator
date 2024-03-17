@@ -34,6 +34,7 @@ import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jdrupes.vmoperator.common.K8sObserver.ResponseType;
+import org.jdrupes.vmoperator.manager.events.ChannelManager;
 import org.jdrupes.vmoperator.manager.events.Exit;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
@@ -60,7 +61,7 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
     private String namespace;
     private ListOptions options = new ListOptions();
     private final AtomicInteger observerCounter = new AtomicInteger(0);
-    private ChannelManager<String, C> channelManager;
+    private ChannelManager<String, C, ?> channelManager;
     private boolean channelManagerMaster;
 
     /**
@@ -160,7 +161,7 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
      * 
      * @return the context
      */
-    public ChannelManager<String, C> channelManager() {
+    public ChannelManager<String, C, ?> channelManager() {
         return channelManager;
     }
 
@@ -171,7 +172,7 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
      * @return the abstract monitor
      */
     public AbstractMonitor<O, L, C>
-            channelManager(ChannelManager<String, C> channelManager) {
+            channelManager(ChannelManager<String, C, ?> channelManager) {
         this.channelManager = channelManager;
         return this;
     }
@@ -281,6 +282,6 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
      * @return the channel used for events related to the specified object
      */
     protected Optional<C> channel(String name) {
-        return channelManager.channel(name);
+        return channelManager.getChannel(name);
     }
 }

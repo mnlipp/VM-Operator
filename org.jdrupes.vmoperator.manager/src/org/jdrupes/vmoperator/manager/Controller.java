@@ -30,6 +30,7 @@ import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
+import org.jdrupes.vmoperator.manager.events.ChannelManager;
 import org.jdrupes.vmoperator.manager.events.Exit;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
@@ -87,7 +88,7 @@ public class Controller extends Component {
     public Controller(Channel componentChannel) {
         super(componentChannel);
         // Prepare component tree
-        ChannelManager<String, VmChannel> chanMgr
+        ChannelManager<String, VmChannel, ?> chanMgr
             = new ChannelManager<>(name -> {
                 try {
                     return new VmChannel(channel(), newEventPipeline(),
@@ -100,7 +101,7 @@ public class Controller extends Component {
             });
         attach(new VmMonitor(channel()).channelManager(chanMgr));
         attach(new DisplaySecretsMonitor(channel())
-            .channelManager(chanMgr.readOnly()));
+            .channelManager(chanMgr.fixed()));
         attach(new Reconciler(channel()));
     }
 

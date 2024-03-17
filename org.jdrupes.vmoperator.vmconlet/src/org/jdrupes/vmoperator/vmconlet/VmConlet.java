@@ -31,14 +31,13 @@ import java.math.BigInteger;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import org.jdrupes.json.JsonBeanDecoder;
 import org.jdrupes.json.JsonDecodeException;
 import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jdrupes.vmoperator.common.K8sObserver;
+import org.jdrupes.vmoperator.manager.events.ChannelManager;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
@@ -69,10 +68,8 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
 
     private static final Set<RenderMode> MODES = RenderMode.asSet(
         RenderMode.Preview, RenderMode.View);
-    private final Map<String, K8sDynamicModel> vmInfos
-        = new ConcurrentHashMap<>();
-    private final Map<String, VmChannel> vmChannels
-        = new ConcurrentHashMap<>();
+    private final ChannelManager<String, VmChannel,
+            K8sDynamicModel> channelManager = new ChannelManager<>();
     private final TimeSeries summarySeries = new TimeSeries(Duration.ofDays(1));
     private Summary cachedSummary;
 
@@ -162,9 +159,10 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
             sendVmInfos = true;
         }
         if (sendVmInfos) {
-            for (var vmInfo : vmInfos.values()) {
-                var def = JsonBeanDecoder.create(vmInfo.data().toString())
-                    .readObject();
+            for (var vmDef : channelManager.associated()) {
+                var def
+                    = JsonBeanDecoder.create(vmDef.data().toString())
+                        .readObject();
                 channel.respond(new NotifyConletView(type(),
                     conletId, "updateVm", def));
             }
@@ -188,8 +186,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
             throws JsonDecodeException, IOException {
         var vmName = event.vmDefinition().getMetadata().getName();
         if (event.type() == K8sObserver.ResponseType.DELETED) {
-            vmInfos.remove(vmName);
-            vmChannels.remove(vmName);
+            channelManager.remove(vmName);
             for (var entry : conletIdsByConsoleConnection().entrySet()) {
                 for (String conletId : entry.getValue()) {
                     entry.getKey().respond(new NotifyConletView(type(),
@@ -199,8 +196,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
         } else {
             var vmDef = new K8sDynamicModel(channel.client().getJSON()
                 .getGson(), convertQuantities(event.vmDefinition().data()));
-            vmInfos.put(vmName, vmDef);
-            vmChannels.put(vmName, channel);
+            channelManager.put(vmName, channel, vmDef);
             var def = JsonBeanDecoder.create(vmDef.data().toString())
                 .readObject();
             for (var entry : conletIdsByConsoleConnection().entrySet()) {
@@ -323,7 +319,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
             return cachedSummary;
         }
         Summary summary = new Summary();
-        for (var vmDef : vmInfos.values()) {
+        for (var vmDef : channelManager.associated()) {
             summary.totalVms += 1;
             var status = GsonPtr.to(vmDef.data()).to("status");
             summary.usedCpus += status.getAsInt("cpus").orElse(0);
@@ -349,7 +345,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
             throws Exception {
         event.stop();
         var vmName = event.params().asString(0);
-        var vmChannel = vmChannels.get(vmName);
+        var vmChannel = channelManager.channel(vmName).orElse(null);
         if (vmChannel == null) {
             return;
         }
