@@ -27,6 +27,7 @@ import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import org.jdrupes.vmoperator.common.K8s;
@@ -59,7 +60,7 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
     private String namespace;
     private ListOptions options = new ListOptions();
     private final AtomicInteger observerCounter = new AtomicInteger(0);
-    private ChannelManager<C> channelManager;
+    private ChannelManager<String, C> channelManager;
     private boolean channelManagerMaster;
 
     /**
@@ -159,7 +160,7 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
      * 
      * @return the context
      */
-    public ChannelManager<C> channelManager() {
+    public ChannelManager<String, C> channelManager() {
         return channelManager;
     }
 
@@ -167,14 +168,11 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
      * Sets the channel manager.
      *
      * @param channelManager the channel manager
-     * @param master if this monitor is a master, i.e. removes channels
-     * from the manager
      * @return the abstract monitor
      */
     public AbstractMonitor<O, L, C>
-            channelManager(ChannelManager<C> channelManager, boolean master) {
+            channelManager(ChannelManager<String, C> channelManager) {
         this.channelManager = channelManager;
-        this.channelManagerMaster = master;
         return this;
     }
 
@@ -282,7 +280,7 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
      * @param name the name
      * @return the channel used for events related to the specified object
      */
-    protected C channel(String name) {
+    protected Optional<C> channel(String name) {
         return channelManager.channel(name);
     }
 }

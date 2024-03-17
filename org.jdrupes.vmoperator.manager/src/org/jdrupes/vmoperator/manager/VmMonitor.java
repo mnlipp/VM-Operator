@@ -104,7 +104,7 @@ public class VmMonitor
     protected void handleChange(K8sClient client,
             Watch.Response<K8sDynamicModel> response) {
         V1ObjectMeta metadata = response.object.getMetadata();
-        VmChannel channel = channel(metadata.getName());
+        VmChannel channel = channel(metadata.getName()).orElse(null);
         if (channel == null) {
             return;
         }

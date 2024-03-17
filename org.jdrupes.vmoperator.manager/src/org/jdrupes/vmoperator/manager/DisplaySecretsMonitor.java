@@ -59,7 +59,7 @@ public class DisplaySecretsMonitor
         if (vmName == null) {
             return;
         }
-        VmChannel channel = channel(vmName);
+        var channel = channel(vmName).orElse(null);
         if (channel == null || channel.vmDefinition() == null) {
             return;
         }

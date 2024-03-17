@@ -87,19 +87,20 @@ public class Controller extends Component {
     public Controller(Channel componentChannel) {
         super(componentChannel);
         // Prepare component tree
-        ChannelManager<VmChannel> chanMgr = new ChannelManager<>(name -> {
-            try {
-                return new VmChannel(channel(), newEventPipeline(),
-                    new K8sClient());
-            } catch (IOException e) {
-                logger.log(Level.SEVERE, e, () -> "Failed to create client"
-                    + " for handling changes: " + e.getMessage());
-                return null;
-            }
-        });
-        attach(new VmMonitor(channel()).channelManager(chanMgr, true));
-        attach(new DisplaySecretsMonitor(channel()).channelManager(chanMgr,
-            false));
+        ChannelManager<String, VmChannel> chanMgr
+            = new ChannelManager<>(name -> {
+                try {
+                    return new VmChannel(channel(), newEventPipeline(),
+                        new K8sClient());
+                } catch (IOException e) {
+                    logger.log(Level.SEVERE, e, () -> "Failed to create client"
+                        + " for handling changes: " + e.getMessage());
+                    return null;
+                }
+            });
+        attach(new VmMonitor(channel()).channelManager(chanMgr));
+        attach(new DisplaySecretsMonitor(channel())
+            .channelManager(chanMgr.readOnly()));
         attach(new Reconciler(channel()));
     }
 
