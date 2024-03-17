@@ -117,7 +117,7 @@
 <span class="source-line-no">104</span><span id="line-104">    protected void handleChange(K8sClient client,</span>
 <span class="source-line-no">105</span><span id="line-105">            Watch.Response&lt;K8sDynamicModel&gt; response) {</span>
 <span class="source-line-no">106</span><span id="line-106">        V1ObjectMeta metadata = response.object.getMetadata();</span>
-<span class="source-line-no">107</span><span id="line-107">        VmChannel channel = channel(metadata.getName());</span>
+<span class="source-line-no">107</span><span id="line-107">        VmChannel channel = channel(metadata.getName()).orElse(null);</span>
 <span class="source-line-no">108</span><span id="line-108">        if (channel == null) {</span>
 <span class="source-line-no">109</span><span id="line-109">            return;</span>
 <span class="source-line-no">110</span><span id="line-110">        }</span>
