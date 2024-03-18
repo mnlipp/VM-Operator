@@ -18,7 +18,6 @@
 
 package org.jdrupes.vmoperator.manager.events;
 
-import java.lang.ref.WeakReference;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -32,12 +31,11 @@ import org.jgrapes.core.Channel;
  * As a convenience, it is possible to additionally associate arbitrary
  * data with the entry (and thus with the channel).
  * 
- * There are several usage patterns for this class. It can be used
- * by a component that defines channels for housekeeping. It can be
- * shared between this component and another component, preferably
- * using the {@link #fixed()} view for the second component.
- * Alternatively, it can also be used to track the mapping using
- * "add/remove" events and the channels on which they are delivered. 
+ * The manager should be used by a component that defines channels for 
+ * housekeeping. It can be shared between this component and another
+ * component, preferably using the {@link #fixed()} view for the 
+ * second component. Alternatively, the second component can use a
+ * {@link ChannelCache} to track the mappings using events.
  *
  * @param <K> the key type
  * @param <C> the channel type
@@ -45,28 +43,9 @@ import org.jgrapes.core.Channel;
  */
 public class ChannelManager<K, C extends Channel, A> {
 
-    private final Map<K, Data<C, A>> channels = new ConcurrentHashMap<>();
+    private final Map<K, Both<C, A>> channels = new ConcurrentHashMap<>();
     private final Function<K, C> supplier;
     private ChannelManager<K, C, A> readOnly;
-
-    /**
-     * Helper
-     */
-    @SuppressWarnings("PMD.ShortClassName")
-    private static class Data<C extends Channel, A> {
-        public WeakReference<C> channel;
-        public A associated;
-
-        /**
-         * Instantiates a new value.
-         *
-         * @param channel the channel
-         */
-        public Data(C channel) {
-            this.channel = new WeakReference<>(channel);
-        }
-
-    }
 
     /**
      * Combines the channel and the associated data.
@@ -121,17 +100,7 @@ public class ChannelManager<K, C extends Channel, A> {
      */
     public Optional<Both<C, A>> both(K key) {
         synchronized (channels) {
-            var value = channels.get(key);
-            if (value == null) {
-                return Optional.empty();
-            }
-            var channel = value.channel.get();
-            if (channel == null) {
-                // Cleanup old reference
-                channels.remove(key);
-                return Optional.empty();
-            }
-            return Optional.of(new Both<>(channel, value.associated));
+            return Optional.ofNullable(channels.get(key));
         }
     }
 
@@ -144,9 +113,7 @@ public class ChannelManager<K, C extends Channel, A> {
      * @return the channel manager
      */
     public ChannelManager<K, C, A> put(K key, C channel, A associated) {
-        Data<C, A> data = new Data<>(channel);
-        data.associated = associated;
-        channels.put(key, data);
+        channels.put(key, new Both<>(channel, associated));
         return this;
     }
 
@@ -198,10 +165,10 @@ public class ChannelManager<K, C extends Channel, A> {
         synchronized (channels) {
             return Optional
                 .of(Optional.ofNullable(channels.get(key))
-                    .map(v -> v.channel.get())
+                    .map(v -> v.channel)
                     .orElseGet(() -> {
                         var channel = supplier.apply(key);
-                        channels.put(key, new Data<>(channel));
+                        channels.put(key, new Both<>(channel, null));
                         return channel;
                     }));
         }
@@ -241,7 +208,7 @@ public class ChannelManager<K, C extends Channel, A> {
     public Collection<A> associated() {
         synchronized (channels) {
             return channels.values().stream()
-                .filter(v -> v.channel.get() != null && v.associated != null)
+                .filter(v -> v.associated != null)
                 .map(v -> v.associated).toList();
         }
     }

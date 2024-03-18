@@ -37,7 +37,7 @@ import org.jdrupes.json.JsonBeanDecoder;
 import org.jdrupes.json.JsonDecodeException;
 import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jdrupes.vmoperator.common.K8sObserver;
-import org.jdrupes.vmoperator.manager.events.ChannelManager;
+import org.jdrupes.vmoperator.manager.events.ChannelCache;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
@@ -68,8 +68,8 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
 
     private static final Set<RenderMode> MODES = RenderMode.asSet(
         RenderMode.Preview, RenderMode.View);
-    private final ChannelManager<String, VmChannel,
-            K8sDynamicModel> channelManager = new ChannelManager<>();
+    private final ChannelCache<String, VmChannel,
+            K8sDynamicModel> channelManager = new ChannelCache<>();
     private final TimeSeries summarySeries = new TimeSeries(Duration.ofDays(1));
     private Summary cachedSummary;
 
