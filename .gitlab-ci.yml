@@ -1,0 +1,28 @@
+default:
+  # Template project: https://gitlab.com/pages/jekyll
+  # Docs: https://docs.gitlab.com/ee/pages/
+  image: ruby:3.2
+  before_script:
+    - git fetch origin gh-pages
+    - git checkout gh-pages
+    - gem install bundler
+    - bundle install
+variables:
+  JEKYLL_ENV: production
+  LC_ALL: C.UTF-8
+test:
+  stage: test
+  script:
+    - bundle exec jekyll build -d test
+  artifacts:
+    paths:
+      - test
+      
+pages:
+  stage: deploy
+  script:
+    - bundle exec jekyll build -d public
+  artifacts:
+    paths:
+      - public
+  environment: production
