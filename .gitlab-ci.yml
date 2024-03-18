@@ -3,6 +3,8 @@ default:
   # Docs: https://docs.gitlab.com/ee/pages/
   image: ruby:3.2
   before_script:
+    - git fetch origin gh-pages
+    - git checkout gh-pages
     - gem install bundler
     - bundle install
 variables:
