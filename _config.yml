@@ -3,8 +3,8 @@ plugins:
 
 author: Michael N. Lipp
 
-logo: favicon-96x96.png
+logo: VM-Operator.svg
 
-tagline: Introduction to OSGi
+tagline: VM-Operator by mnlipp 
 
-description: A tutorial that shows JavaSE developers how to get started with OSGi.
+description: A Kubernetes operator for running virtual machines (notably Qemu VMs) as pods.
