@@ -45,61 +45,50 @@
 <span class="source-line-no">032</span><span id="line-32">@SuppressWarnings("PMD.DataflowAnomalyAnalysis")</span>
 <span class="source-line-no">033</span><span id="line-33">public class K8sV1PodStub extends K8sGenericStub&lt;V1Pod, V1PodList&gt; {</span>
 <span class="source-line-no">034</span><span id="line-34"></span>
-<span class="source-line-no">035</span><span id="line-35">    /** The pods' context. */</span>
-<span class="source-line-no">036</span><span id="line-36">    public static final APIResource CONTEXT</span>
-<span class="source-line-no">037</span><span id="line-37">        = new APIResource("", List.of("v1"), "v1", "Pod", true, "pods", "pod");</span>
-<span class="source-line-no">038</span><span id="line-38"></span>
-<span class="source-line-no">039</span><span id="line-39">    /**</span>
-<span class="source-line-no">040</span><span id="line-40">     * Instantiates a new stub.</span>
-<span class="source-line-no">041</span><span id="line-41">     *</span>
-<span class="source-line-no">042</span><span id="line-42">     * @param client the client</span>
-<span class="source-line-no">043</span><span id="line-43">     * @param namespace the namespace</span>
-<span class="source-line-no">044</span><span id="line-44">     * @param name the name</span>
-<span class="source-line-no">045</span><span id="line-45">     */</span>
-<span class="source-line-no">046</span><span id="line-46">    protected K8sV1PodStub(K8sClient client, String namespace, String name) {</span>
-<span class="source-line-no">047</span><span id="line-47">        super(V1Pod.class, V1PodList.class, client, CONTEXT, namespace, name);</span>
-<span class="source-line-no">048</span><span id="line-48">    }</span>
-<span class="source-line-no">049</span><span id="line-49"></span>
-<span class="source-line-no">050</span><span id="line-50">    /**</span>
-<span class="source-line-no">051</span><span id="line-51">     * Gets the stub for the given namespace and name.</span>
-<span class="source-line-no">052</span><span id="line-52">     *</span>
-<span class="source-line-no">053</span><span id="line-53">     * @param client the client</span>
-<span class="source-line-no">054</span><span id="line-54">     * @param namespace the namespace</span>
-<span class="source-line-no">055</span><span id="line-55">     * @param name the name</span>
-<span class="source-line-no">056</span><span id="line-56">     * @return the kpod stub</span>
-<span class="source-line-no">057</span><span id="line-57">     */</span>
-<span class="source-line-no">058</span><span id="line-58">    public static K8sV1PodStub get(K8sClient client, String namespace,</span>
-<span class="source-line-no">059</span><span id="line-59">            String name) {</span>
-<span class="source-line-no">060</span><span id="line-60">        return new K8sV1PodStub(client, namespace, name);</span>
-<span class="source-line-no">061</span><span id="line-61">    }</span>
-<span class="source-line-no">062</span><span id="line-62"></span>
-<span class="source-line-no">063</span><span id="line-63">    /**</span>
-<span class="source-line-no">064</span><span id="line-64">     * Get the stubs for the objects in the given namespace that match</span>
-<span class="source-line-no">065</span><span id="line-65">     * the criteria from the given options.</span>
-<span class="source-line-no">066</span><span id="line-66">     *</span>
-<span class="source-line-no">067</span><span id="line-67">     * @param client the client</span>
-<span class="source-line-no">068</span><span id="line-68">     * @param namespace the namespace</span>
-<span class="source-line-no">069</span><span id="line-69">     * @param options the options</span>
-<span class="source-line-no">070</span><span id="line-70">     * @return the collection</span>
-<span class="source-line-no">071</span><span id="line-71">     * @throws ApiException the api exception</span>
-<span class="source-line-no">072</span><span id="line-72">     */</span>
-<span class="source-line-no">073</span><span id="line-73">    public static Collection&lt;K8sV1PodStub&gt; list(K8sClient client,</span>
-<span class="source-line-no">074</span><span id="line-74">            String namespace, ListOptions options) throws ApiException {</span>
-<span class="source-line-no">075</span><span id="line-75">        return K8sGenericStub.list(V1Pod.class, V1PodList.class, client,</span>
-<span class="source-line-no">076</span><span id="line-76">            CONTEXT, namespace, options, K8sV1PodStub::getGeneric);</span>
-<span class="source-line-no">077</span><span id="line-77">    }</span>
-<span class="source-line-no">078</span><span id="line-78"></span>
-<span class="source-line-no">079</span><span id="line-79">    /**</span>
-<span class="source-line-no">080</span><span id="line-80">     * Provide {@link GenericSupplier}.</span>
-<span class="source-line-no">081</span><span id="line-81">     */</span>
-<span class="source-line-no">082</span><span id="line-82">    @SuppressWarnings("PMD.UnusedFormalParameter")</span>
-<span class="source-line-no">083</span><span id="line-83">    private static K8sV1PodStub getGeneric(Class&lt;V1Pod&gt; objectClass,</span>
-<span class="source-line-no">084</span><span id="line-84">            Class&lt;V1PodList&gt; objectListClass, K8sClient client,</span>
-<span class="source-line-no">085</span><span id="line-85">            APIResource context, String namespace, String name) {</span>
-<span class="source-line-no">086</span><span id="line-86">        return new K8sV1PodStub(client, namespace, name);</span>
-<span class="source-line-no">087</span><span id="line-87">    }</span>
-<span class="source-line-no">088</span><span id="line-88"></span>
-<span class="source-line-no">089</span><span id="line-89">}</span>
+<span class="source-line-no">035</span><span id="line-35">    public static final APIResource CONTEXT</span>
+<span class="source-line-no">036</span><span id="line-36">        = new APIResource("", List.of("v1"), "v1", "Pod", true, "pods", "pod");</span>
+<span class="source-line-no">037</span><span id="line-37"></span>
+<span class="source-line-no">038</span><span id="line-38">    /**</span>
+<span class="source-line-no">039</span><span id="line-39">     * Instantiates a new stub.</span>
+<span class="source-line-no">040</span><span id="line-40">     *</span>
+<span class="source-line-no">041</span><span id="line-41">     * @param client the client</span>
+<span class="source-line-no">042</span><span id="line-42">     * @param namespace the namespace</span>
+<span class="source-line-no">043</span><span id="line-43">     * @param name the name</span>
+<span class="source-line-no">044</span><span id="line-44">     */</span>
+<span class="source-line-no">045</span><span id="line-45">    protected K8sV1PodStub(K8sClient client, String namespace, String name) {</span>
+<span class="source-line-no">046</span><span id="line-46">        super(V1Pod.class, V1PodList.class, client, CONTEXT, namespace, name);</span>
+<span class="source-line-no">047</span><span id="line-47">    }</span>
+<span class="source-line-no">048</span><span id="line-48"></span>
+<span class="source-line-no">049</span><span id="line-49">    /**</span>
+<span class="source-line-no">050</span><span id="line-50">     * Gets the stub for the given namespace and name.</span>
+<span class="source-line-no">051</span><span id="line-51">     *</span>
+<span class="source-line-no">052</span><span id="line-52">     * @param client the client</span>
+<span class="source-line-no">053</span><span id="line-53">     * @param namespace the namespace</span>
+<span class="source-line-no">054</span><span id="line-54">     * @param name the name</span>
+<span class="source-line-no">055</span><span id="line-55">     * @return the kpod stub</span>
+<span class="source-line-no">056</span><span id="line-56">     */</span>
+<span class="source-line-no">057</span><span id="line-57">    public static K8sV1PodStub get(K8sClient client, String namespace,</span>
+<span class="source-line-no">058</span><span id="line-58">            String name) {</span>
+<span class="source-line-no">059</span><span id="line-59">        return new K8sV1PodStub(client, namespace, name);</span>
+<span class="source-line-no">060</span><span id="line-60">    }</span>
+<span class="source-line-no">061</span><span id="line-61"></span>
+<span class="source-line-no">062</span><span id="line-62">    /**</span>
+<span class="source-line-no">063</span><span id="line-63">     * Get the stubs for the objects in the given namespace that match</span>
+<span class="source-line-no">064</span><span id="line-64">     * the criteria from the given options.</span>
+<span class="source-line-no">065</span><span id="line-65">     *</span>
+<span class="source-line-no">066</span><span id="line-66">     * @param client the client</span>
+<span class="source-line-no">067</span><span id="line-67">     * @param namespace the namespace</span>
+<span class="source-line-no">068</span><span id="line-68">     * @param options the options</span>
+<span class="source-line-no">069</span><span id="line-69">     * @return the collection</span>
+<span class="source-line-no">070</span><span id="line-70">     * @throws ApiException the api exception</span>
+<span class="source-line-no">071</span><span id="line-71">     */</span>
+<span class="source-line-no">072</span><span id="line-72">    public static Collection&lt;K8sV1PodStub&gt; list(K8sClient client,</span>
+<span class="source-line-no">073</span><span id="line-73">            String namespace, ListOptions options) throws ApiException {</span>
+<span class="source-line-no">074</span><span id="line-74">        return K8sGenericStub.list(V1Pod.class, V1PodList.class, client,</span>
+<span class="source-line-no">075</span><span id="line-75">            CONTEXT, namespace, options, K8sV1PodStub::new);</span>
+<span class="source-line-no">076</span><span id="line-76">    }</span>
+<span class="source-line-no">077</span><span id="line-77"></span>
+<span class="source-line-no">078</span><span id="line-78">}</span>
 
 
 
