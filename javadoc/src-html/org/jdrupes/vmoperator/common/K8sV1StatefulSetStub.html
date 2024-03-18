@@ -43,34 +43,37 @@
 <span class="source-line-no">030</span><span id="line-30">public class K8sV1StatefulSetStub</span>
 <span class="source-line-no">031</span><span id="line-31">        extends K8sGenericStub&lt;V1StatefulSet, V1StatefulSetList&gt; {</span>
 <span class="source-line-no">032</span><span id="line-32"></span>
-<span class="source-line-no">033</span><span id="line-33">    /**</span>
-<span class="source-line-no">034</span><span id="line-34">     * Instantiates a new stub.</span>
-<span class="source-line-no">035</span><span id="line-35">     *</span>
-<span class="source-line-no">036</span><span id="line-36">     * @param client the client</span>
-<span class="source-line-no">037</span><span id="line-37">     * @param namespace the namespace</span>
-<span class="source-line-no">038</span><span id="line-38">     * @param name the name</span>
-<span class="source-line-no">039</span><span id="line-39">     */</span>
-<span class="source-line-no">040</span><span id="line-40">    protected K8sV1StatefulSetStub(K8sClient client, String namespace,</span>
-<span class="source-line-no">041</span><span id="line-41">            String name) {</span>
-<span class="source-line-no">042</span><span id="line-42">        super(V1StatefulSet.class, V1StatefulSetList.class, client,</span>
-<span class="source-line-no">043</span><span id="line-43">            new APIResource("apps", List.of("v1"), "v1", "StatefulSet", true,</span>
-<span class="source-line-no">044</span><span id="line-44">                "statefulsets", "statefulset"),</span>
-<span class="source-line-no">045</span><span id="line-45">            namespace, name);</span>
-<span class="source-line-no">046</span><span id="line-46">    }</span>
-<span class="source-line-no">047</span><span id="line-47"></span>
-<span class="source-line-no">048</span><span id="line-48">    /**</span>
-<span class="source-line-no">049</span><span id="line-49">     * Gets the stub for the given namespace and name.</span>
-<span class="source-line-no">050</span><span id="line-50">     *</span>
-<span class="source-line-no">051</span><span id="line-51">     * @param client the client</span>
-<span class="source-line-no">052</span><span id="line-52">     * @param namespace the namespace</span>
-<span class="source-line-no">053</span><span id="line-53">     * @param name the name</span>
-<span class="source-line-no">054</span><span id="line-54">     * @return the stateful set stub</span>
-<span class="source-line-no">055</span><span id="line-55">     */</span>
-<span class="source-line-no">056</span><span id="line-56">    public static K8sV1StatefulSetStub get(K8sClient client, String namespace,</span>
-<span class="source-line-no">057</span><span id="line-57">            String name) {</span>
-<span class="source-line-no">058</span><span id="line-58">        return new K8sV1StatefulSetStub(client, namespace, name);</span>
-<span class="source-line-no">059</span><span id="line-59">    }</span>
-<span class="source-line-no">060</span><span id="line-60">}</span>
+<span class="source-line-no">033</span><span id="line-33">    /** The stateful sets' context */</span>
+<span class="source-line-no">034</span><span id="line-34">    public static final APIResource CONTEXT</span>
+<span class="source-line-no">035</span><span id="line-35">        = new APIResource("apps", List.of("v1"), "v1", "StatefulSet", true,</span>
+<span class="source-line-no">036</span><span id="line-36">            "statefulsets", "statefulset");</span>
+<span class="source-line-no">037</span><span id="line-37"></span>
+<span class="source-line-no">038</span><span id="line-38">    /**</span>
+<span class="source-line-no">039</span><span id="line-39">     * Instantiates a new stub.</span>
+<span class="source-line-no">040</span><span id="line-40">     *</span>
+<span class="source-line-no">041</span><span id="line-41">     * @param client the client</span>
+<span class="source-line-no">042</span><span id="line-42">     * @param namespace the namespace</span>
+<span class="source-line-no">043</span><span id="line-43">     * @param name the name</span>
+<span class="source-line-no">044</span><span id="line-44">     */</span>
+<span class="source-line-no">045</span><span id="line-45">    protected K8sV1StatefulSetStub(K8sClient client, String namespace,</span>
+<span class="source-line-no">046</span><span id="line-46">            String name) {</span>
+<span class="source-line-no">047</span><span id="line-47">        super(V1StatefulSet.class, V1StatefulSetList.class, client, CONTEXT,</span>
+<span class="source-line-no">048</span><span id="line-48">            namespace, name);</span>
+<span class="source-line-no">049</span><span id="line-49">    }</span>
+<span class="source-line-no">050</span><span id="line-50"></span>
+<span class="source-line-no">051</span><span id="line-51">    /**</span>
+<span class="source-line-no">052</span><span id="line-52">     * Gets the stub for the given namespace and name.</span>
+<span class="source-line-no">053</span><span id="line-53">     *</span>
+<span class="source-line-no">054</span><span id="line-54">     * @param client the client</span>
+<span class="source-line-no">055</span><span id="line-55">     * @param namespace the namespace</span>
+<span class="source-line-no">056</span><span id="line-56">     * @param name the name</span>
+<span class="source-line-no">057</span><span id="line-57">     * @return the stateful set stub</span>
+<span class="source-line-no">058</span><span id="line-58">     */</span>
+<span class="source-line-no">059</span><span id="line-59">    public static K8sV1StatefulSetStub get(K8sClient client, String namespace,</span>
+<span class="source-line-no">060</span><span id="line-60">            String name) {</span>
+<span class="source-line-no">061</span><span id="line-61">        return new K8sV1StatefulSetStub(client, namespace, name);</span>
+<span class="source-line-no">062</span><span id="line-62">    }</span>
+<span class="source-line-no">063</span><span id="line-63">}</span>
 
 
 
