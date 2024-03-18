@@ -17,9 +17,7 @@ test:
   artifacts:
     paths:
       - test
-  rules:
-    - if: $CI_COMMIT_REF_NAME == "gh-pages"
-      when: always
+      
 pages:
   stage: deploy
   script:
@@ -27,7 +25,4 @@ pages:
   artifacts:
     paths:
       - public
-  rules:
-    - if: $CI_COMMIT_REF_NAME == "gh-pages"
-      when: always
   environment: production
