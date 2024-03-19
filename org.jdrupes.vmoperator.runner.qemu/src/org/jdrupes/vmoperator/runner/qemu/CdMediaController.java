@@ -25,8 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpChangeMedium;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpOpenTray;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpRemoveMedium;
+import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
-import org.jdrupes.vmoperator.runner.qemu.events.RunnerConfigurationUpdate;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;
 import org.jdrupes.vmoperator.runner.qemu.events.TrayMovedEvent;
 import org.jgrapes.core.Channel;
@@ -68,7 +68,7 @@ public class CdMediaController extends Component {
     @Handler
     @SuppressWarnings({ "PMD.AvoidLiteralsInIfCondition",
         "PMD.AvoidInstantiatingObjectsInLoops" })
-    public void onConfigureQemu(RunnerConfigurationUpdate event) {
+    public void onConfigureQemu(ConfigureQemu event) {
         if (event.state() == State.TERMINATING) {
             return;
         }

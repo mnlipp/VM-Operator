@@ -21,8 +21,8 @@ package org.jdrupes.vmoperator.runner.qemu;
 import java.math.BigInteger;
 import java.util.Optional;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpSetBalloon;
+import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
-import org.jdrupes.vmoperator.runner.qemu.events.RunnerConfigurationUpdate;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.annotation.Handler;
@@ -50,7 +50,7 @@ public class RamController extends Component {
      * @param event the event
      */
     @Handler
-    public void onConfigureQemu(RunnerConfigurationUpdate event) {
+    public void onConfigureQemu(ConfigureQemu event) {
         Optional.ofNullable(event.configuration().vm.currentRam)
             .ifPresent(cr -> {
                 if (currentRam != null && currentRam.equals(cr)) {

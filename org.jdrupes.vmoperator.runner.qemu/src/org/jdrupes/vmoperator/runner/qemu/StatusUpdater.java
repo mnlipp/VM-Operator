@@ -42,9 +42,9 @@ import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
 import org.jdrupes.vmoperator.runner.qemu.events.BalloonChangeEvent;
+import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
 import org.jdrupes.vmoperator.runner.qemu.events.Exit;
 import org.jdrupes.vmoperator.runner.qemu.events.HotpluggableCpuStatus;
-import org.jdrupes.vmoperator.runner.qemu.events.RunnerConfigurationUpdate;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;
 import org.jdrupes.vmoperator.runner.qemu.events.ShutdownEvent;
@@ -178,7 +178,7 @@ public class StatusUpdater extends Component {
      * @throws ApiException 
      */
     @Handler
-    public void onRunnerConfigurationUpdate(RunnerConfigurationUpdate event)
+    public void onConfigureQemu(ConfigureQemu event)
             throws ApiException {
         guestShutdownStops = event.configuration().guestShutdownStops;
 

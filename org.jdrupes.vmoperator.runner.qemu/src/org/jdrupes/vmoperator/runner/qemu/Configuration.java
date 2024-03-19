@@ -46,11 +46,8 @@ public class Configuration implements Dto {
     @SuppressWarnings("PMD.FieldNamingConventions")
     protected final Logger logger = Logger.getLogger(getClass().getName());
 
-    /** Configuration timestamp */
+    /** Configuration timestamp. */
     public Instant asOf;
-
-    /** The config dir. */
-    public Path configDir;
 
     /** The data dir. */
     public Path dataDir;
@@ -76,6 +73,9 @@ public class Configuration implements Dto {
     /** The firmware vars. */
     public Path firmwareVars;
 
+    /** The display password. */
+    public boolean hasDisplayPassword;
+
     /** Optional cloud-init data. */
     public CloudInit cloudInit;
 
@@ -90,10 +90,16 @@ public class Configuration implements Dto {
      * Subsection "cloud-init".
      */
     public static class CloudInit implements Dto {
+
+        /** The meta data. */
         @SuppressWarnings("PMD.UseConcurrentHashMap")
         public Map<String, Object> metaData;
+
+        /** The user data. */
         @SuppressWarnings("PMD.UseConcurrentHashMap")
         public Map<String, Object> userData;
+
+        /** The network config. */
         @SuppressWarnings("PMD.UseConcurrentHashMap")
         public Map<String, Object> networkConfig;
     }
@@ -233,6 +239,8 @@ public class Configuration implements Dto {
      * The Class Display.
      */
     public static class Display implements Dto {
+
+        /** The spice. */
         public Spice spice;
     }
 

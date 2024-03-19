@@ -215,12 +215,8 @@
     <#assign spice = vm.display.spice/>
     # SPICE (display, channels ...)
     # https://www.linux-kvm.org/page/SPICE
-    <#if displayPasswordPath??>
-    - [ "-object", "secret,id=spiceTicket,file=${ displayPasswordPath }" ]
-    </#if>
     - [ "-spice", "port=${ spice.port?c }\
-        <#if displayPasswordPath??>,password-secret=spiceTicket\
-        <#else>,disable-ticketing=on</#if>\
+        ,disable-ticketing=<#if hasDisplayPassword!false>off<#else>on</#if>\
         <#if spice.streamingVideo??>,streaming-video=${ spice.streamingVideo }</#if>\
         ,seamless-migration=on" ]
     - [ "-chardev", "spicevmc,id=vdagentdev,name=vdagent" ]

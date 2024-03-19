@@ -27,11 +27,11 @@ import java.util.Set;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpAddCpu;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpDelCpu;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpQueryHotpluggableCpus;
+import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
 import org.jdrupes.vmoperator.runner.qemu.events.CpuAdded;
 import org.jdrupes.vmoperator.runner.qemu.events.CpuDeleted;
 import org.jdrupes.vmoperator.runner.qemu.events.HotpluggableCpuStatus;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
-import org.jdrupes.vmoperator.runner.qemu.events.RunnerConfigurationUpdate;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
@@ -45,7 +45,7 @@ public class CpuController extends Component {
 
     private Integer currentCpus;
     private Integer desiredCpus;
-    private RunnerConfigurationUpdate suspendedConfigure;
+    private ConfigureQemu suspendedConfigure;
 
     /**
      * Instantiates a new CPU controller.
@@ -62,7 +62,7 @@ public class CpuController extends Component {
      * @param event the event
      */
     @Handler
-    public void onConfigureQemu(RunnerConfigurationUpdate event) {
+    public void onConfigureQemu(ConfigureQemu event) {
         if (event.state() == State.TERMINATING) {
             return;
         }

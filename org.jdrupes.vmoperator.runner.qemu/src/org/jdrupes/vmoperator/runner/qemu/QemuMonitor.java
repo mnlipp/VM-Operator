@@ -35,12 +35,12 @@ import java.util.logging.Level;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCapabilities;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCommand;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpPowerdown;
+import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorEvent;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorReady;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorResult;
 import org.jdrupes.vmoperator.runner.qemu.events.PowerdownEvent;
-import org.jdrupes.vmoperator.runner.qemu.events.RunnerConfigurationUpdate;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.Components;
@@ -87,13 +87,16 @@ public class QemuMonitor extends Component {
      * Instantiates a new qemu monitor.
      *
      * @param componentChannel the component channel
+     * @param configDir the config dir
      * @throws IOException Signals that an I/O exception has occurred.
      */
     @SuppressWarnings("PMD.AssignmentToNonFinalStatic")
-    public QemuMonitor(Channel componentChannel) throws IOException {
+    public QemuMonitor(Channel componentChannel, Path configDir)
+            throws IOException {
         super(componentChannel);
         attach(new RamController(channel()));
         attach(new CpuController(channel()));
+        attach(new DisplayController(channel(), configDir));
         attach(new CdMediaController(channel()));
     }
 
@@ -254,17 +257,18 @@ public class QemuMonitor extends Component {
      * @param event the event
      */
     @Handler
+    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
     public void onExecQmpCommand(MonitorCommand event) {
         var command = event.command();
+        logger.fine(() -> "monitor(out): " + command.toString());
         String asText;
         try {
-            asText = mapper.writeValueAsString(command.toJson());
+            asText = command.asText();
         } catch (JsonProcessingException e) {
             logger.log(Level.SEVERE, e,
                 () -> "Cannot serialize Json: " + e.getMessage());
             return;
         }
-        logger.fine(() -> "monitor(out): " + asText);
         synchronized (executing) {
             monitorChannel.associated(Writer.class).ifPresent(writer -> {
                 try {
@@ -343,7 +347,7 @@ public class QemuMonitor extends Component {
      * @param event the event
      */
     @Handler
-    public void onConfigureQemu(RunnerConfigurationUpdate event) {
+    public void onConfigureQemu(ConfigureQemu event) {
         int newTimeout = event.configuration().vm.powerdownTimeout;
         if (powerdownTimeout != newTimeout) {
             powerdownTimeout = newTimeout;
