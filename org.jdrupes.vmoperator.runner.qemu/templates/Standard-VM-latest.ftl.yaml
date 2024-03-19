@@ -215,11 +215,11 @@
     <#assign spice = vm.display.spice/>
     # SPICE (display, channels ...)
     # https://www.linux-kvm.org/page/SPICE
-    <#if ticketPath??>
-    - [ "-object", "secret,id=spiceTicket,file=${ ticketPath }" ]
+    <#if displayPasswordPath??>
+    - [ "-object", "secret,id=spiceTicket,file=${ displayPasswordPath }" ]
     </#if>
     - [ "-spice", "port=${ spice.port?c }\
-        <#if spice.ticket??>,password-secret=spiceTicket\
+        <#if displayPasswordPath??>,password-secret=spiceTicket\
         <#else>,disable-ticketing=on</#if>\
         <#if spice.streamingVideo??>,streaming-video=${ spice.streamingVideo }</#if>\
         ,seamless-migration=on" ]

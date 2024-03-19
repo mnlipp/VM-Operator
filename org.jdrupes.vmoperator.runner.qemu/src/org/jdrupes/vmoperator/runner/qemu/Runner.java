@@ -207,6 +207,7 @@ public class Runner extends Component {
     private final JsonNode defaults;
     @SuppressWarnings("PMD.UseConcurrentHashMap")
     private final File configFile;
+    private final Path configDir;
     private Configuration config = new Configuration();
     private final freemarker.template.Configuration fmConfig;
     private CommandDefinition swtpmDefinition;
@@ -267,6 +268,7 @@ public class Runner extends Component {
             throw new IOException(
                 "Cannot read configuration file " + configFile);
         }
+        configDir = configFile.getParentFile().toPath();
         attach(new YamlConfigurationStore(channel(), configFile, false));
         fire(new WatchFile(configFile.toPath()));
     }
@@ -307,6 +309,7 @@ public class Runner extends Component {
     private void processInitialConfiguration(Configuration newConfig) {
         try {
             config = newConfig;
+            config.configDir = this.configDir;
             if (!config.check()) {
                 // Invalid configuration, not used, problems already logged.
                 config = null;
@@ -390,9 +393,12 @@ public class Runner extends Component {
             .map(Object::toString).orElse(null));
         model.put("cloudInit", config.cloudInit);
         model.put("vm", config.vm);
-        if (Optional.ofNullable(config.vm.display)
-            .map(d -> d.spice).map(s -> s.ticket).isPresent()) {
-            model.put("ticketPath", config.runtimeDir.resolve("ticket.txt"));
+        Path dsPath = config.configDir.resolve("display-password");
+        if (dsPath.toFile().canRead()) {
+            logger.fine(() -> "Found display password");
+            model.put("displayPasswordPath", dsPath.toString());
+        } else {
+            logger.fine(() -> "No display password in " + dsPath.toString());
         }
 
         // Combine template and data and parse result

@@ -27,7 +27,7 @@ import java.util.List;
  * A stub for secrets (v1).
  */
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
-public class K8sV1Secret extends K8sGenericStub<V1Secret, V1SecretList> {
+public class K8sV1SecretStub extends K8sGenericStub<V1Secret, V1SecretList> {
 
     public static final APIResource CONTEXT = new APIResource("", List.of("v1"),
         "v1", "Secret", true, "secrets", "secret");
@@ -39,7 +39,7 @@ public class K8sV1Secret extends K8sGenericStub<V1Secret, V1SecretList> {
      * @param namespace the namespace
      * @param name the name
      */
-    protected K8sV1Secret(K8sClient client, String namespace,
+    protected K8sV1SecretStub(K8sClient client, String namespace,
             String name) {
         super(V1Secret.class, V1SecretList.class, client,
             CONTEXT, namespace, name);
@@ -53,8 +53,8 @@ public class K8sV1Secret extends K8sGenericStub<V1Secret, V1SecretList> {
      * @param name the name
      * @return the config map stub
      */
-    public static K8sV1Secret get(K8sClient client, String namespace,
+    public static K8sV1SecretStub get(K8sClient client, String namespace,
             String name) {
-        return new K8sV1Secret(client, namespace, name);
+        return new K8sV1SecretStub(client, namespace, name);
     }
 }

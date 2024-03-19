@@ -25,7 +25,7 @@ import io.kubernetes.client.util.Watch.Response;
 import java.io.IOException;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sObserver.ResponseType;
-import org.jdrupes.vmoperator.common.K8sV1Secret;
+import org.jdrupes.vmoperator.common.K8sV1SecretStub;
 import org.jdrupes.vmoperator.manager.events.DisplaySecretChanged;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jgrapes.core.Channel;
@@ -49,7 +49,7 @@ public class DisplaySecretsMonitor
     @Override
     protected void prepareMonitoring() throws IOException, ApiException {
         client(new K8sClient());
-        context(K8sV1Secret.CONTEXT);
+        context(K8sV1SecretStub.CONTEXT);
     }
 
     @Override

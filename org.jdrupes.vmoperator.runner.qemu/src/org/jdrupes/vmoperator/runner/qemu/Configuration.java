@@ -49,6 +49,9 @@ public class Configuration implements Dto {
     /** Configuration timestamp */
     public Instant asOf;
 
+    /** The config dir. */
+    public Path configDir;
+
     /** The data dir. */
     public Path dataDir;
 
