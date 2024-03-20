@@ -23,6 +23,9 @@ package org.jdrupes.vmoperator.manager;
  */
 public class Constants extends org.jdrupes.vmoperator.common.Constants {
 
+    /** The Constant COMP_DISPLAY_SECRET. */
+    public static final String COMP_DISPLAY_SECRET = "display-secret";
+
     /** The Constant STATE_RUNNING. */
     public static final String STATE_RUNNING = "Running";
 

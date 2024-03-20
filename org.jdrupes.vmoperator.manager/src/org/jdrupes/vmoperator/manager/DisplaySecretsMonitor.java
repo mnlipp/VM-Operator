@@ -22,10 +22,13 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Secret;
 import io.kubernetes.client.openapi.models.V1SecretList;
 import io.kubernetes.client.util.Watch.Response;
+import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
+import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sObserver.ResponseType;
 import org.jdrupes.vmoperator.common.K8sV1SecretStub;
+import static org.jdrupes.vmoperator.manager.Constants.COMP_DISPLAY_SECRET;
 import org.jdrupes.vmoperator.manager.events.DisplaySecretChanged;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jgrapes.core.Channel;
@@ -44,12 +47,16 @@ public class DisplaySecretsMonitor
      */
     public DisplaySecretsMonitor(Channel componentChannel) {
         super(componentChannel, V1Secret.class, V1SecretList.class);
+        context(K8sV1SecretStub.CONTEXT);
+        ListOptions options = new ListOptions();
+        options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
+            + "app.kubernetes.io/component=" + COMP_DISPLAY_SECRET);
+        options(options);
     }
 
     @Override
     protected void prepareMonitoring() throws IOException, ApiException {
         client(new K8sClient());
-        context(K8sV1SecretStub.CONTEXT);
     }
 
     @Override
