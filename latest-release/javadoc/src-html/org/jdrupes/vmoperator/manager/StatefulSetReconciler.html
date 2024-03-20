@@ -41,82 +41,90 @@
 <span class="source-line-no">028</span><span id="line-28">import java.io.StringWriter;</span>
 <span class="source-line-no">029</span><span id="line-29">import java.util.Map;</span>
 <span class="source-line-no">030</span><span id="line-30">import java.util.logging.Logger;</span>
-<span class="source-line-no">031</span><span id="line-31">import org.jdrupes.vmoperator.common.K8sV1StatefulSetStub;</span>
-<span class="source-line-no">032</span><span id="line-32">import org.jdrupes.vmoperator.manager.events.VmChannel;</span>
-<span class="source-line-no">033</span><span id="line-33">import org.jdrupes.vmoperator.manager.events.VmDefChanged;</span>
-<span class="source-line-no">034</span><span id="line-34">import org.jdrupes.vmoperator.util.GsonPtr;</span>
-<span class="source-line-no">035</span><span id="line-35">import org.yaml.snakeyaml.LoaderOptions;</span>
-<span class="source-line-no">036</span><span id="line-36">import org.yaml.snakeyaml.Yaml;</span>
-<span class="source-line-no">037</span><span id="line-37">import org.yaml.snakeyaml.constructor.SafeConstructor;</span>
-<span class="source-line-no">038</span><span id="line-38"></span>
-<span class="source-line-no">039</span><span id="line-39">/**</span>
-<span class="source-line-no">040</span><span id="line-40"> * Delegee for reconciling the stateful set (effectively the pod).</span>
-<span class="source-line-no">041</span><span id="line-41"> */</span>
-<span class="source-line-no">042</span><span id="line-42">@SuppressWarnings("PMD.DataflowAnomalyAnalysis")</span>
-<span class="source-line-no">043</span><span id="line-43">/* default */ class StatefulSetReconciler {</span>
-<span class="source-line-no">044</span><span id="line-44"></span>
-<span class="source-line-no">045</span><span id="line-45">    protected final Logger logger = Logger.getLogger(getClass().getName());</span>
-<span class="source-line-no">046</span><span id="line-46">    private final Configuration fmConfig;</span>
-<span class="source-line-no">047</span><span id="line-47"></span>
-<span class="source-line-no">048</span><span id="line-48">    /**</span>
-<span class="source-line-no">049</span><span id="line-49">     * Instantiates a new config map reconciler.</span>
-<span class="source-line-no">050</span><span id="line-50">     *</span>
-<span class="source-line-no">051</span><span id="line-51">     * @param fmConfig the fm config</span>
-<span class="source-line-no">052</span><span id="line-52">     */</span>
-<span class="source-line-no">053</span><span id="line-53">    public StatefulSetReconciler(Configuration fmConfig) {</span>
-<span class="source-line-no">054</span><span id="line-54">        this.fmConfig = fmConfig;</span>
-<span class="source-line-no">055</span><span id="line-55">    }</span>
-<span class="source-line-no">056</span><span id="line-56"></span>
-<span class="source-line-no">057</span><span id="line-57">    /**</span>
-<span class="source-line-no">058</span><span id="line-58">     * Reconcile stateful set.</span>
-<span class="source-line-no">059</span><span id="line-59">     *</span>
-<span class="source-line-no">060</span><span id="line-60">     * @param event the event</span>
-<span class="source-line-no">061</span><span id="line-61">     * @param model the model</span>
-<span class="source-line-no">062</span><span id="line-62">     * @param channel the channel</span>
-<span class="source-line-no">063</span><span id="line-63">     * @throws IOException Signals that an I/O exception has occurred.</span>
-<span class="source-line-no">064</span><span id="line-64">     * @throws TemplateException the template exception</span>
-<span class="source-line-no">065</span><span id="line-65">     * @throws ApiException the api exception</span>
-<span class="source-line-no">066</span><span id="line-66">     */</span>
-<span class="source-line-no">067</span><span id="line-67">    public void reconcile(VmDefChanged event, Map&lt;String, Object&gt; model,</span>
-<span class="source-line-no">068</span><span id="line-68">            VmChannel channel)</span>
-<span class="source-line-no">069</span><span id="line-69">            throws IOException, TemplateException, ApiException {</span>
-<span class="source-line-no">070</span><span id="line-70">        var metadata = event.vmDefinition().getMetadata();</span>
-<span class="source-line-no">071</span><span id="line-71"></span>
-<span class="source-line-no">072</span><span id="line-72">        // Combine template and data and parse result</span>
-<span class="source-line-no">073</span><span id="line-73">        var fmTemplate = fmConfig.getTemplate("runnerSts.ftl.yaml");</span>
-<span class="source-line-no">074</span><span id="line-74">        StringWriter out = new StringWriter();</span>
-<span class="source-line-no">075</span><span id="line-75">        fmTemplate.process(model, out);</span>
-<span class="source-line-no">076</span><span id="line-76">        // Avoid Yaml.load due to</span>
-<span class="source-line-no">077</span><span id="line-77">        // https://github.com/kubernetes-client/java/issues/2741</span>
-<span class="source-line-no">078</span><span id="line-78">        var stsDef = Dynamics.newFromYaml(</span>
-<span class="source-line-no">079</span><span id="line-79">            new Yaml(new SafeConstructor(new LoaderOptions())), out.toString());</span>
-<span class="source-line-no">080</span><span id="line-80"></span>
-<span class="source-line-no">081</span><span id="line-81">        // If exists apply changes only when transitioning state</span>
-<span class="source-line-no">082</span><span id="line-82">        // or not running.</span>
-<span class="source-line-no">083</span><span id="line-83">        var stsStub = K8sV1StatefulSetStub.get(channel.client(),</span>
-<span class="source-line-no">084</span><span id="line-84">            metadata.getNamespace(), metadata.getName());</span>
-<span class="source-line-no">085</span><span id="line-85">        stsStub.model().ifPresent(sts -&gt; {</span>
-<span class="source-line-no">086</span><span id="line-86">            var current = sts.getSpec().getReplicas();</span>
-<span class="source-line-no">087</span><span id="line-87">            var desired = GsonPtr.to(stsDef.getRaw())</span>
-<span class="source-line-no">088</span><span id="line-88">                .to("spec").getAsInt("replicas").orElse(1);</span>
-<span class="source-line-no">089</span><span id="line-89">            if (current == 1 &amp;&amp; desired == 1) {</span>
-<span class="source-line-no">090</span><span id="line-90">                return;</span>
-<span class="source-line-no">091</span><span id="line-91">            }</span>
-<span class="source-line-no">092</span><span id="line-92">        });</span>
-<span class="source-line-no">093</span><span id="line-93"></span>
-<span class="source-line-no">094</span><span id="line-94">        // Do apply changes</span>
-<span class="source-line-no">095</span><span id="line-95">        PatchOptions opts = new PatchOptions();</span>
-<span class="source-line-no">096</span><span id="line-96">        opts.setForce(true);</span>
-<span class="source-line-no">097</span><span id="line-97">        opts.setFieldManager("kubernetes-java-kubectl-apply");</span>
-<span class="source-line-no">098</span><span id="line-98">        if (stsStub.patch(V1Patch.PATCH_FORMAT_APPLY_YAML,</span>
-<span class="source-line-no">099</span><span id="line-99">            new V1Patch(channel.client().getJSON().serialize(stsDef)), opts)</span>
-<span class="source-line-no">100</span><span id="line-100">            .isEmpty()) {</span>
-<span class="source-line-no">101</span><span id="line-101">            logger.warning(</span>
-<span class="source-line-no">102</span><span id="line-102">                () -&gt; "Could not patch stateful set for " + stsStub.name());</span>
-<span class="source-line-no">103</span><span id="line-103">        }</span>
-<span class="source-line-no">104</span><span id="line-104">    }</span>
-<span class="source-line-no">105</span><span id="line-105"></span>
-<span class="source-line-no">106</span><span id="line-106">}</span>
+<span class="source-line-no">031</span><span id="line-31">import org.jdrupes.vmoperator.common.K8sV1SecretStub;</span>
+<span class="source-line-no">032</span><span id="line-32">import org.jdrupes.vmoperator.common.K8sV1StatefulSetStub;</span>
+<span class="source-line-no">033</span><span id="line-33">import org.jdrupes.vmoperator.manager.events.VmChannel;</span>
+<span class="source-line-no">034</span><span id="line-34">import org.jdrupes.vmoperator.manager.events.VmDefChanged;</span>
+<span class="source-line-no">035</span><span id="line-35">import org.jdrupes.vmoperator.util.GsonPtr;</span>
+<span class="source-line-no">036</span><span id="line-36">import org.yaml.snakeyaml.LoaderOptions;</span>
+<span class="source-line-no">037</span><span id="line-37">import org.yaml.snakeyaml.Yaml;</span>
+<span class="source-line-no">038</span><span id="line-38">import org.yaml.snakeyaml.constructor.SafeConstructor;</span>
+<span class="source-line-no">039</span><span id="line-39"></span>
+<span class="source-line-no">040</span><span id="line-40">/**</span>
+<span class="source-line-no">041</span><span id="line-41"> * Delegee for reconciling the stateful set (effectively the pod).</span>
+<span class="source-line-no">042</span><span id="line-42"> */</span>
+<span class="source-line-no">043</span><span id="line-43">@SuppressWarnings("PMD.DataflowAnomalyAnalysis")</span>
+<span class="source-line-no">044</span><span id="line-44">/* default */ class StatefulSetReconciler {</span>
+<span class="source-line-no">045</span><span id="line-45"></span>
+<span class="source-line-no">046</span><span id="line-46">    protected final Logger logger = Logger.getLogger(getClass().getName());</span>
+<span class="source-line-no">047</span><span id="line-47">    private final Configuration fmConfig;</span>
+<span class="source-line-no">048</span><span id="line-48"></span>
+<span class="source-line-no">049</span><span id="line-49">    /**</span>
+<span class="source-line-no">050</span><span id="line-50">     * Instantiates a new config map reconciler.</span>
+<span class="source-line-no">051</span><span id="line-51">     *</span>
+<span class="source-line-no">052</span><span id="line-52">     * @param fmConfig the fm config</span>
+<span class="source-line-no">053</span><span id="line-53">     */</span>
+<span class="source-line-no">054</span><span id="line-54">    public StatefulSetReconciler(Configuration fmConfig) {</span>
+<span class="source-line-no">055</span><span id="line-55">        this.fmConfig = fmConfig;</span>
+<span class="source-line-no">056</span><span id="line-56">    }</span>
+<span class="source-line-no">057</span><span id="line-57"></span>
+<span class="source-line-no">058</span><span id="line-58">    /**</span>
+<span class="source-line-no">059</span><span id="line-59">     * Reconcile stateful set.</span>
+<span class="source-line-no">060</span><span id="line-60">     *</span>
+<span class="source-line-no">061</span><span id="line-61">     * @param event the event</span>
+<span class="source-line-no">062</span><span id="line-62">     * @param model the model</span>
+<span class="source-line-no">063</span><span id="line-63">     * @param channel the channel</span>
+<span class="source-line-no">064</span><span id="line-64">     * @throws IOException Signals that an I/O exception has occurred.</span>
+<span class="source-line-no">065</span><span id="line-65">     * @throws TemplateException the template exception</span>
+<span class="source-line-no">066</span><span id="line-66">     * @throws ApiException the api exception</span>
+<span class="source-line-no">067</span><span id="line-67">     */</span>
+<span class="source-line-no">068</span><span id="line-68">    public void reconcile(VmDefChanged event, Map&lt;String, Object&gt; model,</span>
+<span class="source-line-no">069</span><span id="line-69">            VmChannel channel)</span>
+<span class="source-line-no">070</span><span id="line-70">            throws IOException, TemplateException, ApiException {</span>
+<span class="source-line-no">071</span><span id="line-71">        var metadata = event.vmDefinition().getMetadata();</span>
+<span class="source-line-no">072</span><span id="line-72"></span>
+<span class="source-line-no">073</span><span id="line-73">        // Check if we have a display secret</span>
+<span class="source-line-no">074</span><span id="line-74">        var dsStub = K8sV1SecretStub.get(channel.client(),</span>
+<span class="source-line-no">075</span><span id="line-75">            metadata.getNamespace(), metadata.getName() + "-display-secret");</span>
+<span class="source-line-no">076</span><span id="line-76">        dsStub.model().ifPresent(m -&gt; {</span>
+<span class="source-line-no">077</span><span id="line-77">            model.put("displaySecret", m.getMetadata().getName());</span>
+<span class="source-line-no">078</span><span id="line-78">        });</span>
+<span class="source-line-no">079</span><span id="line-79"></span>
+<span class="source-line-no">080</span><span id="line-80">        // Combine template and data and parse result</span>
+<span class="source-line-no">081</span><span id="line-81">        var fmTemplate = fmConfig.getTemplate("runnerSts.ftl.yaml");</span>
+<span class="source-line-no">082</span><span id="line-82">        StringWriter out = new StringWriter();</span>
+<span class="source-line-no">083</span><span id="line-83">        fmTemplate.process(model, out);</span>
+<span class="source-line-no">084</span><span id="line-84">        // Avoid Yaml.load due to</span>
+<span class="source-line-no">085</span><span id="line-85">        // https://github.com/kubernetes-client/java/issues/2741</span>
+<span class="source-line-no">086</span><span id="line-86">        var stsDef = Dynamics.newFromYaml(</span>
+<span class="source-line-no">087</span><span id="line-87">            new Yaml(new SafeConstructor(new LoaderOptions())), out.toString());</span>
+<span class="source-line-no">088</span><span id="line-88"></span>
+<span class="source-line-no">089</span><span id="line-89">        // If exists apply changes only when transitioning state</span>
+<span class="source-line-no">090</span><span id="line-90">        // or not running.</span>
+<span class="source-line-no">091</span><span id="line-91">        var stsStub = K8sV1StatefulSetStub.get(channel.client(),</span>
+<span class="source-line-no">092</span><span id="line-92">            metadata.getNamespace(), metadata.getName());</span>
+<span class="source-line-no">093</span><span id="line-93">        stsStub.model().ifPresent(sts -&gt; {</span>
+<span class="source-line-no">094</span><span id="line-94">            var current = sts.getSpec().getReplicas();</span>
+<span class="source-line-no">095</span><span id="line-95">            var desired = GsonPtr.to(stsDef.getRaw())</span>
+<span class="source-line-no">096</span><span id="line-96">                .to("spec").getAsInt("replicas").orElse(1);</span>
+<span class="source-line-no">097</span><span id="line-97">            if (current == 1 &amp;&amp; desired == 1) {</span>
+<span class="source-line-no">098</span><span id="line-98">                return;</span>
+<span class="source-line-no">099</span><span id="line-99">            }</span>
+<span class="source-line-no">100</span><span id="line-100">        });</span>
+<span class="source-line-no">101</span><span id="line-101"></span>
+<span class="source-line-no">102</span><span id="line-102">        // Do apply changes</span>
+<span class="source-line-no">103</span><span id="line-103">        PatchOptions opts = new PatchOptions();</span>
+<span class="source-line-no">104</span><span id="line-104">        opts.setForce(true);</span>
+<span class="source-line-no">105</span><span id="line-105">        opts.setFieldManager("kubernetes-java-kubectl-apply");</span>
+<span class="source-line-no">106</span><span id="line-106">        if (stsStub.patch(V1Patch.PATCH_FORMAT_APPLY_YAML,</span>
+<span class="source-line-no">107</span><span id="line-107">            new V1Patch(channel.client().getJSON().serialize(stsDef)), opts)</span>
+<span class="source-line-no">108</span><span id="line-108">            .isEmpty()) {</span>
+<span class="source-line-no">109</span><span id="line-109">            logger.warning(</span>
+<span class="source-line-no">110</span><span id="line-110">                () -&gt; "Could not patch stateful set for " + stsStub.name());</span>
+<span class="source-line-no">111</span><span id="line-111">        }</span>
+<span class="source-line-no">112</span><span id="line-112">    }</span>
+<span class="source-line-no">113</span><span id="line-113"></span>
+<span class="source-line-no">114</span><span id="line-114">}</span>
 
 
 
