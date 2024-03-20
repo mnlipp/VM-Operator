@@ -163,6 +163,42 @@ cloud-init file without any checks. (The introductory comment
 `#cloud-config` required in that file is generated automatically by
 the runner.)
 
+## Display secret/password
+
+*Since: 2.3.0*
+
+You can define a display password using a Kubernetes secret.
+When you start a VM, the controller checks if there is a secret 
+with labels "app.kubernetes.io/name: vm-runner, 
+app.kubernetes.io/component: display-secret, 
+app.kubernetes.io/instance: *vmname*" in the namespace of the
+VM definition. The name of the secret can be chosen freely.
+
+```yaml
+kind: Secret
+apiVersion: v1
+metadata:
+  name: test-vm-display-secret
+  namespace: vmop-demo
+  labels:
+    app.kubernetes.io/name: vm-runner
+    app.kubernetes.io/instance: test-vm
+    app.kubernetes.io/component: display-secret
+type: Opaque
+data:
+  display-password: dGVzdC12bQ==
+```
+
+If such a secret for the VM is found, the VM is configured to use
+the display password specified. The display password in the secret 
+can be updated while the VM runs[^delay]. Activating/deactivating
+the display password while a VM runs is not supported by Qemu and
+therefore requires stopping the VM, adding/removing the secret and
+restarting the VM.
+
+[^delay]: Be aware of the possible delay, see e.g. 
+[here](https://web.archive.org/web/20240223073838/https://ahmet.im/blog/kubernetes-secret-volumes-delay/).
+
 ## Further reading
 
 For a detailed description of the available configuration options see the
