@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
 import java.util.logging.Logger;
-import org.jdrupes.vmoperator.common.K8sV1SecretStub;
 import org.jdrupes.vmoperator.common.K8sV1StatefulSetStub;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
@@ -69,13 +68,6 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
             VmChannel channel)
             throws IOException, TemplateException, ApiException {
         var metadata = event.vmDefinition().getMetadata();
-
-        // Check if we have a display secret
-        var dsStub = K8sV1SecretStub.get(channel.client(),
-            metadata.getNamespace(), metadata.getName() + "-display-secret");
-        dsStub.model().ifPresent(m -> {
-            model.put("displaySecret", m.getMetadata().getName());
-        });
 
         // Combine template and data and parse result
         var fmTemplate = fmConfig.getTemplate("runnerSts.ftl.yaml");

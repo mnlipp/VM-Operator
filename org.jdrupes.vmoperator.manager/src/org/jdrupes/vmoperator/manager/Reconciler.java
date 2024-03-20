@@ -34,6 +34,7 @@ import freemarker.template.TemplateNotFoundException;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
+import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -43,9 +44,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import org.jdrupes.vmoperator.common.Convertions;
+import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jdrupes.vmoperator.common.K8sObserver;
+import org.jdrupes.vmoperator.common.K8sV1SecretStub;
+import static org.jdrupes.vmoperator.manager.Constants.COMP_DISPLAY_SECRET;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
@@ -200,7 +205,8 @@ public class Reconciler extends Component {
         }
 
         // Reconcile, use "augmented" vm definition for model
-        Map<String, Object> model = prepareModel(patchCr(event.vmDefinition()));
+        Map<String, Object> model
+            = prepareModel(channel.client(), patchCr(event.vmDefinition()));
         var configMap = cmReconciler.reconcile(event, model, channel);
         model.put("cm", configMap.getRaw());
         stsReconciler.reconcile(event, model, channel);
@@ -263,8 +269,9 @@ public class Reconciler extends Component {
     }
 
     @SuppressWarnings("PMD.CognitiveComplexity")
-    private Map<String, Object> prepareModel(DynamicKubernetesObject vmDef)
-            throws TemplateModelException {
+    private Map<String, Object> prepareModel(K8sClient client,
+            DynamicKubernetesObject vmDef)
+            throws TemplateModelException, ApiException {
         @SuppressWarnings("PMD.UseConcurrentHashMap")
         Map<String, Object> model = new HashMap<>();
         model.put("managerVersion",
@@ -277,6 +284,20 @@ public class Reconciler extends Component {
                     .build().getStaticModels()
                     .get(Constants.class.getName()));
         model.put("reconciler", config);
+
+        // Check if we have a display secret
+        ListOptions options = new ListOptions();
+        options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
+            + "app.kubernetes.io/component=" + COMP_DISPLAY_SECRET + ","
+            + "app.kubernetes.io/instance=" + vmDef.getMetadata().getName());
+        var dsStub = K8sV1SecretStub
+            .list(client, vmDef.getMetadata().getNamespace(), options).stream()
+            .findFirst();
+        if (dsStub.isPresent()) {
+            dsStub.get().model().ifPresent(m -> {
+                model.put("displaySecret", m.getMetadata().getName());
+            });
+        }
 
         // Methods
         model.put("parseQuantity", new TemplateMethodModelEx() {
