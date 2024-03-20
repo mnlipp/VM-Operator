@@ -198,7 +198,7 @@ public class Controller extends Component {
             client.defaultPatchOptions());
         if (!res.isPresent()) {
             logger.warning(
-                () -> "Cannot patch pod annotations for " + vmStub.name());
+                () -> "Cannot patch definition for Vm " + vmStub.name());
         }
     }
 }
