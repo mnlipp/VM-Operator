@@ -123,10 +123,11 @@
 <span class="source-line-no">110</span><span id="line-110">        if (Objects.equals(this.currentPassword, password)) {</span>
 <span class="source-line-no">111</span><span id="line-111">            return;</span>
 <span class="source-line-no">112</span><span id="line-112">        }</span>
-<span class="source-line-no">113</span><span id="line-113">        fire(new MonitorCommand(new QmpSetDisplayPassword(protocol, password)));</span>
-<span class="source-line-no">114</span><span id="line-114">    }</span>
-<span class="source-line-no">115</span><span id="line-115"></span>
-<span class="source-line-no">116</span><span id="line-116">}</span>
+<span class="source-line-no">113</span><span id="line-113">        logger.fine(() -&gt; "Updating display password");</span>
+<span class="source-line-no">114</span><span id="line-114">        fire(new MonitorCommand(new QmpSetDisplayPassword(protocol, password)));</span>
+<span class="source-line-no">115</span><span id="line-115">    }</span>
+<span class="source-line-no">116</span><span id="line-116"></span>
+<span class="source-line-no">117</span><span id="line-117">}</span>
 
 
 
