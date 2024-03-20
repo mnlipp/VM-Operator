@@ -1,6 +1,6 @@
 /*
  * VM-Operator
- * Copyright (C) 2023 Michael N. Lipp
+ * Copyright (C) 2023,2024 Michael N. Lipp
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -55,10 +55,10 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCont;
+import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
 import org.jdrupes.vmoperator.runner.qemu.events.Exit;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
 import org.jdrupes.vmoperator.runner.qemu.events.QmpConfigured;
-import org.jdrupes.vmoperator.runner.qemu.events.RunnerConfigurationUpdate;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;
 import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
@@ -143,8 +143,8 @@ import org.jgrapes.util.events.WatchFile;
  *     waitForConfigured: entry/fire QmpCapabilities
  *     waitForConfigured --> configure: QmpConfigured
  *     
- *     configure: entry/fire RunnerConfigurationUpdate
- *     configure --> success: RunnerConfigurationUpdate (last handler)/fire cont command
+ *     configure: entry/fire ConfigureQemu
+ *     configure --> success: ConfigureQemu (last handler)/fire cont command
  * }
  * 
  * Initializing --> prepFork: Started
@@ -207,6 +207,7 @@ public class Runner extends Component {
     private final JsonNode defaults;
     @SuppressWarnings("PMD.UseConcurrentHashMap")
     private final File configFile;
+    private final Path configDir;
     private Configuration config = new Configuration();
     private final freemarker.template.Configuration fmConfig;
     private CommandDefinition swtpmDefinition;
@@ -240,6 +241,17 @@ public class Runner extends Component {
         defaults = yamlMapper.readValue(
             Runner.class.getResourceAsStream("defaults.yaml"), JsonNode.class);
 
+        // Get the config
+        configFile = new File(cmdLine.getOptionValue('c',
+            "/etc/opt/" + APP_NAME.replace("-", "") + "/config.yaml"));
+        // Don't rely on night config to produce a good exception
+        // for this simple case
+        if (!Files.isReadable(configFile.toPath())) {
+            throw new IOException(
+                "Cannot read configuration file " + configFile);
+        }
+        configDir = configFile.getParentFile().toPath().toRealPath();
+
         // Configure freemarker library
         fmConfig = new freemarker.template.Configuration(
             freemarker.template.Configuration.VERSION_2_3_32);
@@ -256,17 +268,8 @@ public class Runner extends Component {
         attach(new FileSystemWatcher(channel()));
         attach(new ProcessManager(channel()));
         attach(new SocketConnector(channel()));
-        attach(qemuMonitor = new QemuMonitor(channel()));
+        attach(qemuMonitor = new QemuMonitor(channel(), configDir));
         attach(new StatusUpdater(channel()));
-
-        configFile = new File(cmdLine.getOptionValue('c',
-            "/etc/opt/" + APP_NAME.replace("-", "") + "/config.yaml"));
-        // Don't rely on night config to produce a good exception
-        // for this simple case
-        if (!Files.isReadable(configFile.toPath())) {
-            throw new IOException(
-                "Cannot read configuration file " + configFile);
-        }
         attach(new YamlConfigurationStore(channel(), configFile, false));
         fire(new WatchFile(configFile.toPath()));
     }
@@ -294,13 +297,20 @@ public class Runner extends Component {
     public void onConfigurationUpdate(ConfigurationUpdate event) {
         event.structured(componentPath()).ifPresent(c -> {
             var newConf = yamlMapper.convertValue(c, Configuration.class);
+
+            // Add some values from other sources to configuration
             newConf.asOf = Instant.ofEpochSecond(configFile.lastModified());
+            Path dsPath
+                = configDir.resolve(DisplayController.DISPLAY_PASSWORD_FILE);
+            newConf.hasDisplayPassword = dsPath.toFile().canRead();
+
+            // Special actions for initial configuration (startup)
             if (event instanceof InitialConfiguration) {
                 processInitialConfiguration(newConf);
                 return;
             }
             logger.fine(() -> "Updating configuration");
-            rep.fire(new RunnerConfigurationUpdate(newConf, state));
+            rep.fire(new ConfigureQemu(newConf, state));
         });
     }
 
@@ -388,12 +398,9 @@ public class Runner extends Component {
             .map(Object::toString).orElse(null));
         model.put("firmwareVars", Optional.ofNullable(config.firmwareVars)
             .map(Object::toString).orElse(null));
+        model.put("hasDisplayPassword", config.hasDisplayPassword);
         model.put("cloudInit", config.cloudInit);
         model.put("vm", config.vm);
-        if (Optional.ofNullable(config.vm.display)
-            .map(d -> d.spice).map(s -> s.ticket).isPresent()) {
-            model.put("ticketPath", config.runtimeDir.resolve("ticket.txt"));
-        }
 
         // Combine template and data and parse result
         // (tempting, but no need to use a pipe here)
@@ -598,7 +605,7 @@ public class Runner extends Component {
      */
     @Handler
     public void onQmpConfigured(QmpConfigured event) {
-        rep.fire(new RunnerConfigurationUpdate(config, state));
+        rep.fire(new ConfigureQemu(config, state));
     }
 
     /**
@@ -607,7 +614,7 @@ public class Runner extends Component {
      * @param event the event
      */
     @Handler(priority = -1000)
-    public void onConfigureQemu(RunnerConfigurationUpdate event) {
+    public void onConfigureQemu(ConfigureQemu event) {
         if (state == State.STARTING) {
             fire(new MonitorCommand(new QmpCont()));
             state = State.RUNNING;

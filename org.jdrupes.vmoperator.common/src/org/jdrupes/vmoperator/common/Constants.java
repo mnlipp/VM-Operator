@@ -26,6 +26,9 @@ public class Constants {
     /** The Constant APP_NAME. */
     public static final String APP_NAME = "vm-runner";
 
+    /** The Constant COMP_DISPLAY_SECRETS. */
+    public static final String COMP_DISPLAY_SECRET = "display-secret";
+
     /** The Constant VM_OP_NAME. */
     public static final String VM_OP_NAME = "vm-operator";
 

@@ -126,8 +126,14 @@ spec:
       #   hostPath:
       #     path: /sys/fs/cgroup
       - name: config
-        configMap:
-          name: ${ cr.metadata.name.asString }
+        projected:
+          sources:
+          - configMap:
+              name: ${ cr.metadata.name.asString }
+          <#if displaySecret??>
+          - secret:
+              name: ${ displaySecret }
+          </#if>
       - name: vmop-image-repository
         persistentVolumeClaim:
           claimName: vmop-image-repository

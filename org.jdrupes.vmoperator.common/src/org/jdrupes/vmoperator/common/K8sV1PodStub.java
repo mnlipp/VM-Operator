@@ -32,6 +32,7 @@ import java.util.List;
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class K8sV1PodStub extends K8sGenericStub<V1Pod, V1PodList> {
 
+    /** The pods' context. */
     public static final APIResource CONTEXT
         = new APIResource("", List.of("v1"), "v1", "Pod", true, "pods", "pod");
 
@@ -72,7 +73,17 @@ public class K8sV1PodStub extends K8sGenericStub<V1Pod, V1PodList> {
     public static Collection<K8sV1PodStub> list(K8sClient client,
             String namespace, ListOptions options) throws ApiException {
         return K8sGenericStub.list(V1Pod.class, V1PodList.class, client,
-            CONTEXT, namespace, options, K8sV1PodStub::new);
+            CONTEXT, namespace, options, K8sV1PodStub::getGeneric);
+    }
+
+    /**
+     * Provide {@link GenericSupplier}.
+     */
+    @SuppressWarnings("PMD.UnusedFormalParameter")
+    private static K8sV1PodStub getGeneric(Class<V1Pod> objectClass,
+            Class<V1PodList> objectListClass, K8sClient client,
+            APIResource context, String namespace, String name) {
+        return new K8sV1PodStub(client, namespace, name);
     }
 
 }

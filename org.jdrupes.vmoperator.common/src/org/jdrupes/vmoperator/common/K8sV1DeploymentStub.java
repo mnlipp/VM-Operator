@@ -33,6 +33,10 @@ import java.util.Optional;
 public class K8sV1DeploymentStub
         extends K8sGenericStub<V1Deployment, V1DeploymentList> {
 
+    /** The deployment's context. */
+    public static final APIResource CONTEXT = new APIResource("apps",
+        List.of("v1"), "v1", "Pod", true, "deployments", "deployment");
+
     /**
      * Instantiates a new stub.
      *
@@ -43,22 +47,7 @@ public class K8sV1DeploymentStub
     protected K8sV1DeploymentStub(K8sClient client, String namespace,
             String name) {
         super(V1Deployment.class, V1DeploymentList.class, client,
-            new APIResource("apps", List.of("v1"), "v1", "Pod", true,
-                "deployments", "deployment"),
-            namespace, name);
-    }
-
-    /**
-     * Gets the stub for the given namespace and name.
-     *
-     * @param client the client
-     * @param namespace the namespace
-     * @param name the name
-     * @return the deployment stub
-     */
-    public static K8sV1DeploymentStub get(K8sClient client, String namespace,
-            String name) {
-        return new K8sV1DeploymentStub(client, namespace, name);
+            CONTEXT, namespace, name);
     }
 
     /**
@@ -73,5 +62,18 @@ public class K8sV1DeploymentStub
             new V1Patch("[{\"op\": \"replace\", \"path\": \"/spec/replicas"
                 + "\", \"value\": " + replicas + "}]"),
             client.defaultPatchOptions());
+    }
+
+    /**
+     * Gets the stub for the given namespace and name.
+     *
+     * @param client the client
+     * @param namespace the namespace
+     * @param name the name
+     * @return the deployment stub
+     */
+    public static K8sV1DeploymentStub get(K8sClient client, String namespace,
+            String name) {
+        return new K8sV1DeploymentStub(client, namespace, name);
     }
 }

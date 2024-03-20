@@ -19,21 +19,18 @@
 package org.jdrupes.vmoperator.common;
 
 import io.kubernetes.client.Discovery.APIResource;
-import io.kubernetes.client.openapi.models.V1StatefulSet;
-import io.kubernetes.client.openapi.models.V1StatefulSetList;
+import io.kubernetes.client.openapi.models.V1Secret;
+import io.kubernetes.client.openapi.models.V1SecretList;
 import java.util.List;
 
 /**
- * A stub for stateful sets (v1).
+ * A stub for secrets (v1).
  */
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
-public class K8sV1StatefulSetStub
-        extends K8sGenericStub<V1StatefulSet, V1StatefulSetList> {
+public class K8sV1SecretStub extends K8sGenericStub<V1Secret, V1SecretList> {
 
-    /** The stateful sets' context */
-    public static final APIResource CONTEXT
-        = new APIResource("apps", List.of("v1"), "v1", "StatefulSet", true,
-            "statefulsets", "statefulset");
+    public static final APIResource CONTEXT = new APIResource("", List.of("v1"),
+        "v1", "Secret", true, "secrets", "secret");
 
     /**
      * Instantiates a new stub.
@@ -42,10 +39,10 @@ public class K8sV1StatefulSetStub
      * @param namespace the namespace
      * @param name the name
      */
-    protected K8sV1StatefulSetStub(K8sClient client, String namespace,
+    protected K8sV1SecretStub(K8sClient client, String namespace,
             String name) {
-        super(V1StatefulSet.class, V1StatefulSetList.class, client, CONTEXT,
-            namespace, name);
+        super(V1Secret.class, V1SecretList.class, client,
+            CONTEXT, namespace, name);
     }
 
     /**
@@ -54,10 +51,10 @@ public class K8sV1StatefulSetStub
      * @param client the client
      * @param namespace the namespace
      * @param name the name
-     * @return the stateful set stub
+     * @return the config map stub
      */
-    public static K8sV1StatefulSetStub get(K8sClient client, String namespace,
+    public static K8sV1SecretStub get(K8sClient client, String namespace,
             String name) {
-        return new K8sV1StatefulSetStub(client, namespace, name);
+        return new K8sV1SecretStub(client, namespace, name);
     }
 }

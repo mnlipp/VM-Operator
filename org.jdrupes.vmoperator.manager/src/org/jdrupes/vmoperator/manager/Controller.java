@@ -30,6 +30,7 @@ import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
+import org.jdrupes.vmoperator.manager.events.ChannelManager;
 import org.jdrupes.vmoperator.manager.events.Exit;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
@@ -46,7 +47,7 @@ import org.jgrapes.util.events.ConfigurationUpdate;
  * [Operator Whitepaper](https://github.com/cncf/tag-app-delivery/blob/eece8f7307f2970f46f100f51932db106db46968/operator-wg/whitepaper/Operator-WhitePaper_v1-0.md#operator-components-in-kubernetes).
  * 
  * The implementation splits the controller in two components. The
- * {@link VmWatcher} and the {@link Reconciler}. The former watches
+ * {@link VmMonitor} and the {@link Reconciler}. The former watches
  * the VM definitions (CRs) and generates {@link VmDefChanged} events
  * when they change. The latter handles the changes and reconciles the
  * resources in the cluster.
@@ -87,7 +88,20 @@ public class Controller extends Component {
     public Controller(Channel componentChannel) {
         super(componentChannel);
         // Prepare component tree
-        attach(new VmWatcher(channel()));
+        ChannelManager<String, VmChannel, ?> chanMgr
+            = new ChannelManager<>(name -> {
+                try {
+                    return new VmChannel(channel(), newEventPipeline(),
+                        new K8sClient());
+                } catch (IOException e) {
+                    logger.log(Level.SEVERE, e, () -> "Failed to create client"
+                        + " for handling changes: " + e.getMessage());
+                    return null;
+                }
+            });
+        attach(new VmMonitor(channel()).channelManager(chanMgr));
+        attach(new DisplaySecretsMonitor(channel())
+            .channelManager(chanMgr.fixed()));
         attach(new Reconciler(channel()));
     }
 

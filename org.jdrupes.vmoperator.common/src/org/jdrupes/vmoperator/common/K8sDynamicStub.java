@@ -18,10 +18,14 @@
 
 package org.jdrupes.vmoperator.common;
 
+import com.google.gson.Gson;
 import io.kubernetes.client.Discovery.APIResource;
 import io.kubernetes.client.apimachinery.GroupVersionKind;
+import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.Reader;
+import java.util.Collection;
 
 /**
  * A stub for namespaced custom objects. It uses a dynamic model
@@ -47,6 +51,24 @@ public class K8sDynamicStub
             Class<K8sDynamicModels> objectListClass, K8sClient client,
             APIResource context, String namespace, String name) {
         super(objectClass, objectListClass, client, context, namespace, name);
+
+        // Make sure that we have an adapter for our type
+        Gson gson = client.getJSON().getGson();
+        if (!checkAdapters(client)) {
+            client.getJSON().setGson(gson.newBuilder()
+                .registerTypeAdapterFactory(
+                    new K8sDynamicModelTypeAdapterFactory())
+                .create());
+        }
+    }
+
+    private boolean checkAdapters(ApiClient client) {
+        return K8sDynamicModelTypeAdapterFactory.K8sDynamicModelCreator.class
+            .equals(client.getJSON().getGson().getAdapter(K8sDynamicModel.class)
+                .getClass())
+            && K8sDynamicModelTypeAdapterFactory.K8sDynamicModelsCreator.class
+                .equals(client.getJSON().getGson()
+                    .getAdapter(K8sDynamicModels.class).getClass());
     }
 
     /**
@@ -83,8 +105,7 @@ public class K8sDynamicStub
     @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
         "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })
     public static K8sDynamicStub get(K8sClient client,
-            APIResource context, String namespace, String name)
-            throws ApiException {
+            APIResource context, String namespace, String name) {
         return K8sGenericStub.get(K8sDynamicModel.class, K8sDynamicModels.class,
             client, context, namespace, name, K8sDynamicStub::new);
     }
@@ -106,4 +127,37 @@ public class K8sDynamicStub
             K8sDynamicModels.class, client, context, model,
             K8sDynamicStub::new);
     }
+
+    /**
+     * Get the stubs for the objects in the given namespace that match
+     * the criteria from the given options.
+     *
+     * @param client the client
+     * @param namespace the namespace
+     * @param options the options
+     * @return the collection
+     * @throws ApiException the api exception
+     */
+    public static Collection<K8sDynamicStub> list(K8sClient client,
+            APIResource context, String namespace, ListOptions options)
+            throws ApiException {
+        return K8sGenericStub.list(K8sDynamicModel.class,
+            K8sDynamicModels.class, client, context, namespace, options,
+            K8sDynamicStub::new);
+    }
+
+    /**
+     * Get the stubs for the objects in the given namespace.
+     *
+     * @param client the client
+     * @param namespace the namespace
+     * @return the collection
+     * @throws ApiException the api exception
+     */
+    public static Collection<K8sDynamicStub> list(K8sClient client,
+            APIResource context, String namespace)
+            throws ApiException {
+        return list(client, context, namespace, new ListOptions());
+    }
+
 }

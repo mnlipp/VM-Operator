@@ -45,9 +45,9 @@ import java.util.Map;
 import java.util.Optional;
 import org.jdrupes.vmoperator.common.Convertions;
 import org.jdrupes.vmoperator.common.K8sDynamicModel;
+import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
-import org.jdrupes.vmoperator.manager.events.VmDefChanged.Type;
 import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
 import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
@@ -194,7 +194,7 @@ public class Reconciler extends Component {
 
         // Ownership relationships takes care of deletions
         var defMeta = event.vmDefinition().getMetadata();
-        if (event.type() == Type.DELETED) {
+        if (event.type() == K8sObserver.ResponseType.DELETED) {
             logger.fine(() -> "VM \"" + defMeta.getName() + "\" deleted");
             return;
         }

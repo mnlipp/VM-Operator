@@ -1,6 +1,6 @@
 /*
  * VM-Operator
- * Copyright (C) 2023 Michael N. Lipp
+ * Copyright (C) 2024 Michael N. Lipp
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,38 +18,30 @@
 
 package org.jdrupes.vmoperator.manager.events;
 
-import org.jdrupes.vmoperator.common.K8sDynamicModel;
-import org.jdrupes.vmoperator.common.K8sObserver;
+import io.kubernetes.client.openapi.models.V1Secret;
+import org.jdrupes.vmoperator.common.K8sObserver.ResponseType;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Components;
 import org.jgrapes.core.Event;
 
 /**
- * Indicates a change in a VM definition. Note that the definition
- * consists of the metadata (mostly immutable), the "spec" and the 
- * "status" parts. Consumers that are only interested in "spec" 
- * changes should check {@link #specChanged()} before processing 
- * the event any further. 
+ * Indicates that a display secret has changed. 
  */
 @SuppressWarnings("PMD.DataClass")
-public class VmDefChanged extends Event<Void> {
+public class DisplaySecretChanged extends Event<Void> {
 
-    private final K8sObserver.ResponseType type;
-    private final boolean specChanged;
-    private final K8sDynamicModel vmDef;
+    private final ResponseType type;
+    private final V1Secret secret;
 
     /**
-     * Instantiates a new VM changed event.
+     * Initializes a new display secret changed event.
      *
      * @param type the type
-     * @param specChanged the spec part changed
-     * @param vmDefinition the VM definition
+     * @param secret the secret
      */
-    public VmDefChanged(K8sObserver.ResponseType type, boolean specChanged,
-            K8sDynamicModel vmDefinition) {
+    public DisplaySecretChanged(ResponseType type, V1Secret secret) {
         this.type = type;
-        this.specChanged = specChanged;
-        this.vmDef = vmDefinition;
+        this.secret = secret;
     }
 
     /**
@@ -57,31 +49,24 @@ public class VmDefChanged extends Event<Void> {
      *
      * @return the type
      */
-    public K8sObserver.ResponseType type() {
+    public ResponseType type() {
         return type;
     }
 
     /**
-     * Indicates if the "spec" part changed.
-     */
-    public boolean specChanged() {
-        return specChanged;
-    }
-
-    /**
-     * Returns the object.
+     * Gets the secret.
      *
-     * @return the object.
+     * @return the secret
      */
-    public K8sDynamicModel vmDefinition() {
-        return vmDef;
+    public V1Secret secret() {
+        return secret;
     }
 
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
         builder.append(Components.objectName(this)).append(" [")
-            .append(vmDef.getMetadata().getName()).append(' ').append(type);
+            .append(secret.getMetadata().getName()).append(' ').append(type);
         if (channels() != null) {
             builder.append(", channels=");
             builder.append(Channel.toString(channels()));

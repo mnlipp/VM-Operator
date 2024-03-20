@@ -18,6 +18,7 @@
 
 package org.jdrupes.vmoperator.runner.qemu.commands;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -55,4 +56,30 @@ public abstract class QmpCommand {
      * @return the json node
      */
     public abstract JsonNode toJson();
+
+    /**
+     * Returns the string representation.
+     *
+     * @return the string
+     * @throws JsonProcessingException the JSON processing exception
+     */
+    public String asText() throws JsonProcessingException {
+        return mapper.writeValueAsString(toJson());
+    }
+
+    /**
+     * Calls {@link #asText()} but suppresses the 
+     * {@link JsonProcessingException}.
+     *
+     * @return the string
+     */
+    @Override
+    public String toString() {
+        try {
+            return asText();
+        } catch (JsonProcessingException e) {
+            return "(no string representation)";
+        }
+    }
+
 }
