@@ -197,7 +197,7 @@ therefore requires stopping the VM, adding/removing the secret and
 restarting the VM.
 
 [^delay]: Be aware of the possible delay, see e.g. 
-[here](https://web.archive.org/web/20240223073838/https://ahmet.im/blog/kubernetes-secret-volumes-delay/).
+    [here](https://web.archive.org/web/20240223073838/https://ahmet.im/blog/kubernetes-secret-volumes-delay/).
 
 ## Further reading
 
