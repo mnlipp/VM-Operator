@@ -1411,6 +1411,11 @@ spec:
                     Amount of memory in use.
                   type: string
                   default: "0"
+                displayPasswordSerial:
+                  description: >-
+                    Counts changes of the display password. 
+                  type: integer
+                  default: 0
                 conditions:
                   description: >-
                     List of component conditions observed
