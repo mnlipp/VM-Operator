@@ -1,0 +1,11 @@
+FROM alpine:3.19
+
+RUN apk update &&\
+    apk add --no-cache inotify-tools &&\
+    apk add --no-cache squid
+
+COPY run.sh /usr/local/bin/run-squid.sh
+
+CMD ["/usr/local/bin/run-squid.sh"]
+
+EXPOSE 3128
