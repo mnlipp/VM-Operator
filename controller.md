@@ -145,8 +145,9 @@ that have the same major release number are guaranteed to be compatible.
 
 *Since: 2.2.0* 
 
-The optional object `.spec.cloudInit` with sub-objects `.cloudInit.metaData`
-and `.cloudInit.userData` can be used to provide data for
+The optional object `.spec.cloudInit` with sub-objects `.cloudInit.metaData`,
+`.cloudInit.userData` and `.cloudInit.networkConfig` can be used to provide 
+data for
 [cloud-init](https://cloudinit.readthedocs.io/en/latest/index.html).
 The data from the CRD will be made available to the VM by the runner
 as a vfat formatted disk (see the description of 
@@ -157,11 +158,11 @@ generates it from the CRD's `resourceVersion`. If `.metaData.local-hostname`
 is not defined, the controller adds this property using the value from
 `metadata.name`.
 
-Note that there is no schema definition available for `.userData`.
-Whatever is defined in the CRD is copied to the corresponding
-cloud-init file without any checks. (The introductory comment
-`#cloud-config` required in that file is generated automatically by
-the runner.)
+Note that there are no schema definitions available for `.userData`
+and `.networkConfig`. Whatever is defined in the CRD is copied to
+the corresponding cloud-init file without any checks. (The introductory
+comment `#cloud-config` required at the beginning of `.userData` is
+generated automatically by the runner.)
 
 ## Display secret/password
 
