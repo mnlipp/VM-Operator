@@ -43,6 +43,7 @@ import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
 import org.jdrupes.vmoperator.runner.qemu.events.BalloonChangeEvent;
 import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
+import org.jdrupes.vmoperator.runner.qemu.events.DisplayPasswordChanged;
 import org.jdrupes.vmoperator.runner.qemu.events.Exit;
 import org.jdrupes.vmoperator.runner.qemu.events.HotpluggableCpuStatus;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;
@@ -317,6 +318,26 @@ public class StatusUpdater extends Component {
         vmStub.updateStatus(from -> {
             JsonObject status = from.status();
             status.addProperty("cpus", event.usedCpus().size());
+            return status;
+        });
+    }
+
+    /**
+     * On ballon change.
+     *
+     * @param event the event
+     * @throws ApiException 
+     */
+    @Handler
+    public void onDisplayPasswordChanged(DisplayPasswordChanged event)
+            throws ApiException {
+        if (vmStub == null) {
+            return;
+        }
+        vmStub.updateStatus(from -> {
+            JsonObject status = from.status();
+            status.addProperty("displayPasswordSerial",
+                status.get("displayPasswordSerial").getAsLong() + 1);
             return status;
         });
     }

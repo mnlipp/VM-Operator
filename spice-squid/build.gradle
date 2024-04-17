@@ -1,0 +1,77 @@
+plugins {
+    id 'org.jdrupes.vmoperator.java-application-conventions'
+}
+
+dependencies {
+}
+
+task buildImage(type: Exec) {
+    inputs.files 'Containerfile'
+    
+    commandLine 'podman', 'build', '--pull',
+        '-t', "${project.name}:${project.version}",\
+        '-f', 'Containerfile', '.'
+}
+
+task tagLatestImage(type: Exec) {
+    dependsOn buildImage
+    
+    enabled = !project.version.contains("SNAPSHOT")
+        && !project.version.contains("alpha") \
+        && !project.version.contains("beta") \
+        || project.rootProject.properties['docker.testRegistry'] \
+            && project.rootProject.properties['docker.registry'] \
+            == project.rootProject.properties['docker.testRegistry']
+
+    commandLine 'podman', 'tag', "${project.name}:${project.version}",\
+        "${project.name}:latest"
+}
+
+task buildLatestImage {
+    dependsOn buildImage
+    dependsOn tagLatestImage
+}
+
+task pushImage(type: Exec) {
+    dependsOn buildImage
+
+    commandLine 'podman', 'push', '--tls-verify=false', \
+        "localhost/${project.name}:${project.version}", \
+        "${project.rootProject.properties['docker.registry']}" \
+            + "/${project.name}:${project.version}"
+}
+
+task pushLatestImage(type: Exec) {
+    dependsOn buildLatestImage
+
+    enabled = !project.version.contains("SNAPSHOT")
+        && !project.version.contains("alpha") \
+        && !project.version.contains("beta") \
+        || project.rootProject.properties['docker.testRegistry'] \
+            && project.rootProject.properties['docker.registry'] \
+            == project.rootProject.properties['docker.testRegistry']
+
+    commandLine 'podman', 'push', '--tls-verify=false', \
+        "localhost/${project.name}:${project.version}", \
+        "${project.rootProject.properties['docker.registry']}" \
+            + "/${project.name}:latest"
+}
+
+task pushImages {
+	// Don't push without testing first
+    dependsOn pushImage
+    dependsOn pushLatestImage
+}
+
+test {
+    enabled = project.hasProperty("k8s.testCluster")
+
+    useJUnitPlatform()
+
+    testLogging {
+        showStandardStreams = true
+    }
+    
+    systemProperty "k8s.testCluster", project.hasProperty("k8s.testCluster")
+        ? project.getProperty("k8s.testCluster") : null
+}

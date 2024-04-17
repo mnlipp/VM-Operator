@@ -25,6 +25,7 @@ import org.jdrupes.vmoperator.runner.qemu.commands.QmpCapabilities;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCommand;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpDelCpu;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpQueryHotpluggableCpus;
+import org.jdrupes.vmoperator.runner.qemu.commands.QmpSetDisplayPassword;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Components;
 import org.jgrapes.core.Event;
@@ -56,6 +57,9 @@ public class MonitorResult extends Event<Void> {
         }
         if (command instanceof QmpDelCpu) {
             return new CpuDeleted(command, response);
+        }
+        if (command instanceof QmpSetDisplayPassword) {
+            return new DisplayPasswordChanged(command, response);
         }
         return new MonitorResult(command, response);
     }
