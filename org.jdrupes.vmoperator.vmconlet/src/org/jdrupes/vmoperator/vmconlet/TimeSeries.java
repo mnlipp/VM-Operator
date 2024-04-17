@@ -20,6 +20,7 @@ package org.jdrupes.vmoperator.vmconlet;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -30,7 +31,8 @@ import java.util.List;
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class TimeSeries {
 
-    private final List<Entry> data = new LinkedList<>();
+    @SuppressWarnings("PMD.LooseCoupling")
+    private final LinkedList<Entry> data = new LinkedList<>();
     private final Duration period;
 
     /**
@@ -52,25 +54,26 @@ public class TimeSeries {
     @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
     public TimeSeries add(Instant time, Number... numbers) {
         var newEntry = new Entry(time, numbers);
-        boolean adjust = false;
-        if (data.size() >= 2) {
-            var lastEntry = data.get(data.size() - 1);
-            var lastButOneEntry = data.get(data.size() - 2);
-            adjust = lastEntry.valuesEqual(lastButOneEntry)
-                && lastEntry.valuesEqual(newEntry);
-        }
-        if (adjust) {
-            data.get(data.size() - 1).adjustTime(time);
-        } else {
+        boolean nothingNew = false;
+        synchronized (data) {
+            if (data.size() >= 2) {
+                var lastEntry = data.get(data.size() - 1);
+                var lastButOneEntry = data.get(data.size() - 2);
+                nothingNew = lastEntry.valuesEqual(lastButOneEntry)
+                    && lastEntry.valuesEqual(newEntry);
+            }
+            if (nothingNew) {
+                data.removeLast();
+            }
             data.add(new Entry(time, numbers));
-        }
 
-        // Purge
-        Instant limit = time.minus(period);
-        while (data.size() > 2
-            && data.get(0).getTime().isBefore(limit)
-            && data.get(1).getTime().isBefore(limit)) {
-            data.remove(0);
+            // Purge
+            Instant limit = time.minus(period);
+            while (data.size() > 2
+                && data.get(0).getTime().isBefore(limit)
+                && data.get(1).getTime().isBefore(limit)) {
+                data.removeFirst();
+            }
         }
         return this;
     }
@@ -81,14 +84,16 @@ public class TimeSeries {
      * @return the list
      */
     public List<Entry> entries() {
-        return data;
+        synchronized (data) {
+            return new ArrayList<>(data);
+        }
     }
 
     /**
      * The Class Entry.
      */
     public static class Entry {
-        private Instant timestamp;
+        private final Instant timestamp;
         private final Number[] values;
 
         /**
@@ -101,15 +106,6 @@ public class TimeSeries {
         public Entry(Instant time, Number... numbers) {
             timestamp = time;
             values = numbers;
-        }
-
-        /**
-         * Changes the entry's time.
-         *
-         * @param time the time
-         */
-        public void adjustTime(Instant time) {
-            timestamp = time;
         }
 
         /**
