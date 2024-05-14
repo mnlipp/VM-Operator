@@ -17,10 +17,10 @@
       "/WebConsole":
         "/LoginConlet":
           users:
-            admin:
+            - name: admin
               fullName: Administrator
               password: "$2b$05$NiBd74ZGdplLC63ePZf1f.UtjMKkbQ23cQoO2OKOFalDBHWAOy21."
-            test:
+            - name: test
               fullName: Test Account
               password: "$2b$05$hZaI/jToXf/d3BctZdT38Or7H7h6Pn2W3WiB49p5AyhDHFkkYCvo2"
         "/RoleConfigurator":

@@ -50,19 +50,23 @@ import org.jgrapes.core.NamedChannel;
 import org.jgrapes.core.annotation.Handler;
 import org.jgrapes.core.events.HandlingError;
 import org.jgrapes.core.events.Stop;
+import org.jgrapes.http.HttpConnector;
 import org.jgrapes.http.HttpServer;
 import org.jgrapes.http.InMemorySessionManager;
 import org.jgrapes.http.LanguageSelector;
 import org.jgrapes.http.events.Request;
 import org.jgrapes.io.NioDispatcher;
 import org.jgrapes.io.util.PermitsPool;
+import org.jgrapes.net.SocketConnector;
 import org.jgrapes.net.SocketServer;
+import org.jgrapes.net.SslCodec;
 import org.jgrapes.util.ComponentCollector;
 import org.jgrapes.util.FileSystemWatcher;
 import org.jgrapes.util.YamlConfigurationStore;
 import org.jgrapes.util.events.ConfigurationUpdate;
 import org.jgrapes.util.events.WatchFile;
-import org.jgrapes.webconlet.locallogin.LoginConlet;
+import org.jgrapes.webconlet.oidclogin.LoginConlet;
+import org.jgrapes.webconlet.oidclogin.OidcClient;
 import org.jgrapes.webconsole.base.BrowserLocalBackedKVStore;
 import org.jgrapes.webconsole.base.ConletComponentFactory;
 import org.jgrapes.webconsole.base.ConsoleWeblet;
@@ -71,6 +75,7 @@ import org.jgrapes.webconsole.base.PageResourceProviderFactory;
 import org.jgrapes.webconsole.base.WebConsole;
 import org.jgrapes.webconsole.rbac.RoleConfigurator;
 import org.jgrapes.webconsole.rbac.RoleConletFilter;
+import org.jgrapes.webconsole.rbac.UserLogger;
 import org.jgrapes.webconsole.vuejs.VueJsConsoleWeblet;
 
 /**
@@ -90,10 +95,11 @@ public class Manager extends Component {
      * @param cmdLine 
      *
      * @throws IOException Signals that an I/O exception has occurred.
+     * @throws URISyntaxException 
      */
     @SuppressWarnings({ "PMD.TooFewBranchesForASwitchStatement",
-        "PMD.NcssCount" })
-    public Manager(CommandLine cmdLine) throws IOException {
+        "PMD.NcssCount", "PMD.ConstructorCallsOverridableMethod" })
+    public Manager(CommandLine cmdLine) throws IOException, URISyntaxException {
         super(new NamedChannel("manager"));
         // Prepare component tree
         attach(new NioDispatcher());
@@ -120,9 +126,19 @@ public class Manager extends Component {
             .setServerAddress(new InetSocketAddress(8080))
             .setName("GuiSocketServer"));
 
+        // Channel for HTTP application layer
+        Channel httpChannel = new NamedChannel("guiHttp");
+
+        // Create network channels for client requests.
+        Channel requestChannel = attach(new SocketConnector(SELF));
+        Channel secReqChannel
+            = attach(new SslCodec(SELF, requestChannel, true));
+        // Support for making HTTP requests
+        attach(new HttpConnector(httpChannel, requestChannel,
+            secReqChannel));
+
         // Create an HTTP server as converter between transport and application
         // layer.
-        Channel httpChannel = new NamedChannel("guiHttp");
         HttpServer guiHttpServer = attach(new HttpServer(httpChannel,
             httpTransport, Request.In.Get.class, Request.In.Post.class));
         guiHttpServer.setName("GuiHttpServer");
@@ -138,7 +154,7 @@ public class Manager extends Component {
             return;
         }
         ConsoleWeblet consoleWeblet = guiHttpServer
-            .attach(new VueJsConsoleWeblet(httpChannel, Channel.SELF, rootUri) {
+            .attach(new VueJsConsoleWeblet(httpChannel, SELF, rootUri) {
                 @Override
                 protected Map<String, Object> createConsoleBaseModel() {
                     return augmentBaseModel(super.createConsoleBaseModel());
@@ -156,9 +172,14 @@ public class Manager extends Component {
         console.attach(new RoleConfigurator(console.channel()));
         console.attach(new RoleConletFilter(console.channel()));
         console.attach(new LoginConlet(console.channel()));
+        console.attach(new OidcClient(console.channel(), httpChannel,
+            httpChannel, new URI("/oauth/callback"), 1500));
+        console.attach(new UserLogger(console.channel()));
+
         // Add all available page resource providers
         console.attach(new ComponentCollector<>(
             PageResourceProviderFactory.class, console.channel()));
+
         // Add all available conlets
         console.attach(new ComponentCollector<>(
             ConletComponentFactory.class, console.channel(), type -> {
@@ -299,7 +320,7 @@ public class Manager extends Component {
                 try {
                     app.fire(new Stop());
                     Components.awaitExhaustion();
-                } catch (InterruptedException e) {
+                } catch (InterruptedException e) { // NOPMD
                     // Cannot do anything about this.
                 }
             }));
@@ -310,7 +331,7 @@ public class Manager extends Component {
             // Wait for (regular) termination
             Components.awaitExhaustion();
             System.exit(exitStatus);
-        } catch (IOException | InterruptedException
+        } catch (IOException | InterruptedException | URISyntaxException
                 | org.apache.commons.cli.ParseException e) {
             Logger.getLogger(Manager.class.getName()).log(Level.SEVERE, e,
                 () -> "Failed to start manager: " + e.getMessage());
