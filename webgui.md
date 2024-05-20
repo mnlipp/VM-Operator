@@ -49,6 +49,7 @@ for information about the complete components structure.)
             test:
               fullName: Test Account
               password: "Generate hash with bcrypt"
+          oidcProviders: {}
         "/RoleConfigurator":
           rolesByUser:
             # User admin has role admin
@@ -65,8 +66,17 @@ for information about the complete components structure.)
             - "*"
             # Others cannot use any conlet (except login conlet to log out)
             other:
-            - org.jgrapes.webconlet.locallogin.LoginConlet
+            # Up to version 2.3.x
+            # - org.jgrapes.webconlet.locallogin.LoginConlet
+            # Starting with version 2.4.0
+            - org.jgrapes.webconlet.oidclogin.LoginConlet
 ```
 
-How users can be configured should be obvious from the example. Details
-can be found in the JGrapes Webconsole's documentation of the components.
+How local users can be configured should be obvious from the example.
+The configuration of OIDC providers for user authentication (and 
+optionally for role assignment) is explained in the documentation of the 
+[login conlet](https://mnlipp.github.io/jgrapes/javadoc-webconsole/org/jgrapes/webconlet/oidclogin/LoginConlet.html).
+Details about the `RoleConfigurator` and `RoleConletFilter` can also be found
+in the documentation of the
+[JGrapes WebConsole](https://mnlipp.github.io/jgrapes/WebConsole.html)
+project.
