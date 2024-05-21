@@ -86,6 +86,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
      * on by default and that {@link Manager#fire(Event, Channel...)}
      * sends the event to
      */
+    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public VmConlet(Channel componentChannel) {
         super(componentChannel);
         setPeriodicRefresh(Duration.ofMinutes(1), () -> new Update());
@@ -138,7 +139,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
                         .setRenderAs(
                             RenderMode.Preview.addModifiers(event.renderAs()))
                         .setSupportedModes(MODES));
-            renderedAs.add(RenderMode.View);
+            renderedAs.add(RenderMode.Preview);
             channel.respond(new NotifyConletView(type(),
                 conletId, "summarySeries", summarySeries.entries()));
             var summary = evaluateSummary(false);
@@ -181,7 +182,8 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
      */
     @Handler(namedChannels = "manager")
     @SuppressWarnings({ "PMD.ConfusingTernary", "PMD.CognitiveComplexity",
-        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.AvoidDuplicateLiterals" })
+        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.AvoidDuplicateLiterals",
+        "PMD.ConfusingArgumentToVarargsMethod" })
     public void onVmDefChanged(VmDefChanged event, VmChannel channel)
             throws JsonDecodeException, IOException {
         var vmName = event.vmDefinition().getMetadata().getName();
