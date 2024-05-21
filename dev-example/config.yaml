@@ -39,4 +39,5 @@
             - "*"
             # Others cannot use any conlet (except login conlet to log out)
             other:
-            - org.jgrapes.webconlet.locallogin.LoginConlet
+            - --org.jdrupes.vmoperator.vmconlet.VmConlet
+            - org.jgrapes.webconlet.oidclogin.LoginConlet
