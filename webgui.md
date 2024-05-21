@@ -41,12 +41,14 @@ for information about the complete components structure.)
     "/ConsoleWeblet":
       "/WebConsole":
         "/LoginConlet":
+          # Up to Version 2.3.x "users" was an object with user names
+          # as its properties. Starting with 2.4.0 it is a list.
           users:
-            admin:
+            - name: admin
               fullName: Administrator
               password: "Generate hash with bcrypt"
             # Not needed, provided as example only:
-            test:
+            - name: test
               fullName: Test Account
               password: "Generate hash with bcrypt"
           oidcProviders: {}
