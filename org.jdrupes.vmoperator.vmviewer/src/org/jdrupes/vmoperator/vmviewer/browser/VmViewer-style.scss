@@ -21,6 +21,11 @@
  */
 .jdrupes-vmoperator-vmviewer-preview img {
   height: 3em;
+  padding: 0.25rem;
+  
+  &:hover {
+    box-shadow: var(--darkening);
+  }
 }
 
 .jdrupes-vmoperator-vmviewer-preview-action-list {
