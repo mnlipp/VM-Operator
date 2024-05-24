@@ -1,0 +1,20 @@
+<div title="${_("conletName")}" class="jdrupes-vmoperator-vmviewer-edit"
+    data-jgwc-on-load="orgJDrupesVmOperatorVmViewer.initEdit"
+    data-jgwc-on-action="orgJDrupesVmOperatorVmViewer.applyEdit"    
+    data-jgwc-on-unload="JGConsole.jgwc.unmountVueApps">
+  <form :id="formId" ref="formDom" onsubmit="return false;">
+    <section>
+      <span>{{ localize("Select VM") }}</span>
+      <p>
+        <label>
+          <span>{{ localize("VM") }}</span>
+          <select v-model="vmNameInput">
+          <#list vmNames as name>
+            <option value="${name}">${name}</option>
+          </#list>
+          </select>
+        </label>
+      </p>
+    </section>
+  </form>  
+</div>

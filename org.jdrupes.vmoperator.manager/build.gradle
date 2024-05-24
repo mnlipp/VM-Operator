@@ -32,6 +32,7 @@ dependencies {
     runtimeOnly 'org.apache.logging.log4j:log4j-to-jul:2.20.0'
 
     runtimeOnly project(':org.jdrupes.vmoperator.vmconlet')
+    runtimeOnly project(':org.jdrupes.vmoperator.vmviewer')
 }
 
 application {
