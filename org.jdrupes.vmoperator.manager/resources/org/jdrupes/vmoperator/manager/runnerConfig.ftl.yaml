@@ -202,7 +202,7 @@ data:
             ticket: "${ cr.spec.vm.display.spice.ticket.asString }"
             </#if>
             <#if cr.spec.vm.display.spice.streamingVideo??>
-            ticket: "${ cr.spec.vm.display.spice.streamingVideo.asString }"
+            streaming-video: "${ cr.spec.vm.display.spice.streamingVideo.asString }"
             </#if>
             usbRedirects: ${ cr.spec.vm.display.spice.usbRedirects.asInt?c }
           </#if>
