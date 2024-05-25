@@ -90,7 +90,8 @@ public class QemuMonitor extends Component {
      * @param configDir the config dir
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    @SuppressWarnings("PMD.AssignmentToNonFinalStatic")
+    @SuppressWarnings({ "PMD.AssignmentToNonFinalStatic",
+        "PMD.ConstructorCallsOverridableMethod" })
     public QemuMonitor(Channel componentChannel, Path configDir)
             throws IOException {
         super(componentChannel);
@@ -155,6 +156,7 @@ public class QemuMonitor extends Component {
      * @param event the event
      * @param channel the channel
      */
+    @SuppressWarnings("resource")
     @Handler
     public void onClientConnected(ClientConnected event,
             SocketIOChannel channel) {
@@ -276,7 +278,7 @@ public class QemuMonitor extends Component {
                     writer.append(asText).append('\n').flush();
                 } catch (IOException e) {
                     // Cannot happen, but...
-                    logger.log(Level.WARNING, e, () -> e.getMessage());
+                    logger.log(Level.WARNING, e, e::getMessage);
                 }
             });
         }

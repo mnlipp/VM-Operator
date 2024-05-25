@@ -80,6 +80,7 @@ public class StatusUpdater extends Component {
      *
      * @param componentChannel the component channel
      */
+    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public StatusUpdater(Channel componentChannel) {
         super(componentChannel);
         try {
@@ -91,7 +92,6 @@ public class StatusUpdater extends Component {
                 () -> "Cannot access events API, terminating.");
             fire(new Exit(1));
         }
-
     }
 
     /**
@@ -222,7 +222,8 @@ public class StatusUpdater extends Component {
      * @throws ApiException 
      */
     @Handler
-    @SuppressWarnings("PMD.AssignmentInOperand")
+    @SuppressWarnings({ "PMD.AssignmentInOperand",
+        "PMD.AvoidLiteralsInIfCondition" })
     public void onRunnerStateChanged(RunnerStateChange event)
             throws ApiException {
         K8sDynamicModel vmDef;
