@@ -5,9 +5,9 @@ title: Upgrading
 
 # Upgrading
 
-## To version 2.4.0
+## To version 2.3.0
 
-Starting with version 2.4.0, the web GUI uses a login conlet that
+Starting with version 2.3.0, the web GUI uses a login conlet that
 supports OIDC providers. This effects the configuration of the 
 web GUI components.
 
