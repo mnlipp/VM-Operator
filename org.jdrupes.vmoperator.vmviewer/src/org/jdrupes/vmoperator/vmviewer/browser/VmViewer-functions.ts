@@ -138,6 +138,21 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmviewer.VmViewer",
         api.vmDefinition = vmDefinition;
     });
 
+JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmviewer.VmViewer",
+    "openConsole", function(_conletId: string, mimeType: string, data: string) {
+        let target = document.getElementById(
+            "org.jdrupes.vmoperator.vmviewer.VmViewer.target");
+        if (!target) {
+            target = document.createElement("iframe");
+            target.id = "org.jdrupes.vmoperator.vmviewer.VmViewer.target";
+            target.setAttribute("name", target.id);
+            target.setAttribute("style", "display: none;");            
+            document.querySelector("body")!.append(target);
+        }
+        const url = "data:" + mimeType + ";base64," + data;
+        window.open(url, target.id);
+    });
+
 window.orgJDrupesVmOperatorVmViewer.initEdit = (dialogDom: HTMLElement,
     isUpdate: boolean) => {
     if (isUpdate) {

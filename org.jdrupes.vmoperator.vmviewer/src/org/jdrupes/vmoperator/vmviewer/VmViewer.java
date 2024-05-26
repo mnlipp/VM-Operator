@@ -20,22 +20,27 @@ package org.jdrupes.vmoperator.vmviewer;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.gson.JsonPrimitive;
 import freemarker.core.ParseException;
 import freemarker.template.MalformedTemplateNameException;
 import freemarker.template.Template;
 import freemarker.template.TemplateNotFoundException;
 import io.kubernetes.client.util.Strings;
 import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.logging.Level;
-
 import org.jdrupes.json.JsonBeanDecoder;
 import org.jdrupes.json.JsonDecodeException;
 import org.jdrupes.vmoperator.common.K8sDynamicModel;
@@ -44,11 +49,13 @@ import org.jdrupes.vmoperator.manager.events.ChannelCache;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
+import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Event;
 import org.jgrapes.core.Manager;
 import org.jgrapes.core.annotation.Handler;
 import org.jgrapes.http.Session;
+import org.jgrapes.util.events.ConfigurationUpdate;
 import org.jgrapes.util.events.KeyValueStoreQuery;
 import org.jgrapes.util.events.KeyValueStoreUpdate;
 import org.jgrapes.webconsole.base.Conlet.RenderMode;
@@ -72,7 +79,8 @@ import org.jgrapes.webconsole.base.freemarker.FreeMarkerConlet;
 /**
  * The Class VmConlet.
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
+@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.ExcessiveImports",
+    "PMD.CouplingBetweenObjects" })
 public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
 
     private static final Set<RenderMode> MODES = RenderMode.asSet(
@@ -81,6 +89,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
             K8sDynamicModel> channelManager = new ChannelCache<>();
     private static ObjectMapper objectMapper
         = new ObjectMapper().registerModule(new JavaTimeModule());
+    private Class<?> preferredIpVersion = Inet4Address.class;
 
     /**
      * The periodically generated update event.
@@ -97,6 +106,29 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
      */
     public VmViewer(Channel componentChannel) {
         super(componentChannel);
+    }
+
+    /**
+     * Configure the component.
+     *
+     * @param event the event
+     */
+    @Handler
+    public void onConfigurationUpdate(ConfigurationUpdate event) {
+        event.structured(componentPath()).ifPresent(c -> {
+            @SuppressWarnings("unchecked")
+            var dispRes = (Map<String, Object>) c
+                .getOrDefault("displayResource", Collections.emptyMap());
+            switch ((String) dispRes.getOrDefault("preferredIpVersion", "")) {
+            case "ipv6":
+                preferredIpVersion = Inet6Address.class;
+                break;
+            case "ipv4":
+            default:
+                preferredIpVersion = Inet4Address.class;
+                break;
+            }
+        });
     }
 
     /**
@@ -272,8 +304,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
     }
 
     @Override
-    @SuppressWarnings({ "PMD.AvoidDecimalLiteralsInBigDecimalConstructor",
-        "PMD.TooFewBranchesForASwitchStatement" })
+    @SuppressWarnings({ "PMD.AvoidDecimalLiteralsInBigDecimalConstructor" })
     protected void doUpdateConletState(NotifyConletModel event,
             ConsoleConnection channel, ViewerModel model)
             throws Exception {
@@ -297,9 +328,56 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
         case "stop":
             fire(new ModifyVm(vmName, "state", "Stopped", vmChannel));
             break;
+        case "openConsole":
+            openConsole(vmName, channel, model);
+            break;
         default:// ignore
             break;
         }
+    }
+
+    private void openConsole(String vmName, ConsoleConnection connection,
+            ViewerModel model) {
+        var vmDef = channelManager.associated(vmName).orElse(null);
+        if (vmDef == null) {
+            return;
+        }
+        var addr = displayIp(vmDef);
+        if (addr.isEmpty()) {
+            logger.severe(() -> "Failed to find display IP for " + vmName);
+            return;
+        }
+        var port = GsonPtr.to(vmDef.data()).get(JsonPrimitive.class, "spec",
+            "vm", "display", "spice", "port");
+        if (port.isEmpty()) {
+            logger.severe(() -> "No port defined for display of " + vmName);
+            return;
+        }
+        StringBuffer data = new StringBuffer(50)
+            .append("[virt-viewer]\ntype=spice\nhost=")
+            .append(addr.get().getHostAddress()).append("\nport=")
+            .append(Integer.toString(port.get().getAsInt())).append('\n');
+        connection.respond(new NotifyConletView(type(),
+            model.getConletId(), "openConsole", "application/x-virt-viewer",
+            Base64.getEncoder().encodeToString(data.toString().getBytes())));
+    }
+
+    private Optional<InetAddress> displayIp(K8sDynamicModel vmDef) {
+        var addrs = GsonPtr.to(vmDef.data()).getAsListOf(JsonPrimitive.class,
+            "nodeAddresses").stream().map(JsonPrimitive::getAsString)
+            .map(a -> {
+                try {
+                    return InetAddress.getByName(a);
+                } catch (UnknownHostException e) {
+                    logger.warning(() -> "Invalid IP address: " + a);
+                    return null;
+                }
+            }).filter(a -> a != null).toList();
+        logger.fine(() -> "Known IP addresses for "
+            + vmDef.getMetadata().getName() + ": " + addrs);
+        return addrs.stream()
+            .filter(a -> preferredIpVersion.isAssignableFrom(a.getClass()))
+            .findFirst().or(() -> addrs.stream().findFirst());
     }
 
     @Override
