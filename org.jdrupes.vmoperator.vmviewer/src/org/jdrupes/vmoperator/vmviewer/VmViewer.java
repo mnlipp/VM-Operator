@@ -46,6 +46,7 @@ import org.jdrupes.json.JsonDecodeException;
 import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jdrupes.vmoperator.manager.events.ChannelCache;
+import org.jdrupes.vmoperator.manager.events.GetDisplayPassword;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
@@ -304,7 +305,8 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
     }
 
     @Override
-    @SuppressWarnings({ "PMD.AvoidDecimalLiteralsInBigDecimalConstructor" })
+    @SuppressWarnings({ "PMD.AvoidDecimalLiteralsInBigDecimalConstructor",
+        "PMD.ConfusingArgumentToVarargsMethod" })
     protected void doUpdateConletState(NotifyConletModel event,
             ConsoleConnection channel, ViewerModel model)
             throws Exception {
@@ -329,7 +331,9 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
             fire(new ModifyVm(vmName, "state", "Stopped", vmChannel));
             break;
         case "openConsole":
-            openConsole(vmName, channel, model);
+            channelManager.channel(vmName).ifPresent(
+                vc -> fire(Event.onCompletion(new GetDisplayPassword(vmName),
+                    ds -> openConsole(vmName, channel, model, ds)), vc));
             break;
         default:// ignore
             break;
@@ -337,7 +341,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
     }
 
     private void openConsole(String vmName, ConsoleConnection connection,
-            ViewerModel model) {
+            ViewerModel model, GetDisplayPassword pwQuery) {
         var vmDef = channelManager.associated(vmName).orElse(null);
         if (vmDef == null) {
             return;
@@ -357,6 +361,9 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
             .append("[virt-viewer]\ntype=spice\nhost=")
             .append(addr.get().getHostAddress()).append("\nport=")
             .append(Integer.toString(port.get().getAsInt())).append('\n');
+        pwQuery.password().ifPresent(p -> {
+            data.append("password=").append(p).append('\n');
+        });
         connection.respond(new NotifyConletView(type(),
             model.getConletId(), "openConsole", "application/x-virt-viewer",
             Base64.getEncoder().encodeToString(data.toString().getBytes())));
