@@ -44,12 +44,13 @@ public class K8sDynamicModelTypeAdapterFactory implements TypeAdapterFactory {
      * this factory
      */
     @SuppressWarnings("unchecked")
+    @Override
     public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> typeToken) {
         if (TypeToken.get(K8sDynamicModel.class).equals(typeToken)) {
-            return (TypeAdapter<T>) (new K8sDynamicModelCreator(gson));
+            return (TypeAdapter<T>) new K8sDynamicModelCreator(gson);
         }
         if (TypeToken.get(K8sDynamicModels.class).equals(typeToken)) {
-            return (TypeAdapter<T>) (new K8sDynamicModelsCreator(gson));
+            return (TypeAdapter<T>) new K8sDynamicModelsCreator(gson);
         }
         return null;
     }

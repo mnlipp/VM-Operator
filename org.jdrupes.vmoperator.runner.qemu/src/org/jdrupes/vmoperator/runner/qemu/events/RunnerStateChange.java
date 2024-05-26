@@ -109,15 +109,14 @@ public class RunnerStateChange extends Event<Void> {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
+        StringBuilder builder = new StringBuilder(50);
         builder.append(Components.objectName(this))
             .append(" [").append(state).append(": ").append(reason);
         if (failed) {
             builder.append(" (failed)");
         }
         if (channels() != null) {
-            builder.append(", channels=");
-            builder.append(Channel.toString(channels()));
+            builder.append(", channels=").append(Channel.toString(channels()));
         }
         builder.append(']');
         return builder.toString();

@@ -21,6 +21,7 @@ package org.jdrupes.vmoperator.common;
 /**
  * Some constants.
  */
+@SuppressWarnings("PMD.DataClass")
 public class Constants {
 
     /** The Constant APP_NAME. */

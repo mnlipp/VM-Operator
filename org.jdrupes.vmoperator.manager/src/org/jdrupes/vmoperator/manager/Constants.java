@@ -21,6 +21,7 @@ package org.jdrupes.vmoperator.manager;
 /**
  * Some constants.
  */
+@SuppressWarnings("PMD.DataClass")
 public class Constants extends org.jdrupes.vmoperator.common.Constants {
 
     /** The Constant COMP_DISPLAY_SECRET. */

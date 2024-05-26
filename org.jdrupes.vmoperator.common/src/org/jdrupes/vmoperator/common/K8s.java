@@ -44,7 +44,6 @@ import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 
-// TODO: Auto-generated Javadoc
 /**
  * Helpers for K8s API.
  */
@@ -168,6 +167,7 @@ public class K8s {
      * @return the object
      */
     @Deprecated
+    @SuppressWarnings("PMD.GenericsNaming")
     public static <T extends KubernetesObject, LT extends KubernetesListObject>
             Optional<T>
             get(GenericKubernetesApi<T, LT> api, V1ObjectMeta meta) {
@@ -189,6 +189,7 @@ public class K8s {
      * @return the t
      * @throws ApiException the api exception
      */
+    @SuppressWarnings("PMD.GenericsNaming")
     public static <T extends KubernetesObject, LT extends KubernetesListObject>
             T apply(GenericKubernetesApi<T, LT> api, T existing, String update)
                     throws ApiException {

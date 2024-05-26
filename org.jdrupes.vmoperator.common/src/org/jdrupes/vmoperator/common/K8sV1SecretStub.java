@@ -81,7 +81,8 @@ public class K8sV1SecretStub extends K8sGenericStub<V1Secret, V1SecretList> {
     /**
      * Provide {@link GenericSupplier}.
      */
-    @SuppressWarnings("PMD.UnusedFormalParameter")
+    @SuppressWarnings({ "PMD.UnusedFormalParameter",
+        "PMD.UnusedPrivateMethod" })
     private static K8sV1SecretStub getGeneric(Class<V1Secret> objectClass,
             Class<V1SecretList> objectListClass, K8sClient client,
             APIResource context, String namespace, String name) {
