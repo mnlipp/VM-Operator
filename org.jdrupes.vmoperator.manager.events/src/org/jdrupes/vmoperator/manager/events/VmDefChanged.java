@@ -83,8 +83,7 @@ public class VmDefChanged extends Event<Void> {
         builder.append(Components.objectName(this)).append(" [")
             .append(vmDef.getMetadata().getName()).append(' ').append(type);
         if (channels() != null) {
-            builder.append(", channels=");
-            builder.append(Channel.toString(channels()));
+            builder.append(", channels=").append(Channel.toString(channels()));
         }
         builder.append(']');
         return builder.toString();

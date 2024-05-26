@@ -29,15 +29,17 @@ import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sObserver.ResponseType;
 import org.jdrupes.vmoperator.common.K8sV1SecretStub;
 import static org.jdrupes.vmoperator.manager.Constants.COMP_DISPLAY_SECRET;
-import org.jdrupes.vmoperator.manager.events.DisplaySecretChanged;
+import org.jdrupes.vmoperator.manager.events.DisplayPasswordChanged;
+import org.jdrupes.vmoperator.manager.events.GetDisplayPassword;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jgrapes.core.Channel;
+import org.jgrapes.core.annotation.Handler;
 
 /**
  * Watches for changes of display secrets.
  */
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
-public class DisplaySecretsMonitor
+public class DisplayPasswordMonitor
         extends AbstractMonitor<V1Secret, V1SecretList, VmChannel> {
 
     /**
@@ -45,7 +47,7 @@ public class DisplaySecretsMonitor
      *
      * @param componentChannel the component channel
      */
-    public DisplaySecretsMonitor(Channel componentChannel) {
+    public DisplayPasswordMonitor(Channel componentChannel) {
         super(componentChannel, V1Secret.class, V1SecretList.class);
         context(K8sV1SecretStub.CONTEXT);
         ListOptions options = new ListOptions();
@@ -70,8 +72,31 @@ public class DisplaySecretsMonitor
         if (channel == null || channel.vmDefinition() == null) {
             return;
         }
-        channel.pipeline().fire(new DisplaySecretChanged(
+        channel.pipeline().fire(new DisplayPasswordChanged(
             ResponseType.valueOf(change.type), change.object), channel);
     }
 
+    /**
+     * On get display secrets.
+     *
+     * @param event the event
+     * @param channel the channel
+     * @throws ApiException the api exception
+     */
+    @Handler
+    @SuppressWarnings("PMD.StringInstantiation")
+    public void onGetDisplaySecrets(GetDisplayPassword event, VmChannel channel)
+            throws ApiException {
+        ListOptions options = new ListOptions();
+        options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
+            + "app.kubernetes.io/component=" + COMP_DISPLAY_SECRET + ","
+            + "app.kubernetes.io/instance=" + event.vmName());
+        var stubs = K8sV1SecretStub.list(client(), namespace(), options);
+        if (stubs.isEmpty()) {
+            return;
+        }
+        stubs.iterator().next().model().map(m -> m.getData())
+            .map(m -> m.get("display-password"))
+            .ifPresent(p -> event.setResult(new String(p)));
+    }
 }

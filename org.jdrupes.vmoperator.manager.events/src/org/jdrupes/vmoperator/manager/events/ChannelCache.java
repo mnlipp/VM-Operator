@@ -44,7 +44,7 @@ public class ChannelCache<K, C extends Channel, A> {
      */
     @SuppressWarnings("PMD.ShortClassName")
     private static class Data<C extends Channel, A> {
-        public WeakReference<C> channel;
+        public final WeakReference<C> channel;
         public A associated;
 
         /**

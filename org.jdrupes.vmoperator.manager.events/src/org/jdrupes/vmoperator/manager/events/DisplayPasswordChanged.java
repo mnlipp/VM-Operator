@@ -28,7 +28,7 @@ import org.jgrapes.core.Event;
  * Indicates that a display secret has changed. 
  */
 @SuppressWarnings("PMD.DataClass")
-public class DisplaySecretChanged extends Event<Void> {
+public class DisplayPasswordChanged extends Event<Void> {
 
     private final ResponseType type;
     private final V1Secret secret;
@@ -39,7 +39,7 @@ public class DisplaySecretChanged extends Event<Void> {
      * @param type the type
      * @param secret the secret
      */
-    public DisplaySecretChanged(ResponseType type, V1Secret secret) {
+    public DisplayPasswordChanged(ResponseType type, V1Secret secret) {
         this.type = type;
         this.secret = secret;
     }
@@ -68,8 +68,7 @@ public class DisplaySecretChanged extends Event<Void> {
         builder.append(Components.objectName(this)).append(" [")
             .append(secret.getMetadata().getName()).append(' ').append(type);
         if (channels() != null) {
-            builder.append(", channels=");
-            builder.append(Channel.toString(channels()));
+            builder.append(", channels=").append(Channel.toString(channels()));
         }
         builder.append(']');
         return builder.toString();
