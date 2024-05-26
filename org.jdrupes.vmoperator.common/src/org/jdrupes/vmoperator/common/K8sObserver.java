@@ -87,7 +87,7 @@ public class K8sObserver<O extends KubernetesObject,
             context.getResourcePlural(), client);
         thread = new Thread(() -> {
             try {
-                logger.info(() -> "Watching " + context.getResourcePlural()
+                logger.config(() -> "Watching " + context.getResourcePlural()
                     + " (" + context.getPreferredVersion() + ")"
                     + " in " + namespace);
 
