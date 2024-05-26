@@ -57,130 +57,130 @@
 <span class="source-line-no">044</span><span id="line-44">import org.yaml.snakeyaml.Yaml;</span>
 <span class="source-line-no">045</span><span id="line-45">import org.yaml.snakeyaml.constructor.SafeConstructor;</span>
 <span class="source-line-no">046</span><span id="line-46"></span>
-<span class="source-line-no">047</span><span id="line-47">// TODO: Auto-generated Javadoc</span>
-<span class="source-line-no">048</span><span id="line-48">/**</span>
-<span class="source-line-no">049</span><span id="line-49"> * Helpers for K8s API.</span>
-<span class="source-line-no">050</span><span id="line-50"> */</span>
-<span class="source-line-no">051</span><span id="line-51">@SuppressWarnings({ "PMD.ShortClassName", "PMD.UseUtilityClass",</span>
-<span class="source-line-no">052</span><span id="line-52">    "PMD.DataflowAnomalyAnalysis" })</span>
-<span class="source-line-no">053</span><span id="line-53">public class K8s {</span>
-<span class="source-line-no">054</span><span id="line-54"></span>
-<span class="source-line-no">055</span><span id="line-55">    /**</span>
-<span class="source-line-no">056</span><span id="line-56">     * Returns the result from an API call as {@link Optional} if the</span>
-<span class="source-line-no">057</span><span id="line-57">     * call was successful. Returns an empty `Optional` if the status</span>
-<span class="source-line-no">058</span><span id="line-58">     * code is 404 (not found). Else throws an exception.</span>
-<span class="source-line-no">059</span><span id="line-59">     *</span>
-<span class="source-line-no">060</span><span id="line-60">     * @param &lt;T&gt; the generic type</span>
-<span class="source-line-no">061</span><span id="line-61">     * @param response the response</span>
-<span class="source-line-no">062</span><span id="line-62">     * @return the optional</span>
-<span class="source-line-no">063</span><span id="line-63">     * @throws ApiException the API exception</span>
-<span class="source-line-no">064</span><span id="line-64">     */</span>
-<span class="source-line-no">065</span><span id="line-65">    public static &lt;T extends KubernetesType&gt; Optional&lt;T&gt;</span>
-<span class="source-line-no">066</span><span id="line-66">            optional(KubernetesApiResponse&lt;T&gt; response) throws ApiException {</span>
-<span class="source-line-no">067</span><span id="line-67">        if (response.isSuccess()) {</span>
-<span class="source-line-no">068</span><span id="line-68">            return Optional.of(response.getObject());</span>
-<span class="source-line-no">069</span><span id="line-69">        }</span>
-<span class="source-line-no">070</span><span id="line-70">        if (response.getHttpStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {</span>
-<span class="source-line-no">071</span><span id="line-71">            return Optional.empty();</span>
-<span class="source-line-no">072</span><span id="line-72">        }</span>
-<span class="source-line-no">073</span><span id="line-73">        response.throwsApiException();</span>
-<span class="source-line-no">074</span><span id="line-74">        // Never reached</span>
-<span class="source-line-no">075</span><span id="line-75">        return Optional.empty();</span>
-<span class="source-line-no">076</span><span id="line-76">    }</span>
-<span class="source-line-no">077</span><span id="line-77"></span>
-<span class="source-line-no">078</span><span id="line-78">    /**</span>
-<span class="source-line-no">079</span><span id="line-79">     * Returns a new context with the given version as preferred version.</span>
-<span class="source-line-no">080</span><span id="line-80">     *</span>
-<span class="source-line-no">081</span><span id="line-81">     * @param context the context</span>
-<span class="source-line-no">082</span><span id="line-82">     * @param version the version</span>
-<span class="source-line-no">083</span><span id="line-83">     * @return the API resource</span>
-<span class="source-line-no">084</span><span id="line-84">     */</span>
-<span class="source-line-no">085</span><span id="line-85">    public static APIResource preferred(APIResource context, String version) {</span>
-<span class="source-line-no">086</span><span id="line-86">        assert context.getVersions().contains(version);</span>
-<span class="source-line-no">087</span><span id="line-87">        return new APIResource(context.getGroup(),</span>
-<span class="source-line-no">088</span><span id="line-88">            context.getVersions(), version, context.getKind(),</span>
-<span class="source-line-no">089</span><span id="line-89">            context.getNamespaced(), context.getResourcePlural(),</span>
-<span class="source-line-no">090</span><span id="line-90">            context.getResourceSingular());</span>
-<span class="source-line-no">091</span><span id="line-91">    }</span>
-<span class="source-line-no">092</span><span id="line-92"></span>
-<span class="source-line-no">093</span><span id="line-93">    /**</span>
-<span class="source-line-no">094</span><span id="line-94">     * Return a string representation of the context (API resource).</span>
-<span class="source-line-no">095</span><span id="line-95">     *</span>
-<span class="source-line-no">096</span><span id="line-96">     * @param context the context</span>
-<span class="source-line-no">097</span><span id="line-97">     * @return the string</span>
-<span class="source-line-no">098</span><span id="line-98">     */</span>
-<span class="source-line-no">099</span><span id="line-99">    @SuppressWarnings("PMD.UseLocaleWithCaseConversions")</span>
-<span class="source-line-no">100</span><span id="line-100">    public static String toString(APIResource context) {</span>
-<span class="source-line-no">101</span><span id="line-101">        return (Strings.isNullOrEmpty(context.getGroup()) ? ""</span>
-<span class="source-line-no">102</span><span id="line-102">            : context.getGroup() + "/")</span>
-<span class="source-line-no">103</span><span id="line-103">            + context.getPreferredVersion().toUpperCase()</span>
-<span class="source-line-no">104</span><span id="line-104">            + context.getKind();</span>
-<span class="source-line-no">105</span><span id="line-105">    }</span>
-<span class="source-line-no">106</span><span id="line-106"></span>
-<span class="source-line-no">107</span><span id="line-107">    /**</span>
-<span class="source-line-no">108</span><span id="line-108">     * Convert Yaml to Json.</span>
-<span class="source-line-no">109</span><span id="line-109">     *</span>
-<span class="source-line-no">110</span><span id="line-110">     * @param client the client</span>
-<span class="source-line-no">111</span><span id="line-111">     * @param yaml the yaml</span>
-<span class="source-line-no">112</span><span id="line-112">     * @return the json element</span>
-<span class="source-line-no">113</span><span id="line-113">     */</span>
-<span class="source-line-no">114</span><span id="line-114">    public static JsonObject yamlToJson(ApiClient client, Reader yaml) {</span>
-<span class="source-line-no">115</span><span id="line-115">        // Avoid Yaml.load due to</span>
-<span class="source-line-no">116</span><span id="line-116">        // https://github.com/kubernetes-client/java/issues/2741</span>
-<span class="source-line-no">117</span><span id="line-117">        @SuppressWarnings("PMD.UseConcurrentHashMap")</span>
-<span class="source-line-no">118</span><span id="line-118">        Map&lt;String, Object&gt; yamlData</span>
-<span class="source-line-no">119</span><span id="line-119">            = new Yaml(new SafeConstructor(new LoaderOptions())).load(yaml);</span>
-<span class="source-line-no">120</span><span id="line-120"></span>
-<span class="source-line-no">121</span><span id="line-121">        // There's no short-cut from Java (collections) to Gson</span>
-<span class="source-line-no">122</span><span id="line-122">        var gson = client.getJSON().getGson();</span>
-<span class="source-line-no">123</span><span id="line-123">        var jsonText = gson.toJson(yamlData);</span>
-<span class="source-line-no">124</span><span id="line-124">        return gson.fromJson(jsonText, JsonObject.class);</span>
-<span class="source-line-no">125</span><span id="line-125">    }</span>
-<span class="source-line-no">126</span><span id="line-126"></span>
-<span class="source-line-no">127</span><span id="line-127">    /**</span>
-<span class="source-line-no">128</span><span id="line-128">     * Lookup the specified API resource. If the version is `null` or</span>
-<span class="source-line-no">129</span><span id="line-129">     * empty, the preferred version in the result is the default</span>
-<span class="source-line-no">130</span><span id="line-130">     * returned from the server.</span>
-<span class="source-line-no">131</span><span id="line-131">     *</span>
-<span class="source-line-no">132</span><span id="line-132">     * @param client the client</span>
-<span class="source-line-no">133</span><span id="line-133">     * @param group the group</span>
-<span class="source-line-no">134</span><span id="line-134">     * @param version the version</span>
-<span class="source-line-no">135</span><span id="line-135">     * @param kind the kind</span>
-<span class="source-line-no">136</span><span id="line-136">     * @return the optional</span>
-<span class="source-line-no">137</span><span id="line-137">     * @throws ApiException the api exception</span>
-<span class="source-line-no">138</span><span id="line-138">     */</span>
-<span class="source-line-no">139</span><span id="line-139">    public static Optional&lt;APIResource&gt; context(ApiClient client,</span>
-<span class="source-line-no">140</span><span id="line-140">            String group, String version, String kind) throws ApiException {</span>
-<span class="source-line-no">141</span><span id="line-141">        var apiMatch = new Discovery(client).findAll().stream()</span>
-<span class="source-line-no">142</span><span id="line-142">            .filter(r -&gt; r.getGroup().equals(group) &amp;&amp; r.getKind().equals(kind)</span>
-<span class="source-line-no">143</span><span id="line-143">                &amp;&amp; (Strings.isNullOrEmpty(version)</span>
-<span class="source-line-no">144</span><span id="line-144">                    || r.getVersions().contains(version)))</span>
-<span class="source-line-no">145</span><span id="line-145">            .findFirst();</span>
-<span class="source-line-no">146</span><span id="line-146">        if (apiMatch.isEmpty()) {</span>
-<span class="source-line-no">147</span><span id="line-147">            return Optional.empty();</span>
-<span class="source-line-no">148</span><span id="line-148">        }</span>
-<span class="source-line-no">149</span><span id="line-149">        var apiRes = apiMatch.get();</span>
-<span class="source-line-no">150</span><span id="line-150">        if (!Strings.isNullOrEmpty(version)) {</span>
-<span class="source-line-no">151</span><span id="line-151">            if (!apiRes.getVersions().contains(version)) {</span>
-<span class="source-line-no">152</span><span id="line-152">                return Optional.empty();</span>
-<span class="source-line-no">153</span><span id="line-153">            }</span>
-<span class="source-line-no">154</span><span id="line-154">            apiRes = new APIResource(apiRes.getGroup(), apiRes.getVersions(),</span>
-<span class="source-line-no">155</span><span id="line-155">                version, apiRes.getKind(), apiRes.getNamespaced(),</span>
-<span class="source-line-no">156</span><span id="line-156">                apiRes.getResourcePlural(), apiRes.getResourceSingular());</span>
-<span class="source-line-no">157</span><span id="line-157">        }</span>
-<span class="source-line-no">158</span><span id="line-158">        return Optional.of(apiRes);</span>
-<span class="source-line-no">159</span><span id="line-159">    }</span>
-<span class="source-line-no">160</span><span id="line-160"></span>
-<span class="source-line-no">161</span><span id="line-161">    /**</span>
-<span class="source-line-no">162</span><span id="line-162">     * Get an object from its metadata.</span>
-<span class="source-line-no">163</span><span id="line-163">     *</span>
-<span class="source-line-no">164</span><span id="line-164">     * @param &lt;T&gt; the generic type</span>
-<span class="source-line-no">165</span><span id="line-165">     * @param &lt;LT&gt; the generic type</span>
-<span class="source-line-no">166</span><span id="line-166">     * @param api the api</span>
-<span class="source-line-no">167</span><span id="line-167">     * @param meta the meta</span>
-<span class="source-line-no">168</span><span id="line-168">     * @return the object</span>
-<span class="source-line-no">169</span><span id="line-169">     */</span>
-<span class="source-line-no">170</span><span id="line-170">    @Deprecated</span>
+<span class="source-line-no">047</span><span id="line-47">/**</span>
+<span class="source-line-no">048</span><span id="line-48"> * Helpers for K8s API.</span>
+<span class="source-line-no">049</span><span id="line-49"> */</span>
+<span class="source-line-no">050</span><span id="line-50">@SuppressWarnings({ "PMD.ShortClassName", "PMD.UseUtilityClass",</span>
+<span class="source-line-no">051</span><span id="line-51">    "PMD.DataflowAnomalyAnalysis" })</span>
+<span class="source-line-no">052</span><span id="line-52">public class K8s {</span>
+<span class="source-line-no">053</span><span id="line-53"></span>
+<span class="source-line-no">054</span><span id="line-54">    /**</span>
+<span class="source-line-no">055</span><span id="line-55">     * Returns the result from an API call as {@link Optional} if the</span>
+<span class="source-line-no">056</span><span id="line-56">     * call was successful. Returns an empty `Optional` if the status</span>
+<span class="source-line-no">057</span><span id="line-57">     * code is 404 (not found). Else throws an exception.</span>
+<span class="source-line-no">058</span><span id="line-58">     *</span>
+<span class="source-line-no">059</span><span id="line-59">     * @param &lt;T&gt; the generic type</span>
+<span class="source-line-no">060</span><span id="line-60">     * @param response the response</span>
+<span class="source-line-no">061</span><span id="line-61">     * @return the optional</span>
+<span class="source-line-no">062</span><span id="line-62">     * @throws ApiException the API exception</span>
+<span class="source-line-no">063</span><span id="line-63">     */</span>
+<span class="source-line-no">064</span><span id="line-64">    public static &lt;T extends KubernetesType&gt; Optional&lt;T&gt;</span>
+<span class="source-line-no">065</span><span id="line-65">            optional(KubernetesApiResponse&lt;T&gt; response) throws ApiException {</span>
+<span class="source-line-no">066</span><span id="line-66">        if (response.isSuccess()) {</span>
+<span class="source-line-no">067</span><span id="line-67">            return Optional.of(response.getObject());</span>
+<span class="source-line-no">068</span><span id="line-68">        }</span>
+<span class="source-line-no">069</span><span id="line-69">        if (response.getHttpStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {</span>
+<span class="source-line-no">070</span><span id="line-70">            return Optional.empty();</span>
+<span class="source-line-no">071</span><span id="line-71">        }</span>
+<span class="source-line-no">072</span><span id="line-72">        response.throwsApiException();</span>
+<span class="source-line-no">073</span><span id="line-73">        // Never reached</span>
+<span class="source-line-no">074</span><span id="line-74">        return Optional.empty();</span>
+<span class="source-line-no">075</span><span id="line-75">    }</span>
+<span class="source-line-no">076</span><span id="line-76"></span>
+<span class="source-line-no">077</span><span id="line-77">    /**</span>
+<span class="source-line-no">078</span><span id="line-78">     * Returns a new context with the given version as preferred version.</span>
+<span class="source-line-no">079</span><span id="line-79">     *</span>
+<span class="source-line-no">080</span><span id="line-80">     * @param context the context</span>
+<span class="source-line-no">081</span><span id="line-81">     * @param version the version</span>
+<span class="source-line-no">082</span><span id="line-82">     * @return the API resource</span>
+<span class="source-line-no">083</span><span id="line-83">     */</span>
+<span class="source-line-no">084</span><span id="line-84">    public static APIResource preferred(APIResource context, String version) {</span>
+<span class="source-line-no">085</span><span id="line-85">        assert context.getVersions().contains(version);</span>
+<span class="source-line-no">086</span><span id="line-86">        return new APIResource(context.getGroup(),</span>
+<span class="source-line-no">087</span><span id="line-87">            context.getVersions(), version, context.getKind(),</span>
+<span class="source-line-no">088</span><span id="line-88">            context.getNamespaced(), context.getResourcePlural(),</span>
+<span class="source-line-no">089</span><span id="line-89">            context.getResourceSingular());</span>
+<span class="source-line-no">090</span><span id="line-90">    }</span>
+<span class="source-line-no">091</span><span id="line-91"></span>
+<span class="source-line-no">092</span><span id="line-92">    /**</span>
+<span class="source-line-no">093</span><span id="line-93">     * Return a string representation of the context (API resource).</span>
+<span class="source-line-no">094</span><span id="line-94">     *</span>
+<span class="source-line-no">095</span><span id="line-95">     * @param context the context</span>
+<span class="source-line-no">096</span><span id="line-96">     * @return the string</span>
+<span class="source-line-no">097</span><span id="line-97">     */</span>
+<span class="source-line-no">098</span><span id="line-98">    @SuppressWarnings("PMD.UseLocaleWithCaseConversions")</span>
+<span class="source-line-no">099</span><span id="line-99">    public static String toString(APIResource context) {</span>
+<span class="source-line-no">100</span><span id="line-100">        return (Strings.isNullOrEmpty(context.getGroup()) ? ""</span>
+<span class="source-line-no">101</span><span id="line-101">            : context.getGroup() + "/")</span>
+<span class="source-line-no">102</span><span id="line-102">            + context.getPreferredVersion().toUpperCase()</span>
+<span class="source-line-no">103</span><span id="line-103">            + context.getKind();</span>
+<span class="source-line-no">104</span><span id="line-104">    }</span>
+<span class="source-line-no">105</span><span id="line-105"></span>
+<span class="source-line-no">106</span><span id="line-106">    /**</span>
+<span class="source-line-no">107</span><span id="line-107">     * Convert Yaml to Json.</span>
+<span class="source-line-no">108</span><span id="line-108">     *</span>
+<span class="source-line-no">109</span><span id="line-109">     * @param client the client</span>
+<span class="source-line-no">110</span><span id="line-110">     * @param yaml the yaml</span>
+<span class="source-line-no">111</span><span id="line-111">     * @return the json element</span>
+<span class="source-line-no">112</span><span id="line-112">     */</span>
+<span class="source-line-no">113</span><span id="line-113">    public static JsonObject yamlToJson(ApiClient client, Reader yaml) {</span>
+<span class="source-line-no">114</span><span id="line-114">        // Avoid Yaml.load due to</span>
+<span class="source-line-no">115</span><span id="line-115">        // https://github.com/kubernetes-client/java/issues/2741</span>
+<span class="source-line-no">116</span><span id="line-116">        @SuppressWarnings("PMD.UseConcurrentHashMap")</span>
+<span class="source-line-no">117</span><span id="line-117">        Map&lt;String, Object&gt; yamlData</span>
+<span class="source-line-no">118</span><span id="line-118">            = new Yaml(new SafeConstructor(new LoaderOptions())).load(yaml);</span>
+<span class="source-line-no">119</span><span id="line-119"></span>
+<span class="source-line-no">120</span><span id="line-120">        // There's no short-cut from Java (collections) to Gson</span>
+<span class="source-line-no">121</span><span id="line-121">        var gson = client.getJSON().getGson();</span>
+<span class="source-line-no">122</span><span id="line-122">        var jsonText = gson.toJson(yamlData);</span>
+<span class="source-line-no">123</span><span id="line-123">        return gson.fromJson(jsonText, JsonObject.class);</span>
+<span class="source-line-no">124</span><span id="line-124">    }</span>
+<span class="source-line-no">125</span><span id="line-125"></span>
+<span class="source-line-no">126</span><span id="line-126">    /**</span>
+<span class="source-line-no">127</span><span id="line-127">     * Lookup the specified API resource. If the version is `null` or</span>
+<span class="source-line-no">128</span><span id="line-128">     * empty, the preferred version in the result is the default</span>
+<span class="source-line-no">129</span><span id="line-129">     * returned from the server.</span>
+<span class="source-line-no">130</span><span id="line-130">     *</span>
+<span class="source-line-no">131</span><span id="line-131">     * @param client the client</span>
+<span class="source-line-no">132</span><span id="line-132">     * @param group the group</span>
+<span class="source-line-no">133</span><span id="line-133">     * @param version the version</span>
+<span class="source-line-no">134</span><span id="line-134">     * @param kind the kind</span>
+<span class="source-line-no">135</span><span id="line-135">     * @return the optional</span>
+<span class="source-line-no">136</span><span id="line-136">     * @throws ApiException the api exception</span>
+<span class="source-line-no">137</span><span id="line-137">     */</span>
+<span class="source-line-no">138</span><span id="line-138">    public static Optional&lt;APIResource&gt; context(ApiClient client,</span>
+<span class="source-line-no">139</span><span id="line-139">            String group, String version, String kind) throws ApiException {</span>
+<span class="source-line-no">140</span><span id="line-140">        var apiMatch = new Discovery(client).findAll().stream()</span>
+<span class="source-line-no">141</span><span id="line-141">            .filter(r -&gt; r.getGroup().equals(group) &amp;&amp; r.getKind().equals(kind)</span>
+<span class="source-line-no">142</span><span id="line-142">                &amp;&amp; (Strings.isNullOrEmpty(version)</span>
+<span class="source-line-no">143</span><span id="line-143">                    || r.getVersions().contains(version)))</span>
+<span class="source-line-no">144</span><span id="line-144">            .findFirst();</span>
+<span class="source-line-no">145</span><span id="line-145">        if (apiMatch.isEmpty()) {</span>
+<span class="source-line-no">146</span><span id="line-146">            return Optional.empty();</span>
+<span class="source-line-no">147</span><span id="line-147">        }</span>
+<span class="source-line-no">148</span><span id="line-148">        var apiRes = apiMatch.get();</span>
+<span class="source-line-no">149</span><span id="line-149">        if (!Strings.isNullOrEmpty(version)) {</span>
+<span class="source-line-no">150</span><span id="line-150">            if (!apiRes.getVersions().contains(version)) {</span>
+<span class="source-line-no">151</span><span id="line-151">                return Optional.empty();</span>
+<span class="source-line-no">152</span><span id="line-152">            }</span>
+<span class="source-line-no">153</span><span id="line-153">            apiRes = new APIResource(apiRes.getGroup(), apiRes.getVersions(),</span>
+<span class="source-line-no">154</span><span id="line-154">                version, apiRes.getKind(), apiRes.getNamespaced(),</span>
+<span class="source-line-no">155</span><span id="line-155">                apiRes.getResourcePlural(), apiRes.getResourceSingular());</span>
+<span class="source-line-no">156</span><span id="line-156">        }</span>
+<span class="source-line-no">157</span><span id="line-157">        return Optional.of(apiRes);</span>
+<span class="source-line-no">158</span><span id="line-158">    }</span>
+<span class="source-line-no">159</span><span id="line-159"></span>
+<span class="source-line-no">160</span><span id="line-160">    /**</span>
+<span class="source-line-no">161</span><span id="line-161">     * Get an object from its metadata.</span>
+<span class="source-line-no">162</span><span id="line-162">     *</span>
+<span class="source-line-no">163</span><span id="line-163">     * @param &lt;T&gt; the generic type</span>
+<span class="source-line-no">164</span><span id="line-164">     * @param &lt;LT&gt; the generic type</span>
+<span class="source-line-no">165</span><span id="line-165">     * @param api the api</span>
+<span class="source-line-no">166</span><span id="line-166">     * @param meta the meta</span>
+<span class="source-line-no">167</span><span id="line-167">     * @return the object</span>
+<span class="source-line-no">168</span><span id="line-168">     */</span>
+<span class="source-line-no">169</span><span id="line-169">    @Deprecated</span>
+<span class="source-line-no">170</span><span id="line-170">    @SuppressWarnings("PMD.GenericsNaming")</span>
 <span class="source-line-no">171</span><span id="line-171">    public static &lt;T extends KubernetesObject, LT extends KubernetesListObject&gt;</span>
 <span class="source-line-no">172</span><span id="line-172">            Optional&lt;T&gt;</span>
 <span class="source-line-no">173</span><span id="line-173">            get(GenericKubernetesApi&lt;T, LT&gt; api, V1ObjectMeta meta) {</span>
@@ -202,86 +202,87 @@
 <span class="source-line-no">189</span><span id="line-189">     * @return the t</span>
 <span class="source-line-no">190</span><span id="line-190">     * @throws ApiException the api exception</span>
 <span class="source-line-no">191</span><span id="line-191">     */</span>
-<span class="source-line-no">192</span><span id="line-192">    public static &lt;T extends KubernetesObject, LT extends KubernetesListObject&gt;</span>
-<span class="source-line-no">193</span><span id="line-193">            T apply(GenericKubernetesApi&lt;T, LT&gt; api, T existing, String update)</span>
-<span class="source-line-no">194</span><span id="line-194">                    throws ApiException {</span>
-<span class="source-line-no">195</span><span id="line-195">        PatchOptions opts = new PatchOptions();</span>
-<span class="source-line-no">196</span><span id="line-196">        opts.setForce(true);</span>
-<span class="source-line-no">197</span><span id="line-197">        opts.setFieldManager("kubernetes-java-kubectl-apply");</span>
-<span class="source-line-no">198</span><span id="line-198">        var response = api.patch(existing.getMetadata().getNamespace(),</span>
-<span class="source-line-no">199</span><span id="line-199">            existing.getMetadata().getName(), V1Patch.PATCH_FORMAT_APPLY_YAML,</span>
-<span class="source-line-no">200</span><span id="line-200">            new V1Patch(update), opts).throwsApiException();</span>
-<span class="source-line-no">201</span><span id="line-201">        return response.getObject();</span>
-<span class="source-line-no">202</span><span id="line-202">    }</span>
-<span class="source-line-no">203</span><span id="line-203"></span>
-<span class="source-line-no">204</span><span id="line-204">    /**</span>
-<span class="source-line-no">205</span><span id="line-205">     * Create an object reference.</span>
-<span class="source-line-no">206</span><span id="line-206">     *</span>
-<span class="source-line-no">207</span><span id="line-207">     * @param object the object</span>
-<span class="source-line-no">208</span><span id="line-208">     * @return the v 1 object reference</span>
-<span class="source-line-no">209</span><span id="line-209">     */</span>
-<span class="source-line-no">210</span><span id="line-210">    public static V1ObjectReference</span>
-<span class="source-line-no">211</span><span id="line-211">            objectReference(KubernetesObject object) {</span>
-<span class="source-line-no">212</span><span id="line-212">        return new V1ObjectReference().apiVersion(object.getApiVersion())</span>
-<span class="source-line-no">213</span><span id="line-213">            .kind(object.getKind())</span>
-<span class="source-line-no">214</span><span id="line-214">            .namespace(object.getMetadata().getNamespace())</span>
-<span class="source-line-no">215</span><span id="line-215">            .name(object.getMetadata().getName())</span>
-<span class="source-line-no">216</span><span id="line-216">            .resourceVersion(object.getMetadata().getResourceVersion())</span>
-<span class="source-line-no">217</span><span id="line-217">            .uid(object.getMetadata().getUid());</span>
-<span class="source-line-no">218</span><span id="line-218">    }</span>
-<span class="source-line-no">219</span><span id="line-219"></span>
-<span class="source-line-no">220</span><span id="line-220">    /**</span>
-<span class="source-line-no">221</span><span id="line-221">     * Creates an event related to the object, adding reasonable defaults.</span>
-<span class="source-line-no">222</span><span id="line-222">     * </span>
-<span class="source-line-no">223</span><span id="line-223">     *   * If `kind` is not set, it is set to "Event".</span>
-<span class="source-line-no">224</span><span id="line-224">     *   * If `metadata.namespace` is not set, it is set </span>
-<span class="source-line-no">225</span><span id="line-225">     *     to the object's namespace.</span>
-<span class="source-line-no">226</span><span id="line-226">     *   * If neither `metadata.name` nor `matadata.generateName` are set,</span>
-<span class="source-line-no">227</span><span id="line-227">     *     set `generateName` to the object's name with a dash appended.</span>
-<span class="source-line-no">228</span><span id="line-228">     *   * If `reportingInstance` is not set, set it to the object's name.</span>
-<span class="source-line-no">229</span><span id="line-229">     *   * If `eventTime` is not set, set it to now.</span>
-<span class="source-line-no">230</span><span id="line-230">     *   * If `type` is not set, set it to "Normal"</span>
-<span class="source-line-no">231</span><span id="line-231">     *   * If `regarding` is not set, set it to the given object.</span>
-<span class="source-line-no">232</span><span id="line-232">     *</span>
-<span class="source-line-no">233</span><span id="line-233">     * @param client the client</span>
-<span class="source-line-no">234</span><span id="line-234">     * @param object the object</span>
-<span class="source-line-no">235</span><span id="line-235">     * @param event the event</span>
-<span class="source-line-no">236</span><span id="line-236">     * @throws ApiException the api exception</span>
-<span class="source-line-no">237</span><span id="line-237">     */</span>
-<span class="source-line-no">238</span><span id="line-238">    @SuppressWarnings("PMD.NPathComplexity")</span>
-<span class="source-line-no">239</span><span id="line-239">    public static void createEvent(ApiClient client,</span>
-<span class="source-line-no">240</span><span id="line-240">            KubernetesObject object, EventsV1Event event)</span>
-<span class="source-line-no">241</span><span id="line-241">            throws ApiException {</span>
-<span class="source-line-no">242</span><span id="line-242">        if (Strings.isNullOrEmpty(event.getKind())) {</span>
-<span class="source-line-no">243</span><span id="line-243">            event.kind("Event");</span>
-<span class="source-line-no">244</span><span id="line-244">        }</span>
-<span class="source-line-no">245</span><span id="line-245">        if (event.getMetadata() == null) {</span>
-<span class="source-line-no">246</span><span id="line-246">            event.metadata(new V1ObjectMeta());</span>
-<span class="source-line-no">247</span><span id="line-247">        }</span>
-<span class="source-line-no">248</span><span id="line-248">        if (Strings.isNullOrEmpty(event.getMetadata().getNamespace())) {</span>
-<span class="source-line-no">249</span><span id="line-249">            event.getMetadata().namespace(object.getMetadata().getNamespace());</span>
-<span class="source-line-no">250</span><span id="line-250">        }</span>
-<span class="source-line-no">251</span><span id="line-251">        if (Strings.isNullOrEmpty(event.getMetadata().getName())</span>
-<span class="source-line-no">252</span><span id="line-252">            &amp;&amp; Strings.isNullOrEmpty(event.getMetadata().getGenerateName())) {</span>
-<span class="source-line-no">253</span><span id="line-253">            event.getMetadata()</span>
-<span class="source-line-no">254</span><span id="line-254">                .generateName(object.getMetadata().getName() + "-");</span>
-<span class="source-line-no">255</span><span id="line-255">        }</span>
-<span class="source-line-no">256</span><span id="line-256">        if (Strings.isNullOrEmpty(event.getReportingInstance())) {</span>
-<span class="source-line-no">257</span><span id="line-257">            event.reportingInstance(object.getMetadata().getName());</span>
-<span class="source-line-no">258</span><span id="line-258">        }</span>
-<span class="source-line-no">259</span><span id="line-259">        if (event.getEventTime() == null) {</span>
-<span class="source-line-no">260</span><span id="line-260">            event.eventTime(OffsetDateTime.now());</span>
-<span class="source-line-no">261</span><span id="line-261">        }</span>
-<span class="source-line-no">262</span><span id="line-262">        if (Strings.isNullOrEmpty(event.getType())) {</span>
-<span class="source-line-no">263</span><span id="line-263">            event.type("Normal");</span>
-<span class="source-line-no">264</span><span id="line-264">        }</span>
-<span class="source-line-no">265</span><span id="line-265">        if (event.getRegarding() == null) {</span>
-<span class="source-line-no">266</span><span id="line-266">            event.regarding(objectReference(object));</span>
-<span class="source-line-no">267</span><span id="line-267">        }</span>
-<span class="source-line-no">268</span><span id="line-268">        new EventsV1Api(client).createNamespacedEvent(</span>
-<span class="source-line-no">269</span><span id="line-269">            object.getMetadata().getNamespace(), event, null, null, null, null);</span>
-<span class="source-line-no">270</span><span id="line-270">    }</span>
-<span class="source-line-no">271</span><span id="line-271">}</span>
+<span class="source-line-no">192</span><span id="line-192">    @SuppressWarnings("PMD.GenericsNaming")</span>
+<span class="source-line-no">193</span><span id="line-193">    public static &lt;T extends KubernetesObject, LT extends KubernetesListObject&gt;</span>
+<span class="source-line-no">194</span><span id="line-194">            T apply(GenericKubernetesApi&lt;T, LT&gt; api, T existing, String update)</span>
+<span class="source-line-no">195</span><span id="line-195">                    throws ApiException {</span>
+<span class="source-line-no">196</span><span id="line-196">        PatchOptions opts = new PatchOptions();</span>
+<span class="source-line-no">197</span><span id="line-197">        opts.setForce(true);</span>
+<span class="source-line-no">198</span><span id="line-198">        opts.setFieldManager("kubernetes-java-kubectl-apply");</span>
+<span class="source-line-no">199</span><span id="line-199">        var response = api.patch(existing.getMetadata().getNamespace(),</span>
+<span class="source-line-no">200</span><span id="line-200">            existing.getMetadata().getName(), V1Patch.PATCH_FORMAT_APPLY_YAML,</span>
+<span class="source-line-no">201</span><span id="line-201">            new V1Patch(update), opts).throwsApiException();</span>
+<span class="source-line-no">202</span><span id="line-202">        return response.getObject();</span>
+<span class="source-line-no">203</span><span id="line-203">    }</span>
+<span class="source-line-no">204</span><span id="line-204"></span>
+<span class="source-line-no">205</span><span id="line-205">    /**</span>
+<span class="source-line-no">206</span><span id="line-206">     * Create an object reference.</span>
+<span class="source-line-no">207</span><span id="line-207">     *</span>
+<span class="source-line-no">208</span><span id="line-208">     * @param object the object</span>
+<span class="source-line-no">209</span><span id="line-209">     * @return the v 1 object reference</span>
+<span class="source-line-no">210</span><span id="line-210">     */</span>
+<span class="source-line-no">211</span><span id="line-211">    public static V1ObjectReference</span>
+<span class="source-line-no">212</span><span id="line-212">            objectReference(KubernetesObject object) {</span>
+<span class="source-line-no">213</span><span id="line-213">        return new V1ObjectReference().apiVersion(object.getApiVersion())</span>
+<span class="source-line-no">214</span><span id="line-214">            .kind(object.getKind())</span>
+<span class="source-line-no">215</span><span id="line-215">            .namespace(object.getMetadata().getNamespace())</span>
+<span class="source-line-no">216</span><span id="line-216">            .name(object.getMetadata().getName())</span>
+<span class="source-line-no">217</span><span id="line-217">            .resourceVersion(object.getMetadata().getResourceVersion())</span>
+<span class="source-line-no">218</span><span id="line-218">            .uid(object.getMetadata().getUid());</span>
+<span class="source-line-no">219</span><span id="line-219">    }</span>
+<span class="source-line-no">220</span><span id="line-220"></span>
+<span class="source-line-no">221</span><span id="line-221">    /**</span>
+<span class="source-line-no">222</span><span id="line-222">     * Creates an event related to the object, adding reasonable defaults.</span>
+<span class="source-line-no">223</span><span id="line-223">     * </span>
+<span class="source-line-no">224</span><span id="line-224">     *   * If `kind` is not set, it is set to "Event".</span>
+<span class="source-line-no">225</span><span id="line-225">     *   * If `metadata.namespace` is not set, it is set </span>
+<span class="source-line-no">226</span><span id="line-226">     *     to the object's namespace.</span>
+<span class="source-line-no">227</span><span id="line-227">     *   * If neither `metadata.name` nor `matadata.generateName` are set,</span>
+<span class="source-line-no">228</span><span id="line-228">     *     set `generateName` to the object's name with a dash appended.</span>
+<span class="source-line-no">229</span><span id="line-229">     *   * If `reportingInstance` is not set, set it to the object's name.</span>
+<span class="source-line-no">230</span><span id="line-230">     *   * If `eventTime` is not set, set it to now.</span>
+<span class="source-line-no">231</span><span id="line-231">     *   * If `type` is not set, set it to "Normal"</span>
+<span class="source-line-no">232</span><span id="line-232">     *   * If `regarding` is not set, set it to the given object.</span>
+<span class="source-line-no">233</span><span id="line-233">     *</span>
+<span class="source-line-no">234</span><span id="line-234">     * @param client the client</span>
+<span class="source-line-no">235</span><span id="line-235">     * @param object the object</span>
+<span class="source-line-no">236</span><span id="line-236">     * @param event the event</span>
+<span class="source-line-no">237</span><span id="line-237">     * @throws ApiException the api exception</span>
+<span class="source-line-no">238</span><span id="line-238">     */</span>
+<span class="source-line-no">239</span><span id="line-239">    @SuppressWarnings("PMD.NPathComplexity")</span>
+<span class="source-line-no">240</span><span id="line-240">    public static void createEvent(ApiClient client,</span>
+<span class="source-line-no">241</span><span id="line-241">            KubernetesObject object, EventsV1Event event)</span>
+<span class="source-line-no">242</span><span id="line-242">            throws ApiException {</span>
+<span class="source-line-no">243</span><span id="line-243">        if (Strings.isNullOrEmpty(event.getKind())) {</span>
+<span class="source-line-no">244</span><span id="line-244">            event.kind("Event");</span>
+<span class="source-line-no">245</span><span id="line-245">        }</span>
+<span class="source-line-no">246</span><span id="line-246">        if (event.getMetadata() == null) {</span>
+<span class="source-line-no">247</span><span id="line-247">            event.metadata(new V1ObjectMeta());</span>
+<span class="source-line-no">248</span><span id="line-248">        }</span>
+<span class="source-line-no">249</span><span id="line-249">        if (Strings.isNullOrEmpty(event.getMetadata().getNamespace())) {</span>
+<span class="source-line-no">250</span><span id="line-250">            event.getMetadata().namespace(object.getMetadata().getNamespace());</span>
+<span class="source-line-no">251</span><span id="line-251">        }</span>
+<span class="source-line-no">252</span><span id="line-252">        if (Strings.isNullOrEmpty(event.getMetadata().getName())</span>
+<span class="source-line-no">253</span><span id="line-253">            &amp;&amp; Strings.isNullOrEmpty(event.getMetadata().getGenerateName())) {</span>
+<span class="source-line-no">254</span><span id="line-254">            event.getMetadata()</span>
+<span class="source-line-no">255</span><span id="line-255">                .generateName(object.getMetadata().getName() + "-");</span>
+<span class="source-line-no">256</span><span id="line-256">        }</span>
+<span class="source-line-no">257</span><span id="line-257">        if (Strings.isNullOrEmpty(event.getReportingInstance())) {</span>
+<span class="source-line-no">258</span><span id="line-258">            event.reportingInstance(object.getMetadata().getName());</span>
+<span class="source-line-no">259</span><span id="line-259">        }</span>
+<span class="source-line-no">260</span><span id="line-260">        if (event.getEventTime() == null) {</span>
+<span class="source-line-no">261</span><span id="line-261">            event.eventTime(OffsetDateTime.now());</span>
+<span class="source-line-no">262</span><span id="line-262">        }</span>
+<span class="source-line-no">263</span><span id="line-263">        if (Strings.isNullOrEmpty(event.getType())) {</span>
+<span class="source-line-no">264</span><span id="line-264">            event.type("Normal");</span>
+<span class="source-line-no">265</span><span id="line-265">        }</span>
+<span class="source-line-no">266</span><span id="line-266">        if (event.getRegarding() == null) {</span>
+<span class="source-line-no">267</span><span id="line-267">            event.regarding(objectReference(object));</span>
+<span class="source-line-no">268</span><span id="line-268">        }</span>
+<span class="source-line-no">269</span><span id="line-269">        new EventsV1Api(client).createNamespacedEvent(</span>
+<span class="source-line-no">270</span><span id="line-270">            object.getMetadata().getNamespace(), event, null, null, null, null);</span>
+<span class="source-line-no">271</span><span id="line-271">    }</span>
+<span class="source-line-no">272</span><span id="line-272">}</span>
 
 
 

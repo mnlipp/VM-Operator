@@ -122,21 +122,20 @@
 <span class="source-line-no">109</span><span id="line-109"></span>
 <span class="source-line-no">110</span><span id="line-110">    @Override</span>
 <span class="source-line-no">111</span><span id="line-111">    public String toString() {</span>
-<span class="source-line-no">112</span><span id="line-112">        StringBuilder builder = new StringBuilder();</span>
+<span class="source-line-no">112</span><span id="line-112">        StringBuilder builder = new StringBuilder(50);</span>
 <span class="source-line-no">113</span><span id="line-113">        builder.append(Components.objectName(this))</span>
 <span class="source-line-no">114</span><span id="line-114">            .append(" [").append(state).append(": ").append(reason);</span>
 <span class="source-line-no">115</span><span id="line-115">        if (failed) {</span>
 <span class="source-line-no">116</span><span id="line-116">            builder.append(" (failed)");</span>
 <span class="source-line-no">117</span><span id="line-117">        }</span>
 <span class="source-line-no">118</span><span id="line-118">        if (channels() != null) {</span>
-<span class="source-line-no">119</span><span id="line-119">            builder.append(", channels=");</span>
-<span class="source-line-no">120</span><span id="line-120">            builder.append(Channel.toString(channels()));</span>
-<span class="source-line-no">121</span><span id="line-121">        }</span>
-<span class="source-line-no">122</span><span id="line-122">        builder.append(']');</span>
-<span class="source-line-no">123</span><span id="line-123">        return builder.toString();</span>
-<span class="source-line-no">124</span><span id="line-124">    }</span>
-<span class="source-line-no">125</span><span id="line-125"></span>
-<span class="source-line-no">126</span><span id="line-126">}</span>
+<span class="source-line-no">119</span><span id="line-119">            builder.append(", channels=").append(Channel.toString(channels()));</span>
+<span class="source-line-no">120</span><span id="line-120">        }</span>
+<span class="source-line-no">121</span><span id="line-121">        builder.append(']');</span>
+<span class="source-line-no">122</span><span id="line-122">        return builder.toString();</span>
+<span class="source-line-no">123</span><span id="line-123">    }</span>
+<span class="source-line-no">124</span><span id="line-124"></span>
+<span class="source-line-no">125</span><span id="line-125">}</span>
 
 
 

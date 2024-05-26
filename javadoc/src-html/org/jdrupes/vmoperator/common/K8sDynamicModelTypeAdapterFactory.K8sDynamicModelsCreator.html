@@ -57,90 +57,91 @@
 <span class="source-line-no">044</span><span id="line-44">     * this factory</span>
 <span class="source-line-no">045</span><span id="line-45">     */</span>
 <span class="source-line-no">046</span><span id="line-46">    @SuppressWarnings("unchecked")</span>
-<span class="source-line-no">047</span><span id="line-47">    public &lt;T&gt; TypeAdapter&lt;T&gt; create(Gson gson, TypeToken&lt;T&gt; typeToken) {</span>
-<span class="source-line-no">048</span><span id="line-48">        if (TypeToken.get(K8sDynamicModel.class).equals(typeToken)) {</span>
-<span class="source-line-no">049</span><span id="line-49">            return (TypeAdapter&lt;T&gt;) (new K8sDynamicModelCreator(gson));</span>
-<span class="source-line-no">050</span><span id="line-50">        }</span>
-<span class="source-line-no">051</span><span id="line-51">        if (TypeToken.get(K8sDynamicModels.class).equals(typeToken)) {</span>
-<span class="source-line-no">052</span><span id="line-52">            return (TypeAdapter&lt;T&gt;) (new K8sDynamicModelsCreator(gson));</span>
-<span class="source-line-no">053</span><span id="line-53">        }</span>
-<span class="source-line-no">054</span><span id="line-54">        return null;</span>
-<span class="source-line-no">055</span><span id="line-55">    }</span>
-<span class="source-line-no">056</span><span id="line-56"></span>
-<span class="source-line-no">057</span><span id="line-57">    /**</span>
-<span class="source-line-no">058</span><span id="line-58">     * The Class K8sDynamicModelCreator.</span>
-<span class="source-line-no">059</span><span id="line-59">     */</span>
-<span class="source-line-no">060</span><span id="line-60">    /* default */ class K8sDynamicModelCreator</span>
-<span class="source-line-no">061</span><span id="line-61">            extends TypeAdapter&lt;K8sDynamicModel&gt;</span>
-<span class="source-line-no">062</span><span id="line-62">            implements InstanceCreator&lt;K8sDynamicModel&gt; {</span>
-<span class="source-line-no">063</span><span id="line-63">        private final Gson delegate;</span>
-<span class="source-line-no">064</span><span id="line-64"></span>
-<span class="source-line-no">065</span><span id="line-65">        /**</span>
-<span class="source-line-no">066</span><span id="line-66">         * Instantiates a new object state creator.</span>
-<span class="source-line-no">067</span><span id="line-67">         *</span>
-<span class="source-line-no">068</span><span id="line-68">         * @param delegate the delegate</span>
-<span class="source-line-no">069</span><span id="line-69">         */</span>
-<span class="source-line-no">070</span><span id="line-70">        public K8sDynamicModelCreator(Gson delegate) {</span>
-<span class="source-line-no">071</span><span id="line-71">            this.delegate = delegate;</span>
-<span class="source-line-no">072</span><span id="line-72">        }</span>
-<span class="source-line-no">073</span><span id="line-73"></span>
-<span class="source-line-no">074</span><span id="line-74">        @Override</span>
-<span class="source-line-no">075</span><span id="line-75">        public K8sDynamicModel createInstance(Type type) {</span>
-<span class="source-line-no">076</span><span id="line-76">            return new K8sDynamicModel(delegate, null);</span>
-<span class="source-line-no">077</span><span id="line-77">        }</span>
-<span class="source-line-no">078</span><span id="line-78"></span>
-<span class="source-line-no">079</span><span id="line-79">        @Override</span>
-<span class="source-line-no">080</span><span id="line-80">        public void write(JsonWriter jsonWriter, K8sDynamicModel state)</span>
-<span class="source-line-no">081</span><span id="line-81">                throws IOException {</span>
-<span class="source-line-no">082</span><span id="line-82">            jsonWriter.jsonValue(delegate.toJson(state.data()));</span>
-<span class="source-line-no">083</span><span id="line-83">        }</span>
-<span class="source-line-no">084</span><span id="line-84"></span>
-<span class="source-line-no">085</span><span id="line-85">        @Override</span>
-<span class="source-line-no">086</span><span id="line-86">        public K8sDynamicModel read(JsonReader jsonReader)</span>
-<span class="source-line-no">087</span><span id="line-87">                throws IOException {</span>
-<span class="source-line-no">088</span><span id="line-88">            return new K8sDynamicModel(delegate,</span>
-<span class="source-line-no">089</span><span id="line-89">                delegate.fromJson(jsonReader, JsonObject.class));</span>
-<span class="source-line-no">090</span><span id="line-90">        }</span>
-<span class="source-line-no">091</span><span id="line-91">    }</span>
-<span class="source-line-no">092</span><span id="line-92"></span>
-<span class="source-line-no">093</span><span id="line-93">    /**</span>
-<span class="source-line-no">094</span><span id="line-94">     * The Class K8sDynamicModelsCreator.</span>
-<span class="source-line-no">095</span><span id="line-95">     */</span>
-<span class="source-line-no">096</span><span id="line-96">    /* default */class K8sDynamicModelsCreator</span>
-<span class="source-line-no">097</span><span id="line-97">            extends TypeAdapter&lt;K8sDynamicModels&gt;</span>
-<span class="source-line-no">098</span><span id="line-98">            implements InstanceCreator&lt;K8sDynamicModels&gt; {</span>
-<span class="source-line-no">099</span><span id="line-99"></span>
-<span class="source-line-no">100</span><span id="line-100">        private final Gson delegate;</span>
-<span class="source-line-no">101</span><span id="line-101"></span>
-<span class="source-line-no">102</span><span id="line-102">        /**</span>
-<span class="source-line-no">103</span><span id="line-103">         * Instantiates a new object states creator.</span>
-<span class="source-line-no">104</span><span id="line-104">         *</span>
-<span class="source-line-no">105</span><span id="line-105">         * @param delegate the delegate</span>
-<span class="source-line-no">106</span><span id="line-106">         */</span>
-<span class="source-line-no">107</span><span id="line-107">        public K8sDynamicModelsCreator(Gson delegate) {</span>
-<span class="source-line-no">108</span><span id="line-108">            this.delegate = delegate;</span>
-<span class="source-line-no">109</span><span id="line-109">        }</span>
-<span class="source-line-no">110</span><span id="line-110"></span>
-<span class="source-line-no">111</span><span id="line-111">        @Override</span>
-<span class="source-line-no">112</span><span id="line-112">        public K8sDynamicModels createInstance(Type type) {</span>
-<span class="source-line-no">113</span><span id="line-113">            return new K8sDynamicModels(delegate, null);</span>
-<span class="source-line-no">114</span><span id="line-114">        }</span>
-<span class="source-line-no">115</span><span id="line-115"></span>
-<span class="source-line-no">116</span><span id="line-116">        @Override</span>
-<span class="source-line-no">117</span><span id="line-117">        public void write(JsonWriter jsonWriter, K8sDynamicModels states)</span>
-<span class="source-line-no">118</span><span id="line-118">                throws IOException {</span>
-<span class="source-line-no">119</span><span id="line-119">            jsonWriter.jsonValue(delegate.toJson(states.data()));</span>
-<span class="source-line-no">120</span><span id="line-120">        }</span>
-<span class="source-line-no">121</span><span id="line-121"></span>
-<span class="source-line-no">122</span><span id="line-122">        @Override</span>
-<span class="source-line-no">123</span><span id="line-123">        public K8sDynamicModels read(JsonReader jsonReader)</span>
-<span class="source-line-no">124</span><span id="line-124">                throws IOException {</span>
-<span class="source-line-no">125</span><span id="line-125">            return new K8sDynamicModels(delegate,</span>
-<span class="source-line-no">126</span><span id="line-126">                delegate.fromJson(jsonReader, JsonObject.class));</span>
-<span class="source-line-no">127</span><span id="line-127">        }</span>
-<span class="source-line-no">128</span><span id="line-128">    }</span>
-<span class="source-line-no">129</span><span id="line-129"></span>
-<span class="source-line-no">130</span><span id="line-130">}</span>
+<span class="source-line-no">047</span><span id="line-47">    @Override</span>
+<span class="source-line-no">048</span><span id="line-48">    public &lt;T&gt; TypeAdapter&lt;T&gt; create(Gson gson, TypeToken&lt;T&gt; typeToken) {</span>
+<span class="source-line-no">049</span><span id="line-49">        if (TypeToken.get(K8sDynamicModel.class).equals(typeToken)) {</span>
+<span class="source-line-no">050</span><span id="line-50">            return (TypeAdapter&lt;T&gt;) new K8sDynamicModelCreator(gson);</span>
+<span class="source-line-no">051</span><span id="line-51">        }</span>
+<span class="source-line-no">052</span><span id="line-52">        if (TypeToken.get(K8sDynamicModels.class).equals(typeToken)) {</span>
+<span class="source-line-no">053</span><span id="line-53">            return (TypeAdapter&lt;T&gt;) new K8sDynamicModelsCreator(gson);</span>
+<span class="source-line-no">054</span><span id="line-54">        }</span>
+<span class="source-line-no">055</span><span id="line-55">        return null;</span>
+<span class="source-line-no">056</span><span id="line-56">    }</span>
+<span class="source-line-no">057</span><span id="line-57"></span>
+<span class="source-line-no">058</span><span id="line-58">    /**</span>
+<span class="source-line-no">059</span><span id="line-59">     * The Class K8sDynamicModelCreator.</span>
+<span class="source-line-no">060</span><span id="line-60">     */</span>
+<span class="source-line-no">061</span><span id="line-61">    /* default */ class K8sDynamicModelCreator</span>
+<span class="source-line-no">062</span><span id="line-62">            extends TypeAdapter&lt;K8sDynamicModel&gt;</span>
+<span class="source-line-no">063</span><span id="line-63">            implements InstanceCreator&lt;K8sDynamicModel&gt; {</span>
+<span class="source-line-no">064</span><span id="line-64">        private final Gson delegate;</span>
+<span class="source-line-no">065</span><span id="line-65"></span>
+<span class="source-line-no">066</span><span id="line-66">        /**</span>
+<span class="source-line-no">067</span><span id="line-67">         * Instantiates a new object state creator.</span>
+<span class="source-line-no">068</span><span id="line-68">         *</span>
+<span class="source-line-no">069</span><span id="line-69">         * @param delegate the delegate</span>
+<span class="source-line-no">070</span><span id="line-70">         */</span>
+<span class="source-line-no">071</span><span id="line-71">        public K8sDynamicModelCreator(Gson delegate) {</span>
+<span class="source-line-no">072</span><span id="line-72">            this.delegate = delegate;</span>
+<span class="source-line-no">073</span><span id="line-73">        }</span>
+<span class="source-line-no">074</span><span id="line-74"></span>
+<span class="source-line-no">075</span><span id="line-75">        @Override</span>
+<span class="source-line-no">076</span><span id="line-76">        public K8sDynamicModel createInstance(Type type) {</span>
+<span class="source-line-no">077</span><span id="line-77">            return new K8sDynamicModel(delegate, null);</span>
+<span class="source-line-no">078</span><span id="line-78">        }</span>
+<span class="source-line-no">079</span><span id="line-79"></span>
+<span class="source-line-no">080</span><span id="line-80">        @Override</span>
+<span class="source-line-no">081</span><span id="line-81">        public void write(JsonWriter jsonWriter, K8sDynamicModel state)</span>
+<span class="source-line-no">082</span><span id="line-82">                throws IOException {</span>
+<span class="source-line-no">083</span><span id="line-83">            jsonWriter.jsonValue(delegate.toJson(state.data()));</span>
+<span class="source-line-no">084</span><span id="line-84">        }</span>
+<span class="source-line-no">085</span><span id="line-85"></span>
+<span class="source-line-no">086</span><span id="line-86">        @Override</span>
+<span class="source-line-no">087</span><span id="line-87">        public K8sDynamicModel read(JsonReader jsonReader)</span>
+<span class="source-line-no">088</span><span id="line-88">                throws IOException {</span>
+<span class="source-line-no">089</span><span id="line-89">            return new K8sDynamicModel(delegate,</span>
+<span class="source-line-no">090</span><span id="line-90">                delegate.fromJson(jsonReader, JsonObject.class));</span>
+<span class="source-line-no">091</span><span id="line-91">        }</span>
+<span class="source-line-no">092</span><span id="line-92">    }</span>
+<span class="source-line-no">093</span><span id="line-93"></span>
+<span class="source-line-no">094</span><span id="line-94">    /**</span>
+<span class="source-line-no">095</span><span id="line-95">     * The Class K8sDynamicModelsCreator.</span>
+<span class="source-line-no">096</span><span id="line-96">     */</span>
+<span class="source-line-no">097</span><span id="line-97">    /* default */class K8sDynamicModelsCreator</span>
+<span class="source-line-no">098</span><span id="line-98">            extends TypeAdapter&lt;K8sDynamicModels&gt;</span>
+<span class="source-line-no">099</span><span id="line-99">            implements InstanceCreator&lt;K8sDynamicModels&gt; {</span>
+<span class="source-line-no">100</span><span id="line-100"></span>
+<span class="source-line-no">101</span><span id="line-101">        private final Gson delegate;</span>
+<span class="source-line-no">102</span><span id="line-102"></span>
+<span class="source-line-no">103</span><span id="line-103">        /**</span>
+<span class="source-line-no">104</span><span id="line-104">         * Instantiates a new object states creator.</span>
+<span class="source-line-no">105</span><span id="line-105">         *</span>
+<span class="source-line-no">106</span><span id="line-106">         * @param delegate the delegate</span>
+<span class="source-line-no">107</span><span id="line-107">         */</span>
+<span class="source-line-no">108</span><span id="line-108">        public K8sDynamicModelsCreator(Gson delegate) {</span>
+<span class="source-line-no">109</span><span id="line-109">            this.delegate = delegate;</span>
+<span class="source-line-no">110</span><span id="line-110">        }</span>
+<span class="source-line-no">111</span><span id="line-111"></span>
+<span class="source-line-no">112</span><span id="line-112">        @Override</span>
+<span class="source-line-no">113</span><span id="line-113">        public K8sDynamicModels createInstance(Type type) {</span>
+<span class="source-line-no">114</span><span id="line-114">            return new K8sDynamicModels(delegate, null);</span>
+<span class="source-line-no">115</span><span id="line-115">        }</span>
+<span class="source-line-no">116</span><span id="line-116"></span>
+<span class="source-line-no">117</span><span id="line-117">        @Override</span>
+<span class="source-line-no">118</span><span id="line-118">        public void write(JsonWriter jsonWriter, K8sDynamicModels states)</span>
+<span class="source-line-no">119</span><span id="line-119">                throws IOException {</span>
+<span class="source-line-no">120</span><span id="line-120">            jsonWriter.jsonValue(delegate.toJson(states.data()));</span>
+<span class="source-line-no">121</span><span id="line-121">        }</span>
+<span class="source-line-no">122</span><span id="line-122"></span>
+<span class="source-line-no">123</span><span id="line-123">        @Override</span>
+<span class="source-line-no">124</span><span id="line-124">        public K8sDynamicModels read(JsonReader jsonReader)</span>
+<span class="source-line-no">125</span><span id="line-125">                throws IOException {</span>
+<span class="source-line-no">126</span><span id="line-126">            return new K8sDynamicModels(delegate,</span>
+<span class="source-line-no">127</span><span id="line-127">                delegate.fromJson(jsonReader, JsonObject.class));</span>
+<span class="source-line-no">128</span><span id="line-128">        }</span>
+<span class="source-line-no">129</span><span id="line-129">    }</span>
+<span class="source-line-no">130</span><span id="line-130"></span>
+<span class="source-line-no">131</span><span id="line-131">}</span>
 
 
 

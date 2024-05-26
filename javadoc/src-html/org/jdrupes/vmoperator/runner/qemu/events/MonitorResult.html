@@ -165,13 +165,12 @@
 <span class="source-line-no">152</span><span id="line-152">        builder.append(Components.objectName(this))</span>
 <span class="source-line-no">153</span><span id="line-153">            .append(" [").append(executed).append(", ").append(successful());</span>
 <span class="source-line-no">154</span><span id="line-154">        if (channels() != null) {</span>
-<span class="source-line-no">155</span><span id="line-155">            builder.append(", channels=");</span>
-<span class="source-line-no">156</span><span id="line-156">            builder.append(Channel.toString(channels()));</span>
-<span class="source-line-no">157</span><span id="line-157">        }</span>
-<span class="source-line-no">158</span><span id="line-158">        builder.append(']');</span>
-<span class="source-line-no">159</span><span id="line-159">        return builder.toString();</span>
-<span class="source-line-no">160</span><span id="line-160">    }</span>
-<span class="source-line-no">161</span><span id="line-161">}</span>
+<span class="source-line-no">155</span><span id="line-155">            builder.append(", channels=").append(Channel.toString(channels()));</span>
+<span class="source-line-no">156</span><span id="line-156">        }</span>
+<span class="source-line-no">157</span><span id="line-157">        builder.append(']');</span>
+<span class="source-line-no">158</span><span id="line-158">        return builder.toString();</span>
+<span class="source-line-no">159</span><span id="line-159">    }</span>
+<span class="source-line-no">160</span><span id="line-160">}</span>
 
 
 
