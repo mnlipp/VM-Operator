@@ -370,79 +370,101 @@
 <span class="source-line-no">357</span><span id="line-357">            logger.severe(() -&gt; "No port defined for display of " + vmName);</span>
 <span class="source-line-no">358</span><span id="line-358">            return;</span>
 <span class="source-line-no">359</span><span id="line-359">        }</span>
-<span class="source-line-no">360</span><span id="line-360">        StringBuffer data = new StringBuffer(50)</span>
-<span class="source-line-no">361</span><span id="line-361">            .append("[virt-viewer]\ntype=spice\nhost=")</span>
-<span class="source-line-no">362</span><span id="line-362">            .append(addr.get().getHostAddress()).append("\nport=")</span>
-<span class="source-line-no">363</span><span id="line-363">            .append(Integer.toString(port.get().getAsInt())).append('\n');</span>
-<span class="source-line-no">364</span><span id="line-364">        pwQuery.password().ifPresent(p -&gt; {</span>
-<span class="source-line-no">365</span><span id="line-365">            data.append("password=").append(p).append('\n');</span>
-<span class="source-line-no">366</span><span id="line-366">        });</span>
-<span class="source-line-no">367</span><span id="line-367">        connection.respond(new NotifyConletView(type(),</span>
-<span class="source-line-no">368</span><span id="line-368">            model.getConletId(), "openConsole", "application/x-virt-viewer",</span>
-<span class="source-line-no">369</span><span id="line-369">            Base64.getEncoder().encodeToString(data.toString().getBytes())));</span>
-<span class="source-line-no">370</span><span id="line-370">    }</span>
-<span class="source-line-no">371</span><span id="line-371"></span>
-<span class="source-line-no">372</span><span id="line-372">    private Optional&lt;InetAddress&gt; displayIp(K8sDynamicModel vmDef) {</span>
-<span class="source-line-no">373</span><span id="line-373">        var addrs = GsonPtr.to(vmDef.data()).getAsListOf(JsonPrimitive.class,</span>
-<span class="source-line-no">374</span><span id="line-374">            "nodeAddresses").stream().map(JsonPrimitive::getAsString)</span>
-<span class="source-line-no">375</span><span id="line-375">            .map(a -&gt; {</span>
-<span class="source-line-no">376</span><span id="line-376">                try {</span>
-<span class="source-line-no">377</span><span id="line-377">                    return InetAddress.getByName(a);</span>
-<span class="source-line-no">378</span><span id="line-378">                } catch (UnknownHostException e) {</span>
-<span class="source-line-no">379</span><span id="line-379">                    logger.warning(() -&gt; "Invalid IP address: " + a);</span>
-<span class="source-line-no">380</span><span id="line-380">                    return null;</span>
-<span class="source-line-no">381</span><span id="line-381">                }</span>
-<span class="source-line-no">382</span><span id="line-382">            }).filter(a -&gt; a != null).toList();</span>
-<span class="source-line-no">383</span><span id="line-383">        logger.fine(() -&gt; "Known IP addresses for "</span>
-<span class="source-line-no">384</span><span id="line-384">            + vmDef.getMetadata().getName() + ": " + addrs);</span>
-<span class="source-line-no">385</span><span id="line-385">        return addrs.stream()</span>
-<span class="source-line-no">386</span><span id="line-386">            .filter(a -&gt; preferredIpVersion.isAssignableFrom(a.getClass()))</span>
-<span class="source-line-no">387</span><span id="line-387">            .findFirst().or(() -&gt; addrs.stream().findFirst());</span>
-<span class="source-line-no">388</span><span id="line-388">    }</span>
-<span class="source-line-no">389</span><span id="line-389"></span>
-<span class="source-line-no">390</span><span id="line-390">    @Override</span>
-<span class="source-line-no">391</span><span id="line-391">    protected boolean doSetLocale(SetLocale event, ConsoleConnection channel,</span>
-<span class="source-line-no">392</span><span id="line-392">            String conletId) throws Exception {</span>
-<span class="source-line-no">393</span><span id="line-393">        return true;</span>
-<span class="source-line-no">394</span><span id="line-394">    }</span>
-<span class="source-line-no">395</span><span id="line-395"></span>
-<span class="source-line-no">396</span><span id="line-396">    /**</span>
-<span class="source-line-no">397</span><span id="line-397">     * The Class VmsModel.</span>
-<span class="source-line-no">398</span><span id="line-398">     */</span>
-<span class="source-line-no">399</span><span id="line-399">    public static class ViewerModel extends ConletBaseModel {</span>
-<span class="source-line-no">400</span><span id="line-400"></span>
-<span class="source-line-no">401</span><span id="line-401">        private String vmName;</span>
-<span class="source-line-no">402</span><span id="line-402"></span>
-<span class="source-line-no">403</span><span id="line-403">        /**</span>
-<span class="source-line-no">404</span><span id="line-404">         * Instantiates a new vms model.</span>
-<span class="source-line-no">405</span><span id="line-405">         *</span>
-<span class="source-line-no">406</span><span id="line-406">         * @param conletId the conlet id</span>
-<span class="source-line-no">407</span><span id="line-407">         */</span>
-<span class="source-line-no">408</span><span id="line-408">        public ViewerModel(@JsonProperty("conletId") String conletId) {</span>
-<span class="source-line-no">409</span><span id="line-409">            super(conletId);</span>
-<span class="source-line-no">410</span><span id="line-410">        }</span>
+<span class="source-line-no">360</span><span id="line-360">        var proxyUrl = GsonPtr.to(vmDef.data()).get(JsonPrimitive.class, "spec",</span>
+<span class="source-line-no">361</span><span id="line-361">            "vm", "display", "spice", "proxyUrl");</span>
+<span class="source-line-no">362</span><span id="line-362">        StringBuffer data = new StringBuffer(100)</span>
+<span class="source-line-no">363</span><span id="line-363">            .append("[virt-viewer]\ntype=spice\nhost=")</span>
+<span class="source-line-no">364</span><span id="line-364">            .append(addr.get().getHostAddress()).append("\nport=")</span>
+<span class="source-line-no">365</span><span id="line-365">            .append(Integer.toString(port.get().getAsInt())).append('\n');</span>
+<span class="source-line-no">366</span><span id="line-366">        pwQuery.password().ifPresent(p -&gt; {</span>
+<span class="source-line-no">367</span><span id="line-367">            data.append("password=").append(p).append('\n');</span>
+<span class="source-line-no">368</span><span id="line-368">        });</span>
+<span class="source-line-no">369</span><span id="line-369">        proxyUrl.map(JsonPrimitive::getAsString).ifPresent(u -&gt; {</span>
+<span class="source-line-no">370</span><span id="line-370">            if (!Strings.isNullOrEmpty(u)) {</span>
+<span class="source-line-no">371</span><span id="line-371">                data.append("proxy=").append(u).append('\n');</span>
+<span class="source-line-no">372</span><span id="line-372">            }</span>
+<span class="source-line-no">373</span><span id="line-373">        });</span>
+<span class="source-line-no">374</span><span id="line-374">        connection.respond(new NotifyConletView(type(),</span>
+<span class="source-line-no">375</span><span id="line-375">            model.getConletId(), "openConsole", "application/x-virt-viewer",</span>
+<span class="source-line-no">376</span><span id="line-376">            Base64.getEncoder().encodeToString(data.toString().getBytes())));</span>
+<span class="source-line-no">377</span><span id="line-377">    }</span>
+<span class="source-line-no">378</span><span id="line-378"></span>
+<span class="source-line-no">379</span><span id="line-379">    private Optional&lt;InetAddress&gt; displayIp(K8sDynamicModel vmDef) {</span>
+<span class="source-line-no">380</span><span id="line-380">        var server = GsonPtr.to(vmDef.data()).get(JsonPrimitive.class, "spec",</span>
+<span class="source-line-no">381</span><span id="line-381">            "vm", "display", "spice", "server");</span>
+<span class="source-line-no">382</span><span id="line-382">        if (server.isPresent()) {</span>
+<span class="source-line-no">383</span><span id="line-383">            var srv = server.get().getAsString();</span>
+<span class="source-line-no">384</span><span id="line-384">            try {</span>
+<span class="source-line-no">385</span><span id="line-385">                var addr = InetAddress.getByName(srv);</span>
+<span class="source-line-no">386</span><span id="line-386">                logger.fine(() -&gt; "Using IP address from CRD for "</span>
+<span class="source-line-no">387</span><span id="line-387">                    + vmDef.getMetadata().getName() + ": " + addr);</span>
+<span class="source-line-no">388</span><span id="line-388">                return Optional.of(addr);</span>
+<span class="source-line-no">389</span><span id="line-389">            } catch (UnknownHostException e) {</span>
+<span class="source-line-no">390</span><span id="line-390">                logger.log(Level.SEVERE, e, () -&gt; "Invalid server address "</span>
+<span class="source-line-no">391</span><span id="line-391">                    + srv + ": " + e.getMessage());</span>
+<span class="source-line-no">392</span><span id="line-392">                return Optional.empty();</span>
+<span class="source-line-no">393</span><span id="line-393">            }</span>
+<span class="source-line-no">394</span><span id="line-394">        }</span>
+<span class="source-line-no">395</span><span id="line-395">        var addrs = GsonPtr.to(vmDef.data()).getAsListOf(JsonPrimitive.class,</span>
+<span class="source-line-no">396</span><span id="line-396">            "nodeAddresses").stream().map(JsonPrimitive::getAsString)</span>
+<span class="source-line-no">397</span><span id="line-397">            .map(a -&gt; {</span>
+<span class="source-line-no">398</span><span id="line-398">                try {</span>
+<span class="source-line-no">399</span><span id="line-399">                    return InetAddress.getByName(a);</span>
+<span class="source-line-no">400</span><span id="line-400">                } catch (UnknownHostException e) {</span>
+<span class="source-line-no">401</span><span id="line-401">                    logger.warning(() -&gt; "Invalid IP address: " + a);</span>
+<span class="source-line-no">402</span><span id="line-402">                    return null;</span>
+<span class="source-line-no">403</span><span id="line-403">                }</span>
+<span class="source-line-no">404</span><span id="line-404">            }).filter(a -&gt; a != null).toList();</span>
+<span class="source-line-no">405</span><span id="line-405">        logger.fine(() -&gt; "Known IP addresses for "</span>
+<span class="source-line-no">406</span><span id="line-406">            + vmDef.getMetadata().getName() + ": " + addrs);</span>
+<span class="source-line-no">407</span><span id="line-407">        return addrs.stream()</span>
+<span class="source-line-no">408</span><span id="line-408">            .filter(a -&gt; preferredIpVersion.isAssignableFrom(a.getClass()))</span>
+<span class="source-line-no">409</span><span id="line-409">            .findFirst().or(() -&gt; addrs.stream().findFirst());</span>
+<span class="source-line-no">410</span><span id="line-410">    }</span>
 <span class="source-line-no">411</span><span id="line-411"></span>
-<span class="source-line-no">412</span><span id="line-412">        /**</span>
-<span class="source-line-no">413</span><span id="line-413">         * Gets the vm name.</span>
-<span class="source-line-no">414</span><span id="line-414">         *</span>
-<span class="source-line-no">415</span><span id="line-415">         * @return the vmName</span>
-<span class="source-line-no">416</span><span id="line-416">         */</span>
-<span class="source-line-no">417</span><span id="line-417">        @JsonGetter("vmName")</span>
-<span class="source-line-no">418</span><span id="line-418">        public String vmName() {</span>
-<span class="source-line-no">419</span><span id="line-419">            return vmName;</span>
-<span class="source-line-no">420</span><span id="line-420">        }</span>
-<span class="source-line-no">421</span><span id="line-421"></span>
-<span class="source-line-no">422</span><span id="line-422">        /**</span>
-<span class="source-line-no">423</span><span id="line-423">         * Sets the vm name.</span>
-<span class="source-line-no">424</span><span id="line-424">         *</span>
-<span class="source-line-no">425</span><span id="line-425">         * @param vmName the vmName to set</span>
-<span class="source-line-no">426</span><span id="line-426">         */</span>
-<span class="source-line-no">427</span><span id="line-427">        public void setVmName(String vmName) {</span>
-<span class="source-line-no">428</span><span id="line-428">            this.vmName = vmName;</span>
-<span class="source-line-no">429</span><span id="line-429">        }</span>
-<span class="source-line-no">430</span><span id="line-430"></span>
-<span class="source-line-no">431</span><span id="line-431">    }</span>
-<span class="source-line-no">432</span><span id="line-432">}</span>
+<span class="source-line-no">412</span><span id="line-412">    @Override</span>
+<span class="source-line-no">413</span><span id="line-413">    protected boolean doSetLocale(SetLocale event, ConsoleConnection channel,</span>
+<span class="source-line-no">414</span><span id="line-414">            String conletId) throws Exception {</span>
+<span class="source-line-no">415</span><span id="line-415">        return true;</span>
+<span class="source-line-no">416</span><span id="line-416">    }</span>
+<span class="source-line-no">417</span><span id="line-417"></span>
+<span class="source-line-no">418</span><span id="line-418">    /**</span>
+<span class="source-line-no">419</span><span id="line-419">     * The Class VmsModel.</span>
+<span class="source-line-no">420</span><span id="line-420">     */</span>
+<span class="source-line-no">421</span><span id="line-421">    public static class ViewerModel extends ConletBaseModel {</span>
+<span class="source-line-no">422</span><span id="line-422"></span>
+<span class="source-line-no">423</span><span id="line-423">        private String vmName;</span>
+<span class="source-line-no">424</span><span id="line-424"></span>
+<span class="source-line-no">425</span><span id="line-425">        /**</span>
+<span class="source-line-no">426</span><span id="line-426">         * Instantiates a new vms model.</span>
+<span class="source-line-no">427</span><span id="line-427">         *</span>
+<span class="source-line-no">428</span><span id="line-428">         * @param conletId the conlet id</span>
+<span class="source-line-no">429</span><span id="line-429">         */</span>
+<span class="source-line-no">430</span><span id="line-430">        public ViewerModel(@JsonProperty("conletId") String conletId) {</span>
+<span class="source-line-no">431</span><span id="line-431">            super(conletId);</span>
+<span class="source-line-no">432</span><span id="line-432">        }</span>
+<span class="source-line-no">433</span><span id="line-433"></span>
+<span class="source-line-no">434</span><span id="line-434">        /**</span>
+<span class="source-line-no">435</span><span id="line-435">         * Gets the vm name.</span>
+<span class="source-line-no">436</span><span id="line-436">         *</span>
+<span class="source-line-no">437</span><span id="line-437">         * @return the vmName</span>
+<span class="source-line-no">438</span><span id="line-438">         */</span>
+<span class="source-line-no">439</span><span id="line-439">        @JsonGetter("vmName")</span>
+<span class="source-line-no">440</span><span id="line-440">        public String vmName() {</span>
+<span class="source-line-no">441</span><span id="line-441">            return vmName;</span>
+<span class="source-line-no">442</span><span id="line-442">        }</span>
+<span class="source-line-no">443</span><span id="line-443"></span>
+<span class="source-line-no">444</span><span id="line-444">        /**</span>
+<span class="source-line-no">445</span><span id="line-445">         * Sets the vm name.</span>
+<span class="source-line-no">446</span><span id="line-446">         *</span>
+<span class="source-line-no">447</span><span id="line-447">         * @param vmName the vmName to set</span>
+<span class="source-line-no">448</span><span id="line-448">         */</span>
+<span class="source-line-no">449</span><span id="line-449">        public void setVmName(String vmName) {</span>
+<span class="source-line-no">450</span><span id="line-450">            this.vmName = vmName;</span>
+<span class="source-line-no">451</span><span id="line-451">        }</span>
+<span class="source-line-no">452</span><span id="line-452"></span>
+<span class="source-line-no">453</span><span id="line-453">    }</span>
+<span class="source-line-no">454</span><span id="line-454">}</span>
 
 
 
