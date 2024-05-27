@@ -111,7 +111,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
             .list(newCm.getMetadata().getNamespace(), listOpts).getObject();
 
         // If the VM is being created, the pod may not exist yet.
-        if (pods == null || pods.getItems().size() == 0) {
+        if (pods == null || pods.getItems().isEmpty()) {
             return;
         }
         var pod = pods.getItems().get(0);

@@ -48,7 +48,8 @@ import okhttp3.Response;
  * A client with some additional properties.
  */
 @SuppressWarnings({ "PMD.ExcessivePublicCount", "PMD.TooManyMethods",
-    "PMD.LinguisticNaming", "checkstyle:LineLength" })
+    "PMD.LinguisticNaming", "checkstyle:LineLength",
+    "PMD.CouplingBetweenObjects", "PMD.GodClass" })
 public class K8sClient extends ApiClient {
 
     private ApiClient apiClient;
@@ -96,381 +97,510 @@ public class K8sClient extends ApiClient {
     }
 
     /**
-     * @return
+     * Gets the base path.
+     *
+     * @return the base path
      * @see ApiClient#getBasePath()
      */
+    @Override
     public String getBasePath() {
         return apiClient().getBasePath();
     }
 
     /**
-     * @param basePath
-     * @return
+     * Sets the base path.
+     *
+     * @param basePath the base path
+     * @return the api client
      * @see ApiClient#setBasePath(java.lang.String)
      */
+    @Override
     public ApiClient setBasePath(String basePath) {
         return apiClient().setBasePath(basePath);
     }
 
     /**
-     * @return
+     * Gets the http client.
+     *
+     * @return the http client
      * @see ApiClient#getHttpClient()
      */
+    @Override
     public OkHttpClient getHttpClient() {
         return apiClient().getHttpClient();
     }
 
     /**
-     * @param newHttpClient
-     * @return
+     * Sets the http client.
+     *
+     * @param newHttpClient the new http client
+     * @return the api client
      * @see ApiClient#setHttpClient(okhttp3.OkHttpClient)
      */
+    @Override
     public ApiClient setHttpClient(OkHttpClient newHttpClient) {
         return apiClient().setHttpClient(newHttpClient);
     }
 
     /**
-     * @return
+     * Gets the json.
+     *
+     * @return the json
      * @see ApiClient#getJSON()
      */
     @SuppressWarnings("abbreviationAsWordInName")
+    @Override
     public JSON getJSON() {
         return apiClient().getJSON();
     }
 
     /**
-     * @param json
-     * @return
+     * Sets the JSON.
+     *
+     * @param json the json
+     * @return the api client
      * @see ApiClient#setJSON(io.kubernetes.client.openapi.JSON)
      */
     @SuppressWarnings("abbreviationAsWordInName")
+    @Override
     public ApiClient setJSON(JSON json) {
         return apiClient().setJSON(json);
     }
 
     /**
-     * @return
+     * Checks if is verifying ssl.
+     *
+     * @return true, if is verifying ssl
      * @see ApiClient#isVerifyingSsl()
      */
+    @Override
     public boolean isVerifyingSsl() {
         return apiClient().isVerifyingSsl();
     }
 
     /**
-     * @param verifyingSsl
-     * @return
+     * Sets the verifying ssl.
+     *
+     * @param verifyingSsl the verifying ssl
+     * @return the api client
      * @see ApiClient#setVerifyingSsl(boolean)
      */
+    @Override
     public ApiClient setVerifyingSsl(boolean verifyingSsl) {
         return apiClient().setVerifyingSsl(verifyingSsl);
     }
 
     /**
-     * @return
+     * Gets the ssl ca cert.
+     *
+     * @return the ssl ca cert
      * @see ApiClient#getSslCaCert()
      */
+    @Override
     public InputStream getSslCaCert() {
         return apiClient().getSslCaCert();
     }
 
     /**
-     * @param sslCaCert
-     * @return
+     * Sets the ssl ca cert.
+     *
+     * @param sslCaCert the ssl ca cert
+     * @return the api client
      * @see ApiClient#setSslCaCert(java.io.InputStream)
      */
+    @Override
     public ApiClient setSslCaCert(InputStream sslCaCert) {
         return apiClient().setSslCaCert(sslCaCert);
     }
 
     /**
-     * @return
+     * Gets the key managers.
+     *
+     * @return the key managers
      * @see ApiClient#getKeyManagers()
      */
+    @Override
     public KeyManager[] getKeyManagers() {
         return apiClient().getKeyManagers();
     }
 
     /**
-     * @param managers
-     * @return
+     * Sets the key managers.
+     *
+     * @param managers the managers
+     * @return the api client
      * @see ApiClient#setKeyManagers(javax.net.ssl.KeyManager[])
      */
     @SuppressWarnings("PMD.UseVarargs")
+    @Override
     public ApiClient setKeyManagers(KeyManager[] managers) {
         return apiClient().setKeyManagers(managers);
     }
 
     /**
-     * @return
+     * Gets the date format.
+     *
+     * @return the date format
      * @see ApiClient#getDateFormat()
      */
+    @Override
     public DateFormat getDateFormat() {
         return apiClient().getDateFormat();
     }
 
     /**
-     * @param dateFormat
-     * @return
+     * Sets the date format.
+     *
+     * @param dateFormat the date format
+     * @return the api client
      * @see ApiClient#setDateFormat(java.text.DateFormat)
      */
+    @Override
     public ApiClient setDateFormat(DateFormat dateFormat) {
         return apiClient().setDateFormat(dateFormat);
     }
 
     /**
-     * @param dateFormat
-     * @return
+     * Sets the sql date format.
+     *
+     * @param dateFormat the date format
+     * @return the api client
      * @see ApiClient#setSqlDateFormat(java.text.DateFormat)
      */
+    @Override
     public ApiClient setSqlDateFormat(DateFormat dateFormat) {
         return apiClient().setSqlDateFormat(dateFormat);
     }
 
     /**
-     * @param dateFormat
-     * @return
+     * Sets the offset date time format.
+     *
+     * @param dateFormat the date format
+     * @return the api client
      * @see ApiClient#setOffsetDateTimeFormat(java.time.format.DateTimeFormatter)
      */
+    @Override
     public ApiClient setOffsetDateTimeFormat(DateTimeFormatter dateFormat) {
         return apiClient().setOffsetDateTimeFormat(dateFormat);
     }
 
     /**
-     * @param dateFormat
-     * @return
+     * Sets the local date format.
+     *
+     * @param dateFormat the date format
+     * @return the api client
      * @see ApiClient#setLocalDateFormat(java.time.format.DateTimeFormatter)
      */
+    @Override
     public ApiClient setLocalDateFormat(DateTimeFormatter dateFormat) {
         return apiClient().setLocalDateFormat(dateFormat);
     }
 
     /**
-     * @param lenientOnJson
-     * @return
+     * Sets the lenient on json.
+     *
+     * @param lenientOnJson the lenient on json
+     * @return the api client
      * @see ApiClient#setLenientOnJson(boolean)
      */
+    @Override
     public ApiClient setLenientOnJson(boolean lenientOnJson) {
         return apiClient().setLenientOnJson(lenientOnJson);
     }
 
     /**
-     * @return
+     * Gets the authentications.
+     *
+     * @return the authentications
      * @see ApiClient#getAuthentications()
      */
+    @Override
     public Map<String, Authentication> getAuthentications() {
         return apiClient().getAuthentications();
     }
 
     /**
-     * @param authName
-     * @return
+     * Gets the authentication.
+     *
+     * @param authName the auth name
+     * @return the authentication
      * @see ApiClient#getAuthentication(java.lang.String)
      */
+    @Override
     public Authentication getAuthentication(String authName) {
         return apiClient().getAuthentication(authName);
     }
 
     /**
-     * @param username
+     * Sets the username.
+     *
+     * @param username the new username
      * @see ApiClient#setUsername(java.lang.String)
      */
+    @Override
     public void setUsername(String username) {
         apiClient().setUsername(username);
     }
 
     /**
-     * @param password
+     * Sets the password.
+     *
+     * @param password the new password
      * @see ApiClient#setPassword(java.lang.String)
      */
+    @Override
     public void setPassword(String password) {
         apiClient().setPassword(password);
     }
 
     /**
-     * @param apiKey
+     * Sets the api key.
+     *
+     * @param apiKey the new api key
      * @see ApiClient#setApiKey(java.lang.String)
      */
+    @Override
     public void setApiKey(String apiKey) {
         apiClient().setApiKey(apiKey);
     }
 
     /**
-     * @param apiKeyPrefix
+     * Sets the api key prefix.
+     *
+     * @param apiKeyPrefix the new api key prefix
      * @see ApiClient#setApiKeyPrefix(java.lang.String)
      */
+    @Override
     public void setApiKeyPrefix(String apiKeyPrefix) {
         apiClient().setApiKeyPrefix(apiKeyPrefix);
     }
 
     /**
-     * @param accessToken
+     * Sets the access token.
+     *
+     * @param accessToken the new access token
      * @see ApiClient#setAccessToken(java.lang.String)
      */
+    @Override
     public void setAccessToken(String accessToken) {
         apiClient().setAccessToken(accessToken);
     }
 
     /**
-     * @param userAgent
-     * @return
+     * Sets the user agent.
+     *
+     * @param userAgent the user agent
+     * @return the api client
      * @see ApiClient#setUserAgent(java.lang.String)
      */
+    @Override
     public ApiClient setUserAgent(String userAgent) {
         return apiClient().setUserAgent(userAgent);
     }
 
     /**
-     * @return
+     * To string.
+     *
+     * @return the string
      * @see java.lang.Object#toString()
      */
+    @Override
     public String toString() {
         return apiClient().toString();
     }
 
     /**
-     * @param key
-     * @param value
-     * @return
+     * Adds the default header.
+     *
+     * @param key the key
+     * @param value the value
+     * @return the api client
      * @see ApiClient#addDefaultHeader(java.lang.String, java.lang.String)
      */
+    @Override
     public ApiClient addDefaultHeader(String key, String value) {
         return apiClient().addDefaultHeader(key, value);
     }
 
     /**
-     * @param key
-     * @param value
-     * @return
+     * Adds the default cookie.
+     *
+     * @param key the key
+     * @param value the value
+     * @return the api client
      * @see ApiClient#addDefaultCookie(java.lang.String, java.lang.String)
      */
+    @Override
     public ApiClient addDefaultCookie(String key, String value) {
         return apiClient().addDefaultCookie(key, value);
     }
 
     /**
-     * @return
+     * Checks if is debugging.
+     *
+     * @return true, if is debugging
      * @see ApiClient#isDebugging()
      */
+    @Override
     public boolean isDebugging() {
         return apiClient().isDebugging();
     }
 
     /**
-     * @param debugging
-     * @return
+     * Sets the debugging.
+     *
+     * @param debugging the debugging
+     * @return the api client
      * @see ApiClient#setDebugging(boolean)
      */
+    @Override
     public ApiClient setDebugging(boolean debugging) {
         return apiClient().setDebugging(debugging);
     }
 
     /**
-     * @return
+     * Gets the temp folder path.
+     *
+     * @return the temp folder path
      * @see ApiClient#getTempFolderPath()
      */
+    @Override
     public String getTempFolderPath() {
         return apiClient().getTempFolderPath();
     }
 
     /**
-     * @param tempFolderPath
-     * @return
+     * Sets the temp folder path.
+     *
+     * @param tempFolderPath the temp folder path
+     * @return the api client
      * @see ApiClient#setTempFolderPath(java.lang.String)
      */
+    @Override
     public ApiClient setTempFolderPath(String tempFolderPath) {
         return apiClient().setTempFolderPath(tempFolderPath);
     }
 
     /**
-     * @return
+     * Gets the connect timeout.
+     *
+     * @return the connect timeout
      * @see ApiClient#getConnectTimeout()
      */
+    @Override
     public int getConnectTimeout() {
         return apiClient().getConnectTimeout();
     }
 
     /**
-     * @param connectionTimeout
-     * @return
+     * Sets the connect timeout.
+     *
+     * @param connectionTimeout the connection timeout
+     * @return the api client
      * @see ApiClient#setConnectTimeout(int)
      */
+    @Override
     public ApiClient setConnectTimeout(int connectionTimeout) {
         return apiClient().setConnectTimeout(connectionTimeout);
     }
 
     /**
-     * @return
+     * Gets the read timeout.
+     *
+     * @return the read timeout
      * @see ApiClient#getReadTimeout()
      */
+    @Override
     public int getReadTimeout() {
         return apiClient().getReadTimeout();
     }
 
     /**
-     * @param readTimeout
-     * @return
+     * Sets the read timeout.
+     *
+     * @param readTimeout the read timeout
+     * @return the api client
      * @see ApiClient#setReadTimeout(int)
      */
+    @Override
     public ApiClient setReadTimeout(int readTimeout) {
         return apiClient().setReadTimeout(readTimeout);
     }
 
     /**
-     * @return
+     * Gets the write timeout.
+     *
+     * @return the write timeout
      * @see ApiClient#getWriteTimeout()
      */
+    @Override
     public int getWriteTimeout() {
         return apiClient().getWriteTimeout();
     }
 
     /**
-     * @param writeTimeout
-     * @return
+     * Sets the write timeout.
+     *
+     * @param writeTimeout the write timeout
+     * @return the api client
      * @see ApiClient#setWriteTimeout(int)
      */
+    @Override
     public ApiClient setWriteTimeout(int writeTimeout) {
         return apiClient().setWriteTimeout(writeTimeout);
     }
 
     /**
-     * @param param
-     * @return
+     * Parameter to string.
+     *
+     * @param param the param
+     * @return the string
      * @see ApiClient#parameterToString(java.lang.Object)
      */
+    @Override
     public String parameterToString(Object param) {
         return apiClient().parameterToString(param);
     }
 
     /**
-     * @param name
-     * @param value
-     * @return
+     * Parameter to pair.
+     *
+     * @param name the name
+     * @param value the value
+     * @return the list
      * @see ApiClient#parameterToPair(java.lang.String, java.lang.Object)
      */
+    @Override
     public List<Pair> parameterToPair(String name, Object value) {
         return apiClient().parameterToPair(name, value);
     }
 
     /**
-     * @param collectionFormat
-     * @param name
-     * @param value
-     * @return
+     * Parameter to pairs.
+     *
+     * @param collectionFormat the collection format
+     * @param name the name
+     * @param value the value
+     * @return the list
      * @see ApiClient#parameterToPairs(java.lang.String, java.lang.String, java.util.Collection)
      */
     @SuppressWarnings({ "rawtypes", "PMD.AvoidDuplicateLiterals" })
+    @Override
     public List<Pair> parameterToPairs(String collectionFormat, String name,
             Collection value) {
         return apiClient().parameterToPairs(collectionFormat, name, value);
     }
 
     /**
-     * @param collectionFormat
-     * @param value
-     * @return
+     * Collection path parameter to string.
+     *
+     * @param collectionFormat the collection format
+     * @param value the value
+     * @return the string
      * @see ApiClient#collectionPathParameterToString(java.lang.String, java.util.Collection)
      */
     @SuppressWarnings("rawtypes")
+    @Override
     public String collectionPathParameterToString(String collectionFormat,
             Collection value) {
         return apiClient().collectionPathParameterToString(collectionFormat,
@@ -478,173 +608,218 @@ public class K8sClient extends ApiClient {
     }
 
     /**
-     * @param filename
-     * @return
+     * Sanitize filename.
+     *
+     * @param filename the filename
+     * @return the string
      * @see ApiClient#sanitizeFilename(java.lang.String)
      */
+    @Override
     public String sanitizeFilename(String filename) {
         return apiClient().sanitizeFilename(filename);
     }
 
     /**
-     * @param mime
-     * @return
+     * Checks if is json mime.
+     *
+     * @param mime the mime
+     * @return true, if is json mime
      * @see ApiClient#isJsonMime(java.lang.String)
      */
+    @Override
     public boolean isJsonMime(String mime) {
         return apiClient().isJsonMime(mime);
     }
 
     /**
-     * @param accepts
-     * @return
+     * Select header accept.
+     *
+     * @param accepts the accepts
+     * @return the string
      * @see ApiClient#selectHeaderAccept(java.lang.String[])
      */
     @SuppressWarnings("PMD.UseVarargs")
+    @Override
     public String selectHeaderAccept(String[] accepts) {
         return apiClient().selectHeaderAccept(accepts);
     }
 
     /**
-     * @param contentTypes
-     * @return
+     * Select header content type.
+     *
+     * @param contentTypes the content types
+     * @return the string
      * @see ApiClient#selectHeaderContentType(java.lang.String[])
      */
     @SuppressWarnings("PMD.UseVarargs")
+    @Override
     public String selectHeaderContentType(String[] contentTypes) {
         return apiClient().selectHeaderContentType(contentTypes);
     }
 
     /**
-     * @param str
-     * @return
+     * Escape string.
+     *
+     * @param str the str
+     * @return the string
      * @see ApiClient#escapeString(java.lang.String)
      */
+    @Override
     public String escapeString(String str) {
         return apiClient().escapeString(str);
     }
 
     /**
-     * @param <T>
-     * @param response
-     * @param returnType
-     * @return
-     * @throws ApiException
+     * Deserialize.
+     *
+     * @param <T> the generic type
+     * @param response the response
+     * @param returnType the return type
+     * @return the t
+     * @throws ApiException the api exception
      * @see ApiClient#deserialize(okhttp3.Response, java.lang.reflect.Type)
      */
+    @Override
     public <T> T deserialize(Response response, Type returnType)
             throws ApiException {
         return apiClient().deserialize(response, returnType);
     }
 
     /**
-     * @param obj
-     * @param contentType
-     * @return
-     * @throws ApiException
+     * Serialize.
+     *
+     * @param obj the obj
+     * @param contentType the content type
+     * @return the request body
+     * @throws ApiException the api exception
      * @see ApiClient#serialize(java.lang.Object, java.lang.String)
      */
+    @Override
     public RequestBody serialize(Object obj, String contentType)
             throws ApiException {
         return apiClient().serialize(obj, contentType);
     }
 
     /**
-     * @param response
-     * @return
-     * @throws ApiException
+     * Download file from response.
+     *
+     * @param response the response
+     * @return the file
+     * @throws ApiException the api exception
      * @see ApiClient#downloadFileFromResponse(okhttp3.Response)
      */
+    @Override
     public File downloadFileFromResponse(Response response)
             throws ApiException {
         return apiClient().downloadFileFromResponse(response);
     }
 
     /**
-     * @param response
-     * @return
-     * @throws IOException
+     * Prepare download file.
+     *
+     * @param response the response
+     * @return the file
+     * @throws IOException Signals that an I/O exception has occurred.
      * @see ApiClient#prepareDownloadFile(okhttp3.Response)
      */
+    @Override
     public File prepareDownloadFile(Response response) throws IOException {
         return apiClient().prepareDownloadFile(response);
     }
 
     /**
-     * @param <T>
-     * @param call
-     * @return
-     * @throws ApiException
+     * Execute.
+     *
+     * @param <T> the generic type
+     * @param call the call
+     * @return the api response
+     * @throws ApiException the api exception
      * @see ApiClient#execute(okhttp3.Call)
      */
+    @Override
     public <T> ApiResponse<T> execute(Call call) throws ApiException {
         return apiClient().execute(call);
     }
 
     /**
-     * @param <T>
-     * @param call
-     * @param returnType
-     * @return
-     * @throws ApiException
+     * Execute.
+     *
+     * @param <T> the generic type
+     * @param call the call
+     * @param returnType the return type
+     * @return the api response
+     * @throws ApiException the api exception
      * @see ApiClient#execute(okhttp3.Call, java.lang.reflect.Type)
      */
+    @Override
     public <T> ApiResponse<T> execute(Call call, Type returnType)
             throws ApiException {
         return apiClient().execute(call, returnType);
     }
 
     /**
-     * @param <T>
-     * @param call
-     * @param callback
+     * Execute async.
+     *
+     * @param <T> the generic type
+     * @param call the call
+     * @param callback the callback
      * @see ApiClient#executeAsync(okhttp3.Call, io.kubernetes.client.openapi.ApiCallback)
      */
+    @Override
     public <T> void executeAsync(Call call, ApiCallback<T> callback) {
         apiClient().executeAsync(call, callback);
     }
 
     /**
-     * @param <T>
-     * @param call
-     * @param returnType
-     * @param callback
+     * Execute async.
+     *
+     * @param <T> the generic type
+     * @param call the call
+     * @param returnType the return type
+     * @param callback the callback
      * @see ApiClient#executeAsync(okhttp3.Call, java.lang.reflect.Type, io.kubernetes.client.openapi.ApiCallback)
      */
+    @Override
     public <T> void executeAsync(Call call, Type returnType,
             ApiCallback<T> callback) {
         apiClient().executeAsync(call, returnType, callback);
     }
 
     /**
-     * @param <T>
-     * @param response
-     * @param returnType
-     * @return
-     * @throws ApiException
+     * Handle response.
+     *
+     * @param <T> the generic type
+     * @param response the response
+     * @param returnType the return type
+     * @return the t
+     * @throws ApiException the api exception
      * @see ApiClient#handleResponse(okhttp3.Response, java.lang.reflect.Type)
      */
+    @Override
     public <T> T handleResponse(Response response, Type returnType)
             throws ApiException {
         return apiClient().handleResponse(response, returnType);
     }
 
     /**
-     * @param path
-     * @param method
-     * @param queryParams
-     * @param collectionQueryParams
-     * @param body
-     * @param headerParams
-     * @param cookieParams
-     * @param formParams
-     * @param authNames
-     * @param callback
-     * @return
-     * @throws ApiException
+     * Builds the call.
+     *
+     * @param path the path
+     * @param method the method
+     * @param queryParams the query params
+     * @param collectionQueryParams the collection query params
+     * @param body the body
+     * @param headerParams the header params
+     * @param cookieParams the cookie params
+     * @param formParams the form params
+     * @param authNames the auth names
+     * @param callback the callback
+     * @return the call
+     * @throws ApiException the api exception
      * @see ApiClient#buildCall(java.lang.String, java.lang.String, java.util.List, java.util.List, java.lang.Object, java.util.Map, java.util.Map, java.util.Map, java.lang.String[], io.kubernetes.client.openapi.ApiCallback)
      */
     @SuppressWarnings({ "rawtypes", "PMD.ExcessiveParameterList" })
+    @Override
     public Call buildCall(String path, String method, List<Pair> queryParams,
             List<Pair> collectionQueryParams, Object body,
             Map<String, String> headerParams, Map<String, String> cookieParams,
@@ -656,21 +831,24 @@ public class K8sClient extends ApiClient {
     }
 
     /**
-     * @param path
-     * @param method
-     * @param queryParams
-     * @param collectionQueryParams
-     * @param body
-     * @param headerParams
-     * @param cookieParams
-     * @param formParams
-     * @param authNames
-     * @param callback
-     * @return
-     * @throws ApiException
+     * Builds the request.
+     *
+     * @param path the path
+     * @param method the method
+     * @param queryParams the query params
+     * @param collectionQueryParams the collection query params
+     * @param body the body
+     * @param headerParams the header params
+     * @param cookieParams the cookie params
+     * @param formParams the form params
+     * @param authNames the auth names
+     * @param callback the callback
+     * @return the request
+     * @throws ApiException the api exception
      * @see ApiClient#buildRequest(java.lang.String, java.lang.String, java.util.List, java.util.List, java.lang.Object, java.util.Map, java.util.Map, java.util.Map, java.lang.String[], io.kubernetes.client.openapi.ApiCallback)
      */
     @SuppressWarnings({ "rawtypes", "PMD.ExcessiveParameterList" })
+    @Override
     public Request buildRequest(String path, String method,
             List<Pair> queryParams, List<Pair> collectionQueryParams,
             Object body, Map<String, String> headerParams,
@@ -682,44 +860,56 @@ public class K8sClient extends ApiClient {
     }
 
     /**
-     * @param path
-     * @param queryParams
-     * @param collectionQueryParams
-     * @return
+     * Builds the url.
+     *
+     * @param path the path
+     * @param queryParams the query params
+     * @param collectionQueryParams the collection query params
+     * @return the string
      * @see ApiClient#buildUrl(java.lang.String, java.util.List, java.util.List)
      */
+    @Override
     public String buildUrl(String path, List<Pair> queryParams,
             List<Pair> collectionQueryParams) {
         return apiClient().buildUrl(path, queryParams, collectionQueryParams);
     }
 
     /**
-     * @param headerParams
-     * @param reqBuilder
+     * Process header params.
+     *
+     * @param headerParams the header params
+     * @param reqBuilder the req builder
      * @see ApiClient#processHeaderParams(java.util.Map, okhttp3.Request.Builder)
      */
+    @Override
     public void processHeaderParams(Map<String, String> headerParams,
             Builder reqBuilder) {
         apiClient().processHeaderParams(headerParams, reqBuilder);
     }
 
     /**
-     * @param cookieParams
-     * @param reqBuilder
+     * Process cookie params.
+     *
+     * @param cookieParams the cookie params
+     * @param reqBuilder the req builder
      * @see ApiClient#processCookieParams(java.util.Map, okhttp3.Request.Builder)
      */
+    @Override
     public void processCookieParams(Map<String, String> cookieParams,
             Builder reqBuilder) {
         apiClient().processCookieParams(cookieParams, reqBuilder);
     }
 
     /**
-     * @param authNames
-     * @param queryParams
-     * @param headerParams
-     * @param cookieParams
+     * Update params for auth.
+     *
+     * @param authNames the auth names
+     * @param queryParams the query params
+     * @param headerParams the header params
+     * @param cookieParams the cookie params
      * @see ApiClient#updateParamsForAuth(java.lang.String[], java.util.List, java.util.Map, java.util.Map)
      */
+    @Override
     public void updateParamsForAuth(String[] authNames, List<Pair> queryParams,
             Map<String, String> headerParams,
             Map<String, String> cookieParams) {
@@ -728,30 +918,39 @@ public class K8sClient extends ApiClient {
     }
 
     /**
-     * @param formParams
-     * @return
+     * Builds the request body form encoding.
+     *
+     * @param formParams the form params
+     * @return the request body
      * @see ApiClient#buildRequestBodyFormEncoding(java.util.Map)
      */
+    @Override
     public RequestBody
             buildRequestBodyFormEncoding(Map<String, Object> formParams) {
         return apiClient().buildRequestBodyFormEncoding(formParams);
     }
 
     /**
-     * @param formParams
-     * @return
+     * Builds the request body multipart.
+     *
+     * @param formParams the form params
+     * @return the request body
      * @see ApiClient#buildRequestBodyMultipart(java.util.Map)
      */
+    @Override
     public RequestBody
             buildRequestBodyMultipart(Map<String, Object> formParams) {
         return apiClient().buildRequestBodyMultipart(formParams);
     }
 
     /**
-     * @param file
-     * @return
+     * Guess content type from file.
+     *
+     * @param file the file
+     * @return the string
      * @see ApiClient#guessContentTypeFromFile(java.io.File)
      */
+    @Override
     public String guessContentTypeFromFile(File file) {
         return apiClient().guessContentTypeFromFile(file);
     }

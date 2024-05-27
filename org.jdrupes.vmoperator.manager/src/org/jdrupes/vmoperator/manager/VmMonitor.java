@@ -150,6 +150,7 @@ public class VmMonitor
     private void addDynamicData(K8sClient client, K8sDynamicModel vmState) {
         var rootNode = GsonPtr.to(vmState.data()).get(JsonObject.class);
         rootNode.addProperty("nodeName", "");
+        rootNode.addProperty("nodeAddress", "");
 
         // VM definition status changes before the pod terminates.
         // This results in pod information being shown for a stopped
@@ -172,8 +173,17 @@ public class VmMonitor
             var podList
                 = K8sV1PodStub.list(client, namespace(), podSearch);
             for (var podStub : podList) {
-                rootNode.addProperty("nodeName",
-                    podStub.model().get().getSpec().getNodeName());
+                var nodeName = podStub.model().get().getSpec().getNodeName();
+                rootNode.addProperty("nodeName", nodeName);
+                logger.fine(() -> "Added node name " + nodeName
+                    + " to VM info for " + vmState.getMetadata().getName());
+                @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+                var addrs = new JsonArray();
+                podStub.model().get().getStatus().getPodIPs().stream()
+                    .map(ip -> ip.getIp()).forEach(addrs::add);
+                rootNode.add("nodeAddresses", addrs);
+                logger.fine(() -> "Added node addresses " + addrs
+                    + " to VM info for " + vmState.getMetadata().getName());
             }
         } catch (ApiException e) {
             logger.log(Level.WARNING, e,

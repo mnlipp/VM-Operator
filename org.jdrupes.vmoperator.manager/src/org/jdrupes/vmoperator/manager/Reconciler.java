@@ -224,6 +224,7 @@ public class Reconciler extends Component {
         return new DynamicKubernetesObject(json);
     }
 
+    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
     private void adjustCdRomPaths(JsonObject json) {
         var disks
             = GsonPtr.to(json).to("spec", "vm", "disks").get(JsonArray.class);

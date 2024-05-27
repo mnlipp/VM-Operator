@@ -97,7 +97,11 @@
 .jdrupes-vmoperator-vmconlet-view-action-list {
   white-space: nowrap;
 
-  [role=button]:not(:last-child) {
-    margin-right: 0.5em;
+  [role=button] {
+    padding: 0.25rem;
+
+    &:not([aria-disabled]):hover {
+      box-shadow: var(--darkening);
+    }
   }
 }

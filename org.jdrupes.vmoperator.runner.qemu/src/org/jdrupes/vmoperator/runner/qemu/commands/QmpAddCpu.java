@@ -47,7 +47,7 @@ public class QmpAddCpu extends QmpCommand {
         cmd.put("execute", "device_add");
         ObjectNode args = mapper.createObjectNode();
         cmd.set("arguments", args);
-        args.setAll((ObjectNode) (unused.get("props")));
+        args.setAll((ObjectNode) unused.get("props"));
         args.set("driver", unused.get("type"));
         args.put("id", cpuId);
         return cmd;

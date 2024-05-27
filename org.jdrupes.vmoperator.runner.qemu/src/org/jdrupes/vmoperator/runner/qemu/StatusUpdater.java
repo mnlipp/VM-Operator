@@ -80,6 +80,7 @@ public class StatusUpdater extends Component {
      *
      * @param componentChannel the component channel
      */
+    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public StatusUpdater(Channel componentChannel) {
         super(componentChannel);
         try {
@@ -91,7 +92,6 @@ public class StatusUpdater extends Component {
                 () -> "Cannot access events API, terminating.");
             fire(new Exit(1));
         }
-
     }
 
     /**
@@ -179,6 +179,7 @@ public class StatusUpdater extends Component {
      * @throws ApiException 
      */
     @Handler
+    @SuppressWarnings("PMD.AvoidDuplicateLiterals")
     public void onConfigureQemu(ConfigureQemu event)
             throws ApiException {
         guestShutdownStops = event.configuration().guestShutdownStops;
@@ -189,14 +190,22 @@ public class StatusUpdater extends Component {
         }
 
         // A change of the runner configuration is typically caused
-        // by a new version of the CR. So we observe the new CR.
+        // by a new version of the CR. So we update only if we have
+        // a new version of the CR. There's one exception: the display
+        // password is configured by a file, not by the CR.
         var vmDef = vmStub.model();
         if (vmDef.isPresent()
-            && vmDef.get().metadata().getGeneration() == observedGeneration) {
+            && vmDef.get().metadata().getGeneration() == observedGeneration
+            && (event.configuration().hasDisplayPassword
+                || vmDef.get().status().getAsJsonPrimitive(
+                    "displayPasswordSerial").getAsInt() == -1)) {
             return;
         }
         vmStub.updateStatus(vmDef.get(), from -> {
             JsonObject status = from.status();
+            if (!event.configuration().hasDisplayPassword) {
+                status.addProperty("displayPasswordSerial", -1);
+            }
             status.getAsJsonArray("conditions").asList().stream()
                 .map(cond -> (JsonObject) cond).filter(cond -> "Running"
                     .equals(cond.get("type").getAsString()))
@@ -213,7 +222,8 @@ public class StatusUpdater extends Component {
      * @throws ApiException 
      */
     @Handler
-    @SuppressWarnings("PMD.AssignmentInOperand")
+    @SuppressWarnings({ "PMD.AssignmentInOperand",
+        "PMD.AvoidLiteralsInIfCondition" })
     public void onRunnerStateChanged(RunnerStateChange event)
             throws ApiException {
         K8sDynamicModel vmDef;

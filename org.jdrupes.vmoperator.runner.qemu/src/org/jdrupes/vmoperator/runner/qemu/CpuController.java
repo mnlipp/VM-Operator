@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpAddCpu;
@@ -170,7 +171,7 @@ public class CpuController extends Component {
 
     private void checkCpus() {
         if (suspendedConfigure != null && desiredCpus != null
-            && currentCpus == desiredCpus.intValue()) {
+            && Objects.equals(currentCpus, desiredCpus)) {
             suspendedConfigure.resumeHandling();
             suspendedConfigure = null;
         }

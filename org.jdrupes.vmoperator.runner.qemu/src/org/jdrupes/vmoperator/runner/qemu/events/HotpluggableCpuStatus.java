@@ -30,7 +30,9 @@ import org.jdrupes.vmoperator.runner.qemu.commands.QmpCommand;
  */
 public class HotpluggableCpuStatus extends MonitorResult {
 
+    @SuppressWarnings("PMD.ImmutableField")
     private List<ObjectNode> usedCpus = new ArrayList<>();
+    @SuppressWarnings("PMD.ImmutableField")
     private List<ObjectNode> unusedCpus = new ArrayList<>();
 
     /**

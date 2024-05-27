@@ -108,7 +108,7 @@ public class Configuration implements Dto {
      * Subsection "vm".
      */
     @SuppressWarnings({ "PMD.ShortClassName", "PMD.TooManyFields",
-        "PMD.DataClass" })
+        "PMD.DataClass", "PMD.AvoidDuplicateLiterals" })
     public static class Vm implements Dto {
 
         /** The name. */
@@ -196,6 +196,7 @@ public class Configuration implements Dto {
     /**
      * Subsection "network".
      */
+    @SuppressWarnings("PMD.DataClass")
     public static class Network implements Dto {
 
         /** The type. */
@@ -217,6 +218,7 @@ public class Configuration implements Dto {
     /**
      * Subsection "drive".
      */
+    @SuppressWarnings("PMD.DataClass")
     public static class Drive implements Dto {
 
         /** The type. */
@@ -247,6 +249,7 @@ public class Configuration implements Dto {
     /**
      * Subsection "spice".
      */
+    @SuppressWarnings("PMD.DataClass")
     public static class Spice implements Dto {
 
         /** The port. */

@@ -186,7 +186,8 @@ import org.jgrapes.util.events.WatchFile;
  * 
  */
 @SuppressWarnings({ "PMD.ExcessiveImports", "PMD.AvoidPrintStackTrace",
-    "PMD.DataflowAnomalyAnalysis", "PMD.TooManyMethods" })
+    "PMD.DataflowAnomalyAnalysis", "PMD.TooManyMethods",
+    "PMD.CouplingBetweenObjects" })
 public class Runner extends Component {
 
     private static final String QEMU = "qemu";
@@ -232,7 +233,8 @@ public class Runner extends Component {
      * @param cmdLine the cmd line
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    @SuppressWarnings("PMD.SystemPrintln")
+    @SuppressWarnings({ "PMD.SystemPrintln",
+        "PMD.ConstructorCallsOverridableMethod" })
     public Runner(CommandLine cmdLine) throws IOException {
         yamlMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
             false);
@@ -495,27 +497,27 @@ public class Runner extends Component {
         try {
             var cloudInitDir = config.dataDir.resolve("cloud-init");
             cloudInitDir.toFile().mkdir();
-            var metaOut
-                = Files.newBufferedWriter(cloudInitDir.resolve("meta-data"));
-            if (config.cloudInit.metaData != null) {
-                yamlMapper.writer().writeValue(metaOut,
-                    config.cloudInit.metaData);
+            try (var metaOut
+                = Files.newBufferedWriter(cloudInitDir.resolve("meta-data"))) {
+                if (config.cloudInit.metaData != null) {
+                    yamlMapper.writer().writeValue(metaOut,
+                        config.cloudInit.metaData);
+                }
             }
-            metaOut.close();
-            var userOut
-                = Files.newBufferedWriter(cloudInitDir.resolve("user-data"));
-            userOut.write("#cloud-config\n");
-            if (config.cloudInit.userData != null) {
-                yamlMapper.writer().writeValue(userOut,
-                    config.cloudInit.userData);
+            try (var userOut
+                = Files.newBufferedWriter(cloudInitDir.resolve("user-data"))) {
+                userOut.write("#cloud-config\n");
+                if (config.cloudInit.userData != null) {
+                    yamlMapper.writer().writeValue(userOut,
+                        config.cloudInit.userData);
+                }
             }
-            userOut.close();
             if (config.cloudInit.networkConfig != null) {
-                var networkConfig = Files.newBufferedWriter(
-                    cloudInitDir.resolve("network-config"));
-                yamlMapper.writer().writeValue(networkConfig,
-                    config.cloudInit.networkConfig);
-                networkConfig.close();
+                try (var networkConfig = Files.newBufferedWriter(
+                    cloudInitDir.resolve("network-config"))) {
+                    yamlMapper.writer().writeValue(networkConfig,
+                        config.cloudInit.networkConfig);
+                }
             }
             startProcess(cloudInitImgDefinition);
         } catch (IOException e) {
@@ -545,7 +547,6 @@ public class Runner extends Component {
             && event.path().equals(config.swtpmSocket)) {
             // swtpm running, maybe start qemu
             mayBeStartQemu(QemuPreps.Tpm);
-            return;
         }
     }
 
@@ -690,6 +691,7 @@ public class Runner extends Component {
             "The VM has been shut down"));
     }
 
+    @SuppressWarnings("PMD.ConfusingArgumentToVarargsMethod")
     private void shutdown() {
         if (!Set.of(State.TERMINATING, State.STOPPED).contains(state)) {
             fire(new Stop());

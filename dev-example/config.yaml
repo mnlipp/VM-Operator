@@ -41,3 +41,7 @@
             other:
             - --org.jdrupes.vmoperator.vmconlet.VmConlet
             - org.jgrapes.webconlet.oidclogin.LoginConlet
+        "/ComponentCollector":
+          "/VmViewer":
+            displayResource:
+              preferredIpVersion: ipv4

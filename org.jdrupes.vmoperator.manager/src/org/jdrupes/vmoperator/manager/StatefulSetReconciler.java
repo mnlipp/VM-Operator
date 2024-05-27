@@ -82,14 +82,15 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         // or not running.
         var stsStub = K8sV1StatefulSetStub.get(channel.client(),
             metadata.getNamespace(), metadata.getName());
-        stsStub.model().ifPresent(sts -> {
-            var current = sts.getSpec().getReplicas();
+        var stsModel = stsStub.model().orElse(null);
+        if (stsModel != null) {
+            var current = stsModel.getSpec().getReplicas();
             var desired = GsonPtr.to(stsDef.getRaw())
                 .to("spec").getAsInt("replicas").orElse(1);
             if (current == 1 && desired == 1) {
                 return;
             }
-        });
+        }
 
         // Do apply changes
         PatchOptions opts = new PatchOptions();

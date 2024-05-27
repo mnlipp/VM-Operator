@@ -55,8 +55,7 @@ public class MonitorCommand extends Event<Void> {
         builder.append(Components.objectName(this))
             .append(" [").append(command);
         if (channels() != null) {
-            builder.append(", channels=");
-            builder.append(Channel.toString(channels()));
+            builder.append(", channels=").append(Channel.toString(channels()));
         }
         builder.append(']');
         return builder.toString();

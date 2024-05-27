@@ -85,6 +85,7 @@ public class Controller extends Component {
     /**
      * Creates a new instance.
      */
+    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public Controller(Channel componentChannel) {
         super(componentChannel);
         // Prepare component tree
@@ -100,8 +101,11 @@ public class Controller extends Component {
                 }
             });
         attach(new VmMonitor(channel()).channelManager(chanMgr));
-        attach(new DisplaySecretsMonitor(channel())
+        attach(new DisplayPasswordMonitor(channel())
             .channelManager(chanMgr.fixed()));
+        // Currently, we don't use the IP assigned by the load balancer
+        // to access the VM's console. Might change in the future.
+        // attach(new ServiceMonitor(channel()).channelManager(chanMgr));
         attach(new Reconciler(channel()));
     }
 

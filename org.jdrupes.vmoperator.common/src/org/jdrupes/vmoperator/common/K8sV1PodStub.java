@@ -79,7 +79,8 @@ public class K8sV1PodStub extends K8sGenericStub<V1Pod, V1PodList> {
     /**
      * Provide {@link GenericSupplier}.
      */
-    @SuppressWarnings("PMD.UnusedFormalParameter")
+    @SuppressWarnings({ "PMD.UnusedFormalParameter",
+        "PMD.UnusedPrivateMethod" })
     private static K8sV1PodStub getGeneric(Class<V1Pod> objectClass,
             Class<V1PodList> objectListClass, K8sClient client,
             APIResource context, String namespace, String name) {
