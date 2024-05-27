@@ -163,37 +163,47 @@
 <span class="source-line-no">150</span><span id="line-150">    private void addDynamicData(K8sClient client, K8sDynamicModel vmState) {</span>
 <span class="source-line-no">151</span><span id="line-151">        var rootNode = GsonPtr.to(vmState.data()).get(JsonObject.class);</span>
 <span class="source-line-no">152</span><span id="line-152">        rootNode.addProperty("nodeName", "");</span>
-<span class="source-line-no">153</span><span id="line-153"></span>
-<span class="source-line-no">154</span><span id="line-154">        // VM definition status changes before the pod terminates.</span>
-<span class="source-line-no">155</span><span id="line-155">        // This results in pod information being shown for a stopped</span>
-<span class="source-line-no">156</span><span id="line-156">        // VM which is irritating. So check condition first.</span>
-<span class="source-line-no">157</span><span id="line-157">        var isRunning = GsonPtr.to(rootNode).to("status", "conditions")</span>
-<span class="source-line-no">158</span><span id="line-158">            .get(JsonArray.class)</span>
-<span class="source-line-no">159</span><span id="line-159">            .asList().stream().filter(el -&gt; "Running"</span>
-<span class="source-line-no">160</span><span id="line-160">                .equals(((JsonObject) el).get("type").getAsString()))</span>
-<span class="source-line-no">161</span><span id="line-161">            .findFirst().map(el -&gt; "True"</span>
-<span class="source-line-no">162</span><span id="line-162">                .equals(((JsonObject) el).get("status").getAsString()))</span>
-<span class="source-line-no">163</span><span id="line-163">            .orElse(false);</span>
-<span class="source-line-no">164</span><span id="line-164">        if (!isRunning) {</span>
-<span class="source-line-no">165</span><span id="line-165">            return;</span>
-<span class="source-line-no">166</span><span id="line-166">        }</span>
-<span class="source-line-no">167</span><span id="line-167">        var podSearch = new ListOptions();</span>
-<span class="source-line-no">168</span><span id="line-168">        podSearch.setLabelSelector("app.kubernetes.io/name=" + APP_NAME</span>
-<span class="source-line-no">169</span><span id="line-169">            + ",app.kubernetes.io/component=" + APP_NAME</span>
-<span class="source-line-no">170</span><span id="line-170">            + ",app.kubernetes.io/instance=" + vmState.getMetadata().getName());</span>
-<span class="source-line-no">171</span><span id="line-171">        try {</span>
-<span class="source-line-no">172</span><span id="line-172">            var podList</span>
-<span class="source-line-no">173</span><span id="line-173">                = K8sV1PodStub.list(client, namespace(), podSearch);</span>
-<span class="source-line-no">174</span><span id="line-174">            for (var podStub : podList) {</span>
-<span class="source-line-no">175</span><span id="line-175">                rootNode.addProperty("nodeName",</span>
-<span class="source-line-no">176</span><span id="line-176">                    podStub.model().get().getSpec().getNodeName());</span>
-<span class="source-line-no">177</span><span id="line-177">            }</span>
-<span class="source-line-no">178</span><span id="line-178">        } catch (ApiException e) {</span>
-<span class="source-line-no">179</span><span id="line-179">            logger.log(Level.WARNING, e,</span>
-<span class="source-line-no">180</span><span id="line-180">                () -&gt; "Cannot access node information: " + e.getMessage());</span>
-<span class="source-line-no">181</span><span id="line-181">        }</span>
-<span class="source-line-no">182</span><span id="line-182">    }</span>
-<span class="source-line-no">183</span><span id="line-183">}</span>
+<span class="source-line-no">153</span><span id="line-153">        rootNode.addProperty("nodeAddress", "");</span>
+<span class="source-line-no">154</span><span id="line-154"></span>
+<span class="source-line-no">155</span><span id="line-155">        // VM definition status changes before the pod terminates.</span>
+<span class="source-line-no">156</span><span id="line-156">        // This results in pod information being shown for a stopped</span>
+<span class="source-line-no">157</span><span id="line-157">        // VM which is irritating. So check condition first.</span>
+<span class="source-line-no">158</span><span id="line-158">        var isRunning = GsonPtr.to(rootNode).to("status", "conditions")</span>
+<span class="source-line-no">159</span><span id="line-159">            .get(JsonArray.class)</span>
+<span class="source-line-no">160</span><span id="line-160">            .asList().stream().filter(el -&gt; "Running"</span>
+<span class="source-line-no">161</span><span id="line-161">                .equals(((JsonObject) el).get("type").getAsString()))</span>
+<span class="source-line-no">162</span><span id="line-162">            .findFirst().map(el -&gt; "True"</span>
+<span class="source-line-no">163</span><span id="line-163">                .equals(((JsonObject) el).get("status").getAsString()))</span>
+<span class="source-line-no">164</span><span id="line-164">            .orElse(false);</span>
+<span class="source-line-no">165</span><span id="line-165">        if (!isRunning) {</span>
+<span class="source-line-no">166</span><span id="line-166">            return;</span>
+<span class="source-line-no">167</span><span id="line-167">        }</span>
+<span class="source-line-no">168</span><span id="line-168">        var podSearch = new ListOptions();</span>
+<span class="source-line-no">169</span><span id="line-169">        podSearch.setLabelSelector("app.kubernetes.io/name=" + APP_NAME</span>
+<span class="source-line-no">170</span><span id="line-170">            + ",app.kubernetes.io/component=" + APP_NAME</span>
+<span class="source-line-no">171</span><span id="line-171">            + ",app.kubernetes.io/instance=" + vmState.getMetadata().getName());</span>
+<span class="source-line-no">172</span><span id="line-172">        try {</span>
+<span class="source-line-no">173</span><span id="line-173">            var podList</span>
+<span class="source-line-no">174</span><span id="line-174">                = K8sV1PodStub.list(client, namespace(), podSearch);</span>
+<span class="source-line-no">175</span><span id="line-175">            for (var podStub : podList) {</span>
+<span class="source-line-no">176</span><span id="line-176">                var nodeName = podStub.model().get().getSpec().getNodeName();</span>
+<span class="source-line-no">177</span><span id="line-177">                rootNode.addProperty("nodeName", nodeName);</span>
+<span class="source-line-no">178</span><span id="line-178">                logger.fine(() -&gt; "Added node name " + nodeName</span>
+<span class="source-line-no">179</span><span id="line-179">                    + " to VM info for " + vmState.getMetadata().getName());</span>
+<span class="source-line-no">180</span><span id="line-180">                @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")</span>
+<span class="source-line-no">181</span><span id="line-181">                var addrs = new JsonArray();</span>
+<span class="source-line-no">182</span><span id="line-182">                podStub.model().get().getStatus().getPodIPs().stream()</span>
+<span class="source-line-no">183</span><span id="line-183">                    .map(ip -&gt; ip.getIp()).forEach(addrs::add);</span>
+<span class="source-line-no">184</span><span id="line-184">                rootNode.add("nodeAddresses", addrs);</span>
+<span class="source-line-no">185</span><span id="line-185">                logger.fine(() -&gt; "Added node addresses " + addrs</span>
+<span class="source-line-no">186</span><span id="line-186">                    + " to VM info for " + vmState.getMetadata().getName());</span>
+<span class="source-line-no">187</span><span id="line-187">            }</span>
+<span class="source-line-no">188</span><span id="line-188">        } catch (ApiException e) {</span>
+<span class="source-line-no">189</span><span id="line-189">            logger.log(Level.WARNING, e,</span>
+<span class="source-line-no">190</span><span id="line-190">                () -&gt; "Cannot access node information: " + e.getMessage());</span>
+<span class="source-line-no">191</span><span id="line-191">        }</span>
+<span class="source-line-no">192</span><span id="line-192">    }</span>
+<span class="source-line-no">193</span><span id="line-193">}</span>
 
 
 

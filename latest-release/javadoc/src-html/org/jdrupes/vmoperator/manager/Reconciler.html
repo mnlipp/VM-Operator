@@ -237,130 +237,131 @@
 <span class="source-line-no">224</span><span id="line-224">        return new DynamicKubernetesObject(json);</span>
 <span class="source-line-no">225</span><span id="line-225">    }</span>
 <span class="source-line-no">226</span><span id="line-226"></span>
-<span class="source-line-no">227</span><span id="line-227">    private void adjustCdRomPaths(JsonObject json) {</span>
-<span class="source-line-no">228</span><span id="line-228">        var disks</span>
-<span class="source-line-no">229</span><span id="line-229">            = GsonPtr.to(json).to("spec", "vm", "disks").get(JsonArray.class);</span>
-<span class="source-line-no">230</span><span id="line-230">        for (var disk : disks) {</span>
-<span class="source-line-no">231</span><span id="line-231">            var cdrom = (JsonObject) ((JsonObject) disk).get("cdrom");</span>
-<span class="source-line-no">232</span><span id="line-232">            if (cdrom == null) {</span>
-<span class="source-line-no">233</span><span id="line-233">                continue;</span>
-<span class="source-line-no">234</span><span id="line-234">            }</span>
-<span class="source-line-no">235</span><span id="line-235">            String image = cdrom.get("image").getAsString();</span>
-<span class="source-line-no">236</span><span id="line-236">            if (image.isEmpty()) {</span>
-<span class="source-line-no">237</span><span id="line-237">                continue;</span>
-<span class="source-line-no">238</span><span id="line-238">            }</span>
-<span class="source-line-no">239</span><span id="line-239">            try {</span>
-<span class="source-line-no">240</span><span id="line-240">                @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")</span>
-<span class="source-line-no">241</span><span id="line-241">                var imageUri = new URI("file://" + Constants.IMAGE_REPO_PATH</span>
-<span class="source-line-no">242</span><span id="line-242">                    + "/").resolve(image);</span>
-<span class="source-line-no">243</span><span id="line-243">                if ("file".equals(imageUri.getScheme())) {</span>
-<span class="source-line-no">244</span><span id="line-244">                    cdrom.addProperty("image", imageUri.getPath());</span>
-<span class="source-line-no">245</span><span id="line-245">                } else {</span>
-<span class="source-line-no">246</span><span id="line-246">                    cdrom.addProperty("image", imageUri.toString());</span>
-<span class="source-line-no">247</span><span id="line-247">                }</span>
-<span class="source-line-no">248</span><span id="line-248">            } catch (URISyntaxException e) {</span>
-<span class="source-line-no">249</span><span id="line-249">                logger.warning(() -&gt; "Invalid CDROM image: " + image);</span>
-<span class="source-line-no">250</span><span id="line-250">            }</span>
-<span class="source-line-no">251</span><span id="line-251">        }</span>
-<span class="source-line-no">252</span><span id="line-252">    }</span>
-<span class="source-line-no">253</span><span id="line-253"></span>
-<span class="source-line-no">254</span><span id="line-254">    private void adjustCloudInitData(JsonObject json) {</span>
-<span class="source-line-no">255</span><span id="line-255">        var spec = GsonPtr.to(json).to("spec").get(JsonObject.class);</span>
-<span class="source-line-no">256</span><span id="line-256">        if (!spec.has("cloudInit")) {</span>
-<span class="source-line-no">257</span><span id="line-257">            return;</span>
-<span class="source-line-no">258</span><span id="line-258">        }</span>
-<span class="source-line-no">259</span><span id="line-259">        var metaData = GsonPtr.to(spec).to("cloudInit", "metaData");</span>
-<span class="source-line-no">260</span><span id="line-260">        if (metaData.getAsString("instance-id").isEmpty()) {</span>
-<span class="source-line-no">261</span><span id="line-261">            metaData.set("instance-id",</span>
-<span class="source-line-no">262</span><span id="line-262">                GsonPtr.to(json).getAsString("metadata", "resourceVersion")</span>
-<span class="source-line-no">263</span><span id="line-263">                    .map(s -&gt; "v" + s).orElse("v1"));</span>
-<span class="source-line-no">264</span><span id="line-264">        }</span>
-<span class="source-line-no">265</span><span id="line-265">        if (metaData.getAsString("local-hostname").isEmpty()) {</span>
-<span class="source-line-no">266</span><span id="line-266">            metaData.set("local-hostname",</span>
-<span class="source-line-no">267</span><span id="line-267">                GsonPtr.to(json).getAsString("metadata", "name").get());</span>
-<span class="source-line-no">268</span><span id="line-268">        }</span>
-<span class="source-line-no">269</span><span id="line-269">    }</span>
-<span class="source-line-no">270</span><span id="line-270"></span>
-<span class="source-line-no">271</span><span id="line-271">    @SuppressWarnings("PMD.CognitiveComplexity")</span>
-<span class="source-line-no">272</span><span id="line-272">    private Map&lt;String, Object&gt; prepareModel(K8sClient client,</span>
-<span class="source-line-no">273</span><span id="line-273">            DynamicKubernetesObject vmDef)</span>
-<span class="source-line-no">274</span><span id="line-274">            throws TemplateModelException, ApiException {</span>
-<span class="source-line-no">275</span><span id="line-275">        @SuppressWarnings("PMD.UseConcurrentHashMap")</span>
-<span class="source-line-no">276</span><span id="line-276">        Map&lt;String, Object&gt; model = new HashMap&lt;&gt;();</span>
-<span class="source-line-no">277</span><span id="line-277">        model.put("managerVersion",</span>
-<span class="source-line-no">278</span><span id="line-278">            Optional.ofNullable(Reconciler.class.getPackage()</span>
-<span class="source-line-no">279</span><span id="line-279">                .getImplementationVersion()).orElse("(Unknown)"));</span>
-<span class="source-line-no">280</span><span id="line-280">        model.put("cr", vmDef.getRaw());</span>
-<span class="source-line-no">281</span><span id="line-281">        model.put("constants",</span>
-<span class="source-line-no">282</span><span id="line-282">            (TemplateHashModel) new DefaultObjectWrapperBuilder(</span>
-<span class="source-line-no">283</span><span id="line-283">                Configuration.VERSION_2_3_32)</span>
-<span class="source-line-no">284</span><span id="line-284">                    .build().getStaticModels()</span>
-<span class="source-line-no">285</span><span id="line-285">                    .get(Constants.class.getName()));</span>
-<span class="source-line-no">286</span><span id="line-286">        model.put("reconciler", config);</span>
-<span class="source-line-no">287</span><span id="line-287"></span>
-<span class="source-line-no">288</span><span id="line-288">        // Check if we have a display secret</span>
-<span class="source-line-no">289</span><span id="line-289">        ListOptions options = new ListOptions();</span>
-<span class="source-line-no">290</span><span id="line-290">        options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","</span>
-<span class="source-line-no">291</span><span id="line-291">            + "app.kubernetes.io/component=" + COMP_DISPLAY_SECRET + ","</span>
-<span class="source-line-no">292</span><span id="line-292">            + "app.kubernetes.io/instance=" + vmDef.getMetadata().getName());</span>
-<span class="source-line-no">293</span><span id="line-293">        var dsStub = K8sV1SecretStub</span>
-<span class="source-line-no">294</span><span id="line-294">            .list(client, vmDef.getMetadata().getNamespace(), options).stream()</span>
-<span class="source-line-no">295</span><span id="line-295">            .findFirst();</span>
-<span class="source-line-no">296</span><span id="line-296">        if (dsStub.isPresent()) {</span>
-<span class="source-line-no">297</span><span id="line-297">            dsStub.get().model().ifPresent(m -&gt; {</span>
-<span class="source-line-no">298</span><span id="line-298">                model.put("displaySecret", m.getMetadata().getName());</span>
-<span class="source-line-no">299</span><span id="line-299">            });</span>
-<span class="source-line-no">300</span><span id="line-300">        }</span>
-<span class="source-line-no">301</span><span id="line-301"></span>
-<span class="source-line-no">302</span><span id="line-302">        // Methods</span>
-<span class="source-line-no">303</span><span id="line-303">        model.put("parseQuantity", new TemplateMethodModelEx() {</span>
-<span class="source-line-no">304</span><span id="line-304">            @Override</span>
-<span class="source-line-no">305</span><span id="line-305">            @SuppressWarnings("PMD.PreserveStackTrace")</span>
-<span class="source-line-no">306</span><span id="line-306">            public Object exec(@SuppressWarnings("rawtypes") List arguments)</span>
-<span class="source-line-no">307</span><span id="line-307">                    throws TemplateModelException {</span>
-<span class="source-line-no">308</span><span id="line-308">                var arg = arguments.get(0);</span>
-<span class="source-line-no">309</span><span id="line-309">                if (arg instanceof Number number) {</span>
-<span class="source-line-no">310</span><span id="line-310">                    return number;</span>
-<span class="source-line-no">311</span><span id="line-311">                }</span>
-<span class="source-line-no">312</span><span id="line-312">                try {</span>
-<span class="source-line-no">313</span><span id="line-313">                    return Quantity.fromString(arg.toString()).getNumber();</span>
-<span class="source-line-no">314</span><span id="line-314">                } catch (NumberFormatException e) {</span>
-<span class="source-line-no">315</span><span id="line-315">                    throw new TemplateModelException("Cannot parse memory "</span>
-<span class="source-line-no">316</span><span id="line-316">                        + "specified as \"" + arg + "\": " + e.getMessage());</span>
-<span class="source-line-no">317</span><span id="line-317">                }</span>
-<span class="source-line-no">318</span><span id="line-318">            }</span>
-<span class="source-line-no">319</span><span id="line-319">        });</span>
-<span class="source-line-no">320</span><span id="line-320">        model.put("formatMemory", new TemplateMethodModelEx() {</span>
-<span class="source-line-no">321</span><span id="line-321">            @Override</span>
-<span class="source-line-no">322</span><span id="line-322">            @SuppressWarnings("PMD.PreserveStackTrace")</span>
-<span class="source-line-no">323</span><span id="line-323">            public Object exec(@SuppressWarnings("rawtypes") List arguments)</span>
-<span class="source-line-no">324</span><span id="line-324">                    throws TemplateModelException {</span>
-<span class="source-line-no">325</span><span id="line-325">                var arg = arguments.get(0);</span>
-<span class="source-line-no">326</span><span id="line-326">                if (arg instanceof SimpleNumber number) {</span>
-<span class="source-line-no">327</span><span id="line-327">                    arg = number.getAsNumber();</span>
-<span class="source-line-no">328</span><span id="line-328">                }</span>
-<span class="source-line-no">329</span><span id="line-329">                BigInteger bigInt;</span>
-<span class="source-line-no">330</span><span id="line-330">                if (arg instanceof BigInteger value) {</span>
-<span class="source-line-no">331</span><span id="line-331">                    bigInt = value;</span>
-<span class="source-line-no">332</span><span id="line-332">                } else if (arg instanceof BigDecimal dec) {</span>
-<span class="source-line-no">333</span><span id="line-333">                    try {</span>
-<span class="source-line-no">334</span><span id="line-334">                        bigInt = dec.toBigIntegerExact();</span>
-<span class="source-line-no">335</span><span id="line-335">                    } catch (ArithmeticException e) {</span>
-<span class="source-line-no">336</span><span id="line-336">                        return arg;</span>
-<span class="source-line-no">337</span><span id="line-337">                    }</span>
-<span class="source-line-no">338</span><span id="line-338">                } else if (arg instanceof Integer value) {</span>
-<span class="source-line-no">339</span><span id="line-339">                    bigInt = BigInteger.valueOf(value);</span>
-<span class="source-line-no">340</span><span id="line-340">                } else if (arg instanceof Long value) {</span>
-<span class="source-line-no">341</span><span id="line-341">                    bigInt = BigInteger.valueOf(value);</span>
-<span class="source-line-no">342</span><span id="line-342">                } else {</span>
-<span class="source-line-no">343</span><span id="line-343">                    return arg;</span>
-<span class="source-line-no">344</span><span id="line-344">                }</span>
-<span class="source-line-no">345</span><span id="line-345">                return Convertions.formatMemory(bigInt);</span>
-<span class="source-line-no">346</span><span id="line-346">            }</span>
-<span class="source-line-no">347</span><span id="line-347">        });</span>
-<span class="source-line-no">348</span><span id="line-348">        return model;</span>
-<span class="source-line-no">349</span><span id="line-349">    }</span>
-<span class="source-line-no">350</span><span id="line-350">}</span>
+<span class="source-line-no">227</span><span id="line-227">    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")</span>
+<span class="source-line-no">228</span><span id="line-228">    private void adjustCdRomPaths(JsonObject json) {</span>
+<span class="source-line-no">229</span><span id="line-229">        var disks</span>
+<span class="source-line-no">230</span><span id="line-230">            = GsonPtr.to(json).to("spec", "vm", "disks").get(JsonArray.class);</span>
+<span class="source-line-no">231</span><span id="line-231">        for (var disk : disks) {</span>
+<span class="source-line-no">232</span><span id="line-232">            var cdrom = (JsonObject) ((JsonObject) disk).get("cdrom");</span>
+<span class="source-line-no">233</span><span id="line-233">            if (cdrom == null) {</span>
+<span class="source-line-no">234</span><span id="line-234">                continue;</span>
+<span class="source-line-no">235</span><span id="line-235">            }</span>
+<span class="source-line-no">236</span><span id="line-236">            String image = cdrom.get("image").getAsString();</span>
+<span class="source-line-no">237</span><span id="line-237">            if (image.isEmpty()) {</span>
+<span class="source-line-no">238</span><span id="line-238">                continue;</span>
+<span class="source-line-no">239</span><span id="line-239">            }</span>
+<span class="source-line-no">240</span><span id="line-240">            try {</span>
+<span class="source-line-no">241</span><span id="line-241">                @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")</span>
+<span class="source-line-no">242</span><span id="line-242">                var imageUri = new URI("file://" + Constants.IMAGE_REPO_PATH</span>
+<span class="source-line-no">243</span><span id="line-243">                    + "/").resolve(image);</span>
+<span class="source-line-no">244</span><span id="line-244">                if ("file".equals(imageUri.getScheme())) {</span>
+<span class="source-line-no">245</span><span id="line-245">                    cdrom.addProperty("image", imageUri.getPath());</span>
+<span class="source-line-no">246</span><span id="line-246">                } else {</span>
+<span class="source-line-no">247</span><span id="line-247">                    cdrom.addProperty("image", imageUri.toString());</span>
+<span class="source-line-no">248</span><span id="line-248">                }</span>
+<span class="source-line-no">249</span><span id="line-249">            } catch (URISyntaxException e) {</span>
+<span class="source-line-no">250</span><span id="line-250">                logger.warning(() -&gt; "Invalid CDROM image: " + image);</span>
+<span class="source-line-no">251</span><span id="line-251">            }</span>
+<span class="source-line-no">252</span><span id="line-252">        }</span>
+<span class="source-line-no">253</span><span id="line-253">    }</span>
+<span class="source-line-no">254</span><span id="line-254"></span>
+<span class="source-line-no">255</span><span id="line-255">    private void adjustCloudInitData(JsonObject json) {</span>
+<span class="source-line-no">256</span><span id="line-256">        var spec = GsonPtr.to(json).to("spec").get(JsonObject.class);</span>
+<span class="source-line-no">257</span><span id="line-257">        if (!spec.has("cloudInit")) {</span>
+<span class="source-line-no">258</span><span id="line-258">            return;</span>
+<span class="source-line-no">259</span><span id="line-259">        }</span>
+<span class="source-line-no">260</span><span id="line-260">        var metaData = GsonPtr.to(spec).to("cloudInit", "metaData");</span>
+<span class="source-line-no">261</span><span id="line-261">        if (metaData.getAsString("instance-id").isEmpty()) {</span>
+<span class="source-line-no">262</span><span id="line-262">            metaData.set("instance-id",</span>
+<span class="source-line-no">263</span><span id="line-263">                GsonPtr.to(json).getAsString("metadata", "resourceVersion")</span>
+<span class="source-line-no">264</span><span id="line-264">                    .map(s -&gt; "v" + s).orElse("v1"));</span>
+<span class="source-line-no">265</span><span id="line-265">        }</span>
+<span class="source-line-no">266</span><span id="line-266">        if (metaData.getAsString("local-hostname").isEmpty()) {</span>
+<span class="source-line-no">267</span><span id="line-267">            metaData.set("local-hostname",</span>
+<span class="source-line-no">268</span><span id="line-268">                GsonPtr.to(json).getAsString("metadata", "name").get());</span>
+<span class="source-line-no">269</span><span id="line-269">        }</span>
+<span class="source-line-no">270</span><span id="line-270">    }</span>
+<span class="source-line-no">271</span><span id="line-271"></span>
+<span class="source-line-no">272</span><span id="line-272">    @SuppressWarnings("PMD.CognitiveComplexity")</span>
+<span class="source-line-no">273</span><span id="line-273">    private Map&lt;String, Object&gt; prepareModel(K8sClient client,</span>
+<span class="source-line-no">274</span><span id="line-274">            DynamicKubernetesObject vmDef)</span>
+<span class="source-line-no">275</span><span id="line-275">            throws TemplateModelException, ApiException {</span>
+<span class="source-line-no">276</span><span id="line-276">        @SuppressWarnings("PMD.UseConcurrentHashMap")</span>
+<span class="source-line-no">277</span><span id="line-277">        Map&lt;String, Object&gt; model = new HashMap&lt;&gt;();</span>
+<span class="source-line-no">278</span><span id="line-278">        model.put("managerVersion",</span>
+<span class="source-line-no">279</span><span id="line-279">            Optional.ofNullable(Reconciler.class.getPackage()</span>
+<span class="source-line-no">280</span><span id="line-280">                .getImplementationVersion()).orElse("(Unknown)"));</span>
+<span class="source-line-no">281</span><span id="line-281">        model.put("cr", vmDef.getRaw());</span>
+<span class="source-line-no">282</span><span id="line-282">        model.put("constants",</span>
+<span class="source-line-no">283</span><span id="line-283">            (TemplateHashModel) new DefaultObjectWrapperBuilder(</span>
+<span class="source-line-no">284</span><span id="line-284">                Configuration.VERSION_2_3_32)</span>
+<span class="source-line-no">285</span><span id="line-285">                    .build().getStaticModels()</span>
+<span class="source-line-no">286</span><span id="line-286">                    .get(Constants.class.getName()));</span>
+<span class="source-line-no">287</span><span id="line-287">        model.put("reconciler", config);</span>
+<span class="source-line-no">288</span><span id="line-288"></span>
+<span class="source-line-no">289</span><span id="line-289">        // Check if we have a display secret</span>
+<span class="source-line-no">290</span><span id="line-290">        ListOptions options = new ListOptions();</span>
+<span class="source-line-no">291</span><span id="line-291">        options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","</span>
+<span class="source-line-no">292</span><span id="line-292">            + "app.kubernetes.io/component=" + COMP_DISPLAY_SECRET + ","</span>
+<span class="source-line-no">293</span><span id="line-293">            + "app.kubernetes.io/instance=" + vmDef.getMetadata().getName());</span>
+<span class="source-line-no">294</span><span id="line-294">        var dsStub = K8sV1SecretStub</span>
+<span class="source-line-no">295</span><span id="line-295">            .list(client, vmDef.getMetadata().getNamespace(), options).stream()</span>
+<span class="source-line-no">296</span><span id="line-296">            .findFirst();</span>
+<span class="source-line-no">297</span><span id="line-297">        if (dsStub.isPresent()) {</span>
+<span class="source-line-no">298</span><span id="line-298">            dsStub.get().model().ifPresent(m -&gt; {</span>
+<span class="source-line-no">299</span><span id="line-299">                model.put("displaySecret", m.getMetadata().getName());</span>
+<span class="source-line-no">300</span><span id="line-300">            });</span>
+<span class="source-line-no">301</span><span id="line-301">        }</span>
+<span class="source-line-no">302</span><span id="line-302"></span>
+<span class="source-line-no">303</span><span id="line-303">        // Methods</span>
+<span class="source-line-no">304</span><span id="line-304">        model.put("parseQuantity", new TemplateMethodModelEx() {</span>
+<span class="source-line-no">305</span><span id="line-305">            @Override</span>
+<span class="source-line-no">306</span><span id="line-306">            @SuppressWarnings("PMD.PreserveStackTrace")</span>
+<span class="source-line-no">307</span><span id="line-307">            public Object exec(@SuppressWarnings("rawtypes") List arguments)</span>
+<span class="source-line-no">308</span><span id="line-308">                    throws TemplateModelException {</span>
+<span class="source-line-no">309</span><span id="line-309">                var arg = arguments.get(0);</span>
+<span class="source-line-no">310</span><span id="line-310">                if (arg instanceof Number number) {</span>
+<span class="source-line-no">311</span><span id="line-311">                    return number;</span>
+<span class="source-line-no">312</span><span id="line-312">                }</span>
+<span class="source-line-no">313</span><span id="line-313">                try {</span>
+<span class="source-line-no">314</span><span id="line-314">                    return Quantity.fromString(arg.toString()).getNumber();</span>
+<span class="source-line-no">315</span><span id="line-315">                } catch (NumberFormatException e) {</span>
+<span class="source-line-no">316</span><span id="line-316">                    throw new TemplateModelException("Cannot parse memory "</span>
+<span class="source-line-no">317</span><span id="line-317">                        + "specified as \"" + arg + "\": " + e.getMessage());</span>
+<span class="source-line-no">318</span><span id="line-318">                }</span>
+<span class="source-line-no">319</span><span id="line-319">            }</span>
+<span class="source-line-no">320</span><span id="line-320">        });</span>
+<span class="source-line-no">321</span><span id="line-321">        model.put("formatMemory", new TemplateMethodModelEx() {</span>
+<span class="source-line-no">322</span><span id="line-322">            @Override</span>
+<span class="source-line-no">323</span><span id="line-323">            @SuppressWarnings("PMD.PreserveStackTrace")</span>
+<span class="source-line-no">324</span><span id="line-324">            public Object exec(@SuppressWarnings("rawtypes") List arguments)</span>
+<span class="source-line-no">325</span><span id="line-325">                    throws TemplateModelException {</span>
+<span class="source-line-no">326</span><span id="line-326">                var arg = arguments.get(0);</span>
+<span class="source-line-no">327</span><span id="line-327">                if (arg instanceof SimpleNumber number) {</span>
+<span class="source-line-no">328</span><span id="line-328">                    arg = number.getAsNumber();</span>
+<span class="source-line-no">329</span><span id="line-329">                }</span>
+<span class="source-line-no">330</span><span id="line-330">                BigInteger bigInt;</span>
+<span class="source-line-no">331</span><span id="line-331">                if (arg instanceof BigInteger value) {</span>
+<span class="source-line-no">332</span><span id="line-332">                    bigInt = value;</span>
+<span class="source-line-no">333</span><span id="line-333">                } else if (arg instanceof BigDecimal dec) {</span>
+<span class="source-line-no">334</span><span id="line-334">                    try {</span>
+<span class="source-line-no">335</span><span id="line-335">                        bigInt = dec.toBigIntegerExact();</span>
+<span class="source-line-no">336</span><span id="line-336">                    } catch (ArithmeticException e) {</span>
+<span class="source-line-no">337</span><span id="line-337">                        return arg;</span>
+<span class="source-line-no">338</span><span id="line-338">                    }</span>
+<span class="source-line-no">339</span><span id="line-339">                } else if (arg instanceof Integer value) {</span>
+<span class="source-line-no">340</span><span id="line-340">                    bigInt = BigInteger.valueOf(value);</span>
+<span class="source-line-no">341</span><span id="line-341">                } else if (arg instanceof Long value) {</span>
+<span class="source-line-no">342</span><span id="line-342">                    bigInt = BigInteger.valueOf(value);</span>
+<span class="source-line-no">343</span><span id="line-343">                } else {</span>
+<span class="source-line-no">344</span><span id="line-344">                    return arg;</span>
+<span class="source-line-no">345</span><span id="line-345">                }</span>
+<span class="source-line-no">346</span><span id="line-346">                return Convertions.formatMemory(bigInt);</span>
+<span class="source-line-no">347</span><span id="line-347">            }</span>
+<span class="source-line-no">348</span><span id="line-348">        });</span>
+<span class="source-line-no">349</span><span id="line-349">        return model;</span>
+<span class="source-line-no">350</span><span id="line-350">    }</span>
+<span class="source-line-no">351</span><span id="line-351">}</span>
 
 
 

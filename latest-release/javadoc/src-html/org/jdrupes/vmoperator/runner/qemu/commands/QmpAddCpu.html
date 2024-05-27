@@ -60,7 +60,7 @@
 <span class="source-line-no">047</span><span id="line-47">        cmd.put("execute", "device_add");</span>
 <span class="source-line-no">048</span><span id="line-48">        ObjectNode args = mapper.createObjectNode();</span>
 <span class="source-line-no">049</span><span id="line-49">        cmd.set("arguments", args);</span>
-<span class="source-line-no">050</span><span id="line-50">        args.setAll((ObjectNode) (unused.get("props")));</span>
+<span class="source-line-no">050</span><span id="line-50">        args.setAll((ObjectNode) unused.get("props"));</span>
 <span class="source-line-no">051</span><span id="line-51">        args.set("driver", unused.get("type"));</span>
 <span class="source-line-no">052</span><span id="line-52">        args.put("id", cpuId);</span>
 <span class="source-line-no">053</span><span id="line-53">        return cmd;</span>

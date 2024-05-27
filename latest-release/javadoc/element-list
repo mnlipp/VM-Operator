@@ -6,3 +6,4 @@ org.jdrupes.vmoperator.runner.qemu.commands
 org.jdrupes.vmoperator.runner.qemu.events
 org.jdrupes.vmoperator.util
 org.jdrupes.vmoperator.vmconlet
+org.jdrupes.vmoperator.vmviewer

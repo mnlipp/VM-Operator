@@ -124,7 +124,7 @@
 <span class="source-line-no">111</span><span id="line-111">            .list(newCm.getMetadata().getNamespace(), listOpts).getObject();</span>
 <span class="source-line-no">112</span><span id="line-112"></span>
 <span class="source-line-no">113</span><span id="line-113">        // If the VM is being created, the pod may not exist yet.</span>
-<span class="source-line-no">114</span><span id="line-114">        if (pods == null || pods.getItems().size() == 0) {</span>
+<span class="source-line-no">114</span><span id="line-114">        if (pods == null || pods.getItems().isEmpty()) {</span>
 <span class="source-line-no">115</span><span id="line-115">            return;</span>
 <span class="source-line-no">116</span><span id="line-116">        }</span>
 <span class="source-line-no">117</span><span id="line-117">        var pod = pods.getItems().get(0);</span>
