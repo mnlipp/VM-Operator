@@ -85,8 +85,7 @@ window.orgJDrupesVmOperatorVmViewer.initPreview = (previewDom: HTMLElement,
               <tr>
                 <td><img role=button 
                   v-on:click="vmAction(vmDef.name, 'openConsole')"
-                  :src="resourceBase + (vmDef.spec 
-                  && vmDef.spec.vm.state == 'Running'
+                  :src="resourceBase + (vmDef.running
                   ? 'computer.svg' : 'computer-off.svg')"></td>
                 <td v-if="vmDef.spec"
                   class="jdrupes-vmoperator-vmviewer-preview-action-list">
@@ -135,6 +134,14 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmviewer.VmViewer",
         vmDefinition.name = vmDefinition.metadata.name;
         vmDefinition.currentCpus = vmDefinition.status.cpus;
         vmDefinition.currentRam = Number(vmDefinition.status.ram);
+        for (const condition of vmDefinition.status.conditions) {
+            if (condition.type === "Running") {
+                vmDefinition.running = condition.status === "True";
+                vmDefinition.runningConditionSince 
+                    = new Date(condition.lastTransitionTime);
+                break;
+            }
+        }
         api.vmDefinition = vmDefinition;
     });
 
