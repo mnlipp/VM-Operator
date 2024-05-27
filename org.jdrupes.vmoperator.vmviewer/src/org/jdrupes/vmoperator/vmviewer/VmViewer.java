@@ -357,12 +357,19 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
             logger.severe(() -> "No port defined for display of " + vmName);
             return;
         }
-        StringBuffer data = new StringBuffer(50)
+        var proxyUrl = GsonPtr.to(vmDef.data()).get(JsonPrimitive.class, "spec",
+            "vm", "display", "spice", "proxyUrl");
+        StringBuffer data = new StringBuffer(100)
             .append("[virt-viewer]\ntype=spice\nhost=")
             .append(addr.get().getHostAddress()).append("\nport=")
             .append(Integer.toString(port.get().getAsInt())).append('\n');
         pwQuery.password().ifPresent(p -> {
             data.append("password=").append(p).append('\n');
+        });
+        proxyUrl.map(JsonPrimitive::getAsString).ifPresent(u -> {
+            if (!Strings.isNullOrEmpty(u)) {
+                data.append("proxy=").append(u).append('\n');
+            }
         });
         connection.respond(new NotifyConletView(type(),
             model.getConletId(), "openConsole", "application/x-virt-viewer",
@@ -370,6 +377,21 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
     }
 
     private Optional<InetAddress> displayIp(K8sDynamicModel vmDef) {
+        var server = GsonPtr.to(vmDef.data()).get(JsonPrimitive.class, "spec",
+            "vm", "display", "spice", "server");
+        if (server.isPresent()) {
+            var srv = server.get().getAsString();
+            try {
+                var addr = InetAddress.getByName(srv);
+                logger.fine(() -> "Using IP address from CRD for "
+                    + vmDef.getMetadata().getName() + ": " + addr);
+                return Optional.of(addr);
+            } catch (UnknownHostException e) {
+                logger.log(Level.SEVERE, e, () -> "Invalid server address "
+                    + srv + ": " + e.getMessage());
+                return Optional.empty();
+            }
+        }
         var addrs = GsonPtr.to(vmDef.data()).getAsListOf(JsonPrimitive.class,
             "nodeAddresses").stream().map(JsonPrimitive::getAsString)
             .map(a -> {

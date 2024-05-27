@@ -1385,9 +1385,20 @@ spec:
                           type: object
                           properties:
                             port:
+                              description: >-
+                                Port number used for the Spice server.
                               type: integer
                               default: 5900
-                            ticket:
+                            server:
+                              description: >-
+                                Server (address) to use for connecting
+                                to the spice server. Defaults to the address
+                                of the node that the VM is running on.
+                              type: string
+                            proxyUrl:
+                              description: >-
+                                If specified, is copied to the generated
+                                viewer configuration files.
                               type: string
                             streamingVideo:
                               type: string
