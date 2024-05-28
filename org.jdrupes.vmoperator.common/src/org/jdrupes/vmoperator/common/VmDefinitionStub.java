@@ -32,23 +32,23 @@ import java.util.Collection;
  * custom objects.
  */
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
-public class K8sDynamicStub
-        extends K8sDynamicStubBase<K8sDynamicModel, K8sDynamicModels> {
+public class VmDefinitionStub
+        extends K8sDynamicStubBase<VmDefinitionModel, VmDefinitionModels> {
 
-    private static DynamicTypeAdapterFactory<K8sDynamicModel,
-            K8sDynamicModels> taf = new K8sDynamicModelTypeAdapterFactory();
+    private static DynamicTypeAdapterFactory<VmDefinitionModel,
+            VmDefinitionModels> taf = new VmDefintionModelTypeAdapterFactory();
 
     /**
-     * Instantiates a new dynamic stub.
+     * Instantiates a new stub for VM defintions.
      *
      * @param client the client
      * @param context the context
      * @param namespace the namespace
      * @param name the name
      */
-    public K8sDynamicStub(K8sClient client,
-            APIResource context, String namespace, String name) {
-        super(K8sDynamicModel.class, K8sDynamicModels.class, taf, client,
+    public VmDefinitionStub(K8sClient client, APIResource context,
+            String namespace, String name) {
+        super(VmDefinitionModel.class, VmDefinitionModels.class, taf, client,
             context, namespace, name);
     }
 
@@ -66,11 +66,12 @@ public class K8sDynamicStub
      */
     @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
         "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })
-    public static K8sDynamicStub get(K8sClient client,
+    public static VmDefinitionStub get(K8sClient client,
             GroupVersionKind gvk, String namespace, String name)
             throws ApiException {
-        return K8sGenericStub.get(K8sDynamicModel.class, K8sDynamicModels.class,
-            client, gvk, namespace, name, K8sDynamicStub::new);
+        return K8sGenericStub.get(VmDefinitionModel.class,
+            VmDefinitionModels.class, client, gvk, namespace, name,
+            VmDefinitionStub::new);
     }
 
     /**
@@ -85,9 +86,9 @@ public class K8sDynamicStub
      */
     @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
         "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })
-    public static K8sDynamicStub get(K8sClient client,
+    public static VmDefinitionStub get(K8sClient client,
             APIResource context, String namespace, String name) {
-        return new K8sDynamicStub(client, context, namespace, name);
+        return new VmDefinitionStub(client, context, namespace, name);
     }
 
     /**
@@ -99,13 +100,13 @@ public class K8sDynamicStub
      * @return the k 8 s dynamic stub
      * @throws ApiException the api exception
      */
-    public static K8sDynamicStub createFromYaml(K8sClient client,
+    public static VmDefinitionStub createFromYaml(K8sClient client,
             APIResource context, Reader yaml) throws ApiException {
-        var model = new K8sDynamicModel(client.getJSON().getGson(),
+        var model = new VmDefinitionModel(client.getJSON().getGson(),
             K8s.yamlToJson(client, yaml));
-        return K8sGenericStub.create(K8sDynamicModel.class,
-            K8sDynamicModels.class, client, context, model,
-            K8sDynamicStub::new);
+        return K8sGenericStub.create(VmDefinitionModel.class,
+            VmDefinitionModels.class, client, context, model,
+            VmDefinitionStub::new);
     }
 
     /**
@@ -118,12 +119,12 @@ public class K8sDynamicStub
      * @return the collection
      * @throws ApiException the api exception
      */
-    public static Collection<K8sDynamicStub> list(K8sClient client,
+    public static Collection<VmDefinitionStub> list(K8sClient client,
             APIResource context, String namespace, ListOptions options)
             throws ApiException {
-        return K8sGenericStub.list(K8sDynamicModel.class,
-            K8sDynamicModels.class, client, context, namespace, options,
-            K8sDynamicStub::new);
+        return K8sGenericStub.list(VmDefinitionModel.class,
+            VmDefinitionModels.class, client, context, namespace, options,
+            VmDefinitionStub::new);
     }
 
     /**
@@ -134,23 +135,23 @@ public class K8sDynamicStub
      * @return the collection
      * @throws ApiException the api exception
      */
-    public static Collection<K8sDynamicStub> list(K8sClient client,
+    public static Collection<VmDefinitionStub> list(K8sClient client,
             APIResource context, String namespace)
             throws ApiException {
         return list(client, context, namespace, new ListOptions());
     }
 
     /**
-     * A factory for creating K8sDynamicModel(s) objects.
+     * A factory for creating VmDefinitionModel(s) objects.
      */
-    public static class K8sDynamicModelTypeAdapterFactory extends
-            DynamicTypeAdapterFactory<K8sDynamicModel, K8sDynamicModels> {
+    public static class VmDefintionModelTypeAdapterFactory extends
+            DynamicTypeAdapterFactory<VmDefinitionModel, VmDefinitionModels> {
 
         /**
          * Instantiates a new dynamic model type adapter factory.
          */
-        public K8sDynamicModelTypeAdapterFactory() {
-            super(K8sDynamicModel.class, K8sDynamicModels.class);
+        public VmDefintionModelTypeAdapterFactory() {
+            super(VmDefinitionModel.class, VmDefinitionModels.class);
         }
     }
 

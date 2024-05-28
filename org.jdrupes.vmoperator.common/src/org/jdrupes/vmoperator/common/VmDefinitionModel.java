@@ -20,25 +20,21 @@ package org.jdrupes.vmoperator.common;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import io.kubernetes.client.common.KubernetesListObject;
 
 /**
- * Represents a list of Kubernetes objects each of which is
- * represented using a JSON data structure.
- * Some information that is common to all Kubernetes objects,
- * notably the metadata, is made available through the methods
- * defined by {@link KubernetesListObject}.
+ * Represents a VM definition.
  */
-public class K8sDynamicModels extends K8sDynamicModelsBase<K8sDynamicModel> {
+@SuppressWarnings("PMD.DataClass")
+public class VmDefinitionModel extends K8sDynamicModel {
 
     /**
-     * Initialize the object list using the given JSON data.
+     * Instantiates a new model from the JSON representation.
      *
      * @param delegate the gson instance to use for extracting structured data
-     * @param data the data
+     * @param json the JSON
      */
-    public K8sDynamicModels(Gson delegate, JsonObject data) {
-        super(K8sDynamicModel.class, delegate, data);
+    public VmDefinitionModel(Gson delegate, JsonObject json) {
+        super(delegate, json);
     }
 
 }

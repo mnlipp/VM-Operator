@@ -19,7 +19,7 @@
 package org.jdrupes.vmoperator.manager.events;
 
 import org.jdrupes.vmoperator.common.K8sClient;
-import org.jdrupes.vmoperator.common.K8sDynamicModel;
+import org.jdrupes.vmoperator.common.VmDefinitionModel;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.EventPipeline;
 import org.jgrapes.core.Subchannel.DefaultSubchannel;
@@ -32,7 +32,7 @@ public class VmChannel extends DefaultSubchannel {
 
     private final EventPipeline pipeline;
     private final K8sClient client;
-    private K8sDynamicModel vmDefinition;
+    private VmDefinitionModel vmDefinition;
     private long generation = -1;
 
     /**
@@ -56,7 +56,7 @@ public class VmChannel extends DefaultSubchannel {
      * @return the watch channel
      */
     @SuppressWarnings("PMD.LinguisticNaming")
-    public VmChannel setVmDefinition(K8sDynamicModel definition) {
+    public VmChannel setVmDefinition(VmDefinitionModel definition) {
         this.vmDefinition = definition;
         return this;
     }
@@ -66,7 +66,7 @@ public class VmChannel extends DefaultSubchannel {
      *
      * @return the json object
      */
-    public K8sDynamicModel vmDefinition() {
+    public VmDefinitionModel vmDefinition() {
         return vmDefinition;
     }
 
