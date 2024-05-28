@@ -31,80 +31,110 @@
 <span class="source-line-no">018</span><span id="line-18"></span>
 <span class="source-line-no">019</span><span id="line-19">package org.jdrupes.vmoperator.manager;</span>
 <span class="source-line-no">020</span><span id="line-20"></span>
-<span class="source-line-no">021</span><span id="line-21">import java.io.IOException;</span>
-<span class="source-line-no">022</span><span id="line-22">import org.jgrapes.core.Channel;</span>
-<span class="source-line-no">023</span><span id="line-23">import org.jgrapes.core.Component;</span>
-<span class="source-line-no">024</span><span id="line-24">import org.jgrapes.core.annotation.Handler;</span>
-<span class="source-line-no">025</span><span id="line-25">import org.jgrapes.webconsole.base.Conlet;</span>
-<span class="source-line-no">026</span><span id="line-26">import org.jgrapes.webconsole.base.ConsoleConnection;</span>
-<span class="source-line-no">027</span><span id="line-27">import org.jgrapes.webconsole.base.events.AddConletRequest;</span>
-<span class="source-line-no">028</span><span id="line-28">import org.jgrapes.webconsole.base.events.ConsoleConfigured;</span>
-<span class="source-line-no">029</span><span id="line-29">import org.jgrapes.webconsole.base.events.ConsoleReady;</span>
-<span class="source-line-no">030</span><span id="line-30">import org.jgrapes.webconsole.base.events.RenderConlet;</span>
-<span class="source-line-no">031</span><span id="line-31"></span>
-<span class="source-line-no">032</span><span id="line-32">/**</span>
-<span class="source-line-no">033</span><span id="line-33"> * </span>
-<span class="source-line-no">034</span><span id="line-34"> */</span>
-<span class="source-line-no">035</span><span id="line-35">public class AvoidEmptyPolicy extends Component {</span>
-<span class="source-line-no">036</span><span id="line-36"></span>
-<span class="source-line-no">037</span><span id="line-37">    private final String renderedFlagName = getClass().getName() + ".rendered";</span>
-<span class="source-line-no">038</span><span id="line-38"></span>
-<span class="source-line-no">039</span><span id="line-39">    /**</span>
-<span class="source-line-no">040</span><span id="line-40">     * Creates a new component with its channel set to the given channel.</span>
-<span class="source-line-no">041</span><span id="line-41">     * </span>
-<span class="source-line-no">042</span><span id="line-42">     * @param componentChannel</span>
-<span class="source-line-no">043</span><span id="line-43">     */</span>
-<span class="source-line-no">044</span><span id="line-44">    public AvoidEmptyPolicy(Channel componentChannel) {</span>
-<span class="source-line-no">045</span><span id="line-45">        super(componentChannel);</span>
-<span class="source-line-no">046</span><span id="line-46">    }</span>
-<span class="source-line-no">047</span><span id="line-47"></span>
-<span class="source-line-no">048</span><span id="line-48">    /**</span>
-<span class="source-line-no">049</span><span id="line-49">     * On console ready.</span>
-<span class="source-line-no">050</span><span id="line-50">     *</span>
-<span class="source-line-no">051</span><span id="line-51">     * @param event the event</span>
-<span class="source-line-no">052</span><span id="line-52">     * @param connection the connection</span>
-<span class="source-line-no">053</span><span id="line-53">     */</span>
-<span class="source-line-no">054</span><span id="line-54">    @Handler</span>
-<span class="source-line-no">055</span><span id="line-55">    public void onConsoleReady(ConsoleReady event,</span>
-<span class="source-line-no">056</span><span id="line-56">            ConsoleConnection connection) {</span>
-<span class="source-line-no">057</span><span id="line-57">        connection.session().put(renderedFlagName, false);</span>
-<span class="source-line-no">058</span><span id="line-58">    }</span>
-<span class="source-line-no">059</span><span id="line-59"></span>
-<span class="source-line-no">060</span><span id="line-60">    /**</span>
-<span class="source-line-no">061</span><span id="line-61">     * On render conlet.</span>
-<span class="source-line-no">062</span><span id="line-62">     *</span>
-<span class="source-line-no">063</span><span id="line-63">     * @param event the event</span>
-<span class="source-line-no">064</span><span id="line-64">     * @param connection the connection</span>
-<span class="source-line-no">065</span><span id="line-65">     */</span>
-<span class="source-line-no">066</span><span id="line-66">    @Handler</span>
-<span class="source-line-no">067</span><span id="line-67">    public void onRenderConlet(RenderConlet event,</span>
-<span class="source-line-no">068</span><span id="line-68">            ConsoleConnection connection) {</span>
-<span class="source-line-no">069</span><span id="line-69">        connection.session().put(renderedFlagName, true);</span>
-<span class="source-line-no">070</span><span id="line-70">    }</span>
-<span class="source-line-no">071</span><span id="line-71"></span>
-<span class="source-line-no">072</span><span id="line-72">    /**</span>
-<span class="source-line-no">073</span><span id="line-73">     * On console configured.</span>
-<span class="source-line-no">074</span><span id="line-74">     *</span>
-<span class="source-line-no">075</span><span id="line-75">     * @param event the event</span>
-<span class="source-line-no">076</span><span id="line-76">     * @param connection the console connection</span>
-<span class="source-line-no">077</span><span id="line-77">     * @throws InterruptedException the interrupted exception</span>
-<span class="source-line-no">078</span><span id="line-78">     */</span>
-<span class="source-line-no">079</span><span id="line-79">    @Handler</span>
-<span class="source-line-no">080</span><span id="line-80">    public void onConsoleConfigured(ConsoleConfigured event,</span>
-<span class="source-line-no">081</span><span id="line-81">            ConsoleConnection connection) throws InterruptedException,</span>
-<span class="source-line-no">082</span><span id="line-82">            IOException {</span>
-<span class="source-line-no">083</span><span id="line-83">        if ((Boolean) connection.session().getOrDefault(</span>
-<span class="source-line-no">084</span><span id="line-84">            renderedFlagName, false)) {</span>
-<span class="source-line-no">085</span><span id="line-85">            return;</span>
-<span class="source-line-no">086</span><span id="line-86">        }</span>
-<span class="source-line-no">087</span><span id="line-87">        fire(new AddConletRequest(event.event().event().renderSupport(),</span>
-<span class="source-line-no">088</span><span id="line-88">            "org.jdrupes.vmoperator.vmconlet.VmConlet",</span>
-<span class="source-line-no">089</span><span id="line-89">            Conlet.RenderMode</span>
-<span class="source-line-no">090</span><span id="line-90">                .asSet(Conlet.RenderMode.Preview, Conlet.RenderMode.View)),</span>
-<span class="source-line-no">091</span><span id="line-91">            connection);</span>
-<span class="source-line-no">092</span><span id="line-92">    }</span>
-<span class="source-line-no">093</span><span id="line-93"></span>
-<span class="source-line-no">094</span><span id="line-94">}</span>
+<span class="source-line-no">021</span><span id="line-21">import java.io.BufferedReader;</span>
+<span class="source-line-no">022</span><span id="line-22">import java.io.IOException;</span>
+<span class="source-line-no">023</span><span id="line-23">import java.io.InputStreamReader;</span>
+<span class="source-line-no">024</span><span id="line-24">import java.util.Collections;</span>
+<span class="source-line-no">025</span><span id="line-25">import java.util.ResourceBundle;</span>
+<span class="source-line-no">026</span><span id="line-26">import java.util.stream.Collectors;</span>
+<span class="source-line-no">027</span><span id="line-27">import org.jgrapes.core.Channel;</span>
+<span class="source-line-no">028</span><span id="line-28">import org.jgrapes.core.Component;</span>
+<span class="source-line-no">029</span><span id="line-29">import org.jgrapes.core.annotation.Handler;</span>
+<span class="source-line-no">030</span><span id="line-30">import org.jgrapes.webconlet.markdowndisplay.MarkdownDisplayConlet;</span>
+<span class="source-line-no">031</span><span id="line-31">import org.jgrapes.webconsole.base.Conlet.RenderMode;</span>
+<span class="source-line-no">032</span><span id="line-32">import org.jgrapes.webconsole.base.ConsoleConnection;</span>
+<span class="source-line-no">033</span><span id="line-33">import org.jgrapes.webconsole.base.events.AddConletRequest;</span>
+<span class="source-line-no">034</span><span id="line-34">import org.jgrapes.webconsole.base.events.ConsoleConfigured;</span>
+<span class="source-line-no">035</span><span id="line-35">import org.jgrapes.webconsole.base.events.ConsoleReady;</span>
+<span class="source-line-no">036</span><span id="line-36">import org.jgrapes.webconsole.base.events.RenderConlet;</span>
+<span class="source-line-no">037</span><span id="line-37"></span>
+<span class="source-line-no">038</span><span id="line-38">/**</span>
+<span class="source-line-no">039</span><span id="line-39"> * </span>
+<span class="source-line-no">040</span><span id="line-40"> */</span>
+<span class="source-line-no">041</span><span id="line-41">public class AvoidEmptyPolicy extends Component {</span>
+<span class="source-line-no">042</span><span id="line-42"></span>
+<span class="source-line-no">043</span><span id="line-43">    private final String renderedFlagName = getClass().getName() + ".rendered";</span>
+<span class="source-line-no">044</span><span id="line-44"></span>
+<span class="source-line-no">045</span><span id="line-45">    /**</span>
+<span class="source-line-no">046</span><span id="line-46">     * Creates a new component with its channel set to the given channel.</span>
+<span class="source-line-no">047</span><span id="line-47">     * </span>
+<span class="source-line-no">048</span><span id="line-48">     * @param componentChannel</span>
+<span class="source-line-no">049</span><span id="line-49">     */</span>
+<span class="source-line-no">050</span><span id="line-50">    public AvoidEmptyPolicy(Channel componentChannel) {</span>
+<span class="source-line-no">051</span><span id="line-51">        super(componentChannel);</span>
+<span class="source-line-no">052</span><span id="line-52">    }</span>
+<span class="source-line-no">053</span><span id="line-53"></span>
+<span class="source-line-no">054</span><span id="line-54">    /**</span>
+<span class="source-line-no">055</span><span id="line-55">     * On console ready.</span>
+<span class="source-line-no">056</span><span id="line-56">     *</span>
+<span class="source-line-no">057</span><span id="line-57">     * @param event the event</span>
+<span class="source-line-no">058</span><span id="line-58">     * @param connection the connection</span>
+<span class="source-line-no">059</span><span id="line-59">     */</span>
+<span class="source-line-no">060</span><span id="line-60">    @Handler</span>
+<span class="source-line-no">061</span><span id="line-61">    public void onConsoleReady(ConsoleReady event,</span>
+<span class="source-line-no">062</span><span id="line-62">            ConsoleConnection connection) {</span>
+<span class="source-line-no">063</span><span id="line-63">        connection.session().put(renderedFlagName, false);</span>
+<span class="source-line-no">064</span><span id="line-64">    }</span>
+<span class="source-line-no">065</span><span id="line-65"></span>
+<span class="source-line-no">066</span><span id="line-66">    /**</span>
+<span class="source-line-no">067</span><span id="line-67">     * On render conlet.</span>
+<span class="source-line-no">068</span><span id="line-68">     *</span>
+<span class="source-line-no">069</span><span id="line-69">     * @param event the event</span>
+<span class="source-line-no">070</span><span id="line-70">     * @param connection the connection</span>
+<span class="source-line-no">071</span><span id="line-71">     */</span>
+<span class="source-line-no">072</span><span id="line-72">    @Handler</span>
+<span class="source-line-no">073</span><span id="line-73">    public void onRenderConlet(RenderConlet event,</span>
+<span class="source-line-no">074</span><span id="line-74">            ConsoleConnection connection) {</span>
+<span class="source-line-no">075</span><span id="line-75">        connection.session().put(renderedFlagName, true);</span>
+<span class="source-line-no">076</span><span id="line-76">    }</span>
+<span class="source-line-no">077</span><span id="line-77"></span>
+<span class="source-line-no">078</span><span id="line-78">    /**</span>
+<span class="source-line-no">079</span><span id="line-79">     * On console configured.</span>
+<span class="source-line-no">080</span><span id="line-80">     *</span>
+<span class="source-line-no">081</span><span id="line-81">     * @param event the event</span>
+<span class="source-line-no">082</span><span id="line-82">     * @param connection the console connection</span>
+<span class="source-line-no">083</span><span id="line-83">     * @throws InterruptedException the interrupted exception</span>
+<span class="source-line-no">084</span><span id="line-84">     */</span>
+<span class="source-line-no">085</span><span id="line-85">    @Handler</span>
+<span class="source-line-no">086</span><span id="line-86">    public void onConsoleConfigured(ConsoleConfigured event,</span>
+<span class="source-line-no">087</span><span id="line-87">            ConsoleConnection connection) throws InterruptedException,</span>
+<span class="source-line-no">088</span><span id="line-88">            IOException {</span>
+<span class="source-line-no">089</span><span id="line-89">        if ((Boolean) connection.session().getOrDefault(renderedFlagName,</span>
+<span class="source-line-no">090</span><span id="line-90">            false)) {</span>
+<span class="source-line-no">091</span><span id="line-91">            return;</span>
+<span class="source-line-no">092</span><span id="line-92">        }</span>
+<span class="source-line-no">093</span><span id="line-93">        var resourceBundle = ResourceBundle.getBundle(</span>
+<span class="source-line-no">094</span><span id="line-94">            getClass().getPackage().getName() + ".l10n", connection.locale(),</span>
+<span class="source-line-no">095</span><span id="line-95">            getClass().getClassLoader(),</span>
+<span class="source-line-no">096</span><span id="line-96">            ResourceBundle.Control.getNoFallbackControl(</span>
+<span class="source-line-no">097</span><span id="line-97">                ResourceBundle.Control.FORMAT_DEFAULT));</span>
+<span class="source-line-no">098</span><span id="line-98">        var locale = resourceBundle.getLocale().toString();</span>
+<span class="source-line-no">099</span><span id="line-99">        String shortDesc;</span>
+<span class="source-line-no">100</span><span id="line-100">        try (BufferedReader shortDescReader</span>
+<span class="source-line-no">101</span><span id="line-101">            = new BufferedReader(new InputStreamReader(</span>
+<span class="source-line-no">102</span><span id="line-102">                AvoidEmptyPolicy.class.getResourceAsStream(</span>
+<span class="source-line-no">103</span><span id="line-103">                    "ManagerIntro-Preview" + (locale.isEmpty() ? ""</span>
+<span class="source-line-no">104</span><span id="line-104">                        : "_" + locale) + ".md"),</span>
+<span class="source-line-no">105</span><span id="line-105">                "utf-8"))) {</span>
+<span class="source-line-no">106</span><span id="line-106">            shortDesc</span>
+<span class="source-line-no">107</span><span id="line-107">                = shortDescReader.lines().collect(Collectors.joining("\n"));</span>
+<span class="source-line-no">108</span><span id="line-108">        }</span>
+<span class="source-line-no">109</span><span id="line-109">        fire(new AddConletRequest(event.event().event().renderSupport(),</span>
+<span class="source-line-no">110</span><span id="line-110">            MarkdownDisplayConlet.class.getName(),</span>
+<span class="source-line-no">111</span><span id="line-111">            RenderMode.asSet(RenderMode.Preview))</span>
+<span class="source-line-no">112</span><span id="line-112">                .addProperty(MarkdownDisplayConlet.CONLET_ID,</span>
+<span class="source-line-no">113</span><span id="line-113">                    getClass().getName())</span>
+<span class="source-line-no">114</span><span id="line-114">                .addProperty(MarkdownDisplayConlet.TITLE,</span>
+<span class="source-line-no">115</span><span id="line-115">                    resourceBundle.getString("consoleTitle"))</span>
+<span class="source-line-no">116</span><span id="line-116">                .addProperty(MarkdownDisplayConlet.PREVIEW_SOURCE,</span>
+<span class="source-line-no">117</span><span id="line-117">                    shortDesc)</span>
+<span class="source-line-no">118</span><span id="line-118">                .addProperty(MarkdownDisplayConlet.DELETABLE, true)</span>
+<span class="source-line-no">119</span><span id="line-119">                .addProperty(MarkdownDisplayConlet.EDITABLE_BY,</span>
+<span class="source-line-no">120</span><span id="line-120">                    Collections.EMPTY_SET),</span>
+<span class="source-line-no">121</span><span id="line-121">            connection);</span>
+<span class="source-line-no">122</span><span id="line-122">    }</span>
+<span class="source-line-no">123</span><span id="line-123"></span>
+<span class="source-line-no">124</span><span id="line-124">}</span>
 
 
 
