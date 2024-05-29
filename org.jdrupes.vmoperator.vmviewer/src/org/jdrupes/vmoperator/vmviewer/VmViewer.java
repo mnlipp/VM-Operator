@@ -227,7 +227,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
             var fmModel = fmModel(event, channel, conletId, conletState);
             fmModel.put("vmNames", channelManager.associated().stream()
                 .filter(d -> !permissions(d, channel.session()).isEmpty())
-                .map(d -> d.getMetadata().getName()).toList());
+                .map(d -> d.getMetadata().getName()).sorted().toList());
             channel.respond(new OpenModalDialog(type(), conletId,
                 processTemplate(event, tpl, fmModel))
                     .addOption("cancelable", true)
