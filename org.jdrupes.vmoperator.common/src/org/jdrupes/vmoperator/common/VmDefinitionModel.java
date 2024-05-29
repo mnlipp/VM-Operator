@@ -22,6 +22,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import java.util.Collection;
+import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -38,10 +40,22 @@ public class VmDefinitionModel extends K8sDynamicModel {
      * Permissions for accessing and manipulating the VM.
      */
     public enum Permission {
-        START, STOP, ACCESS_CONSOLE;
+        START("start"), STOP("stop"), ACCESS_CONSOLE("accessConsole");
 
-        private static Map<String, Permission> reprs = Map.of("start", START,
-            "stop", STOP, "accessConsole", ACCESS_CONSOLE);
+        @SuppressWarnings("PMD.UseConcurrentHashMap")
+        private static Map<String, Permission> reprs = new HashMap<>();
+
+        static {
+            for (var value : EnumSet.allOf(Permission.class)) {
+                reprs.put(value.repr, value);
+            }
+        }
+
+        private final String repr;
+
+        Permission(String repr) {
+            this.repr = repr;
+        }
 
         /**
          * Create permission from representation in CRD.
@@ -51,6 +65,11 @@ public class VmDefinitionModel extends K8sDynamicModel {
          */
         public static Permission parse(String value) {
             return reprs.get(value);
+        }
+
+        @Override
+        public String toString() {
+            return repr;
         }
     }
 
