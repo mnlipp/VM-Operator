@@ -40,7 +40,8 @@ import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicModel;
-import org.jdrupes.vmoperator.common.K8sDynamicStub;
+import org.jdrupes.vmoperator.common.VmDefinitionModel;
+import org.jdrupes.vmoperator.common.VmDefinitionStub;
 import org.jdrupes.vmoperator.runner.qemu.events.BalloonChangeEvent;
 import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
 import org.jdrupes.vmoperator.runner.qemu.events.DisplayPasswordChanged;
@@ -73,7 +74,7 @@ public class StatusUpdater extends Component {
     private long observedGeneration;
     private boolean guestShutdownStops;
     private boolean shutdownByGuest;
-    private K8sDynamicStub vmStub;
+    private VmDefinitionStub vmStub;
 
     /**
      * Instantiates a new status updater.
@@ -158,7 +159,7 @@ public class StatusUpdater extends Component {
             return;
         }
         try {
-            vmStub = K8sDynamicStub.get(apiClient,
+            vmStub = VmDefinitionStub.get(apiClient,
                 new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
                 namespace, vmName);
             vmStub.model().ifPresent(model -> {
@@ -226,7 +227,7 @@ public class StatusUpdater extends Component {
         "PMD.AvoidLiteralsInIfCondition" })
     public void onRunnerStateChanged(RunnerStateChange event)
             throws ApiException {
-        K8sDynamicModel vmDef;
+        VmDefinitionModel vmDef;
         if (vmStub == null || (vmDef = vmStub.model().orElse(null)) == null) {
             return;
         }
