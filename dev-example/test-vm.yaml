@@ -9,6 +9,10 @@ spec:
     path: vmoperator/org.jdrupes.vmoperator.runner.qemu-alpine
     pullPolicy: Always
 
+  permissions:
+    - user: admin
+      may: ["start", "stop", "accessConsole"]
+
   resources:
     requests:
       cpu: 1

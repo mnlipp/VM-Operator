@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import freemarker.core.ParseException;
 import freemarker.template.MalformedTemplateNameException;
@@ -45,6 +46,8 @@ import org.jdrupes.json.JsonBeanDecoder;
 import org.jdrupes.json.JsonDecodeException;
 import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jdrupes.vmoperator.common.K8sObserver;
+import org.jdrupes.vmoperator.common.VmDefinitionModel;
+import org.jdrupes.vmoperator.common.VmDefinitionModel.Permission;
 import org.jdrupes.vmoperator.manager.events.ChannelCache;
 import org.jdrupes.vmoperator.manager.events.GetDisplayPassword;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
@@ -62,6 +65,7 @@ import org.jgrapes.util.events.KeyValueStoreUpdate;
 import org.jgrapes.webconsole.base.Conlet.RenderMode;
 import org.jgrapes.webconsole.base.ConletBaseModel;
 import org.jgrapes.webconsole.base.ConsoleConnection;
+import org.jgrapes.webconsole.base.ConsoleRole;
 import org.jgrapes.webconsole.base.ConsoleUser;
 import org.jgrapes.webconsole.base.WebConsoleUtils;
 import org.jgrapes.webconsole.base.events.AddConletType;
@@ -87,7 +91,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
     private static final Set<RenderMode> MODES = RenderMode.asSet(
         RenderMode.Preview, RenderMode.Edit);
     private final ChannelCache<String, VmChannel,
-            K8sDynamicModel> channelManager = new ChannelCache<>();
+            VmDefinitionModel> channelManager = new ChannelCache<>();
     private static ObjectMapper objectMapper
         = new ObjectMapper().registerModule(new JavaTimeModule());
     private Class<?> preferredIpVersion = Inet4Address.class;
@@ -221,8 +225,9 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
             Template tpl = freemarkerConfig()
                 .getTemplate("VmViewer-edit.ftl.html");
             var fmModel = fmModel(event, channel, conletId, conletState);
-            fmModel.put("vmNames",
-                channelManager.keys().stream().sorted().toList());
+            fmModel.put("vmNames", channelManager.associated().stream()
+                .filter(d -> !permissions(d, channel.session()).isEmpty())
+                .map(d -> d.getMetadata().getName()).toList());
             channel.respond(new OpenModalDialog(type(), conletId,
                 processTemplate(event, tpl, fmModel))
                     .addOption("cancelable", true)
@@ -230,6 +235,15 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
                         resourceBundle.getString("okayLabel")));
         }
         return renderedAs;
+    }
+
+    private Set<Permission> permissions(VmDefinitionModel vmDef,
+            Session session) {
+        var user = WebConsoleUtils.userFromSession(session)
+            .map(ConsoleUser::getName).orElse(null);
+        var roles = WebConsoleUtils.rolesFromSession(session)
+            .stream().map(ConsoleRole::getName).toList();
+        return vmDef.permissionsFor(user, roles);
     }
 
     private void updateConfig(ConsoleConnection channel, ViewerModel model) {
@@ -246,6 +260,9 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
             try {
                 var def = JsonBeanDecoder.create(vmDef.data().toString())
                     .readObject();
+                def.setField("userPermissions",
+                    permissions(vmDef, channel.session()).stream()
+                        .map(Permission::toString).toList());
                 channel.respond(new NotifyConletView(type(),
                     model.getConletId(), "updateVmDefinition", def));
             } catch (JsonDecodeException e) {
@@ -279,8 +296,10 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
         "PMD.ConfusingArgumentToVarargsMethod" })
     public void onVmDefChanged(VmDefChanged event, VmChannel channel)
             throws JsonDecodeException, IOException {
-        var vmDef = new K8sDynamicModel(channel.client().getJSON()
+        var vmDef = new VmDefinitionModel(channel.client().getJSON()
             .getGson(), event.vmDefinition().data());
+        GsonPtr.to(vmDef.data()).to("metadata").get(JsonObject.class)
+            .remove("managedFields");
         var vmName = vmDef.getMetadata().getName();
         if (event.type() == K8sObserver.ResponseType.DELETED) {
             channelManager.remove(vmName);
@@ -316,6 +335,9 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
         if (vmChannel == null) {
             return;
         }
+        var vmDef = channelManager.associated(vmName);
+        var perms = vmDef.map(d -> permissions(d, channel.session()))
+            .orElse(Collections.emptySet());
         switch (event.method()) {
         case "selectedVm":
             model.setVmName(event.params().asString(0));
@@ -325,15 +347,22 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
             updateConfig(channel, model);
             break;
         case "start":
-            fire(new ModifyVm(vmName, "state", "Running", vmChannel));
+            if (perms.contains(Permission.START)) {
+                fire(new ModifyVm(vmName, "state", "Running", vmChannel));
+            }
             break;
         case "stop":
-            fire(new ModifyVm(vmName, "state", "Stopped", vmChannel));
+            if (perms.contains(Permission.STOP)) {
+                fire(new ModifyVm(vmName, "state", "Stopped", vmChannel));
+            }
             break;
         case "openConsole":
-            channelManager.channel(vmName).ifPresent(
-                vc -> fire(Event.onCompletion(new GetDisplayPassword(vmName),
-                    ds -> openConsole(vmName, channel, model, ds)), vc));
+            if (perms.contains(Permission.ACCESS_CONSOLE)) {
+                channelManager.channel(vmName).ifPresent(
+                    vc -> fire(Event.onCompletion(
+                        new GetDisplayPassword(vmName),
+                        ds -> openConsole(vmName, channel, model, ds)), vc));
+            }
             break;
         default:// ignore
             break;

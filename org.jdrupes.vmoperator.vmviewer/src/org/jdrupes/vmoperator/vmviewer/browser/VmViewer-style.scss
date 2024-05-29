@@ -19,24 +19,23 @@
 /*
  * Conlet specific styles.
  */
-.jdrupes-vmoperator-vmviewer-preview img {
-  height: 3em;
-  padding: 0.25rem;
-  
-  &:hover {
-    box-shadow: var(--darkening);
+.jdrupes-vmoperator-vmviewer-preview {
+
+  [role=button] {
+    padding: 0.25rem;
+
+    &:not([aria-disabled]):hover, &[aria-disabled='false']:hover {
+      box-shadow: var(--darkening);
+    }
+  }
+
+  img {
+    height: 3em;
+    padding: 0.25rem;
   }
 }
 
 .jdrupes-vmoperator-vmviewer-preview-action-list {
   white-space: nowrap;
-
-  [role=button] {
-    padding: 0.25rem;
-
-    &:not([aria-disabled]):hover {
-      box-shadow: var(--darkening);
-    }
-  }
 }
 
