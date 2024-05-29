@@ -11,7 +11,11 @@ spec:
 
   permissions:
     - user: admin
-      may: ["start", "stop", "accessConsole"]
+      may: 
+      - "*"
+    - user: test
+      may:
+      - "start"
 
   resources:
     requests:

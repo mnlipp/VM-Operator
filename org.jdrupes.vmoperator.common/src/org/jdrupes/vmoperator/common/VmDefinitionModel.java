@@ -63,8 +63,12 @@ public class VmDefinitionModel extends K8sDynamicModel {
          * @param value the value
          * @return the permission
          */
-        public static Permission parse(String value) {
-            return reprs.get(value);
+        @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
+        public static Set<Permission> parse(String value) {
+            if ("*".equals(value)) {
+                return EnumSet.allOf(Permission.class);
+            }
+            return Set.of(reprs.get(value));
         }
 
         @Override
@@ -101,7 +105,8 @@ public class VmDefinitionModel extends K8sDynamicModel {
             .map(p -> GsonPtr.to(p).getAsListOf(JsonPrimitive.class, "may")
                 .stream())
             .flatMap(Function.identity()).map(p -> p.getAsString())
-            .map(Permission::parse).collect(Collectors.toSet());
+            .map(Permission::parse).map(Set::stream)
+            .flatMap(Function.identity()).collect(Collectors.toSet());
     }
 
 }

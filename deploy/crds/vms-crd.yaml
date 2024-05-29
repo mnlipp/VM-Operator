@@ -1012,7 +1012,7 @@ spec:
                         type: array
                         items:
                           type: string
-                          enum: ["start", "stop", "accessConsole"]
+                          enum: ["start", "stop", "accessConsole", "*"]
                         default: []
                 vm:
                   type: object
