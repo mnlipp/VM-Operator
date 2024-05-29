@@ -35,8 +35,8 @@ import java.util.Optional;
 import java.util.Set;
 import org.jdrupes.json.JsonBeanDecoder;
 import org.jdrupes.json.JsonDecodeException;
-import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jdrupes.vmoperator.common.K8sObserver;
+import org.jdrupes.vmoperator.common.VmDefinitionModel;
 import org.jdrupes.vmoperator.manager.events.ChannelCache;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
@@ -69,7 +69,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
     private static final Set<RenderMode> MODES = RenderMode.asSet(
         RenderMode.Preview, RenderMode.View);
     private final ChannelCache<String, VmChannel,
-            K8sDynamicModel> channelManager = new ChannelCache<>();
+            VmDefinitionModel> channelManager = new ChannelCache<>();
     private final TimeSeries summarySeries = new TimeSeries(Duration.ofDays(1));
     private Summary cachedSummary;
 
@@ -196,8 +196,8 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
                 }
             }
         } else {
-            var vmDef = new K8sDynamicModel(channel.client().getJSON()
-                .getGson(), convertQuantities(event.vmDefinition().data()));
+            var vmDef = new VmDefinitionModel(channel.client().getJSON()
+                .getGson(), cleanup(event.vmDefinition().data()));
             channelManager.put(vmName, channel, vmDef);
             var def = JsonBeanDecoder.create(vmDef.data().toString())
                 .readObject();
@@ -220,7 +220,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
     }
 
     @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-    private JsonObject convertQuantities(JsonObject vmDef) {
+    private JsonObject cleanup(JsonObject vmDef) {
         // Clone and remove managed fields
         var json = vmDef.deepCopy();
         GsonPtr.to(json).to("metadata").get(JsonObject.class)
