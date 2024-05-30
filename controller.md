@@ -191,7 +191,7 @@ type: Opaque
 data:
   display-password: dGVzdC12bQ==
   # Since 3.0.0:
-  # expiry: bmV2ZXI=
+  # password-expiry: bmV2ZXI=
 ```
 
 If such a secret for the VM is found, the VM is configured to use
@@ -206,7 +206,7 @@ restarting the VM.
 
 *Since: 3.0.0*
 
-The secret's `data` can have an additional property `data.expiry` which
+The secret's `data` can have an additional property `data.password-expiry` which
 specifies a (base64 encoded) expiry date for the password. Supported
 values are those defined by qemu (`+n` seconds from now, `n` Unix
 timestamp, `never` and `now`).
