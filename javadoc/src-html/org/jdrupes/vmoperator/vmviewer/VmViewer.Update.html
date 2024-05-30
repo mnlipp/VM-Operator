@@ -240,7 +240,7 @@
 <span class="source-line-no">227</span><span id="line-227">            var fmModel = fmModel(event, channel, conletId, conletState);</span>
 <span class="source-line-no">228</span><span id="line-228">            fmModel.put("vmNames", channelManager.associated().stream()</span>
 <span class="source-line-no">229</span><span id="line-229">                .filter(d -&gt; !permissions(d, channel.session()).isEmpty())</span>
-<span class="source-line-no">230</span><span id="line-230">                .map(d -&gt; d.getMetadata().getName()).toList());</span>
+<span class="source-line-no">230</span><span id="line-230">                .map(d -&gt; d.getMetadata().getName()).sorted().toList());</span>
 <span class="source-line-no">231</span><span id="line-231">            channel.respond(new OpenModalDialog(type(), conletId,</span>
 <span class="source-line-no">232</span><span id="line-232">                processTemplate(event, tpl, fmModel))</span>
 <span class="source-line-no">233</span><span id="line-233">                    .addOption("cancelable", true)</span>

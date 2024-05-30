@@ -82,8 +82,8 @@
 <span class="source-line-no">069</span><span id="line-69">    public static K8sDynamicStub get(K8sClient client,</span>
 <span class="source-line-no">070</span><span id="line-70">            GroupVersionKind gvk, String namespace, String name)</span>
 <span class="source-line-no">071</span><span id="line-71">            throws ApiException {</span>
-<span class="source-line-no">072</span><span id="line-72">        return K8sGenericStub.get(K8sDynamicModel.class, K8sDynamicModels.class,</span>
-<span class="source-line-no">073</span><span id="line-73">            client, gvk, namespace, name, K8sDynamicStub::new);</span>
+<span class="source-line-no">072</span><span id="line-72">        return new K8sDynamicStub(client, apiResource(client, gvk), namespace,</span>
+<span class="source-line-no">073</span><span id="line-73">            name);</span>
 <span class="source-line-no">074</span><span id="line-74">    }</span>
 <span class="source-line-no">075</span><span id="line-75"></span>
 <span class="source-line-no">076</span><span id="line-76">    /**</span>
@@ -118,7 +118,7 @@
 <span class="source-line-no">105</span><span id="line-105">            K8s.yamlToJson(client, yaml));</span>
 <span class="source-line-no">106</span><span id="line-106">        return K8sGenericStub.create(K8sDynamicModel.class,</span>
 <span class="source-line-no">107</span><span id="line-107">            K8sDynamicModels.class, client, context, model,</span>
-<span class="source-line-no">108</span><span id="line-108">            K8sDynamicStub::new);</span>
+<span class="source-line-no">108</span><span id="line-108">            (c, ns, n) -&gt; new K8sDynamicStub(c, context, ns, n));</span>
 <span class="source-line-no">109</span><span id="line-109">    }</span>
 <span class="source-line-no">110</span><span id="line-110"></span>
 <span class="source-line-no">111</span><span id="line-111">    /**</span>
@@ -136,7 +136,7 @@
 <span class="source-line-no">123</span><span id="line-123">            throws ApiException {</span>
 <span class="source-line-no">124</span><span id="line-124">        return K8sGenericStub.list(K8sDynamicModel.class,</span>
 <span class="source-line-no">125</span><span id="line-125">            K8sDynamicModels.class, client, context, namespace, options,</span>
-<span class="source-line-no">126</span><span id="line-126">            K8sDynamicStub::new);</span>
+<span class="source-line-no">126</span><span id="line-126">            (c, ns, n) -&gt; new K8sDynamicStub(c, context, ns, n));</span>
 <span class="source-line-no">127</span><span id="line-127">    }</span>
 <span class="source-line-no">128</span><span id="line-128"></span>
 <span class="source-line-no">129</span><span id="line-129">    /**</span>
