@@ -54,6 +54,8 @@ spec:
     display:
       spice:
         port: 5910
+        # Since 3.0.0:
+        # generateSecret: false
 ```
 
 ## Pod management 
@@ -199,6 +201,13 @@ restarting the VM.
 
 [^delay]: Be aware of the possible delay, see e.g. 
     [here](https://web.archive.org/web/20240223073838/https://ahmet.im/blog/kubernetes-secret-volumes-delay/).
+
+*Since: 3.0.0*
+
+If `spec.display.spice.generateSecret` is set to `true`, the controller creates
+a secret for the display password if none is found. The secret is created
+with a random password that expires immediately, which makes the display 
+effectively inaccessible until the secret is changed.
 
 ## Further reading
 
