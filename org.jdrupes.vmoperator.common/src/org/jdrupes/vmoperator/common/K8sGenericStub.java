@@ -259,14 +259,12 @@ public class K8sGenericStub<O extends KubernetesObject,
          * Gets a new stub.
          *
          * @param client the client
-         * @param context the API resource
          * @param namespace the namespace
          * @param name the name
          * @return the result
          */
         @SuppressWarnings("PMD.UseObjectForClearerAPI")
-        R get(K8sClient client, APIResource context, String namespace,
-                String name);
+        R get(K8sClient client, String namespace, String name);
     }
 
     @Override
@@ -274,40 +272,6 @@ public class K8sGenericStub<O extends KubernetesObject,
     public String toString() {
         return (Strings.isNullOrEmpty(group()) ? "" : group() + "/")
             + version().toUpperCase() + kind() + " " + namespace + ":" + name;
-    }
-
-    /**
-     * Get a namespaced object stub. If the version in parameter
-     * `gvk` is an empty string, the stub refers to the first object 
-     * found with matching group and kind. 
-     *
-     * @param <O> the object type
-     * @param <L> the object list type
-     * @param <R> the stub type
-     * @param objectClass the object class
-     * @param objectListClass the object list class
-     * @param client the client
-     * @param gvk the group, version and kind
-     * @param namespace the namespace
-     * @param name the name
-     * @param provider the provider
-     * @return the stub if the object exists
-     * @throws ApiException the api exception
-     */
-    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop" })
-    public static <O extends KubernetesObject, L extends KubernetesListObject,
-            R extends K8sGenericStub<O, L>>
-            R get(Class<O> objectClass, Class<L> objectListClass,
-                    K8sClient client, GroupVersionKind gvk, String namespace,
-                    String name, GenericSupplier<O, L, R> provider)
-                    throws ApiException {
-        var context = K8s.context(client, gvk.getGroup(), gvk.getVersion(),
-            gvk.getKind());
-        if (context.isEmpty()) {
-            throw new ApiException("No known API for " + gvk.getGroup()
-                + "/" + gvk.getVersion() + " " + gvk.getKind());
-        }
-        return provider.get(client, context.get(), namespace, name);
     }
 
     /**
@@ -336,7 +300,7 @@ public class K8sGenericStub<O extends KubernetesObject,
             context.getGroup(), context.getPreferredVersion(),
             context.getResourcePlural(), client);
         api.create(model).throwsApiException();
-        return provider.get(client, context, model.getMetadata().getNamespace(),
+        return provider.get(client, model.getMetadata().getNamespace(),
             model.getMetadata().getName());
     }
 
@@ -371,7 +335,7 @@ public class K8sGenericStub<O extends KubernetesObject,
                 client);
             var objs = api.list(namespace, options).throwsApiException();
             for (var item : objs.getObject().getItems()) {
-                result.add(provider.get(client, context, namespace,
+                result.add(provider.get(client, namespace,
                     item.getMetadata().getName()));
             }
         }
@@ -383,6 +347,25 @@ public class K8sGenericStub<O extends KubernetesObject,
         result.remove(context.getPreferredVersion());
         result.add(0, context.getPreferredVersion());
         return result;
+    }
+
+    /**
+     * Api resource.
+     *
+     * @param client the client
+     * @param gvk the gvk
+     * @return the API resource
+     * @throws ApiException the api exception
+     */
+    public static APIResource apiResource(K8sClient client,
+            GroupVersionKind gvk) throws ApiException {
+        var context = K8s.context(client, gvk.getGroup(), gvk.getVersion(),
+            gvk.getKind());
+        if (context.isEmpty()) {
+            throw new ApiException("No known API for " + gvk.getGroup()
+                + "/" + gvk.getVersion() + " " + gvk.getKind());
+        }
+        return context.get();
     }
 
 }

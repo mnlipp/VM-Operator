@@ -69,8 +69,8 @@ public class K8sDynamicStub
     public static K8sDynamicStub get(K8sClient client,
             GroupVersionKind gvk, String namespace, String name)
             throws ApiException {
-        return K8sGenericStub.get(K8sDynamicModel.class, K8sDynamicModels.class,
-            client, gvk, namespace, name, K8sDynamicStub::new);
+        return new K8sDynamicStub(client, apiResource(client, gvk), namespace,
+            name);
     }
 
     /**
@@ -105,7 +105,7 @@ public class K8sDynamicStub
             K8s.yamlToJson(client, yaml));
         return K8sGenericStub.create(K8sDynamicModel.class,
             K8sDynamicModels.class, client, context, model,
-            K8sDynamicStub::new);
+            (c, ns, n) -> new K8sDynamicStub(c, context, ns, n));
     }
 
     /**
@@ -123,7 +123,7 @@ public class K8sDynamicStub
             throws ApiException {
         return K8sGenericStub.list(K8sDynamicModel.class,
             K8sDynamicModels.class, client, context, namespace, options,
-            K8sDynamicStub::new);
+            (c, ns, n) -> new K8sDynamicStub(c, context, ns, n));
     }
 
     /**

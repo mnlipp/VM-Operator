@@ -73,7 +73,7 @@ public class K8sV1PodStub extends K8sGenericStub<V1Pod, V1PodList> {
     public static Collection<K8sV1PodStub> list(K8sClient client,
             String namespace, ListOptions options) throws ApiException {
         return K8sGenericStub.list(V1Pod.class, V1PodList.class, client,
-            CONTEXT, namespace, options, (clnt, context, nscp,
+            CONTEXT, namespace, options, (clnt, nscp,
                     name) -> new K8sV1PodStub(clnt, nscp, name));
     }
 }

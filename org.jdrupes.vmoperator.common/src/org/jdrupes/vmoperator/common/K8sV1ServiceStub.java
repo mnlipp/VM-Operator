@@ -74,7 +74,7 @@ public class K8sV1ServiceStub extends K8sGenericStub<V1Service, V1ServiceList> {
     public static Collection<K8sV1ServiceStub> list(K8sClient client,
             String namespace, ListOptions options) throws ApiException {
         return K8sGenericStub.list(V1Service.class, V1ServiceList.class, client,
-            CONTEXT, namespace, options, (clnt, context, nscp,
-                    name) -> new K8sV1ServiceStub(clnt, nscp, name));
+            CONTEXT, namespace, options,
+            (clnt, nscp, name) -> new K8sV1ServiceStub(clnt, nscp, name));
     }
 }

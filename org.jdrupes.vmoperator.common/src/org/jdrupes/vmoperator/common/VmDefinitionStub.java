@@ -69,9 +69,8 @@ public class VmDefinitionStub
     public static VmDefinitionStub get(K8sClient client,
             GroupVersionKind gvk, String namespace, String name)
             throws ApiException {
-        return K8sGenericStub.get(VmDefinitionModel.class,
-            VmDefinitionModels.class, client, gvk, namespace, name,
-            VmDefinitionStub::new);
+        return new VmDefinitionStub(client, apiResource(client, gvk), namespace,
+            name);
     }
 
     /**
@@ -106,7 +105,7 @@ public class VmDefinitionStub
             K8s.yamlToJson(client, yaml));
         return K8sGenericStub.create(VmDefinitionModel.class,
             VmDefinitionModels.class, client, context, model,
-            VmDefinitionStub::new);
+            (c, ns, n) -> new VmDefinitionStub(c, context, ns, n));
     }
 
     /**
@@ -124,7 +123,7 @@ public class VmDefinitionStub
             throws ApiException {
         return K8sGenericStub.list(VmDefinitionModel.class,
             VmDefinitionModels.class, client, context, namespace, options,
-            VmDefinitionStub::new);
+            (c, ns, n) -> new VmDefinitionStub(c, context, ns, n));
     }
 
     /**
