@@ -190,6 +190,8 @@ metadata:
 type: Opaque
 data:
   display-password: dGVzdC12bQ==
+  # Since 3.0.0:
+  # expiry: bmV2ZXI=
 ```
 
 If such a secret for the VM is found, the VM is configured to use
@@ -203,6 +205,11 @@ restarting the VM.
     [here](https://web.archive.org/web/20240223073838/https://ahmet.im/blog/kubernetes-secret-volumes-delay/).
 
 *Since: 3.0.0*
+
+The secret's `data` can have an additional property `data.expiry` which
+specifies a (base64 encoded) expiry date for the password. Supported
+values are those defined by qemu (`+n` seconds from now, `n` Unix
+timestamp, `never` and `now`).
 
 If `spec.display.spice.generateSecret` is set to `true`, the controller creates
 a secret for the display password if none is found. The secret is created
