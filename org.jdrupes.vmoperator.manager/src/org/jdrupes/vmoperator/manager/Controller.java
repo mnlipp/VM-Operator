@@ -101,7 +101,7 @@ public class Controller extends Component {
                 }
             });
         attach(new VmMonitor(channel()).channelManager(chanMgr));
-        attach(new DisplayPasswordMonitor(channel())
+        attach(new DisplaySecretMonitor(channel())
             .channelManager(chanMgr.fixed()));
         // Currently, we don't use the IP assigned by the load balancer
         // to access the VM's console. Might change in the future.

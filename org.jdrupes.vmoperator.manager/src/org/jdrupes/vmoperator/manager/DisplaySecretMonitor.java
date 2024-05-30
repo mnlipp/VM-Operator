@@ -39,7 +39,7 @@ import org.jgrapes.core.annotation.Handler;
  * Watches for changes of display secrets.
  */
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
-public class DisplayPasswordMonitor
+public class DisplaySecretMonitor
         extends AbstractMonitor<V1Secret, V1SecretList, VmChannel> {
 
     /**
@@ -47,7 +47,7 @@ public class DisplayPasswordMonitor
      *
      * @param componentChannel the component channel
      */
-    public DisplayPasswordMonitor(Channel componentChannel) {
+    public DisplaySecretMonitor(Channel componentChannel) {
         super(componentChannel, V1Secret.class, V1SecretList.class);
         context(K8sV1SecretStub.CONTEXT);
         ListOptions options = new ListOptions();

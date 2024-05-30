@@ -1419,6 +1419,9 @@ spec:
                                 to the spice server. Defaults to the address
                                 of the node that the VM is running on.
                               type: string
+                            generateSecret:
+                              type: boolean
+                              default: true
                             proxyUrl:
                               description: >-
                                 If specified, is copied to the generated
