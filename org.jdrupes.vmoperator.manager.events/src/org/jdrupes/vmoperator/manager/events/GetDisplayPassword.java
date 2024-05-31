@@ -19,40 +19,44 @@
 package org.jdrupes.vmoperator.manager.events;
 
 import java.util.Optional;
+import org.jdrupes.vmoperator.common.VmDefinitionModel;
 import org.jgrapes.core.Event;
 
 /**
- * Gets the current display secret. 
+ * Gets the current display secret and optionally updates it.
  */
 @SuppressWarnings("PMD.DataClass")
 public class GetDisplayPassword extends Event<String> {
 
-    private final String vmName;
+    private final VmDefinitionModel vmDef;
 
     /**
      * Instantiates a new returns the display secret.
      *
-     * @param vmName the vm name
+     * @param vmDef the vm name
      */
-    public GetDisplayPassword(String vmName) {
-        this.vmName = vmName;
+    public GetDisplayPassword(VmDefinitionModel vmDef) {
+        this.vmDef = vmDef;
     }
 
     /**
-     * Gets the vm name.
+     * Gets the vm definition.
      *
-     * @return the vm name
+     * @return the vm definition
      */
-    public String vmName() {
-        return vmName;
+    public VmDefinitionModel vmDefinition() {
+        return vmDef;
     }
 
     /**
-     * Return the password. Should only be called when the event is completed.
+     * Return the password. May only be called when the event is completed.
      *
      * @return the optional
      */
     public Optional<String> password() {
+        if (!isDone()) {
+            throw new IllegalStateException("Event is not done.");
+        }
         return currentResults().stream().findFirst();
     }
 }

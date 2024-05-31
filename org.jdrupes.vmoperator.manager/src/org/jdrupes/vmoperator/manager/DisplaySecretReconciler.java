@@ -32,6 +32,8 @@ import java.util.logging.Logger;
 import org.jdrupes.vmoperator.common.K8sV1SecretStub;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.manager.Constants.COMP_DISPLAY_SECRET;
+import static org.jdrupes.vmoperator.manager.Constants.DATA_DISPLAY_PASSWORD;
+import static org.jdrupes.vmoperator.manager.Constants.DATA_PASSWORD_EXPIRY;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.util.GsonPtr;
@@ -82,7 +84,7 @@ import org.jose4j.base64url.Base64;
         // Create secret
         var secret = new V1Secret();
         secret.setMetadata(new V1ObjectMeta().namespace(metadata.getNamespace())
-            .name(metadata.getName() + "-display-secret")
+            .name(metadata.getName() + "-" + COMP_DISPLAY_SECRET)
             .putLabelsItem("app.kubernetes.io/name", APP_NAME)
             .putLabelsItem("app.kubernetes.io/component", COMP_DISPLAY_SECRET)
             .putLabelsItem("app.kubernetes.io/instance", metadata.getName()));
@@ -97,8 +99,8 @@ import org.jose4j.base64url.Base64;
         byte[] bytes = new byte[16];
         random.nextBytes(bytes);
         var password = Base64.encode(bytes);
-        secret.setStringData(Map.of("display-password", password,
-            "password-expiry", "now"));
+        secret.setStringData(Map.of(DATA_DISPLAY_PASSWORD, password,
+            DATA_PASSWORD_EXPIRY, "now"));
         K8sV1SecretStub.create(channel.client(), secret);
     }
 

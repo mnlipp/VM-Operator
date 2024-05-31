@@ -27,6 +27,12 @@ public class Constants extends org.jdrupes.vmoperator.common.Constants {
     /** The Constant COMP_DISPLAY_SECRET. */
     public static final String COMP_DISPLAY_SECRET = "display-secret";
 
+    /** The Constant DATA_DISPLAY_PASSWORD. */
+    public static final String DATA_DISPLAY_PASSWORD = "display-password";
+
+    /** The Constant DATA_PASSWORD_EXPIRY. */
+    public static final String DATA_PASSWORD_EXPIRY = "password-expiry";
+
     /** The Constant STATE_RUNNING. */
     public static final String STATE_RUNNING = "Running";
 

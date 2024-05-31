@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -109,4 +110,14 @@ public class VmDefinitionModel extends K8sDynamicModel {
             .flatMap(Function.identity()).collect(Collectors.toSet());
     }
 
+    /**
+     * Get the display password serial.
+     *
+     * @return the optional
+     */
+    public Optional<Long> displayPasswordSerial() {
+        return GsonPtr.to(status())
+            .get(JsonPrimitive.class, "displayPasswordSerial")
+            .map(JsonPrimitive::getAsLong);
+    }
 }

@@ -331,13 +331,13 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
             throws Exception {
         event.stop();
         var vmName = event.params().asString(0);
-        var vmChannel = channelManager.channel(vmName).orElse(null);
-        if (vmChannel == null) {
+        var both = channelManager.both(vmName);
+        if (both.isEmpty()) {
             return;
         }
-        var vmDef = channelManager.associated(vmName);
-        var perms = vmDef.map(d -> permissions(d, channel.session()))
-            .orElse(Collections.emptySet());
+        var vmChannel = both.get().channel;
+        var vmDef = both.get().associated;
+        var perms = permissions(vmDef, channel.session());
         switch (event.method()) {
         case "selectedVm":
             model.setVmName(event.params().asString(0));
@@ -358,10 +358,10 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
             break;
         case "openConsole":
             if (perms.contains(Permission.ACCESS_CONSOLE)) {
-                channelManager.channel(vmName).ifPresent(
-                    vc -> fire(Event.onCompletion(
-                        new GetDisplayPassword(vmName),
-                        ds -> openConsole(vmName, channel, model, ds)), vc));
+                var pwQuery = Event.onCompletion(new GetDisplayPassword(vmDef),
+                    e -> e.password().ifPresent(
+                        pw -> openConsole(vmName, channel, model, pw)));
+                fire(pwQuery, vmChannel);
             }
             break;
         default:// ignore
@@ -370,7 +370,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
     }
 
     private void openConsole(String vmName, ConsoleConnection connection,
-            ViewerModel model, GetDisplayPassword pwQuery) {
+            ViewerModel model, String password) {
         var vmDef = channelManager.associated(vmName).orElse(null);
         if (vmDef == null) {
             return;
@@ -391,10 +391,8 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
         StringBuffer data = new StringBuffer(100)
             .append("[virt-viewer]\ntype=spice\nhost=")
             .append(addr.get().getHostAddress()).append("\nport=")
-            .append(Integer.toString(port.get().getAsInt())).append('\n');
-        pwQuery.password().ifPresent(p -> {
-            data.append("password=").append(p).append('\n');
-        });
+            .append(Integer.toString(port.get().getAsInt()))
+            .append("\npassword=").append(password).append('\n');
         proxyUrl.map(JsonPrimitive::getAsString).ifPresent(u -> {
             if (!Strings.isNullOrEmpty(u)) {
                 data.append("proxy=").append(u).append('\n');
