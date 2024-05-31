@@ -26,9 +26,11 @@ import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.Strings;
 import io.kubernetes.client.util.generic.GenericKubernetesApi;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import io.kubernetes.client.util.generic.options.GetOptions;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import io.kubernetes.client.util.generic.options.PatchOptions;
+import io.kubernetes.client.util.generic.options.UpdateOptions;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -228,7 +230,8 @@ public class K8sGenericStub<O extends KubernetesObject,
     public Optional<O> patch(String patchType, V1Patch patch,
             PatchOptions options) throws ApiException {
         return K8s
-            .optional(api.patch(namespace, name, patchType, patch, options));
+            .optional(api.patch(namespace, name, patchType, patch, options)
+                .throwsApiException());
     }
 
     /**
@@ -243,6 +246,30 @@ public class K8sGenericStub<O extends KubernetesObject,
             patch(String patchType, V1Patch patch) throws ApiException {
         PatchOptions opts = new PatchOptions();
         return patch(patchType, patch, opts);
+    }
+
+    /**
+     * Update the object.
+     *
+     * @param object the object
+     * @return the kubernetes api response
+     * @throws ApiException the api exception
+     */
+    public KubernetesApiResponse<O> update(O object) throws ApiException {
+        return api.update(object).throwsApiException();
+    }
+
+    /**
+     * Update the object.
+     *
+     * @param object the object
+     * @param options the options
+     * @return the kubernetes api response
+     * @throws ApiException the api exception
+     */
+    public KubernetesApiResponse<O> update(O object, UpdateOptions options)
+            throws ApiException {
+        return api.update(object, options).throwsApiException();
     }
 
     /**
