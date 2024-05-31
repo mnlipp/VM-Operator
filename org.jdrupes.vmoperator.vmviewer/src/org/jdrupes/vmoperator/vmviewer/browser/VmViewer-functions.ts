@@ -88,7 +88,8 @@ window.orgJDrupesVmOperatorVmViewer.initPreview = (previewDom: HTMLElement,
                     || !vmDef.userPermissions.includes('accessConsole')" 
                   v-on:click="vmAction(vmDef.name, 'openConsole')"
                   :src="resourceBase + (vmDef.running
-                  ? 'computer.svg' : 'computer-off.svg')"></td>
+                  ? 'computer.svg' : 'computer-off.svg')"
+                  :title="localize('Open console')"></td>
                 <td v-if="vmDef.spec"
                   class="jdrupes-vmoperator-vmviewer-preview-action-list">
                   <span role="button" v-if="vmDef.spec.vm.state != 'Running'"

@@ -32,6 +32,10 @@
   img {
     height: 3em;
     padding: 0.25rem;
+    
+    &[aria-disabled=''], &[aria-disabled='true'] {
+        opacity: 0.4;
+    }
   }
 }
 
