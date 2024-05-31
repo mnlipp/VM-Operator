@@ -50,6 +50,7 @@ import org.jgrapes.core.Channel;
 import org.jgrapes.core.CompletionLock;
 import org.jgrapes.core.Event;
 import org.jgrapes.core.annotation.Handler;
+import org.jgrapes.util.events.ConfigurationUpdate;
 import org.jose4j.base64url.Base64;
 
 /**
@@ -59,7 +60,7 @@ import org.jose4j.base64url.Base64;
 public class DisplaySecretMonitor
         extends AbstractMonitor<V1Secret, V1SecretList, VmChannel> {
 
-    private final int passwordValidity = 10;
+    private int passwordValidity = 10;
     private final List<PendingGet> pendingGets
         = Collections.synchronizedList(new LinkedList<>());
 
@@ -75,6 +76,25 @@ public class DisplaySecretMonitor
         options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
             + "app.kubernetes.io/component=" + COMP_DISPLAY_SECRET);
         options(options);
+    }
+
+    /**
+     * On configuration update.
+     *
+     * @param event the event
+     */
+    @Handler
+    public void onConfigurationUpdate(ConfigurationUpdate event) {
+        event.structured(componentPath()).ifPresent(c -> {
+            try {
+                if (c.containsKey("passwordValidity")) {
+                    passwordValidity = Integer
+                        .parseInt((String) c.get("passwordValidity"));
+                }
+            } catch (ClassCastException e) {
+                logger.config("Malformed configuration: " + e.getMessage());
+            }
+        });
     }
 
     @Override
