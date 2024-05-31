@@ -104,7 +104,9 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         ListOptions listOpts = new ListOptions();
         listOpts.setLabelSelector(
             "app.kubernetes.io/managed-by=" + VM_OP_NAME + ","
-                + "app.kubernetes.io/name=" + APP_NAME);
+                + "app.kubernetes.io/name=" + APP_NAME + ","
+                + "app.kubernetes.io/instance=" + newCm.getMetadata()
+                    .getLabels().get("app.kubernetes.io/instance"));
         // Get pod, selected by label
         var podApi = new DynamicKubernetesApi("", "v1", "pods", client);
         var pods = podApi
