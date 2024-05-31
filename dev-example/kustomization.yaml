@@ -74,6 +74,8 @@ patches:
                   "/VmViewer":
                     displayResource:
                       preferredIpVersion: ipv4
+                    syncPreviewsFor:
+                    - role: user
 - target:
     group: apps
     version: v1

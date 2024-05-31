@@ -48,3 +48,5 @@
           "/VmViewer":
             displayResource:
               preferredIpVersion: ipv4
+            syncPreviewsFor:
+            - role: user

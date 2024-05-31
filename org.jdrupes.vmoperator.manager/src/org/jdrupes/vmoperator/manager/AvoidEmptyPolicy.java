@@ -69,10 +69,13 @@ public class AvoidEmptyPolicy extends Component {
      * @param event the event
      * @param connection the connection
      */
-    @Handler
+    @Handler(priority = 100)
     public void onRenderConlet(RenderConlet event,
             ConsoleConnection connection) {
-        connection.session().put(renderedFlagName, true);
+        if (event.renderAs().contains(RenderMode.Preview)
+            || event.renderAs().contains(RenderMode.View)) {
+            connection.session().put(renderedFlagName, true);
+        }
     }
 
     /**
@@ -82,7 +85,7 @@ public class AvoidEmptyPolicy extends Component {
      * @param connection the console connection
      * @throws InterruptedException the interrupted exception
      */
-    @Handler
+    @Handler(priority = -100)
     public void onConsoleConfigured(ConsoleConfigured event,
             ConsoleConnection connection) throws InterruptedException,
             IOException {

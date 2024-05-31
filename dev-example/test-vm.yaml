@@ -16,7 +16,7 @@ spec:
       - "*"
     - user: test
       may:
-      - "start"
+      - "accessConsole"
 
   resources:
     requests:
