@@ -65,8 +65,7 @@ public class K8sV1SecretStub extends K8sGenericStub<V1Secret, V1SecretList> {
      * Creates an object stub from a model.
      *
      * @param client the client
-     * @param context the context
-     * @param yaml the yaml
+     * @param model the model
      * @return the k 8 s dynamic stub
      * @throws ApiException the api exception
      */

@@ -53,7 +53,6 @@ import org.jose4j.base64url.Base64;
      * @param event the event
      * @param model the model
      * @param channel the channel
-     * @return the dynamic kubernetes object
      * @throws IOException Signals that an I/O exception has occurred.
      * @throws TemplateException the template exception
      * @throws ApiException the api exception
