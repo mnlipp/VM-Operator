@@ -130,7 +130,9 @@ public class DisplaySecretMonitor
         ListOptions listOpts = new ListOptions();
         listOpts.setLabelSelector(
             "app.kubernetes.io/managed-by=" + VM_OP_NAME + ","
-                + "app.kubernetes.io/name=" + APP_NAME);
+                + "app.kubernetes.io/name=" + APP_NAME + ","
+                + "app.kubernetes.io/instance=" + change.object.getMetadata()
+                    .getLabels().get("app.kubernetes.io/instance"));
         // Get pod, selected by label
         var pods = K8sV1PodStub.list(client, namespace(), listOpts);
 
