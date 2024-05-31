@@ -84,7 +84,9 @@ public class DisplaySecretMonitor
      * @param event the event
      */
     @Handler
+    @Override
     public void onConfigurationUpdate(ConfigurationUpdate event) {
+        super.onConfigurationUpdate(event);
         event.structured(componentPath()).ifPresent(c -> {
             try {
                 if (c.containsKey("passwordValidity")) {
@@ -166,7 +168,8 @@ public class DisplaySecretMonitor
             + "app.kubernetes.io/component=" + COMP_DISPLAY_SECRET + ","
             + "app.kubernetes.io/instance="
             + event.vmDefinition().metadata().getName());
-        var stubs = K8sV1SecretStub.list(client(), namespace(), options);
+        var stubs = K8sV1SecretStub.list(client(),
+            event.vmDefinition().metadata().getNamespace(), options);
         if (stubs.isEmpty()) {
             return;
         }
