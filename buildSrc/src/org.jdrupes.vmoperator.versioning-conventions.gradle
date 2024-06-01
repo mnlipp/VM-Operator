@@ -28,5 +28,5 @@ scmVersion {
         prefix = p
     }
 }
-version = scmVersion.version
+project.version = scmVersion.version
 ext.isSnapshot = version.endsWith('-SNAPSHOT')
