@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Scanner;
 import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
@@ -180,7 +181,8 @@ public class DisplaySecretMonitor
         // Check validity
         var model = stub.model().get();
         @SuppressWarnings("PMD.StringInstantiation")
-        var expiry = new String(model.getData().get(DATA_PASSWORD_EXPIRY));
+        var expiry = Optional.ofNullable(model.getData()
+            .get(DATA_PASSWORD_EXPIRY)).map(b -> new String(b)).orElse(null);
         if (model.getData().get(DATA_DISPLAY_PASSWORD) != null
             && stillValid(expiry)) {
             event.setResult(
