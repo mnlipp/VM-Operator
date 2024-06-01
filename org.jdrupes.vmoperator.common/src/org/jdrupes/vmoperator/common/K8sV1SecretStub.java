@@ -25,7 +25,6 @@ import io.kubernetes.client.openapi.models.V1SecretList;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.util.Collection;
 import java.util.List;
-import org.jdrupes.vmoperator.common.K8sGenericStub.GenericSupplier;
 
 /**
  * A stub for secrets (v1).
@@ -63,6 +62,20 @@ public class K8sV1SecretStub extends K8sGenericStub<V1Secret, V1SecretList> {
     }
 
     /**
+     * Creates an object stub from a model.
+     *
+     * @param client the client
+     * @param model the model
+     * @return the k 8 s dynamic stub
+     * @throws ApiException the api exception
+     */
+    public static K8sV1SecretStub create(K8sClient client, V1Secret model)
+            throws ApiException {
+        return K8sGenericStub.create(V1Secret.class,
+            V1SecretList.class, client, CONTEXT, model, K8sV1SecretStub::new);
+    }
+
+    /**
      * Get the stubs for the objects in the given namespace that match
      * the criteria from the given options.
      *
@@ -75,18 +88,6 @@ public class K8sV1SecretStub extends K8sGenericStub<V1Secret, V1SecretList> {
     public static Collection<K8sV1SecretStub> list(K8sClient client,
             String namespace, ListOptions options) throws ApiException {
         return K8sGenericStub.list(V1Secret.class, V1SecretList.class, client,
-            CONTEXT, namespace, options, K8sV1SecretStub::getGeneric);
+            CONTEXT, namespace, options, K8sV1SecretStub::new);
     }
-
-    /**
-     * Provide {@link GenericSupplier}.
-     */
-    @SuppressWarnings({ "PMD.UnusedFormalParameter",
-        "PMD.UnusedPrivateMethod" })
-    private static K8sV1SecretStub getGeneric(Class<V1Secret> objectClass,
-            Class<V1SecretList> objectListClass, K8sClient client,
-            APIResource context, String namespace, String name) {
-        return new K8sV1SecretStub(client, namespace, name);
-    }
-
 }

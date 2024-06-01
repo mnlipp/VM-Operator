@@ -18,8 +18,8 @@
 
 package org.jdrupes.vmoperator.manager.events;
 
-import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jdrupes.vmoperator.common.K8sObserver;
+import org.jdrupes.vmoperator.common.VmDefinitionModel;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Components;
 import org.jgrapes.core.Event;
@@ -36,7 +36,7 @@ public class VmDefChanged extends Event<Void> {
 
     private final K8sObserver.ResponseType type;
     private final boolean specChanged;
-    private final K8sDynamicModel vmDef;
+    private final VmDefinitionModel vmDef;
 
     /**
      * Instantiates a new VM changed event.
@@ -46,7 +46,7 @@ public class VmDefChanged extends Event<Void> {
      * @param vmDefinition the VM definition
      */
     public VmDefChanged(K8sObserver.ResponseType type, boolean specChanged,
-            K8sDynamicModel vmDefinition) {
+            VmDefinitionModel vmDefinition) {
         this.type = type;
         this.specChanged = specChanged;
         this.vmDef = vmDefinition;
@@ -73,7 +73,7 @@ public class VmDefChanged extends Event<Void> {
      *
      * @return the object.
      */
-    public K8sDynamicModel vmDefinition() {
+    public VmDefinitionModel vmDefinition() {
         return vmDef;
     }
 

@@ -26,9 +26,11 @@ import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.Strings;
 import io.kubernetes.client.util.generic.GenericKubernetesApi;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import io.kubernetes.client.util.generic.options.GetOptions;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import io.kubernetes.client.util.generic.options.PatchOptions;
+import io.kubernetes.client.util.generic.options.UpdateOptions;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -228,7 +230,8 @@ public class K8sGenericStub<O extends KubernetesObject,
     public Optional<O> patch(String patchType, V1Patch patch,
             PatchOptions options) throws ApiException {
         return K8s
-            .optional(api.patch(namespace, name, patchType, patch, options));
+            .optional(api.patch(namespace, name, patchType, patch, options)
+                .throwsApiException());
     }
 
     /**
@@ -246,6 +249,30 @@ public class K8sGenericStub<O extends KubernetesObject,
     }
 
     /**
+     * Update the object.
+     *
+     * @param object the object
+     * @return the kubernetes api response
+     * @throws ApiException the api exception
+     */
+    public KubernetesApiResponse<O> update(O object) throws ApiException {
+        return api.update(object).throwsApiException();
+    }
+
+    /**
+     * Update the object.
+     *
+     * @param object the object
+     * @param options the options
+     * @return the kubernetes api response
+     * @throws ApiException the api exception
+     */
+    public KubernetesApiResponse<O> update(O object, UpdateOptions options)
+            throws ApiException {
+        return api.update(object, options).throwsApiException();
+    }
+
+    /**
      * A supplier for generic stubs.
      *
      * @param <O> the object type
@@ -258,17 +285,13 @@ public class K8sGenericStub<O extends KubernetesObject,
         /**
          * Gets a new stub.
          *
-         * @param objectClass the object class
-         * @param objectListClass the object list class
          * @param client the client
-         * @param context the API resource
          * @param namespace the namespace
          * @param name the name
          * @return the result
          */
         @SuppressWarnings("PMD.UseObjectForClearerAPI")
-        R get(Class<O> objectClass, Class<L> objectListClass, K8sClient client,
-                APIResource context, String namespace, String name);
+        R get(K8sClient client, String namespace, String name);
     }
 
     @Override
@@ -276,68 +299,6 @@ public class K8sGenericStub<O extends KubernetesObject,
     public String toString() {
         return (Strings.isNullOrEmpty(group()) ? "" : group() + "/")
             + version().toUpperCase() + kind() + " " + namespace + ":" + name;
-    }
-
-    /**
-     * Get a namespaced object stub. If the version in parameter
-     * `gvk` is an empty string, the stub refers to the first object 
-     * found with matching group and kind. 
-     *
-     * @param <O> the object type
-     * @param <L> the object list type
-     * @param <R> the stub type
-     * @param objectClass the object class
-     * @param objectListClass the object list class
-     * @param client the client
-     * @param gvk the group, version and kind
-     * @param namespace the namespace
-     * @param name the name
-     * @param provider the provider
-     * @return the stub if the object exists
-     * @throws ApiException the api exception
-     */
-    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop" })
-    public static <O extends KubernetesObject, L extends KubernetesListObject,
-            R extends K8sGenericStub<O, L>>
-            R get(Class<O> objectClass, Class<L> objectListClass,
-                    K8sClient client, GroupVersionKind gvk, String namespace,
-                    String name, GenericSupplier<O, L, R> provider)
-                    throws ApiException {
-        var context = K8s.context(client, gvk.getGroup(), gvk.getVersion(),
-            gvk.getKind());
-        if (context.isEmpty()) {
-            throw new ApiException("No known API for " + gvk.getGroup()
-                + "/" + gvk.getVersion() + " " + gvk.getKind());
-        }
-        return provider.get(objectClass, objectListClass, client, context.get(),
-            namespace, name);
-    }
-
-    /**
-     * Get a namespaced object stub.
-     *
-     * @param <O> the object type
-     * @param <L> the object list type
-     * @param <R> the stub type
-     * @param objectClass the object class
-     * @param objectListClass the object list class
-     * @param client the client
-     * @param context the context
-     * @param namespace the namespace
-     * @param name the name
-     * @param provider the provider
-     * @return the stub if the object exists
-     * @throws ApiException the api exception
-     */
-    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
-        "PMD.UseObjectForClearerAPI" })
-    public static <O extends KubernetesObject, L extends KubernetesListObject,
-            R extends K8sGenericStub<O, L>>
-            R get(Class<O> objectClass, Class<L> objectListClass,
-                    K8sClient client, APIResource context, String namespace,
-                    String name, GenericSupplier<O, L, R> provider) {
-        return provider.get(objectClass, objectListClass, client,
-            context, namespace, name);
     }
 
     /**
@@ -366,8 +327,7 @@ public class K8sGenericStub<O extends KubernetesObject,
             context.getGroup(), context.getPreferredVersion(),
             context.getResourcePlural(), client);
         api.create(model).throwsApiException();
-        return provider.get(objectClass, objectListClass, client,
-            context, model.getMetadata().getNamespace(),
+        return provider.get(client, model.getMetadata().getNamespace(),
             model.getMetadata().getName());
     }
 
@@ -402,8 +362,8 @@ public class K8sGenericStub<O extends KubernetesObject,
                 client);
             var objs = api.list(namespace, options).throwsApiException();
             for (var item : objs.getObject().getItems()) {
-                result.add(provider.get(objectClass, objectListClass, client,
-                    context, namespace, item.getMetadata().getName()));
+                result.add(provider.get(client, namespace,
+                    item.getMetadata().getName()));
             }
         }
         return result;
@@ -414,6 +374,25 @@ public class K8sGenericStub<O extends KubernetesObject,
         result.remove(context.getPreferredVersion());
         result.add(0, context.getPreferredVersion());
         return result;
+    }
+
+    /**
+     * Api resource.
+     *
+     * @param client the client
+     * @param gvk the gvk
+     * @return the API resource
+     * @throws ApiException the api exception
+     */
+    public static APIResource apiResource(K8sClient client,
+            GroupVersionKind gvk) throws ApiException {
+        var context = K8s.context(client, gvk.getGroup(), gvk.getVersion(),
+            gvk.getKind());
+        if (context.isEmpty()) {
+            throw new ApiException("No known API for " + gvk.getGroup()
+                + "/" + gvk.getVersion() + " " + gvk.getKind());
+        }
+        return context.get();
     }
 
 }

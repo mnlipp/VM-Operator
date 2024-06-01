@@ -84,17 +84,22 @@ window.orgJDrupesVmOperatorVmViewer.initPreview = (previewDom: HTMLElement,
             <tbody>
               <tr>
                 <td><img role=button 
+                  :aria-disabled="!vmDef.running || !vmDef.userPermissions
+                    || !vmDef.userPermissions.includes('accessConsole')" 
                   v-on:click="vmAction(vmDef.name, 'openConsole')"
                   :src="resourceBase + (vmDef.running
-                  ? 'computer.svg' : 'computer-off.svg')"></td>
+                  ? 'computer.svg' : 'computer-off.svg')"
+                  :title="localize('Open console')"></td>
                 <td v-if="vmDef.spec"
                   class="jdrupes-vmoperator-vmviewer-preview-action-list">
-                  <span role="button" v-if="vmDef.spec.vm.state != 'Running'" 
-                      tabindex="0" class="fa fa-play" :title="localize('Start VM')"
+                  <span role="button" v-if="vmDef.spec.vm.state != 'Running'"
+                    :aria-disabled="!vmDef.userPermissions.includes('start')" 
+                    tabindex="0" class="fa fa-play" :title="localize('Start VM')"
                     v-on:click="vmAction(vmDef.name, 'start')"></span>
                   <span role="button" v-else class="fa fa-play"
                     aria-disabled="true" :title="localize('Start VM')"></span>
                   <span role="button" v-if="vmDef.spec.vm.state != 'Stopped'"
+                    :aria-disabled="!vmDef.userPermissions.includes('stop')" 
                     tabindex="0" class="fa fa-stop" :title="localize('Stop VM')"
                     v-on:click="vmAction(vmDef.name, 'stop')"></span>
                   <span role="button" v-else class="fa fa-stop"

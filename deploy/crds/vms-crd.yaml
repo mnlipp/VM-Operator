@@ -990,6 +990,30 @@ spec:
                       description: Copied to cloud-init's network-config file.
                       type: object
                       x-kubernetes-preserve-unknown-fields: true
+                permissions:
+                  type: array
+                  description: >-
+                    Defines permissions for accessing and manipulating the VM.
+                  items:
+                    type: object
+                    description: >-
+                      Permissions can be granted to a user or to a role.
+                    oneOf:
+                    - required:
+                      - user
+                    - required:
+                      - role
+                    properties:
+                      user:
+                        type: string
+                      role:
+                        type: string
+                      may:
+                        type: array
+                        items:
+                          type: string
+                          enum: ["start", "stop", "accessConsole", "*"]
+                        default: []
                 vm:
                   type: object
                   description: Defines the VM.
@@ -1395,6 +1419,9 @@ spec:
                                 to the spice server. Defaults to the address
                                 of the node that the VM is running on.
                               type: string
+                            generateSecret:
+                              type: boolean
+                              default: true
                             proxyUrl:
                               description: >-
                                 If specified, is copied to the generated

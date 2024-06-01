@@ -28,6 +28,8 @@
             # User admin has role admin
             admin:
             - admin
+            test:
+            - user
             # All users have role other
             "*":
             - other
@@ -37,11 +39,14 @@
             # Admins can use all conlets
             admin:
             - "*"
+            user:
+            - org.jdrupes.vmoperator.vmviewer.VmViewer
             # Others cannot use any conlet (except login conlet to log out)
             other:
-            - --org.jdrupes.vmoperator.vmconlet.VmConlet
             - org.jgrapes.webconlet.oidclogin.LoginConlet
         "/ComponentCollector":
           "/VmViewer":
             displayResource:
               preferredIpVersion: ipv4
+            syncPreviewsFor:
+            - role: user

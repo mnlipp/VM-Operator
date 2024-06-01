@@ -1,6 +1,6 @@
 /*
  * VM-Operator
- * Copyright (C) 2023 Michael N. Lipp
+ * Copyright (C) 2024 Michael N. Lipp
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,30 +16,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-/*
- * Conlet specific styles.
+package org.jdrupes.vmoperator.common;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
+/**
+ * Represents a list of {@link VmDefinitionModel}s.
  */
-.jdrupes-vmoperator-vmviewer-preview {
+public class VmDefinitionModels
+        extends K8sDynamicModelsBase<VmDefinitionModel> {
 
-  [role=button] {
-    padding: 0.25rem;
-
-    &:not([aria-disabled]):hover, &[aria-disabled='false']:hover {
-      box-shadow: var(--darkening);
+    /**
+     * Initialize the object list using the given JSON data.
+     *
+     * @param delegate the gson instance to use for extracting structured data
+     * @param data the data
+     */
+    public VmDefinitionModels(Gson delegate, JsonObject data) {
+        super(VmDefinitionModel.class, delegate, data);
     }
-  }
-
-  img {
-    height: 3em;
-    padding: 0.25rem;
-    
-    &[aria-disabled=''], &[aria-disabled='true'] {
-        opacity: 0.4;
-    }
-  }
 }
-
-.jdrupes-vmoperator-vmviewer-preview-action-list {
-  white-space: nowrap;
-}
-

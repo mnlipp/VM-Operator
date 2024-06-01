@@ -7,7 +7,16 @@ spec:
   image:
     repository: docker-registry.lan.mnl.de
     path: vmoperator/org.jdrupes.vmoperator.runner.qemu-alpine
+    version: latest
     pullPolicy: Always
+
+  permissions:
+    - user: admin
+      may: 
+      - "*"
+    - user: test
+      may:
+      - "accessConsole"
 
   resources:
     requests:
@@ -52,3 +61,4 @@ spec:
     display:
       spice:
         port: 5810
+        generateSecret: true

@@ -19,14 +19,8 @@
 package org.jdrupes.vmoperator.common;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.kubernetes.client.common.KubernetesListObject;
-import io.kubernetes.client.openapi.Configuration;
-import io.kubernetes.client.openapi.models.V1ListMeta;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 
 /**
  * Represents a list of Kubernetes objects each of which is
@@ -35,11 +29,7 @@ import java.util.Objects;
  * notably the metadata, is made available through the methods
  * defined by {@link KubernetesListObject}.
  */
-public class K8sDynamicModels implements KubernetesListObject {
-
-    private final JsonObject data;
-    private final V1ListMeta metadata;
-    private final List<K8sDynamicModel> items;
+public class K8sDynamicModels extends K8sDynamicModelsBase<K8sDynamicModel> {
 
     /**
      * Initialize the object list using the given JSON data.
@@ -48,116 +38,7 @@ public class K8sDynamicModels implements KubernetesListObject {
      * @param data the data
      */
     public K8sDynamicModels(Gson delegate, JsonObject data) {
-        this.data = data;
-        metadata = delegate.fromJson(data.get("metadata"), V1ListMeta.class);
-        items = new ArrayList<>();
-        for (JsonElement e : data.get("items").getAsJsonArray()) {
-            items.add(new K8sDynamicModel(delegate, e.getAsJsonObject()));
-        }
+        super(K8sDynamicModel.class, delegate, data);
     }
 
-    @Override
-    public String getApiVersion() {
-        return apiVersion();
-    }
-
-    /**
-     * Gets the API version. (Abbreviated method name for convenience.)
-     *
-     * @return the API version
-     */
-    public String apiVersion() {
-        return data.get("apiVersion").getAsString();
-    }
-
-    @Override
-    public String getKind() {
-        return kind();
-    }
-
-    /**
-     * Gets the kind. (Abbreviated method name for convenience.)
-     *
-     * @return the kind
-     */
-    public String kind() {
-        return data.get("kind").getAsString();
-    }
-
-    @Override
-    public V1ListMeta getMetadata() {
-        return metadata;
-    }
-
-    /**
-     * Gets the metadata. (Abbreviated method name for convenience.)
-     *
-     * @return the metadata
-     */
-    public V1ListMeta metadata() {
-        return metadata;
-    }
-
-    /**
-     * Returns the JSON representation of this object.
-     *
-     * @return the JOSN representation
-     */
-    public JsonObject data() {
-        return data;
-    }
-
-    @Override
-    public List<K8sDynamicModel> getItems() {
-        return items;
-    }
-
-    /**
-     * Sets the api version.
-     *
-     * @param apiVersion the new api version
-     */
-    public void setApiVersion(String apiVersion) {
-        data.addProperty("apiVersion", apiVersion);
-    }
-
-    /**
-     * Sets the kind.
-     *
-     * @param kind the new kind
-     */
-    public void setKind(String kind) {
-        data.addProperty("kind", kind);
-    }
-
-    /**
-     * Sets the metadata.
-     *
-     * @param objectMeta the new metadata
-     */
-    public void setMetadata(V1ListMeta objectMeta) {
-        data.add("metadata",
-            Configuration.getDefaultApiClient().getJSON().getGson()
-                .toJsonTree(objectMeta));
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(data);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        K8sDynamicModels other = (K8sDynamicModels) obj;
-        return Objects.equals(data, other.data);
-    }
 }

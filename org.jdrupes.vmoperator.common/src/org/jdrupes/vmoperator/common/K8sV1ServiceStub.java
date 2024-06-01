@@ -25,7 +25,6 @@ import io.kubernetes.client.openapi.models.V1ServiceList;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.util.Collection;
 import java.util.List;
-import org.jdrupes.vmoperator.common.K8sGenericStub.GenericSupplier;
 
 /**
  * A stub for secrets (v1).
@@ -75,18 +74,7 @@ public class K8sV1ServiceStub extends K8sGenericStub<V1Service, V1ServiceList> {
     public static Collection<K8sV1ServiceStub> list(K8sClient client,
             String namespace, ListOptions options) throws ApiException {
         return K8sGenericStub.list(V1Service.class, V1ServiceList.class, client,
-            CONTEXT, namespace, options, K8sV1ServiceStub::getGeneric);
+            CONTEXT, namespace, options,
+            (clnt, nscp, name) -> new K8sV1ServiceStub(clnt, nscp, name));
     }
-
-    /**
-     * Provide {@link GenericSupplier}.
-     */
-    @SuppressWarnings({ "PMD.UnusedFormalParameter",
-        "PMD.UnusedPrivateMethod" })
-    private static K8sV1ServiceStub getGeneric(Class<V1Service> objectClass,
-            Class<V1ServiceList> objectListClass, K8sClient client,
-            APIResource context, String namespace, String name) {
-        return new K8sV1ServiceStub(client, namespace, name);
-    }
-
 }

@@ -135,6 +135,7 @@ public class Reconciler extends Component {
     @SuppressWarnings("PMD.SingularField")
     private final Configuration fmConfig;
     private final ConfigMapReconciler cmReconciler;
+    private final DisplaySecretReconciler dsReconciler;
     private final StatefulSetReconciler stsReconciler;
     private final LoadBalancerReconciler lbReconciler;
     @SuppressWarnings("PMD.UseConcurrentHashMap")
@@ -159,6 +160,7 @@ public class Reconciler extends Component {
         fmConfig.setClassForTemplateLoading(Reconciler.class, "");
 
         cmReconciler = new ConfigMapReconciler(fmConfig);
+        dsReconciler = new DisplaySecretReconciler();
         stsReconciler = new StatefulSetReconciler(fmConfig);
         lbReconciler = new LoadBalancerReconciler(fmConfig);
     }
@@ -209,6 +211,7 @@ public class Reconciler extends Component {
             = prepareModel(channel.client(), patchCr(event.vmDefinition()));
         var configMap = cmReconciler.reconcile(event, model, channel);
         model.put("cm", configMap.getRaw());
+        dsReconciler.reconcile(event, model, channel);
         stsReconciler.reconcile(event, model, channel);
         lbReconciler.reconcile(event, model, channel);
     }

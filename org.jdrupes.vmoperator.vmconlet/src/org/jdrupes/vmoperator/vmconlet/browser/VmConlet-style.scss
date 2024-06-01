@@ -100,7 +100,7 @@
   [role=button] {
     padding: 0.25rem;
 
-    &:not([aria-disabled]):hover {
+    &:not([aria-disabled]):hover, &[aria-disabled='false']:hover {
       box-shadow: var(--darkening);
     }
   }

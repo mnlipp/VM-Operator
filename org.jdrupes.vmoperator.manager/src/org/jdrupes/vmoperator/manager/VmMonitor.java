@@ -32,12 +32,14 @@ import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicModel;
-import org.jdrupes.vmoperator.common.K8sDynamicModels;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
 import org.jdrupes.vmoperator.common.K8sObserver.ResponseType;
 import org.jdrupes.vmoperator.common.K8sV1ConfigMapStub;
 import org.jdrupes.vmoperator.common.K8sV1PodStub;
 import org.jdrupes.vmoperator.common.K8sV1StatefulSetStub;
+import org.jdrupes.vmoperator.common.VmDefinitionModel;
+import org.jdrupes.vmoperator.common.VmDefinitionModels;
+import org.jdrupes.vmoperator.common.VmDefinitionStub;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
@@ -50,8 +52,8 @@ import org.jgrapes.core.Channel;
  * Watches for changes of VM definitions.
  */
 @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.ExcessiveImports" })
-public class VmMonitor
-        extends AbstractMonitor<K8sDynamicModel, K8sDynamicModels, VmChannel> {
+public class VmMonitor extends
+        AbstractMonitor<VmDefinitionModel, VmDefinitionModels, VmChannel> {
 
     /**
      * Instantiates a new VM definition watcher.
@@ -59,7 +61,8 @@ public class VmMonitor
      * @param componentChannel the component channel
      */
     public VmMonitor(Channel componentChannel) {
-        super(componentChannel, K8sDynamicModel.class, K8sDynamicModels.class);
+        super(componentChannel, VmDefinitionModel.class,
+            VmDefinitionModels.class);
     }
 
     @Override
@@ -102,7 +105,7 @@ public class VmMonitor
 
     @Override
     protected void handleChange(K8sClient client,
-            Watch.Response<K8sDynamicModel> response) {
+            Watch.Response<VmDefinitionModel> response) {
         V1ObjectMeta metadata = response.object.getMetadata();
         VmChannel channel = channel(metadata.getName()).orElse(null);
         if (channel == null) {
@@ -138,9 +141,10 @@ public class VmMonitor
                 vmDef), channel);
     }
 
-    private K8sDynamicModel getModel(K8sClient client, K8sDynamicModel vmDef) {
+    private VmDefinitionModel getModel(K8sClient client,
+            VmDefinitionModel vmDef) {
         try {
-            return K8sDynamicStub.get(client, context(), namespace(),
+            return VmDefinitionStub.get(client, context(), namespace(),
                 vmDef.metadata().getName()).model().orElse(null);
         } catch (ApiException e) {
             return null;

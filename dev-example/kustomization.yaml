@@ -54,6 +54,8 @@ patches:
                     # User admin has role admin
                     admin:
                     - admin
+                    test:
+                    - user
                     # All users have role other
                     "*":
                     - other
@@ -63,6 +65,8 @@ patches:
                     # Admins can use all conlets
                     admin:
                     - "*"
+                    user:
+                    - org.jdrupes.vmoperator.vmviewer.VmViewer
                     # Others cannot use any conlet (except login conlet to log out)
                     other:
                     - org.jgrapes.webconlet.locallogin.LoginConlet
@@ -70,6 +74,8 @@ patches:
                   "/VmViewer":
                     displayResource:
                       preferredIpVersion: ipv4
+                    syncPreviewsFor:
+                    - role: user
 - target:
     group: apps
     version: v1
