@@ -48,8 +48,8 @@
 <span class="source-line-no">035</span><span id="line-35">import java.util.Set;</span>
 <span class="source-line-no">036</span><span id="line-36">import org.jdrupes.json.JsonBeanDecoder;</span>
 <span class="source-line-no">037</span><span id="line-37">import org.jdrupes.json.JsonDecodeException;</span>
-<span class="source-line-no">038</span><span id="line-38">import org.jdrupes.vmoperator.common.K8sDynamicModel;</span>
-<span class="source-line-no">039</span><span id="line-39">import org.jdrupes.vmoperator.common.K8sObserver;</span>
+<span class="source-line-no">038</span><span id="line-38">import org.jdrupes.vmoperator.common.K8sObserver;</span>
+<span class="source-line-no">039</span><span id="line-39">import org.jdrupes.vmoperator.common.VmDefinitionModel;</span>
 <span class="source-line-no">040</span><span id="line-40">import org.jdrupes.vmoperator.manager.events.ChannelCache;</span>
 <span class="source-line-no">041</span><span id="line-41">import org.jdrupes.vmoperator.manager.events.ModifyVm;</span>
 <span class="source-line-no">042</span><span id="line-42">import org.jdrupes.vmoperator.manager.events.VmChannel;</span>
@@ -82,7 +82,7 @@
 <span class="source-line-no">069</span><span id="line-69">    private static final Set&lt;RenderMode&gt; MODES = RenderMode.asSet(</span>
 <span class="source-line-no">070</span><span id="line-70">        RenderMode.Preview, RenderMode.View);</span>
 <span class="source-line-no">071</span><span id="line-71">    private final ChannelCache&lt;String, VmChannel,</span>
-<span class="source-line-no">072</span><span id="line-72">            K8sDynamicModel&gt; channelManager = new ChannelCache&lt;&gt;();</span>
+<span class="source-line-no">072</span><span id="line-72">            VmDefinitionModel&gt; channelManager = new ChannelCache&lt;&gt;();</span>
 <span class="source-line-no">073</span><span id="line-73">    private final TimeSeries summarySeries = new TimeSeries(Duration.ofDays(1));</span>
 <span class="source-line-no">074</span><span id="line-74">    private Summary cachedSummary;</span>
 <span class="source-line-no">075</span><span id="line-75"></span>
@@ -209,8 +209,8 @@
 <span class="source-line-no">196</span><span id="line-196">                }</span>
 <span class="source-line-no">197</span><span id="line-197">            }</span>
 <span class="source-line-no">198</span><span id="line-198">        } else {</span>
-<span class="source-line-no">199</span><span id="line-199">            var vmDef = new K8sDynamicModel(channel.client().getJSON()</span>
-<span class="source-line-no">200</span><span id="line-200">                .getGson(), convertQuantities(event.vmDefinition().data()));</span>
+<span class="source-line-no">199</span><span id="line-199">            var vmDef = new VmDefinitionModel(channel.client().getJSON()</span>
+<span class="source-line-no">200</span><span id="line-200">                .getGson(), cleanup(event.vmDefinition().data()));</span>
 <span class="source-line-no">201</span><span id="line-201">            channelManager.put(vmName, channel, vmDef);</span>
 <span class="source-line-no">202</span><span id="line-202">            var def = JsonBeanDecoder.create(vmDef.data().toString())</span>
 <span class="source-line-no">203</span><span id="line-203">                .readObject();</span>
@@ -233,7 +233,7 @@
 <span class="source-line-no">220</span><span id="line-220">    }</span>
 <span class="source-line-no">221</span><span id="line-221"></span>
 <span class="source-line-no">222</span><span id="line-222">    @SuppressWarnings("PMD.AvoidDuplicateLiterals")</span>
-<span class="source-line-no">223</span><span id="line-223">    private JsonObject convertQuantities(JsonObject vmDef) {</span>
+<span class="source-line-no">223</span><span id="line-223">    private JsonObject cleanup(JsonObject vmDef) {</span>
 <span class="source-line-no">224</span><span id="line-224">        // Clone and remove managed fields</span>
 <span class="source-line-no">225</span><span id="line-225">        var json = vmDef.deepCopy();</span>
 <span class="source-line-no">226</span><span id="line-226">        GsonPtr.to(json).to("metadata").get(JsonObject.class)</span>
