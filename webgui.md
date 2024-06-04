@@ -87,8 +87,8 @@ and role management.
             admin:
             - admin
             # Non-privileged users are users
-            user:
-            - test
+            test:
+            - user
             # All users have role other
             "*":
             - other
