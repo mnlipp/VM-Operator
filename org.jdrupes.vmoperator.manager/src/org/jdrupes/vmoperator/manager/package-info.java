@@ -119,6 +119,7 @@
  * [WebConsole] *-- [RoleConfigurator]
  * [WebConsole] *-- [RoleConletFilter]
  * [WebConsole] *-left- [LoginConlet]
+ * [WebConsole] *-right- [OidcClient]
  * 
  * Component "ComponentCollector\nfor page resources" as cpr <<internal>>
  * [WebConsole] *-- [cpr]
@@ -153,14 +154,25 @@
  * () "guiHttp" as http
  * http .up. [GuiHttpServer]
  * 
- * [PreferencesStore] .right. http
+ * [PreferencesStore] .. http
+ * [OidcClient] .up. http
+ * [LanguageSelector] .left. http
  * [InMemorySessionManager] .up. http
- * [LanguageSelector] .up. http
  * 
  * package "Conceptual WebConsole" {
- *   [ConsoleWeblet] .left. http
+ *   [ConsoleWeblet] .right. http
  *   [ConsoleWeblet] *-down- [WebConsole]
  * }
+ * 
+ * [Controller] .down[hidden]. [ConsoleWeblet]
+ * 
+ * () "console" as console
+ * console .. WebConsole
+ * 
+ * [OidcClient] .. console
+ * [LoginConlet] .right. console
+ * 
+ * note right of console: More conlets connect here
  * 
  * @enduml
  */
