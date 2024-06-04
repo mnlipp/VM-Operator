@@ -47,8 +47,8 @@ for information about the complete components structure.)
 
 Access to the web GUI is controlled by the login conlet. The framework
 does not include sophisticated components for user management. Rather,
-it assumes there is an OIDC provider for user authentication and role
-management.
+it assumes that an OIDC provider is responsible for user authentication
+and role management.
 
 ```yaml
 "/Manager":
