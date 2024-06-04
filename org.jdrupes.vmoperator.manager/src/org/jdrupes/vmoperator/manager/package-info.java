@@ -74,6 +74,8 @@
  * 
  * Component NioDispatcher as NioDispatcher <<internal>>
  * [Manager] *-up- [NioDispatcher]
+ * Component HttpConnector as HttpConnector <<internal>>
+ * [Manager] *-up- [HttpConnector]
  * Component FileSystemWatcher as FileSystemWatcher <<internal>>
  * [Manager] *-up- [FileSystemWatcher]
  * Component YamlConfigurationStore as YamlConfigurationStore <<internal>>
@@ -148,11 +150,13 @@
  * () "guiTransport" as hT
  * hT .up. [GuiSocketServer:8080]
  * hT .down. [GuiHttpServer]
+ * hT .right[hidden]. [HttpConnector]
  * 
  * [YamlConfigurationStore] -right[hidden]- hT
  * 
  * () "guiHttp" as http
  * http .up. [GuiHttpServer]
+ * http .up. [HttpConnector]
  * 
  * [PreferencesStore] .. http
  * [OidcClient] .up. http
