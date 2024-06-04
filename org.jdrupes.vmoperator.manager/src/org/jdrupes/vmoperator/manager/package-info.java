@@ -57,7 +57,7 @@
  * ```
  *  
  * Developers may also be interested in the usage of channels
- * by the application's component:
+ * by the application's components:
  *
  * ![Main channels](app-channels.svg)
  * 
