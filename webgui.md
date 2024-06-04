@@ -31,6 +31,9 @@ from the
 
 *Since 3.0.0*
 
+![VM-Viewer](VmViewer-preview.png)
+
+
 ## Configuration
 
 The web GUI is implemented using components from the
