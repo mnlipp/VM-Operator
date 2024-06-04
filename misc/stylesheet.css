@@ -45,7 +45,7 @@
 body {
     background-color:#ffffff;
     color:#353833;
-    font: normal 16px/1.5 "DejaVu Serif", serif;
+    font: normal 16px/1.5 "DejaVu Sans", Arial, Helvetica, sans-serif;
     margin:0;
     padding:0;
     height:100%;
@@ -80,10 +80,12 @@ h2 {
     font-size:18px;
 }
 h3 {
-    font-size:16px;
+    font-size:17px;
 }
 h4 {
-    font-size:15px;
+    font-size:16px;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
 }
 h5 {
     font-size:14px;
