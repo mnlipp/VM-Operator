@@ -52,6 +52,9 @@ for information about the complete components structure.)
               fullName: Test Account
               password: "Generate hash with bcrypt"
           oidcProviders: {}
+        # Only required when using OIDC, see below.
+        "/OidcClient":
+          redirectUri: https://my.server.here/oauth/callback"
         "/RoleConfigurator":
           rolesByUser:
             # User admin has role admin
