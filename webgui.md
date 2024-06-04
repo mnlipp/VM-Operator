@@ -7,6 +7,8 @@ title: VM-Operator Web-GUI
 
 The manager component provides a GUI via a web server.
 
+## Manager view
+
 An overview display shows the current CPU and RAM usage and a graph
 with recent changes.
 
@@ -24,6 +26,12 @@ be added as required by the environment. (See the
 [definition](https://github.com/mnlipp/VM-Operator/blob/main/deploy/vmop-service.yaml)
 from the
 [sample deployment](https://github.com/mnlipp/VM-Operator/tree/main/deploy)).
+
+## User view
+
+*Since 3.0.0*
+
+## Configuration
 
 The web GUI is implemented using components from the
 [JGrapes WebConsole](https://mnlipp.github.io/jgrapes/WebConsole.html)
