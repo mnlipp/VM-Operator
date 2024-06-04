@@ -157,6 +157,7 @@
  * () "guiHttp" as http
  * http .up. [GuiHttpServer]
  * http .up. [HttpConnector]
+ * note top of [HttpConnector]: transport layer com-\nponents omitted
  * 
  * [PreferencesStore] .. http
  * [OidcClient] .up. http
@@ -176,7 +177,7 @@
  * [OidcClient] .. console
  * [LoginConlet] .right. console
  * 
- * note right of console: More conlets connect here
+ * note right of console: More conlets\nconnect here
  * 
  * @enduml
  */
