@@ -80,7 +80,7 @@ and role management.
           redirectUri: https://my.server.here/oauth/callback"
           
         # May be used for assigning roles to both local users and users from
-        # the OIDC provider. Not needed if roles are using by the OIDC provider.
+        # the OIDC provider. Not needed if roles are managed by the OIDC provider.
         "/RoleConfigurator":
           rolesByUser:
             # User admin has role admin
