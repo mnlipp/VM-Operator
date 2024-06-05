@@ -92,13 +92,15 @@ window.orgJDrupesVmOperatorVmViewer.initPreview = (previewDom: HTMLElement,
                   :title="localize('Open console')"></td>
                 <td v-if="vmDef.spec"
                   class="jdrupes-vmoperator-vmviewer-preview-action-list">
-                  <span role="button" v-if="vmDef.spec.vm.state != 'Running'"
+                  <span role="button" 
+                    v-if="vmDef.spec.vm.state != 'Running' && !vmDef.running"
                     :aria-disabled="!vmDef.userPermissions.includes('start')" 
                     tabindex="0" class="fa fa-play" :title="localize('Start VM')"
                     v-on:click="vmAction(vmDef.name, 'start')"></span>
                   <span role="button" v-else class="fa fa-play"
                     aria-disabled="true" :title="localize('Start VM')"></span>
-                  <span role="button" v-if="vmDef.spec.vm.state != 'Stopped'"
+                  <span role="button"
+                    v-if="vmDef.spec.vm.state != 'Stopped' && vmDef.running"
                     :aria-disabled="!vmDef.userPermissions.includes('stop')" 
                     tabindex="0" class="fa fa-stop" :title="localize('Stop VM')"
                     v-on:click="vmAction(vmDef.name, 'stop')"></span>
