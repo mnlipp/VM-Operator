@@ -90,7 +90,7 @@ import org.jgrapes.webconsole.base.events.UpdateConletType;
 import org.jgrapes.webconsole.base.freemarker.FreeMarkerConlet;
 
 /**
- * The Class VmConlet.
+ * The Class VmViewer.
  */
 @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.ExcessiveImports",
     "PMD.CouplingBetweenObjects", "PMD.GodClass" })
