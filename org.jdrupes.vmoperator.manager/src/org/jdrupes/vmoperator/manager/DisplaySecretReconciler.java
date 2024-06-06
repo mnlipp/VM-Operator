@@ -64,7 +64,7 @@ import org.jose4j.base64url.Base64;
         var display = GsonPtr.to(event.vmDefinition().data()).to("spec", "vm",
             "display");
         if (!display.get(JsonPrimitive.class, "spice", "generateSecret")
-            .map(JsonPrimitive::getAsBoolean).orElse(false)) {
+            .map(JsonPrimitive::getAsBoolean).orElse(true)) {
             return;
         }
 
