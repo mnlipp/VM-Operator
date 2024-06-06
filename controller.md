@@ -211,10 +211,14 @@ specifies a (base64 encoded) expiry date for the password. Supported
 values are those defined by qemu (`+n` seconds from now, `n` Unix
 timestamp, `never` and `now`).
 
-If `spec.display.spice.generateSecret` is set to `true`, the controller creates
-a secret for the display password if none is found. The secret is created
-with a random password that expires immediately, which makes the display 
-effectively inaccessible until the secret is changed.
+Unless `spec.vm.display.spice.generateSecret` is set to `false` in the VM
+definition (CRD), the controller creates a secret for the display 
+password automatically if none is found. The secret is created
+with a random password that expires immediately, which makes the
+display effectively inaccessible until the secret is modified.
+Note that a password set manually may be overwritten by components
+of the manager unless the password-expiry is set to "never" or
+some time in the future.
 
 ## Further reading
 

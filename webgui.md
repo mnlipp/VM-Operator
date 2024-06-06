@@ -5,20 +5,22 @@ title: VM-Operator Web-GUI
 
 # The Web-GUI
 
-The manager component provides a GUI via a web server.
+The manager component provides a GUI via a web server. The web GUI is
+implemented using components from the
+[JGrapes WebConsole](https://mnlipp.github.io/jgrapes/WebConsole.html)
+project. Configuration of the GUI therefore follows the conventions
+of that framework.
 
-## Manager view
+The structure of the configuration information should be easy to 
+understand from the examples provided. In general, configuration values
+are applied to the individual components that make up an application.
+The hierarchy of the components is reflected in the configuration
+information because components are "addressed" by their position in
+that hierarchy. (See
+[the package description](latest-release/javadoc/org/jdrupes/vmoperator/manager/package-summary.html)
+for information about the complete component structure.)
 
-An overview display shows the current CPU and RAM usage and a graph
-with recent changes.
-
-![VM-Operator GUI](VM-Operator-GUI-preview.png)
-
-The detail display lists all VMs. From here you can start and stop
-the VMs and adjust the CPU and RAM usages (modifies the definition
-in kubernetes).
-
-![VM-Operator GUI](VM-Operator-GUI-view.png)
+## Network access
 
 By default, the service is made available at port 8080 of the manager 
 pod. Of course, a kubernetes service and an ingress configuration must
@@ -27,23 +29,7 @@ be added as required by the environment. (See the
 from the
 [sample deployment](https://github.com/mnlipp/VM-Operator/tree/main/deploy)).
 
-## User view
-
-*Since 3.0.0*
-
-![VM-Viewer](VmViewer-preview.png)
-
-
-## Configuration
-
-The web GUI is implemented using components from the
-[JGrapes WebConsole](https://mnlipp.github.io/jgrapes/WebConsole.html)
-project. Configuration of the GUI therefore follows the conventions
-of that framework. (See
-[the package description](latest-release/javadoc/org/jdrupes/vmoperator/manager/package-summary.html)
-for information about the complete components structure.)
-
-### Access management
+## User Access
 
 Access to the web GUI is controlled by the login conlet. The framework
 does not include sophisticated components for user management. Rather,
@@ -120,6 +106,12 @@ in the documentation of the
 [JGrapes WebConsole](https://mnlipp.github.io/jgrapes/WebConsole.html)
 project.
 
-### Configuring the VM viewer
+The configuration above allows all users with role "admin" to use all
+GUI components and users with role "user" to only use the viewer conlet,
+i.e. the [User view](user-gui.html). The fallback role "other" allows
+all users to use the login conlet to log out.
 
-*Since 3.0.0*
+## Views
+
+The configuration of the components that provide the manager and 
+users views is explained in the respective sections.
