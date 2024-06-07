@@ -43,11 +43,11 @@ is a permission for each possible action. "*" grants them all.
 Next, there are two ways to create the VM widgets (preview conlets
 in the framework's terms). They can be created on demand or
 automatically for each VM that a logged in user has permission to
-access. The former is the preferred way for an administrator that
+access. The former is the preferred way for an administrator who
 has access to all VMs and needs to open a particular VM's console
 for trouble shooting only. The latter is the preferred way
-for a regular user that has access to a limited number of VMs.
-In this case, automatically creating the widgets has the additional
+for a regular user who has access to a limited number of VMs.
+In this case, creating the widgets automatically has the additional
 benefit that regular users don't need to know how to create and
 configure the widgets using the menu and the properties dialog.
 
@@ -110,8 +110,8 @@ value of `proxyUrl` is used as value for key "proxy".
 ## Securing access
 
 As described [previously](./controller.html#display-secretpassword),
-access to a VM's display can be secured by a password. If a secret
-with a password exists for a VM, the password is automatically
+access to a VM's display can be secured with a password. If a secret
+with a password exists for a VM, the password is
 included in the connection file.
 
 While this approach is very convenient for the user, it is not
