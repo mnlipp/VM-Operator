@@ -57,7 +57,7 @@
  * ```
  *  
  * Developers may also be interested in the usage of channels
- * by the application's component:
+ * by the application's components:
  *
  * ![Main channels](app-channels.svg)
  * 
@@ -74,6 +74,8 @@
  * 
  * Component NioDispatcher as NioDispatcher <<internal>>
  * [Manager] *-up- [NioDispatcher]
+ * Component HttpConnector as HttpConnector <<internal>>
+ * [Manager] *-up- [HttpConnector]
  * Component FileSystemWatcher as FileSystemWatcher <<internal>>
  * [Manager] *-up- [FileSystemWatcher]
  * Component YamlConfigurationStore as YamlConfigurationStore <<internal>>
@@ -119,6 +121,7 @@
  * [WebConsole] *-- [RoleConfigurator]
  * [WebConsole] *-- [RoleConletFilter]
  * [WebConsole] *-left- [LoginConlet]
+ * [WebConsole] *-right- [OidcClient]
  * 
  * Component "ComponentCollector\nfor page resources" as cpr <<internal>>
  * [WebConsole] *-- [cpr]
@@ -147,20 +150,34 @@
  * () "guiTransport" as hT
  * hT .up. [GuiSocketServer:8080]
  * hT .down. [GuiHttpServer]
+ * hT .right[hidden]. [HttpConnector]
  * 
  * [YamlConfigurationStore] -right[hidden]- hT
  * 
  * () "guiHttp" as http
  * http .up. [GuiHttpServer]
+ * http .up. [HttpConnector]
+ * note top of [HttpConnector]: transport layer com-\nponents omitted
  * 
- * [PreferencesStore] .right. http
+ * [PreferencesStore] .. http
+ * [OidcClient] .up. http
+ * [LanguageSelector] .left. http
  * [InMemorySessionManager] .up. http
- * [LanguageSelector] .up. http
  * 
  * package "Conceptual WebConsole" {
- *   [ConsoleWeblet] .left. http
+ *   [ConsoleWeblet] .right. http
  *   [ConsoleWeblet] *-down- [WebConsole]
  * }
+ * 
+ * [Controller] .down[hidden]. [ConsoleWeblet]
+ * 
+ * () "console" as console
+ * console .. WebConsole
+ * 
+ * [OidcClient] .. console
+ * [LoginConlet] .right. console
+ * 
+ * note right of console: More conlets\nconnect here
  * 
  * @enduml
  */

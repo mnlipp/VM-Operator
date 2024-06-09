@@ -52,12 +52,14 @@
               v-html="controller.breakBeforeDots(entry[key])"></span>
           </td>
           <td class="jdrupes-vmoperator-vmconlet-view-action-list">
-            <span role="button" v-if="entry.spec.vm.state != 'Running'" 
+            <span role="button" 
+              v-if="entry.spec.vm.state != 'Running' && !entry['running']" 
               tabindex="0" class="fa fa-play" :title="localize('Start VM')"
               v-on:click="vmAction(entry.name, 'start')"></span>
             <span role="button" v-else class="fa fa-play"
               aria-disabled="true" :title="localize('Start VM')"></span>
-            <span role="button" v-if="entry.spec.vm.state != 'Stopped'"
+            <span role="button"
+              v-if="entry.spec.vm.state != 'Stopped' && entry['running']"
               tabindex="0" class="fa fa-stop" :title="localize('Stop VM')"
               v-on:click="vmAction(entry.name, 'stop')"></span>
             <span role="button" v-else class="fa fa-stop"

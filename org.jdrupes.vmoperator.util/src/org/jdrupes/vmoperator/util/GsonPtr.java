@@ -273,6 +273,18 @@ public class GsonPtr {
      * @return the gson ptr
      * @see #set(Object, JsonElement)
      */
+    public GsonPtr set(Object selector, Long value) {
+        return set(selector, new JsonPrimitive(value));
+    }
+
+    /**
+     * Short for `set(selector, new JsonPrimitive(value))`.
+     *
+     * @param selector the selector
+     * @param value the value
+     * @return the gson ptr
+     * @see #set(Object, JsonElement)
+     */
     public GsonPtr set(Object selector, BigInteger value) {
         return set(selector, new JsonPrimitive(value));
     }

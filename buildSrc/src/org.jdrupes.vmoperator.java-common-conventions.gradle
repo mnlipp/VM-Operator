@@ -5,6 +5,11 @@
  */
 
 plugins {
+    // Apply the common versioning conventions.
+    // Put this at the start, because accessing project.version before
+    // this is applied makes things fail.
+    id 'org.jdrupes.vmoperator.versioning-conventions'
+
     // Apply the java Plugin to add support for Java.
     id 'java'
     
@@ -13,9 +18,6 @@ plugins {
     
     // Access to git information
     id 'org.ajoberstar.grgit'
-    
-    // Apply the common versioning conventions.
-    id 'org.jdrupes.vmoperator.versioning-conventions'
 }
 
 repositories {

@@ -116,8 +116,9 @@ public class DisplayController extends Component {
         }
 
         if (Objects.equals(this.currentPassword, password)) {
-            return false;
+            return true;
         }
+        this.currentPassword = password;
         logger.fine(() -> "Updating display password");
         fire(new MonitorCommand(new QmpSetDisplayPassword(protocol, password)));
         return true;

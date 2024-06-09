@@ -45,6 +45,12 @@
   # property in the CRD.  
   # "guestShutdownStops":
   #   false
+  
+  # When incremented, the VM is reset. The value has no default value,
+  # i.e. if you start the VM without a value for this property, and
+  # decide to trigger a reset later, you have to first set the value
+  # and then inrement it.
+  # "resetCounter": 1
 
   # Define the VM (required)
   "vm":

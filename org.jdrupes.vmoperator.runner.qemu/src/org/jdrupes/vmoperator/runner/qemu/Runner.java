@@ -55,6 +55,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCont;
+import org.jdrupes.vmoperator.runner.qemu.commands.QmpReset;
 import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
 import org.jdrupes.vmoperator.runner.qemu.events.Exit;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
@@ -215,6 +216,7 @@ public class Runner extends Component {
     private CommandDefinition cloudInitImgDefinition;
     private CommandDefinition qemuDefinition;
     private final QemuMonitor qemuMonitor;
+    private Integer resetCounter;
     private State state = State.INITIALIZING;
 
     /** Preparatory actions for QEMU start */
@@ -615,12 +617,29 @@ public class Runner extends Component {
      * @param event the event
      */
     @Handler(priority = -1000)
-    public void onConfigureQemu(ConfigureQemu event) {
+    public void onConfigureQemuFinal(ConfigureQemu event) {
         if (state == State.STARTING) {
             fire(new MonitorCommand(new QmpCont()));
             state = State.RUNNING;
             rep.fire(new RunnerStateChange(state, "VmStarted",
                 "Qemu has been configured and is continuing"));
+        }
+    }
+
+    /**
+     * On configure qemu.
+     *
+     * @param event the event
+     */
+    @Handler
+    public void onConfigureQemu(ConfigureQemu event) {
+        if (state == State.RUNNING) {
+            if (resetCounter != null
+                && event.configuration().resetCounter != null
+                && event.configuration().resetCounter > resetCounter) {
+                fire(new MonitorCommand(new QmpReset()));
+            }
+            resetCounter = event.configuration().resetCounter;
         }
     }
 

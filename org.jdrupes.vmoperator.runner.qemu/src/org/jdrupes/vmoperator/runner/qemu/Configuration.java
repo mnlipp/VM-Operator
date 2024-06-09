@@ -82,6 +82,9 @@ public class Configuration implements Dto {
     /** If guest shutdown changes CRD .vm.state to "Stopped". */
     public boolean guestShutdownStops;
 
+    /** Increments of the reset counter trigger a reset of the VM. */
+    public Integer resetCounter;
+
     /** The vm. */
     @SuppressWarnings("PMD.ShortVariable")
     public Vm vm;

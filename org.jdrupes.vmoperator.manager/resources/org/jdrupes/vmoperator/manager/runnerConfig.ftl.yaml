@@ -48,6 +48,12 @@ data:
       # Whether a shutdown initiated by the guest stops the pod deployment
       guestShutdownStops: ${ cr.spec.guestShutdownStops!false?c }
       
+      # When incremented, the VM is reset. The value has no default value,
+      # i.e. if you start the VM without a value for this property, and
+      # decide to trigger a reset later, you have to first set the value
+      # and then inrement it.
+      resetCounter: ${ cr.resetCount }
+
       # Forward the cloud-init data if provided
       <#if cr.spec.cloudInit??>    
       cloudInit:
