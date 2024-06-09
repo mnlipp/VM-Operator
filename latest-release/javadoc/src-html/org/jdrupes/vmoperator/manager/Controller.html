@@ -194,31 +194,30 @@
 <span class="source-line-no">181</span><span id="line-181">    @Handler</span>
 <span class="source-line-no">182</span><span id="line-182">    public void onModifyVm(ModifyVm event, VmChannel channel)</span>
 <span class="source-line-no">183</span><span id="line-183">            throws ApiException, IOException {</span>
-<span class="source-line-no">184</span><span id="line-184">        patchVmSpec(channel.client(), event.name(), event.path(),</span>
+<span class="source-line-no">184</span><span id="line-184">        patchVmDef(channel.client(), event.name(), "spec/vm/" + event.path(),</span>
 <span class="source-line-no">185</span><span id="line-185">            event.value());</span>
 <span class="source-line-no">186</span><span id="line-186">    }</span>
 <span class="source-line-no">187</span><span id="line-187"></span>
-<span class="source-line-no">188</span><span id="line-188">    private void patchVmSpec(K8sClient client, String name, String path,</span>
-<span class="source-line-no">189</span><span id="line-189">            Object value)</span>
-<span class="source-line-no">190</span><span id="line-190">            throws ApiException, IOException {</span>
-<span class="source-line-no">191</span><span id="line-191">        var vmStub = K8sDynamicStub.get(client,</span>
-<span class="source-line-no">192</span><span id="line-192">            new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM), namespace,</span>
-<span class="source-line-no">193</span><span id="line-193">            name);</span>
-<span class="source-line-no">194</span><span id="line-194"></span>
-<span class="source-line-no">195</span><span id="line-195">        // Patch running</span>
-<span class="source-line-no">196</span><span id="line-196">        String valueAsText = value instanceof String</span>
-<span class="source-line-no">197</span><span id="line-197">            ? "\"" + value + "\""</span>
-<span class="source-line-no">198</span><span id="line-198">            : value.toString();</span>
-<span class="source-line-no">199</span><span id="line-199">        var res = vmStub.patch(V1Patch.PATCH_FORMAT_JSON_PATCH,</span>
-<span class="source-line-no">200</span><span id="line-200">            new V1Patch("[{\"op\": \"replace\", \"path\": \"/spec/vm/"</span>
-<span class="source-line-no">201</span><span id="line-201">                + path + "\", \"value\": " + valueAsText + "}]"),</span>
-<span class="source-line-no">202</span><span id="line-202">            client.defaultPatchOptions());</span>
-<span class="source-line-no">203</span><span id="line-203">        if (!res.isPresent()) {</span>
-<span class="source-line-no">204</span><span id="line-204">            logger.warning(</span>
-<span class="source-line-no">205</span><span id="line-205">                () -&gt; "Cannot patch definition for Vm " + vmStub.name());</span>
-<span class="source-line-no">206</span><span id="line-206">        }</span>
-<span class="source-line-no">207</span><span id="line-207">    }</span>
-<span class="source-line-no">208</span><span id="line-208">}</span>
+<span class="source-line-no">188</span><span id="line-188">    private void patchVmDef(K8sClient client, String name, String path,</span>
+<span class="source-line-no">189</span><span id="line-189">            Object value) throws ApiException, IOException {</span>
+<span class="source-line-no">190</span><span id="line-190">        var vmStub = K8sDynamicStub.get(client,</span>
+<span class="source-line-no">191</span><span id="line-191">            new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM), namespace,</span>
+<span class="source-line-no">192</span><span id="line-192">            name);</span>
+<span class="source-line-no">193</span><span id="line-193"></span>
+<span class="source-line-no">194</span><span id="line-194">        // Patch running</span>
+<span class="source-line-no">195</span><span id="line-195">        String valueAsText = value instanceof String</span>
+<span class="source-line-no">196</span><span id="line-196">            ? "\"" + value + "\""</span>
+<span class="source-line-no">197</span><span id="line-197">            : value.toString();</span>
+<span class="source-line-no">198</span><span id="line-198">        var res = vmStub.patch(V1Patch.PATCH_FORMAT_JSON_PATCH,</span>
+<span class="source-line-no">199</span><span id="line-199">            new V1Patch("[{\"op\": \"replace\", \"path\": \"/"</span>
+<span class="source-line-no">200</span><span id="line-200">                + path + "\", \"value\": " + valueAsText + "}]"),</span>
+<span class="source-line-no">201</span><span id="line-201">            client.defaultPatchOptions());</span>
+<span class="source-line-no">202</span><span id="line-202">        if (!res.isPresent()) {</span>
+<span class="source-line-no">203</span><span id="line-203">            logger.warning(</span>
+<span class="source-line-no">204</span><span id="line-204">                () -&gt; "Cannot patch definition for Vm " + vmStub.name());</span>
+<span class="source-line-no">205</span><span id="line-205">        }</span>
+<span class="source-line-no">206</span><span id="line-206">    }</span>
+<span class="source-line-no">207</span><span id="line-207">}</span>
 
 
 
