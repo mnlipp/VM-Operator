@@ -20,6 +20,7 @@ package org.jdrupes.vmoperator.vmviewer;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.gson.JsonObject;
@@ -466,11 +467,18 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
 
     @Override
     @SuppressWarnings({ "PMD.AvoidDecimalLiteralsInBigDecimalConstructor",
-        "PMD.ConfusingArgumentToVarargsMethod", "PMD.NcssCount" })
+        "PMD.ConfusingArgumentToVarargsMethod", "PMD.NcssCount",
+        "PMD.AvoidLiteralsInIfCondition" })
     protected void doUpdateConletState(NotifyConletModel event,
             ConsoleConnection channel, ViewerModel model)
             throws Exception {
         event.stop();
+        if ("selectedVm".equals(event.method())) {
+            selectVm(event, channel, model);
+            return;
+        }
+
+        // Handle command for selected VM
         var both = Optional.ofNullable(model.vmName())
             .flatMap(vm -> channelManager.both(vm));
         if (both.isEmpty()) {
@@ -482,13 +490,6 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
         var perms = permissions(vmDef, channel.session());
         var resourceBundle = resourceBundle(channel.locale());
         switch (event.method()) {
-        case "selectedVm":
-            model.setVmName(event.params().asString(0));
-            String jsonState = objectMapper.writeValueAsString(model);
-            channel.respond(new KeyValueStoreUpdate().update(storagePath(
-                channel.session(), model.getConletId()), jsonState));
-            updateConfig(channel, model);
-            break;
         case "start":
             if (perms.contains(Permission.START)) {
                 fire(new ModifyVm(vmName, "state", "Running", vmChannel));
@@ -520,6 +521,15 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
         default:// ignore
             break;
         }
+    }
+
+    private void selectVm(NotifyConletModel event, ConsoleConnection channel,
+            ViewerModel model) throws JsonProcessingException {
+        model.setVmName(event.params().asString(0));
+        String jsonState = objectMapper.writeValueAsString(model);
+        channel.respond(new KeyValueStoreUpdate().update(storagePath(
+            channel.session(), model.getConletId()), jsonState));
+        updateConfig(channel, model);
     }
 
     private void openConsole(String vmName, ConsoleConnection connection,
