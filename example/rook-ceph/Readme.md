@@ -1,12 +1,12 @@
 # Example setup
 
-The CRD must be deployed independently. 
+The CRD must be deployed independently.
 
 ```sh
 kubectl apply -f https://github.com/mnlipp/VM-Operator/raw/main/deploy/crds/vms-crd.yaml
 ```
 
-Apart from that, the `kustomize.yaml` defines a namespace for the manager 
+Apart from that, the `kustomize.yaml` defines a namespace for the manager
 (and the VMs managed by it) and applies patches to use `rook-cephfs` as
 storage class (instead of the default storage class).
 
