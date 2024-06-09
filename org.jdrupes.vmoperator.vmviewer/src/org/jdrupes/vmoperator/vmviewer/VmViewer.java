@@ -54,6 +54,7 @@ import org.jdrupes.vmoperator.common.VmDefinitionModel.Permission;
 import org.jdrupes.vmoperator.manager.events.ChannelCache;
 import org.jdrupes.vmoperator.manager.events.GetDisplayPassword;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
+import org.jdrupes.vmoperator.manager.events.ResetVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.util.GsonPtr;
@@ -93,7 +94,7 @@ import org.jgrapes.webconsole.base.freemarker.FreeMarkerConlet;
  * The Class VmViewer.
  */
 @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.ExcessiveImports",
-    "PMD.CouplingBetweenObjects", "PMD.GodClass" })
+    "PMD.CouplingBetweenObjects", "PMD.GodClass", "PMD.TooManyMethods" })
 public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
 
     private static final String VM_NAME_PROPERTY = "vmName";
@@ -465,12 +466,12 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
 
     @Override
     @SuppressWarnings({ "PMD.AvoidDecimalLiteralsInBigDecimalConstructor",
-        "PMD.ConfusingArgumentToVarargsMethod" })
+        "PMD.ConfusingArgumentToVarargsMethod", "PMD.NcssCount" })
     protected void doUpdateConletState(NotifyConletModel event,
             ConsoleConnection channel, ViewerModel model)
             throws Exception {
         event.stop();
-        var both = Optional.ofNullable(event.params().asString(0))
+        var both = Optional.ofNullable(model.vmName())
             .flatMap(vm -> channelManager.both(vm));
         if (both.isEmpty()) {
             return;
@@ -479,6 +480,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
         var vmDef = both.get().associated;
         var vmName = vmDef.metadata().getName();
         var perms = permissions(vmDef, channel.session());
+        var resourceBundle = resourceBundle(channel.locale());
         switch (event.method()) {
         case "selectedVm":
             model.setVmName(event.params().asString(0));
@@ -495,6 +497,16 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
         case "stop":
             if (perms.contains(Permission.STOP)) {
                 fire(new ModifyVm(vmName, "state", "Stopped", vmChannel));
+            }
+            break;
+        case "reset":
+            if (perms.contains(Permission.RESET)) {
+                confirmReset(event, channel, model, resourceBundle);
+            }
+            break;
+        case "resetConfirmed":
+            if (perms.contains(Permission.RESET)) {
+                fire(new ResetVm(vmName), vmChannel);
             }
             break;
         case "openConsole":
@@ -575,6 +587,20 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
         return addrs.stream()
             .filter(a -> preferredIpVersion.isAssignableFrom(a.getClass()))
             .findFirst().or(() -> addrs.stream().findFirst());
+    }
+
+    private void confirmReset(NotifyConletModel event,
+            ConsoleConnection channel, ViewerModel model,
+            ResourceBundle resourceBundle) throws TemplateNotFoundException,
+            MalformedTemplateNameException, ParseException, IOException {
+        Template tpl = freemarkerConfig()
+            .getTemplate("VmViewer-confirmReset.ftl.html");
+        channel.respond(new OpenModalDialog(type(), model.getConletId(),
+            processTemplate(event, tpl,
+                fmModel(event, channel, model.getConletId(), model)))
+                    .addOption("cancelable", true).addOption("closeLabel", "")
+                    .addOption("title",
+                        resourceBundle.getString("confirmResetTitle")));
     }
 
     @Override

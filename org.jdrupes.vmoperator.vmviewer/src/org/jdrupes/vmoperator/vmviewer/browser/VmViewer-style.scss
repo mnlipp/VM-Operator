@@ -19,7 +19,24 @@
 /*
  * Conlet specific styles.
  */
-.jdrupes-vmoperator-vmviewer-preview {
+.jdrupes-vmoperator-vmviewer {
+  
+  span[role="button"].svg-icon {
+    display: inline-block;
+    line-height: 1;
+    /* Align with forkawesome */
+    font-size: 14px;
+    fill: var(--primary);
+
+    &[aria-disabled="true"], &[aria-disabled=""] {
+      fill: var(--disabled);
+    }
+    
+    svg {
+      height: 2ex;
+      width: 1em;
+    }
+  }
 
   [role=button] {
     padding: 0.25rem;
@@ -28,7 +45,10 @@
       box-shadow: var(--darkening);
     }
   }
+}
 
+.jdrupes-vmoperator-vmviewer.jdrupes-vmoperator-vmviewer-preview {
+  
   img {
     height: 3em;
     padding: 0.25rem;
@@ -37,14 +57,30 @@
         opacity: 0.4;
     }
   }
+  
+  .jdrupes-vmoperator-vmviewer-preview-action-list {
+    white-space: nowrap;
+  }
 }
 
-.jdrupes-vmoperator-vmviewer-preview-action-list {
-  white-space: nowrap;
-}
-
-.jdrupes-vmoperator-vmviewer-edit {
+.jdrupes-vmoperator-vmviewer.jdrupes-vmoperator-vmviewer-edit {
   select {
     width: 15em;
   }
+}
+
+.jdrupes-vmoperator-vmviewer.jdrupes-vmoperator-vmviewer-confirm-reset {
+  p {
+    text-align: center;
+  }
+  
+  span[role="button"].svg-icon {
+    fill: var(--danger);
+
+    svg {
+      width: 2.5em;
+      height: 2.5em;
+    }
+  }
+  
 }

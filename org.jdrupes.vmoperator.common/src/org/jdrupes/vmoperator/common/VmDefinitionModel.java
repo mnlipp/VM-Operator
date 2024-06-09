@@ -41,7 +41,8 @@ public class VmDefinitionModel extends K8sDynamicModel {
      * Permissions for accessing and manipulating the VM.
      */
     public enum Permission {
-        START("start"), STOP("stop"), ACCESS_CONSOLE("accessConsole");
+        START("start"), STOP("stop"), RESET("reset"),
+        ACCESS_CONSOLE("accessConsole");
 
         @SuppressWarnings("PMD.UseConcurrentHashMap")
         private static Map<String, Permission> reprs = new HashMap<>();

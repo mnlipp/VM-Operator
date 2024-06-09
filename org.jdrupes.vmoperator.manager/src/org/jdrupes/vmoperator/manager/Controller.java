@@ -181,13 +181,12 @@ public class Controller extends Component {
     @Handler
     public void onModifyVm(ModifyVm event, VmChannel channel)
             throws ApiException, IOException {
-        patchVmSpec(channel.client(), event.name(), event.path(),
+        patchVmDef(channel.client(), event.name(), "spec/vm/" + event.path(),
             event.value());
     }
 
-    private void patchVmSpec(K8sClient client, String name, String path,
-            Object value)
-            throws ApiException, IOException {
+    private void patchVmDef(K8sClient client, String name, String path,
+            Object value) throws ApiException, IOException {
         var vmStub = K8sDynamicStub.get(client,
             new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM), namespace,
             name);
@@ -197,7 +196,7 @@ public class Controller extends Component {
             ? "\"" + value + "\""
             : value.toString();
         var res = vmStub.patch(V1Patch.PATCH_FORMAT_JSON_PATCH,
-            new V1Patch("[{\"op\": \"replace\", \"path\": \"/spec/vm/"
+            new V1Patch("[{\"op\": \"replace\", \"path\": \"/"
                 + path + "\", \"value\": " + valueAsText + "}]"),
             client.defaultPatchOptions());
         if (!res.isPresent()) {

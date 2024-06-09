@@ -31,8 +31,9 @@ declare global {
     interface Window {
         orgJDrupesVmOperatorVmViewer: { 
             initPreview?: (previewDom: HTMLElement, isUpdate: boolean) => void,
-            initEdit?: (viewDom: HTMLElement, isUpdate: boolean) => void
-            applyEdit?: (viewDom: HTMLElement, apply: boolean) => void
+            initEdit?: (viewDom: HTMLElement, isUpdate: boolean) => void,
+            applyEdit?: (viewDom: HTMLElement, apply: boolean) => void,
+            confirmReset?: (conletType: string, conletId: string) => void
         }
     }
 }
@@ -74,7 +75,7 @@ window.orgJDrupesVmOperatorVmViewer.initPreview = (previewDom: HTMLElement,
             provideApi(previewDom, previewApi);
 
             const vmAction = (vmName: string, action: string) => {
-                JGConsole.notifyConletModel(conletId, action, vmName);
+                JGConsole.notifyConletModel(conletId, action);
             };
         
             return { localize, resourceBase, vmDef, vmAction };
@@ -83,7 +84,7 @@ window.orgJDrupesVmOperatorVmViewer.initPreview = (previewDom: HTMLElement,
           <table>
             <tbody>
               <tr>
-                <td><img role=button 
+                <td rowspan="2"><img role=button 
                   :aria-disabled="!vmDef.running || !vmDef.userPermissions
                     || !vmDef.userPermissions.includes('accessConsole')" 
                   v-on:click="vmAction(vmDef.name, 'openConsole')"
@@ -106,6 +107,15 @@ window.orgJDrupesVmOperatorVmViewer.initPreview = (previewDom: HTMLElement,
                     v-on:click="vmAction(vmDef.name, 'stop')"></span>
                   <span role="button" v-else class="fa fa-stop"
                     aria-disabled="true" :title="localize('Stop VM')"></span>
+                  <span role="button"
+                    :aria-disabled="!vmDef.running || !vmDef.userPermissions.includes('reset')" 
+                    tabindex="0" class="svg-icon" :title="localize('Reset VM')"
+                    v-on:click="vmAction(vmDef.name, 'reset')">
+                    <svg viewBox="0 0 1541.33 1535.5083">
+                      <path d="m 0,127.9968 v 448 c 0,35 29,64 64,64 h 448 c 35,0 64,-29 64,-64 0,-17 -6.92831,-33.07213 -19,-45 C 264.23058,241.7154 337.19508,314.89599 109,82.996795 c -11.999999,-12 -28,-19 -45,-19 -35,0 -64,29 -64,64.000005 z" />
+                      <path d="m 772.97656,1535.5046 c 117.57061,0.3623 236.06134,-26.2848 345.77544,-81.4687 292.5708,-147.1572 459.8088,-465.37411 415.5214,-790.12504 C 1489.9861,339.15993 1243.597,77.463924 922.29883,14.342498 601.00067,-48.778928 274.05699,100.37563 110.62891,384.39133 c -34.855139,60.57216 -14.006492,137.9313 46.5664,172.78516 60.57172,34.85381 137.92941,14.00532 172.78321,-46.56641 109.97944,-191.12927 327.69604,-290.34657 543.53515,-247.94336 215.83913,42.40321 380.18953,216.77543 410.00973,435.44141 29.8203,218.66598 -81.8657,430.94957 -278.4863,529.84567 -196.6206,98.8962 -432.84043,61.8202 -589.90233,-92.6777 -24.91016,-24.5038 -85.48587,-83.3326 -119.02246,-52.9832 -24.01114,21.7292 -35.41741,29.5454 -59.9209,54.4559 -24.50381,24.9102 -35.33636,36.9034 -57.54543,60.4713 -38.1335,40.4667 34.10761,93.9685 59.01808,118.472 145.96311,143.5803 339.36149,219.2087 535.3125,219.8125 z"/>
+                    </svg>
+                  </span>
                 </td>
                 <td v-else>
                 </td>
@@ -210,4 +220,10 @@ window.orgJDrupesVmOperatorVmViewer.applyEdit =
         .dataset["conletId"]!;
     const vmName = getApi<ref<string>>(dialogDom!)!.value;
     JGConsole.notifyConletModel(conletId, "selectedVm", vmName);
+}
+
+window.orgJDrupesVmOperatorVmViewer.confirmReset = 
+        (conletType: string, conletId: string) => {
+    JGConsole.instance.closeModalDialog(conletType, conletId);
+    JGConsole.notifyConletModel(conletId, "resetConfirmed");
 }

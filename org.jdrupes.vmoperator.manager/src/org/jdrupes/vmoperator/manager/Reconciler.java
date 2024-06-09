@@ -51,6 +51,7 @@ import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jdrupes.vmoperator.common.K8sV1SecretStub;
 import static org.jdrupes.vmoperator.manager.Constants.COMP_DISPLAY_SECRET;
+import org.jdrupes.vmoperator.manager.events.ResetVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
@@ -209,11 +210,33 @@ public class Reconciler extends Component {
         // Reconcile, use "augmented" vm definition for model
         Map<String, Object> model
             = prepareModel(channel.client(), patchCr(event.vmDefinition()));
-        var configMap = cmReconciler.reconcile(event, model, channel);
+        var configMap = cmReconciler.reconcile(model, channel);
         model.put("cm", configMap.getRaw());
         dsReconciler.reconcile(event, model, channel);
         stsReconciler.reconcile(event, model, channel);
         lbReconciler.reconcile(event, model, channel);
+    }
+
+    /**
+     * Reset the VM by incrementing the reset count and doing a 
+     * partial reconcile (configmap only).
+     *
+     * @param event the event
+     * @param channel the channel
+     * @throws IOException 
+     * @throws ApiException 
+     * @throws TemplateException 
+     */
+    @Handler
+    public void onResetVm(ResetVm event, VmChannel channel)
+            throws ApiException, IOException, TemplateException {
+        var defRoot
+            = GsonPtr.to(channel.vmDefinition().data()).get(JsonObject.class);
+        defRoot.addProperty("resetCount",
+            defRoot.get("resetCount").getAsLong() + 1);
+        Map<String, Object> model
+            = prepareModel(channel.client(), patchCr(channel.vmDefinition()));
+        cmReconciler.reconcile(model, channel);
     }
 
     private DynamicKubernetesObject patchCr(K8sDynamicModel vmDef) {

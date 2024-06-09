@@ -25,13 +25,13 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.common.K8sClient;
-import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
 import org.jdrupes.vmoperator.common.K8sObserver.ResponseType;
 import org.jdrupes.vmoperator.common.K8sV1ConfigMapStub;
@@ -121,7 +121,7 @@ public class VmMonitor extends
         }
         if (vmDef.data() != null) {
             // New data, augment and save
-            addDynamicData(channel.client(), vmDef);
+            addDynamicData(channel.client(), vmDef, channel.vmDefinition());
             channel.setVmDefinition(vmDef);
         } else {
             // Reuse cached
@@ -151,8 +151,16 @@ public class VmMonitor extends
         }
     }
 
-    private void addDynamicData(K8sClient client, K8sDynamicModel vmState) {
+    private void addDynamicData(K8sClient client, VmDefinitionModel vmState,
+            VmDefinitionModel prevState) {
         var rootNode = GsonPtr.to(vmState.data()).get(JsonObject.class);
+
+        // Maintain (or initialize) the resetCount
+        rootNode.addProperty("resetCount", Optional.ofNullable(prevState)
+            .map(ps -> GsonPtr.to(ps.data()))
+            .flatMap(d -> d.getAsLong("resetCount")).orElse(0L));
+
+        // Add defaults in case the VM is not running
         rootNode.addProperty("nodeName", "");
         rootNode.addProperty("nodeAddress", "");
 

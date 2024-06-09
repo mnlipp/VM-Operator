@@ -36,7 +36,6 @@ import org.jdrupes.vmoperator.common.K8s;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
-import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
@@ -62,7 +61,6 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
     /**
      * Reconcile.
      *
-     * @param event the event
      * @param model the model
      * @param channel the channel
      * @return the dynamic kubernetes object
@@ -70,8 +68,8 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
      * @throws TemplateException the template exception
      * @throws ApiException the api exception
      */
-    public DynamicKubernetesObject reconcile(VmDefChanged event,
-            Map<String, Object> model, VmChannel channel)
+    public DynamicKubernetesObject reconcile(Map<String, Object> model,
+            VmChannel channel)
             throws IOException, TemplateException, ApiException {
         // Get API
         DynamicKubernetesApi cmApi = new DynamicKubernetesApi("", "v1",
