@@ -67,592 +67,618 @@
 <span class="source-line-no">054</span><span id="line-54">import org.jdrupes.vmoperator.manager.events.ChannelCache;</span>
 <span class="source-line-no">055</span><span id="line-55">import org.jdrupes.vmoperator.manager.events.GetDisplayPassword;</span>
 <span class="source-line-no">056</span><span id="line-56">import org.jdrupes.vmoperator.manager.events.ModifyVm;</span>
-<span class="source-line-no">057</span><span id="line-57">import org.jdrupes.vmoperator.manager.events.VmChannel;</span>
-<span class="source-line-no">058</span><span id="line-58">import org.jdrupes.vmoperator.manager.events.VmDefChanged;</span>
-<span class="source-line-no">059</span><span id="line-59">import org.jdrupes.vmoperator.util.GsonPtr;</span>
-<span class="source-line-no">060</span><span id="line-60">import org.jgrapes.core.Channel;</span>
-<span class="source-line-no">061</span><span id="line-61">import org.jgrapes.core.Components;</span>
-<span class="source-line-no">062</span><span id="line-62">import org.jgrapes.core.Event;</span>
-<span class="source-line-no">063</span><span id="line-63">import org.jgrapes.core.Manager;</span>
-<span class="source-line-no">064</span><span id="line-64">import org.jgrapes.core.annotation.Handler;</span>
-<span class="source-line-no">065</span><span id="line-65">import org.jgrapes.http.Session;</span>
-<span class="source-line-no">066</span><span id="line-66">import org.jgrapes.util.events.ConfigurationUpdate;</span>
-<span class="source-line-no">067</span><span id="line-67">import org.jgrapes.util.events.KeyValueStoreQuery;</span>
-<span class="source-line-no">068</span><span id="line-68">import org.jgrapes.util.events.KeyValueStoreUpdate;</span>
-<span class="source-line-no">069</span><span id="line-69">import org.jgrapes.webconsole.base.Conlet.RenderMode;</span>
-<span class="source-line-no">070</span><span id="line-70">import org.jgrapes.webconsole.base.ConletBaseModel;</span>
-<span class="source-line-no">071</span><span id="line-71">import org.jgrapes.webconsole.base.ConsoleConnection;</span>
-<span class="source-line-no">072</span><span id="line-72">import org.jgrapes.webconsole.base.ConsoleRole;</span>
-<span class="source-line-no">073</span><span id="line-73">import org.jgrapes.webconsole.base.ConsoleUser;</span>
-<span class="source-line-no">074</span><span id="line-74">import org.jgrapes.webconsole.base.WebConsoleUtils;</span>
-<span class="source-line-no">075</span><span id="line-75">import org.jgrapes.webconsole.base.events.AddConletRequest;</span>
-<span class="source-line-no">076</span><span id="line-76">import org.jgrapes.webconsole.base.events.AddConletType;</span>
-<span class="source-line-no">077</span><span id="line-77">import org.jgrapes.webconsole.base.events.AddPageResources.ScriptResource;</span>
-<span class="source-line-no">078</span><span id="line-78">import org.jgrapes.webconsole.base.events.ConletDeleted;</span>
-<span class="source-line-no">079</span><span id="line-79">import org.jgrapes.webconsole.base.events.ConsoleConfigured;</span>
-<span class="source-line-no">080</span><span id="line-80">import org.jgrapes.webconsole.base.events.ConsolePrepared;</span>
-<span class="source-line-no">081</span><span id="line-81">import org.jgrapes.webconsole.base.events.ConsoleReady;</span>
-<span class="source-line-no">082</span><span id="line-82">import org.jgrapes.webconsole.base.events.DeleteConlet;</span>
-<span class="source-line-no">083</span><span id="line-83">import org.jgrapes.webconsole.base.events.NotifyConletModel;</span>
-<span class="source-line-no">084</span><span id="line-84">import org.jgrapes.webconsole.base.events.NotifyConletView;</span>
-<span class="source-line-no">085</span><span id="line-85">import org.jgrapes.webconsole.base.events.OpenModalDialog;</span>
-<span class="source-line-no">086</span><span id="line-86">import org.jgrapes.webconsole.base.events.RenderConlet;</span>
-<span class="source-line-no">087</span><span id="line-87">import org.jgrapes.webconsole.base.events.RenderConletRequestBase;</span>
-<span class="source-line-no">088</span><span id="line-88">import org.jgrapes.webconsole.base.events.SetLocale;</span>
-<span class="source-line-no">089</span><span id="line-89">import org.jgrapes.webconsole.base.events.UpdateConletType;</span>
-<span class="source-line-no">090</span><span id="line-90">import org.jgrapes.webconsole.base.freemarker.FreeMarkerConlet;</span>
-<span class="source-line-no">091</span><span id="line-91"></span>
-<span class="source-line-no">092</span><span id="line-92">/**</span>
-<span class="source-line-no">093</span><span id="line-93"> * The Class VmViewer.</span>
-<span class="source-line-no">094</span><span id="line-94"> */</span>
-<span class="source-line-no">095</span><span id="line-95">@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.ExcessiveImports",</span>
-<span class="source-line-no">096</span><span id="line-96">    "PMD.CouplingBetweenObjects", "PMD.GodClass" })</span>
-<span class="source-line-no">097</span><span id="line-97">public class VmViewer extends FreeMarkerConlet&lt;VmViewer.ViewerModel&gt; {</span>
-<span class="source-line-no">098</span><span id="line-98"></span>
-<span class="source-line-no">099</span><span id="line-99">    private static final String VM_NAME_PROPERTY = "vmName";</span>
-<span class="source-line-no">100</span><span id="line-100">    private static final String RENDERED</span>
-<span class="source-line-no">101</span><span id="line-101">        = VmViewer.class.getName() + ".rendered";</span>
-<span class="source-line-no">102</span><span id="line-102">    private static final String PENDING</span>
-<span class="source-line-no">103</span><span id="line-103">        = VmViewer.class.getName() + ".pending";</span>
-<span class="source-line-no">104</span><span id="line-104">    private static final Set&lt;RenderMode&gt; MODES = RenderMode.asSet(</span>
-<span class="source-line-no">105</span><span id="line-105">        RenderMode.Preview, RenderMode.Edit);</span>
-<span class="source-line-no">106</span><span id="line-106">    private static final Set&lt;RenderMode&gt; MODES_FOR_GENERATED = RenderMode.asSet(</span>
-<span class="source-line-no">107</span><span id="line-107">        RenderMode.Preview, RenderMode.StickyPreview);</span>
-<span class="source-line-no">108</span><span id="line-108">    private final ChannelCache&lt;String, VmChannel,</span>
-<span class="source-line-no">109</span><span id="line-109">            VmDefinitionModel&gt; channelManager = new ChannelCache&lt;&gt;();</span>
-<span class="source-line-no">110</span><span id="line-110">    private static ObjectMapper objectMapper</span>
-<span class="source-line-no">111</span><span id="line-111">        = new ObjectMapper().registerModule(new JavaTimeModule());</span>
-<span class="source-line-no">112</span><span id="line-112">    private Class&lt;?&gt; preferredIpVersion = Inet4Address.class;</span>
-<span class="source-line-no">113</span><span id="line-113">    private final Set&lt;String&gt; syncUsers = new HashSet&lt;&gt;();</span>
-<span class="source-line-no">114</span><span id="line-114">    private final Set&lt;String&gt; syncRoles = new HashSet&lt;&gt;();</span>
-<span class="source-line-no">115</span><span id="line-115"></span>
-<span class="source-line-no">116</span><span id="line-116">    /**</span>
-<span class="source-line-no">117</span><span id="line-117">     * The periodically generated update event.</span>
-<span class="source-line-no">118</span><span id="line-118">     */</span>
-<span class="source-line-no">119</span><span id="line-119">    public static class Update extends Event&lt;Void&gt; {</span>
-<span class="source-line-no">120</span><span id="line-120">    }</span>
-<span class="source-line-no">121</span><span id="line-121"></span>
-<span class="source-line-no">122</span><span id="line-122">    /**</span>
-<span class="source-line-no">123</span><span id="line-123">     * Creates a new component with its channel set to the given channel.</span>
-<span class="source-line-no">124</span><span id="line-124">     * </span>
-<span class="source-line-no">125</span><span id="line-125">     * @param componentChannel the channel that the component's handlers listen</span>
-<span class="source-line-no">126</span><span id="line-126">     * on by default and that {@link Manager#fire(Event, Channel...)}</span>
-<span class="source-line-no">127</span><span id="line-127">     * sends the event to</span>
-<span class="source-line-no">128</span><span id="line-128">     */</span>
-<span class="source-line-no">129</span><span id="line-129">    public VmViewer(Channel componentChannel) {</span>
-<span class="source-line-no">130</span><span id="line-130">        super(componentChannel);</span>
-<span class="source-line-no">131</span><span id="line-131">    }</span>
-<span class="source-line-no">132</span><span id="line-132"></span>
-<span class="source-line-no">133</span><span id="line-133">    /**</span>
-<span class="source-line-no">134</span><span id="line-134">     * Configure the component.</span>
-<span class="source-line-no">135</span><span id="line-135">     *</span>
-<span class="source-line-no">136</span><span id="line-136">     * @param event the event</span>
-<span class="source-line-no">137</span><span id="line-137">     */</span>
-<span class="source-line-no">138</span><span id="line-138">    @SuppressWarnings("unchecked")</span>
-<span class="source-line-no">139</span><span id="line-139">    @Handler</span>
-<span class="source-line-no">140</span><span id="line-140">    public void onConfigurationUpdate(ConfigurationUpdate event) {</span>
-<span class="source-line-no">141</span><span id="line-141">        event.structured(componentPath()).ifPresent(c -&gt; {</span>
-<span class="source-line-no">142</span><span id="line-142">            try {</span>
-<span class="source-line-no">143</span><span id="line-143">                var dispRes = (Map&lt;String, Object&gt;) c</span>
-<span class="source-line-no">144</span><span id="line-144">                    .getOrDefault("displayResource", Collections.emptyMap());</span>
-<span class="source-line-no">145</span><span id="line-145">                switch ((String) dispRes.getOrDefault("preferredIpVersion",</span>
-<span class="source-line-no">146</span><span id="line-146">                    "")) {</span>
-<span class="source-line-no">147</span><span id="line-147">                case "ipv6":</span>
-<span class="source-line-no">148</span><span id="line-148">                    preferredIpVersion = Inet6Address.class;</span>
-<span class="source-line-no">149</span><span id="line-149">                    break;</span>
-<span class="source-line-no">150</span><span id="line-150">                case "ipv4":</span>
-<span class="source-line-no">151</span><span id="line-151">                default:</span>
-<span class="source-line-no">152</span><span id="line-152">                    preferredIpVersion = Inet4Address.class;</span>
-<span class="source-line-no">153</span><span id="line-153">                    break;</span>
-<span class="source-line-no">154</span><span id="line-154">                }</span>
-<span class="source-line-no">155</span><span id="line-155"></span>
-<span class="source-line-no">156</span><span id="line-156">                // Sync</span>
-<span class="source-line-no">157</span><span id="line-157">                for (var entry : (List&lt;Map&lt;String, String&gt;&gt;) c.getOrDefault(</span>
-<span class="source-line-no">158</span><span id="line-158">                    "syncPreviewsFor", Collections.emptyList())) {</span>
-<span class="source-line-no">159</span><span id="line-159">                    if (entry.containsKey("user")) {</span>
-<span class="source-line-no">160</span><span id="line-160">                        syncUsers.add(entry.get("user"));</span>
-<span class="source-line-no">161</span><span id="line-161">                    } else if (entry.containsKey("role")) {</span>
-<span class="source-line-no">162</span><span id="line-162">                        syncRoles.add(entry.get("role"));</span>
-<span class="source-line-no">163</span><span id="line-163">                    }</span>
-<span class="source-line-no">164</span><span id="line-164">                }</span>
-<span class="source-line-no">165</span><span id="line-165">            } catch (ClassCastException e) {</span>
-<span class="source-line-no">166</span><span id="line-166">                logger.config("Malformed configuration: " + e.getMessage());</span>
-<span class="source-line-no">167</span><span id="line-167">            }</span>
-<span class="source-line-no">168</span><span id="line-168">        });</span>
-<span class="source-line-no">169</span><span id="line-169">    }</span>
-<span class="source-line-no">170</span><span id="line-170"></span>
-<span class="source-line-no">171</span><span id="line-171">    private boolean syncPreviews(Session session) {</span>
-<span class="source-line-no">172</span><span id="line-172">        return WebConsoleUtils.userFromSession(session)</span>
-<span class="source-line-no">173</span><span id="line-173">            .filter(u -&gt; syncUsers.contains(u.getName())).isPresent()</span>
-<span class="source-line-no">174</span><span id="line-174">            || WebConsoleUtils.rolesFromSession(session).stream()</span>
-<span class="source-line-no">175</span><span id="line-175">                .filter(cr -&gt; syncRoles.contains(cr.getName())).findAny()</span>
-<span class="source-line-no">176</span><span id="line-176">                .isPresent();</span>
-<span class="source-line-no">177</span><span id="line-177">    }</span>
-<span class="source-line-no">178</span><span id="line-178"></span>
-<span class="source-line-no">179</span><span id="line-179">    /**</span>
-<span class="source-line-no">180</span><span id="line-180">     * On {@link ConsoleReady}, fire the {@link AddConletType}.</span>
-<span class="source-line-no">181</span><span id="line-181">     *</span>
-<span class="source-line-no">182</span><span id="line-182">     * @param event the event</span>
-<span class="source-line-no">183</span><span id="line-183">     * @param channel the channel</span>
-<span class="source-line-no">184</span><span id="line-184">     * @throws TemplateNotFoundException the template not found exception</span>
-<span class="source-line-no">185</span><span id="line-185">     * @throws MalformedTemplateNameException the malformed template name</span>
-<span class="source-line-no">186</span><span id="line-186">     *             exception</span>
-<span class="source-line-no">187</span><span id="line-187">     * @throws ParseException the parse exception</span>
-<span class="source-line-no">188</span><span id="line-188">     * @throws IOException Signals that an I/O exception has occurred.</span>
-<span class="source-line-no">189</span><span id="line-189">     */</span>
-<span class="source-line-no">190</span><span id="line-190">    @Handler</span>
-<span class="source-line-no">191</span><span id="line-191">    public void onConsoleReady(ConsoleReady event, ConsoleConnection channel)</span>
-<span class="source-line-no">192</span><span id="line-192">            throws TemplateNotFoundException, MalformedTemplateNameException,</span>
-<span class="source-line-no">193</span><span id="line-193">            ParseException, IOException {</span>
-<span class="source-line-no">194</span><span id="line-194">        // Add conlet resources to page</span>
-<span class="source-line-no">195</span><span id="line-195">        channel.respond(new AddConletType(type())</span>
-<span class="source-line-no">196</span><span id="line-196">            .setDisplayNames(</span>
-<span class="source-line-no">197</span><span id="line-197">                localizations(channel.supportedLocales(), "conletName"))</span>
-<span class="source-line-no">198</span><span id="line-198">            .addRenderMode(RenderMode.Preview)</span>
-<span class="source-line-no">199</span><span id="line-199">            .addScript(new ScriptResource().setScriptType("module")</span>
-<span class="source-line-no">200</span><span id="line-200">                .setScriptUri(event.renderSupport().conletResource(</span>
-<span class="source-line-no">201</span><span id="line-201">                    type(), "VmViewer-functions.js"))));</span>
-<span class="source-line-no">202</span><span id="line-202">        channel.session().put(RENDERED, new HashSet&lt;&gt;());</span>
-<span class="source-line-no">203</span><span id="line-203">    }</span>
-<span class="source-line-no">204</span><span id="line-204"></span>
-<span class="source-line-no">205</span><span id="line-205">    /**</span>
-<span class="source-line-no">206</span><span id="line-206">     * On console configured.</span>
-<span class="source-line-no">207</span><span id="line-207">     *</span>
-<span class="source-line-no">208</span><span id="line-208">     * @param event the event</span>
-<span class="source-line-no">209</span><span id="line-209">     * @param connection the console connection</span>
-<span class="source-line-no">210</span><span id="line-210">     * @throws InterruptedException the interrupted exception</span>
-<span class="source-line-no">211</span><span id="line-211">     */</span>
-<span class="source-line-no">212</span><span id="line-212">    @Handler</span>
-<span class="source-line-no">213</span><span id="line-213">    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")</span>
-<span class="source-line-no">214</span><span id="line-214">    public void onConsoleConfigured(ConsoleConfigured event,</span>
-<span class="source-line-no">215</span><span id="line-215">            ConsoleConnection connection) throws InterruptedException,</span>
-<span class="source-line-no">216</span><span id="line-216">            IOException {</span>
-<span class="source-line-no">217</span><span id="line-217">        @SuppressWarnings("unchecked")</span>
-<span class="source-line-no">218</span><span id="line-218">        final var rendered = (Set&lt;String&gt;) connection.session().get(RENDERED);</span>
-<span class="source-line-no">219</span><span id="line-219">        connection.session().remove(RENDERED);</span>
-<span class="source-line-no">220</span><span id="line-220">        if (!syncPreviews(connection.session())) {</span>
-<span class="source-line-no">221</span><span id="line-221">            return;</span>
-<span class="source-line-no">222</span><span id="line-222">        }</span>
-<span class="source-line-no">223</span><span id="line-223"></span>
-<span class="source-line-no">224</span><span id="line-224">        boolean foundMissing = false;</span>
-<span class="source-line-no">225</span><span id="line-225">        for (var vmName : accessibleVms(connection)) {</span>
-<span class="source-line-no">226</span><span id="line-226">            if (rendered.contains(vmName)) {</span>
-<span class="source-line-no">227</span><span id="line-227">                continue;</span>
-<span class="source-line-no">228</span><span id="line-228">            }</span>
-<span class="source-line-no">229</span><span id="line-229">            if (!foundMissing) {</span>
-<span class="source-line-no">230</span><span id="line-230">                // Suspending to allow rendering of conlets to be noticed</span>
-<span class="source-line-no">231</span><span id="line-231">                var failSafe = Components.schedule(t -&gt; event.resumeHandling(),</span>
-<span class="source-line-no">232</span><span id="line-232">                    Duration.ofSeconds(1));</span>
-<span class="source-line-no">233</span><span id="line-233">                event.suspendHandling(failSafe::cancel);</span>
-<span class="source-line-no">234</span><span id="line-234">                connection.setAssociated(PENDING, event);</span>
-<span class="source-line-no">235</span><span id="line-235">                foundMissing = true;</span>
-<span class="source-line-no">236</span><span id="line-236">            }</span>
-<span class="source-line-no">237</span><span id="line-237">            fire(new AddConletRequest(event.event().event().renderSupport(),</span>
-<span class="source-line-no">238</span><span id="line-238">                VmViewer.class.getName(),</span>
-<span class="source-line-no">239</span><span id="line-239">                RenderMode.asSet(RenderMode.Preview))</span>
-<span class="source-line-no">240</span><span id="line-240">                    .addProperty(VM_NAME_PROPERTY, vmName),</span>
-<span class="source-line-no">241</span><span id="line-241">                connection);</span>
-<span class="source-line-no">242</span><span id="line-242">        }</span>
-<span class="source-line-no">243</span><span id="line-243">    }</span>
-<span class="source-line-no">244</span><span id="line-244"></span>
-<span class="source-line-no">245</span><span id="line-245">    /**</span>
-<span class="source-line-no">246</span><span id="line-246">     * On console prepared.</span>
-<span class="source-line-no">247</span><span id="line-247">     *</span>
-<span class="source-line-no">248</span><span id="line-248">     * @param event the event</span>
-<span class="source-line-no">249</span><span id="line-249">     * @param connection the connection</span>
-<span class="source-line-no">250</span><span id="line-250">     */</span>
-<span class="source-line-no">251</span><span id="line-251">    @Handler</span>
-<span class="source-line-no">252</span><span id="line-252">    public void onConsolePrepared(ConsolePrepared event,</span>
-<span class="source-line-no">253</span><span id="line-253">            ConsoleConnection connection) {</span>
-<span class="source-line-no">254</span><span id="line-254">        if (syncPreviews(connection.session())) {</span>
-<span class="source-line-no">255</span><span id="line-255">            connection.respond(new UpdateConletType(type()));</span>
-<span class="source-line-no">256</span><span id="line-256">        }</span>
-<span class="source-line-no">257</span><span id="line-257">    }</span>
-<span class="source-line-no">258</span><span id="line-258"></span>
-<span class="source-line-no">259</span><span id="line-259">    private String storagePath(Session session, String conletId) {</span>
-<span class="source-line-no">260</span><span id="line-260">        return "/" + WebConsoleUtils.userFromSession(session)</span>
-<span class="source-line-no">261</span><span id="line-261">            .map(ConsoleUser::getName).orElse("")</span>
-<span class="source-line-no">262</span><span id="line-262">            + "/" + VmViewer.class.getName() + "/" + conletId;</span>
-<span class="source-line-no">263</span><span id="line-263">    }</span>
-<span class="source-line-no">264</span><span id="line-264"></span>
-<span class="source-line-no">265</span><span id="line-265">    @Override</span>
-<span class="source-line-no">266</span><span id="line-266">    protected Optional&lt;ViewerModel&gt; createNewState(AddConletRequest event,</span>
-<span class="source-line-no">267</span><span id="line-267">            ConsoleConnection connection, String conletId) throws Exception {</span>
-<span class="source-line-no">268</span><span id="line-268">        var model = new ViewerModel(conletId);</span>
-<span class="source-line-no">269</span><span id="line-269">        model.vmName = (String) event.properties().get(VM_NAME_PROPERTY);</span>
-<span class="source-line-no">270</span><span id="line-270">        if (model.vmName != null) {</span>
-<span class="source-line-no">271</span><span id="line-271">            model.setGenerated(true);</span>
-<span class="source-line-no">272</span><span id="line-272">        }</span>
-<span class="source-line-no">273</span><span id="line-273">        String jsonState = objectMapper.writeValueAsString(model);</span>
-<span class="source-line-no">274</span><span id="line-274">        connection.respond(new KeyValueStoreUpdate().update(</span>
-<span class="source-line-no">275</span><span id="line-275">            storagePath(connection.session(), model.getConletId()), jsonState));</span>
-<span class="source-line-no">276</span><span id="line-276">        return Optional.of(model);</span>
-<span class="source-line-no">277</span><span id="line-277">    }</span>
-<span class="source-line-no">278</span><span id="line-278"></span>
-<span class="source-line-no">279</span><span id="line-279">    @Override</span>
-<span class="source-line-no">280</span><span id="line-280">    protected Optional&lt;ViewerModel&gt; createStateRepresentation(Event&lt;?&gt; event,</span>
-<span class="source-line-no">281</span><span id="line-281">            ConsoleConnection connection, String conletId) throws Exception {</span>
-<span class="source-line-no">282</span><span id="line-282">        var model = new ViewerModel(conletId);</span>
-<span class="source-line-no">283</span><span id="line-283">        String jsonState = objectMapper.writeValueAsString(model);</span>
-<span class="source-line-no">284</span><span id="line-284">        connection.respond(new KeyValueStoreUpdate().update(</span>
-<span class="source-line-no">285</span><span id="line-285">            storagePath(connection.session(), model.getConletId()), jsonState));</span>
-<span class="source-line-no">286</span><span id="line-286">        return Optional.of(model);</span>
-<span class="source-line-no">287</span><span id="line-287">    }</span>
-<span class="source-line-no">288</span><span id="line-288"></span>
-<span class="source-line-no">289</span><span id="line-289">    @Override</span>
-<span class="source-line-no">290</span><span id="line-290">    @SuppressWarnings("PMD.EmptyCatchBlock")</span>
-<span class="source-line-no">291</span><span id="line-291">    protected Optional&lt;ViewerModel&gt; recreateState(Event&lt;?&gt; event,</span>
-<span class="source-line-no">292</span><span id="line-292">            ConsoleConnection channel, String conletId) throws Exception {</span>
-<span class="source-line-no">293</span><span id="line-293">        KeyValueStoreQuery query = new KeyValueStoreQuery(</span>
-<span class="source-line-no">294</span><span id="line-294">            storagePath(channel.session(), conletId), channel);</span>
-<span class="source-line-no">295</span><span id="line-295">        newEventPipeline().fire(query, channel);</span>
-<span class="source-line-no">296</span><span id="line-296">        try {</span>
-<span class="source-line-no">297</span><span id="line-297">            if (!query.results().isEmpty()) {</span>
-<span class="source-line-no">298</span><span id="line-298">                var json = query.results().get(0).values().stream().findFirst()</span>
-<span class="source-line-no">299</span><span id="line-299">                    .get();</span>
-<span class="source-line-no">300</span><span id="line-300">                ViewerModel model</span>
-<span class="source-line-no">301</span><span id="line-301">                    = objectMapper.readValue(json, ViewerModel.class);</span>
-<span class="source-line-no">302</span><span id="line-302">                return Optional.of(model);</span>
-<span class="source-line-no">303</span><span id="line-303">            }</span>
-<span class="source-line-no">304</span><span id="line-304">        } catch (InterruptedException e) {</span>
-<span class="source-line-no">305</span><span id="line-305">            // Means we have no result.</span>
-<span class="source-line-no">306</span><span id="line-306">        }</span>
-<span class="source-line-no">307</span><span id="line-307"></span>
-<span class="source-line-no">308</span><span id="line-308">        // Fall back to creating default state.</span>
-<span class="source-line-no">309</span><span id="line-309">        return createStateRepresentation(event, channel, conletId);</span>
-<span class="source-line-no">310</span><span id="line-310">    }</span>
-<span class="source-line-no">311</span><span id="line-311"></span>
-<span class="source-line-no">312</span><span id="line-312">    @Override</span>
-<span class="source-line-no">313</span><span id="line-313">    @SuppressWarnings({ "PMD.AvoidInstantiatingObjectsInLoops", "unchecked" })</span>
-<span class="source-line-no">314</span><span id="line-314">    protected Set&lt;RenderMode&gt; doRenderConlet(RenderConletRequestBase&lt;?&gt; event,</span>
-<span class="source-line-no">315</span><span id="line-315">            ConsoleConnection channel, String conletId, ViewerModel model)</span>
-<span class="source-line-no">316</span><span id="line-316">            throws Exception {</span>
-<span class="source-line-no">317</span><span id="line-317">        ResourceBundle resourceBundle = resourceBundle(channel.locale());</span>
-<span class="source-line-no">318</span><span id="line-318">        Set&lt;RenderMode&gt; renderedAs = new HashSet&lt;&gt;();</span>
-<span class="source-line-no">319</span><span id="line-319">        if (event.renderAs().contains(RenderMode.Preview)) {</span>
-<span class="source-line-no">320</span><span id="line-320">            channel.associated(PENDING, Event.class)</span>
-<span class="source-line-no">321</span><span id="line-321">                .ifPresent(e -&gt; {</span>
-<span class="source-line-no">322</span><span id="line-322">                    e.resumeHandling();</span>
-<span class="source-line-no">323</span><span id="line-323">                    channel.setAssociated(PENDING, null);</span>
-<span class="source-line-no">324</span><span id="line-324">                });</span>
-<span class="source-line-no">325</span><span id="line-325"></span>
-<span class="source-line-no">326</span><span id="line-326">            // Remove conlet if definition has been removed</span>
-<span class="source-line-no">327</span><span id="line-327">            if (model.vmName() != null</span>
-<span class="source-line-no">328</span><span id="line-328">                &amp;&amp; !channelManager.associated(model.vmName()).isPresent()) {</span>
-<span class="source-line-no">329</span><span id="line-329">                channel.respond(</span>
-<span class="source-line-no">330</span><span id="line-330">                    new DeleteConlet(conletId, Collections.emptySet()));</span>
-<span class="source-line-no">331</span><span id="line-331">                return Collections.emptySet();</span>
-<span class="source-line-no">332</span><span id="line-332">            }</span>
-<span class="source-line-no">333</span><span id="line-333"></span>
-<span class="source-line-no">334</span><span id="line-334">            // Don't render if user has not at least one permission</span>
-<span class="source-line-no">335</span><span id="line-335">            if (model.vmName() != null</span>
-<span class="source-line-no">336</span><span id="line-336">                &amp;&amp; channelManager.associated(model.vmName())</span>
-<span class="source-line-no">337</span><span id="line-337">                    .map(d -&gt; permissions(d, channel.session()).isEmpty())</span>
-<span class="source-line-no">338</span><span id="line-338">                    .orElse(true)) {</span>
-<span class="source-line-no">339</span><span id="line-339">                return Collections.emptySet();</span>
-<span class="source-line-no">340</span><span id="line-340">            }</span>
-<span class="source-line-no">341</span><span id="line-341"></span>
-<span class="source-line-no">342</span><span id="line-342">            // Render</span>
-<span class="source-line-no">343</span><span id="line-343">            Template tpl</span>
-<span class="source-line-no">344</span><span id="line-344">                = freemarkerConfig().getTemplate("VmViewer-preview.ftl.html");</span>
-<span class="source-line-no">345</span><span id="line-345">            channel.respond(new RenderConlet(type(), conletId,</span>
-<span class="source-line-no">346</span><span id="line-346">                processTemplate(event, tpl,</span>
-<span class="source-line-no">347</span><span id="line-347">                    fmModel(event, channel, conletId, model)))</span>
-<span class="source-line-no">348</span><span id="line-348">                        .setRenderAs(</span>
-<span class="source-line-no">349</span><span id="line-349">                            RenderMode.Preview.addModifiers(event.renderAs()))</span>
-<span class="source-line-no">350</span><span id="line-350">                        .setSupportedModes(</span>
-<span class="source-line-no">351</span><span id="line-351">                            model.isGenerated() ? MODES_FOR_GENERATED : MODES));</span>
-<span class="source-line-no">352</span><span id="line-352">            renderedAs.add(RenderMode.Preview);</span>
-<span class="source-line-no">353</span><span id="line-353">            if (!Strings.isNullOrEmpty(model.vmName())) {</span>
-<span class="source-line-no">354</span><span id="line-354">                Optional.ofNullable(channel.session().get(RENDERED))</span>
-<span class="source-line-no">355</span><span id="line-355">                    .ifPresent(s -&gt; ((Set&lt;String&gt;) s).add(model.vmName()));</span>
-<span class="source-line-no">356</span><span id="line-356">                updateConfig(channel, model);</span>
-<span class="source-line-no">357</span><span id="line-357">            }</span>
-<span class="source-line-no">358</span><span id="line-358">        }</span>
-<span class="source-line-no">359</span><span id="line-359">        if (event.renderAs().contains(RenderMode.Edit)) {</span>
-<span class="source-line-no">360</span><span id="line-360">            Template tpl = freemarkerConfig()</span>
-<span class="source-line-no">361</span><span id="line-361">                .getTemplate("VmViewer-edit.ftl.html");</span>
-<span class="source-line-no">362</span><span id="line-362">            var fmModel = fmModel(event, channel, conletId, model);</span>
-<span class="source-line-no">363</span><span id="line-363">            fmModel.put("vmNames", accessibleVms(channel));</span>
-<span class="source-line-no">364</span><span id="line-364">            channel.respond(new OpenModalDialog(type(), conletId,</span>
-<span class="source-line-no">365</span><span id="line-365">                processTemplate(event, tpl, fmModel))</span>
-<span class="source-line-no">366</span><span id="line-366">                    .addOption("cancelable", true)</span>
-<span class="source-line-no">367</span><span id="line-367">                    .addOption("okayLabel",</span>
-<span class="source-line-no">368</span><span id="line-368">                        resourceBundle.getString("okayLabel")));</span>
-<span class="source-line-no">369</span><span id="line-369">        }</span>
-<span class="source-line-no">370</span><span id="line-370">        return renderedAs;</span>
-<span class="source-line-no">371</span><span id="line-371">    }</span>
-<span class="source-line-no">372</span><span id="line-372"></span>
-<span class="source-line-no">373</span><span id="line-373">    private List&lt;String&gt; accessibleVms(ConsoleConnection channel) {</span>
-<span class="source-line-no">374</span><span id="line-374">        return channelManager.associated().stream()</span>
-<span class="source-line-no">375</span><span id="line-375">            .filter(d -&gt; !permissions(d, channel.session()).isEmpty())</span>
-<span class="source-line-no">376</span><span id="line-376">            .map(d -&gt; d.getMetadata().getName()).sorted().toList();</span>
-<span class="source-line-no">377</span><span id="line-377">    }</span>
-<span class="source-line-no">378</span><span id="line-378"></span>
-<span class="source-line-no">379</span><span id="line-379">    private Set&lt;Permission&gt; permissions(VmDefinitionModel vmDef,</span>
-<span class="source-line-no">380</span><span id="line-380">            Session session) {</span>
-<span class="source-line-no">381</span><span id="line-381">        var user = WebConsoleUtils.userFromSession(session)</span>
-<span class="source-line-no">382</span><span id="line-382">            .map(ConsoleUser::getName).orElse(null);</span>
-<span class="source-line-no">383</span><span id="line-383">        var roles = WebConsoleUtils.rolesFromSession(session)</span>
-<span class="source-line-no">384</span><span id="line-384">            .stream().map(ConsoleRole::getName).toList();</span>
-<span class="source-line-no">385</span><span id="line-385">        return vmDef.permissionsFor(user, roles);</span>
-<span class="source-line-no">386</span><span id="line-386">    }</span>
-<span class="source-line-no">387</span><span id="line-387"></span>
-<span class="source-line-no">388</span><span id="line-388">    private void updateConfig(ConsoleConnection channel, ViewerModel model) {</span>
-<span class="source-line-no">389</span><span id="line-389">        channel.respond(new NotifyConletView(type(),</span>
-<span class="source-line-no">390</span><span id="line-390">            model.getConletId(), "updateConfig", model.vmName()));</span>
-<span class="source-line-no">391</span><span id="line-391">        updateVmDef(channel, model);</span>
-<span class="source-line-no">392</span><span id="line-392">    }</span>
-<span class="source-line-no">393</span><span id="line-393"></span>
-<span class="source-line-no">394</span><span id="line-394">    private void updateVmDef(ConsoleConnection channel, ViewerModel model) {</span>
-<span class="source-line-no">395</span><span id="line-395">        if (Strings.isNullOrEmpty(model.vmName())) {</span>
-<span class="source-line-no">396</span><span id="line-396">            return;</span>
-<span class="source-line-no">397</span><span id="line-397">        }</span>
-<span class="source-line-no">398</span><span id="line-398">        channelManager.associated(model.vmName()).ifPresent(vmDef -&gt; {</span>
-<span class="source-line-no">399</span><span id="line-399">            try {</span>
-<span class="source-line-no">400</span><span id="line-400">                var def = JsonBeanDecoder.create(vmDef.data().toString())</span>
-<span class="source-line-no">401</span><span id="line-401">                    .readObject();</span>
-<span class="source-line-no">402</span><span id="line-402">                def.setField("userPermissions",</span>
-<span class="source-line-no">403</span><span id="line-403">                    permissions(vmDef, channel.session()).stream()</span>
-<span class="source-line-no">404</span><span id="line-404">                        .map(Permission::toString).toList());</span>
-<span class="source-line-no">405</span><span id="line-405">                channel.respond(new NotifyConletView(type(),</span>
-<span class="source-line-no">406</span><span id="line-406">                    model.getConletId(), "updateVmDefinition", def));</span>
-<span class="source-line-no">407</span><span id="line-407">            } catch (JsonDecodeException e) {</span>
-<span class="source-line-no">408</span><span id="line-408">                logger.log(Level.SEVERE, e,</span>
-<span class="source-line-no">409</span><span id="line-409">                    () -&gt; "Failed to serialize VM definition");</span>
-<span class="source-line-no">410</span><span id="line-410">            }</span>
-<span class="source-line-no">411</span><span id="line-411">        });</span>
-<span class="source-line-no">412</span><span id="line-412">    }</span>
-<span class="source-line-no">413</span><span id="line-413"></span>
-<span class="source-line-no">414</span><span id="line-414">    @Override</span>
-<span class="source-line-no">415</span><span id="line-415">    protected void doConletDeleted(ConletDeleted event,</span>
-<span class="source-line-no">416</span><span id="line-416">            ConsoleConnection channel, String conletId, ViewerModel conletState)</span>
-<span class="source-line-no">417</span><span id="line-417">            throws Exception {</span>
-<span class="source-line-no">418</span><span id="line-418">        if (event.renderModes().isEmpty()) {</span>
-<span class="source-line-no">419</span><span id="line-419">            channel.respond(new KeyValueStoreUpdate().delete(</span>
-<span class="source-line-no">420</span><span id="line-420">                storagePath(channel.session(), conletId)));</span>
-<span class="source-line-no">421</span><span id="line-421">        }</span>
-<span class="source-line-no">422</span><span id="line-422">    }</span>
-<span class="source-line-no">423</span><span id="line-423"></span>
-<span class="source-line-no">424</span><span id="line-424">    /**</span>
-<span class="source-line-no">425</span><span id="line-425">     * Track the VM definitions.</span>
-<span class="source-line-no">426</span><span id="line-426">     *</span>
-<span class="source-line-no">427</span><span id="line-427">     * @param event the event</span>
-<span class="source-line-no">428</span><span id="line-428">     * @param channel the channel</span>
-<span class="source-line-no">429</span><span id="line-429">     * @throws JsonDecodeException the json decode exception</span>
-<span class="source-line-no">430</span><span id="line-430">     * @throws IOException </span>
-<span class="source-line-no">431</span><span id="line-431">     */</span>
-<span class="source-line-no">432</span><span id="line-432">    @Handler(namedChannels = "manager")</span>
-<span class="source-line-no">433</span><span id="line-433">    @SuppressWarnings({ "PMD.ConfusingTernary", "PMD.CognitiveComplexity",</span>
-<span class="source-line-no">434</span><span id="line-434">        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.AvoidDuplicateLiterals",</span>
-<span class="source-line-no">435</span><span id="line-435">        "PMD.ConfusingArgumentToVarargsMethod" })</span>
-<span class="source-line-no">436</span><span id="line-436">    public void onVmDefChanged(VmDefChanged event, VmChannel channel)</span>
-<span class="source-line-no">437</span><span id="line-437">            throws JsonDecodeException, IOException {</span>
-<span class="source-line-no">438</span><span id="line-438">        var vmDef = new VmDefinitionModel(channel.client().getJSON()</span>
-<span class="source-line-no">439</span><span id="line-439">            .getGson(), event.vmDefinition().data());</span>
-<span class="source-line-no">440</span><span id="line-440">        GsonPtr.to(vmDef.data()).to("metadata").get(JsonObject.class)</span>
-<span class="source-line-no">441</span><span id="line-441">            .remove("managedFields");</span>
-<span class="source-line-no">442</span><span id="line-442">        var vmName = vmDef.getMetadata().getName();</span>
-<span class="source-line-no">443</span><span id="line-443">        if (event.type() == K8sObserver.ResponseType.DELETED) {</span>
-<span class="source-line-no">444</span><span id="line-444">            channelManager.remove(vmName);</span>
-<span class="source-line-no">445</span><span id="line-445">        } else {</span>
-<span class="source-line-no">446</span><span id="line-446">            channelManager.put(vmName, channel, vmDef);</span>
-<span class="source-line-no">447</span><span id="line-447">        }</span>
-<span class="source-line-no">448</span><span id="line-448">        for (var entry : conletIdsByConsoleConnection().entrySet()) {</span>
-<span class="source-line-no">449</span><span id="line-449">            var connection = entry.getKey();</span>
-<span class="source-line-no">450</span><span id="line-450">            for (var conletId : entry.getValue()) {</span>
-<span class="source-line-no">451</span><span id="line-451">                var model = stateFromSession(connection.session(), conletId);</span>
-<span class="source-line-no">452</span><span id="line-452">                if (model.isEmpty()</span>
-<span class="source-line-no">453</span><span id="line-453">                    || !Objects.areEqual(model.get().vmName(), vmName)) {</span>
-<span class="source-line-no">454</span><span id="line-454">                    continue;</span>
-<span class="source-line-no">455</span><span id="line-455">                }</span>
-<span class="source-line-no">456</span><span id="line-456">                if (event.type() == K8sObserver.ResponseType.DELETED) {</span>
-<span class="source-line-no">457</span><span id="line-457">                    connection.respond(</span>
-<span class="source-line-no">458</span><span id="line-458">                        new DeleteConlet(conletId, Collections.emptySet()));</span>
-<span class="source-line-no">459</span><span id="line-459">                } else {</span>
-<span class="source-line-no">460</span><span id="line-460">                    updateVmDef(connection, model.get());</span>
-<span class="source-line-no">461</span><span id="line-461">                }</span>
-<span class="source-line-no">462</span><span id="line-462">            }</span>
-<span class="source-line-no">463</span><span id="line-463">        }</span>
-<span class="source-line-no">464</span><span id="line-464">    }</span>
-<span class="source-line-no">465</span><span id="line-465"></span>
-<span class="source-line-no">466</span><span id="line-466">    @Override</span>
-<span class="source-line-no">467</span><span id="line-467">    @SuppressWarnings({ "PMD.AvoidDecimalLiteralsInBigDecimalConstructor",</span>
-<span class="source-line-no">468</span><span id="line-468">        "PMD.ConfusingArgumentToVarargsMethod" })</span>
-<span class="source-line-no">469</span><span id="line-469">    protected void doUpdateConletState(NotifyConletModel event,</span>
-<span class="source-line-no">470</span><span id="line-470">            ConsoleConnection channel, ViewerModel model)</span>
-<span class="source-line-no">471</span><span id="line-471">            throws Exception {</span>
-<span class="source-line-no">472</span><span id="line-472">        event.stop();</span>
-<span class="source-line-no">473</span><span id="line-473">        var both = Optional.ofNullable(event.params().asString(0))</span>
-<span class="source-line-no">474</span><span id="line-474">            .flatMap(vm -&gt; channelManager.both(vm));</span>
-<span class="source-line-no">475</span><span id="line-475">        if (both.isEmpty()) {</span>
-<span class="source-line-no">476</span><span id="line-476">            return;</span>
-<span class="source-line-no">477</span><span id="line-477">        }</span>
-<span class="source-line-no">478</span><span id="line-478">        var vmChannel = both.get().channel;</span>
-<span class="source-line-no">479</span><span id="line-479">        var vmDef = both.get().associated;</span>
-<span class="source-line-no">480</span><span id="line-480">        var vmName = vmDef.metadata().getName();</span>
-<span class="source-line-no">481</span><span id="line-481">        var perms = permissions(vmDef, channel.session());</span>
-<span class="source-line-no">482</span><span id="line-482">        switch (event.method()) {</span>
-<span class="source-line-no">483</span><span id="line-483">        case "selectedVm":</span>
-<span class="source-line-no">484</span><span id="line-484">            model.setVmName(event.params().asString(0));</span>
-<span class="source-line-no">485</span><span id="line-485">            String jsonState = objectMapper.writeValueAsString(model);</span>
-<span class="source-line-no">486</span><span id="line-486">            channel.respond(new KeyValueStoreUpdate().update(storagePath(</span>
-<span class="source-line-no">487</span><span id="line-487">                channel.session(), model.getConletId()), jsonState));</span>
-<span class="source-line-no">488</span><span id="line-488">            updateConfig(channel, model);</span>
-<span class="source-line-no">489</span><span id="line-489">            break;</span>
-<span class="source-line-no">490</span><span id="line-490">        case "start":</span>
-<span class="source-line-no">491</span><span id="line-491">            if (perms.contains(Permission.START)) {</span>
-<span class="source-line-no">492</span><span id="line-492">                fire(new ModifyVm(vmName, "state", "Running", vmChannel));</span>
-<span class="source-line-no">493</span><span id="line-493">            }</span>
-<span class="source-line-no">494</span><span id="line-494">            break;</span>
-<span class="source-line-no">495</span><span id="line-495">        case "stop":</span>
-<span class="source-line-no">496</span><span id="line-496">            if (perms.contains(Permission.STOP)) {</span>
-<span class="source-line-no">497</span><span id="line-497">                fire(new ModifyVm(vmName, "state", "Stopped", vmChannel));</span>
-<span class="source-line-no">498</span><span id="line-498">            }</span>
-<span class="source-line-no">499</span><span id="line-499">            break;</span>
-<span class="source-line-no">500</span><span id="line-500">        case "openConsole":</span>
-<span class="source-line-no">501</span><span id="line-501">            if (perms.contains(Permission.ACCESS_CONSOLE)) {</span>
-<span class="source-line-no">502</span><span id="line-502">                var pwQuery = Event.onCompletion(new GetDisplayPassword(vmDef),</span>
-<span class="source-line-no">503</span><span id="line-503">                    e -&gt; e.password().ifPresent(</span>
-<span class="source-line-no">504</span><span id="line-504">                        pw -&gt; openConsole(vmName, channel, model, pw)));</span>
-<span class="source-line-no">505</span><span id="line-505">                fire(pwQuery, vmChannel);</span>
-<span class="source-line-no">506</span><span id="line-506">            }</span>
-<span class="source-line-no">507</span><span id="line-507">            break;</span>
-<span class="source-line-no">508</span><span id="line-508">        default:// ignore</span>
-<span class="source-line-no">509</span><span id="line-509">            break;</span>
-<span class="source-line-no">510</span><span id="line-510">        }</span>
-<span class="source-line-no">511</span><span id="line-511">    }</span>
-<span class="source-line-no">512</span><span id="line-512"></span>
-<span class="source-line-no">513</span><span id="line-513">    private void openConsole(String vmName, ConsoleConnection connection,</span>
-<span class="source-line-no">514</span><span id="line-514">            ViewerModel model, String password) {</span>
-<span class="source-line-no">515</span><span id="line-515">        var vmDef = channelManager.associated(vmName).orElse(null);</span>
-<span class="source-line-no">516</span><span id="line-516">        if (vmDef == null) {</span>
-<span class="source-line-no">517</span><span id="line-517">            return;</span>
-<span class="source-line-no">518</span><span id="line-518">        }</span>
-<span class="source-line-no">519</span><span id="line-519">        var addr = displayIp(vmDef);</span>
-<span class="source-line-no">520</span><span id="line-520">        if (addr.isEmpty()) {</span>
-<span class="source-line-no">521</span><span id="line-521">            logger.severe(() -&gt; "Failed to find display IP for " + vmName);</span>
-<span class="source-line-no">522</span><span id="line-522">            return;</span>
-<span class="source-line-no">523</span><span id="line-523">        }</span>
-<span class="source-line-no">524</span><span id="line-524">        var port = GsonPtr.to(vmDef.data()).get(JsonPrimitive.class, "spec",</span>
-<span class="source-line-no">525</span><span id="line-525">            "vm", "display", "spice", "port");</span>
-<span class="source-line-no">526</span><span id="line-526">        if (port.isEmpty()) {</span>
-<span class="source-line-no">527</span><span id="line-527">            logger.severe(() -&gt; "No port defined for display of " + vmName);</span>
-<span class="source-line-no">528</span><span id="line-528">            return;</span>
-<span class="source-line-no">529</span><span id="line-529">        }</span>
-<span class="source-line-no">530</span><span id="line-530">        var proxyUrl = GsonPtr.to(vmDef.data()).get(JsonPrimitive.class, "spec",</span>
-<span class="source-line-no">531</span><span id="line-531">            "vm", "display", "spice", "proxyUrl");</span>
-<span class="source-line-no">532</span><span id="line-532">        StringBuffer data = new StringBuffer(100)</span>
-<span class="source-line-no">533</span><span id="line-533">            .append("[virt-viewer]\ntype=spice\nhost=")</span>
-<span class="source-line-no">534</span><span id="line-534">            .append(addr.get().getHostAddress()).append("\nport=")</span>
-<span class="source-line-no">535</span><span id="line-535">            .append(Integer.toString(port.get().getAsInt()))</span>
-<span class="source-line-no">536</span><span id="line-536">            .append("\npassword=").append(password).append('\n');</span>
-<span class="source-line-no">537</span><span id="line-537">        proxyUrl.map(JsonPrimitive::getAsString).ifPresent(u -&gt; {</span>
-<span class="source-line-no">538</span><span id="line-538">            if (!Strings.isNullOrEmpty(u)) {</span>
-<span class="source-line-no">539</span><span id="line-539">                data.append("proxy=").append(u).append('\n');</span>
-<span class="source-line-no">540</span><span id="line-540">            }</span>
-<span class="source-line-no">541</span><span id="line-541">        });</span>
-<span class="source-line-no">542</span><span id="line-542">        connection.respond(new NotifyConletView(type(),</span>
-<span class="source-line-no">543</span><span id="line-543">            model.getConletId(), "openConsole", "application/x-virt-viewer",</span>
-<span class="source-line-no">544</span><span id="line-544">            Base64.getEncoder().encodeToString(data.toString().getBytes())));</span>
-<span class="source-line-no">545</span><span id="line-545">    }</span>
-<span class="source-line-no">546</span><span id="line-546"></span>
-<span class="source-line-no">547</span><span id="line-547">    private Optional&lt;InetAddress&gt; displayIp(K8sDynamicModel vmDef) {</span>
-<span class="source-line-no">548</span><span id="line-548">        var server = GsonPtr.to(vmDef.data()).get(JsonPrimitive.class, "spec",</span>
-<span class="source-line-no">549</span><span id="line-549">            "vm", "display", "spice", "server");</span>
-<span class="source-line-no">550</span><span id="line-550">        if (server.isPresent()) {</span>
-<span class="source-line-no">551</span><span id="line-551">            var srv = server.get().getAsString();</span>
-<span class="source-line-no">552</span><span id="line-552">            try {</span>
-<span class="source-line-no">553</span><span id="line-553">                var addr = InetAddress.getByName(srv);</span>
-<span class="source-line-no">554</span><span id="line-554">                logger.fine(() -&gt; "Using IP address from CRD for "</span>
-<span class="source-line-no">555</span><span id="line-555">                    + vmDef.getMetadata().getName() + ": " + addr);</span>
-<span class="source-line-no">556</span><span id="line-556">                return Optional.of(addr);</span>
-<span class="source-line-no">557</span><span id="line-557">            } catch (UnknownHostException e) {</span>
-<span class="source-line-no">558</span><span id="line-558">                logger.log(Level.SEVERE, e, () -&gt; "Invalid server address "</span>
-<span class="source-line-no">559</span><span id="line-559">                    + srv + ": " + e.getMessage());</span>
-<span class="source-line-no">560</span><span id="line-560">                return Optional.empty();</span>
-<span class="source-line-no">561</span><span id="line-561">            }</span>
-<span class="source-line-no">562</span><span id="line-562">        }</span>
-<span class="source-line-no">563</span><span id="line-563">        var addrs = GsonPtr.to(vmDef.data()).getAsListOf(JsonPrimitive.class,</span>
-<span class="source-line-no">564</span><span id="line-564">            "nodeAddresses").stream().map(JsonPrimitive::getAsString)</span>
-<span class="source-line-no">565</span><span id="line-565">            .map(a -&gt; {</span>
-<span class="source-line-no">566</span><span id="line-566">                try {</span>
-<span class="source-line-no">567</span><span id="line-567">                    return InetAddress.getByName(a);</span>
-<span class="source-line-no">568</span><span id="line-568">                } catch (UnknownHostException e) {</span>
-<span class="source-line-no">569</span><span id="line-569">                    logger.warning(() -&gt; "Invalid IP address: " + a);</span>
-<span class="source-line-no">570</span><span id="line-570">                    return null;</span>
-<span class="source-line-no">571</span><span id="line-571">                }</span>
-<span class="source-line-no">572</span><span id="line-572">            }).filter(a -&gt; a != null).toList();</span>
-<span class="source-line-no">573</span><span id="line-573">        logger.fine(() -&gt; "Known IP addresses for "</span>
-<span class="source-line-no">574</span><span id="line-574">            + vmDef.getMetadata().getName() + ": " + addrs);</span>
-<span class="source-line-no">575</span><span id="line-575">        return addrs.stream()</span>
-<span class="source-line-no">576</span><span id="line-576">            .filter(a -&gt; preferredIpVersion.isAssignableFrom(a.getClass()))</span>
-<span class="source-line-no">577</span><span id="line-577">            .findFirst().or(() -&gt; addrs.stream().findFirst());</span>
-<span class="source-line-no">578</span><span id="line-578">    }</span>
-<span class="source-line-no">579</span><span id="line-579"></span>
-<span class="source-line-no">580</span><span id="line-580">    @Override</span>
-<span class="source-line-no">581</span><span id="line-581">    protected boolean doSetLocale(SetLocale event, ConsoleConnection channel,</span>
-<span class="source-line-no">582</span><span id="line-582">            String conletId) throws Exception {</span>
-<span class="source-line-no">583</span><span id="line-583">        return true;</span>
-<span class="source-line-no">584</span><span id="line-584">    }</span>
-<span class="source-line-no">585</span><span id="line-585"></span>
-<span class="source-line-no">586</span><span id="line-586">    /**</span>
-<span class="source-line-no">587</span><span id="line-587">     * The Class VmsModel.</span>
-<span class="source-line-no">588</span><span id="line-588">     */</span>
-<span class="source-line-no">589</span><span id="line-589">    @SuppressWarnings("PMD.DataClass")</span>
-<span class="source-line-no">590</span><span id="line-590">    public static class ViewerModel extends ConletBaseModel {</span>
+<span class="source-line-no">057</span><span id="line-57">import org.jdrupes.vmoperator.manager.events.ResetVm;</span>
+<span class="source-line-no">058</span><span id="line-58">import org.jdrupes.vmoperator.manager.events.VmChannel;</span>
+<span class="source-line-no">059</span><span id="line-59">import org.jdrupes.vmoperator.manager.events.VmDefChanged;</span>
+<span class="source-line-no">060</span><span id="line-60">import org.jdrupes.vmoperator.util.GsonPtr;</span>
+<span class="source-line-no">061</span><span id="line-61">import org.jgrapes.core.Channel;</span>
+<span class="source-line-no">062</span><span id="line-62">import org.jgrapes.core.Components;</span>
+<span class="source-line-no">063</span><span id="line-63">import org.jgrapes.core.Event;</span>
+<span class="source-line-no">064</span><span id="line-64">import org.jgrapes.core.Manager;</span>
+<span class="source-line-no">065</span><span id="line-65">import org.jgrapes.core.annotation.Handler;</span>
+<span class="source-line-no">066</span><span id="line-66">import org.jgrapes.http.Session;</span>
+<span class="source-line-no">067</span><span id="line-67">import org.jgrapes.util.events.ConfigurationUpdate;</span>
+<span class="source-line-no">068</span><span id="line-68">import org.jgrapes.util.events.KeyValueStoreQuery;</span>
+<span class="source-line-no">069</span><span id="line-69">import org.jgrapes.util.events.KeyValueStoreUpdate;</span>
+<span class="source-line-no">070</span><span id="line-70">import org.jgrapes.webconsole.base.Conlet.RenderMode;</span>
+<span class="source-line-no">071</span><span id="line-71">import org.jgrapes.webconsole.base.ConletBaseModel;</span>
+<span class="source-line-no">072</span><span id="line-72">import org.jgrapes.webconsole.base.ConsoleConnection;</span>
+<span class="source-line-no">073</span><span id="line-73">import org.jgrapes.webconsole.base.ConsoleRole;</span>
+<span class="source-line-no">074</span><span id="line-74">import org.jgrapes.webconsole.base.ConsoleUser;</span>
+<span class="source-line-no">075</span><span id="line-75">import org.jgrapes.webconsole.base.WebConsoleUtils;</span>
+<span class="source-line-no">076</span><span id="line-76">import org.jgrapes.webconsole.base.events.AddConletRequest;</span>
+<span class="source-line-no">077</span><span id="line-77">import org.jgrapes.webconsole.base.events.AddConletType;</span>
+<span class="source-line-no">078</span><span id="line-78">import org.jgrapes.webconsole.base.events.AddPageResources.ScriptResource;</span>
+<span class="source-line-no">079</span><span id="line-79">import org.jgrapes.webconsole.base.events.ConletDeleted;</span>
+<span class="source-line-no">080</span><span id="line-80">import org.jgrapes.webconsole.base.events.ConsoleConfigured;</span>
+<span class="source-line-no">081</span><span id="line-81">import org.jgrapes.webconsole.base.events.ConsolePrepared;</span>
+<span class="source-line-no">082</span><span id="line-82">import org.jgrapes.webconsole.base.events.ConsoleReady;</span>
+<span class="source-line-no">083</span><span id="line-83">import org.jgrapes.webconsole.base.events.DeleteConlet;</span>
+<span class="source-line-no">084</span><span id="line-84">import org.jgrapes.webconsole.base.events.NotifyConletModel;</span>
+<span class="source-line-no">085</span><span id="line-85">import org.jgrapes.webconsole.base.events.NotifyConletView;</span>
+<span class="source-line-no">086</span><span id="line-86">import org.jgrapes.webconsole.base.events.OpenModalDialog;</span>
+<span class="source-line-no">087</span><span id="line-87">import org.jgrapes.webconsole.base.events.RenderConlet;</span>
+<span class="source-line-no">088</span><span id="line-88">import org.jgrapes.webconsole.base.events.RenderConletRequestBase;</span>
+<span class="source-line-no">089</span><span id="line-89">import org.jgrapes.webconsole.base.events.SetLocale;</span>
+<span class="source-line-no">090</span><span id="line-90">import org.jgrapes.webconsole.base.events.UpdateConletType;</span>
+<span class="source-line-no">091</span><span id="line-91">import org.jgrapes.webconsole.base.freemarker.FreeMarkerConlet;</span>
+<span class="source-line-no">092</span><span id="line-92"></span>
+<span class="source-line-no">093</span><span id="line-93">/**</span>
+<span class="source-line-no">094</span><span id="line-94"> * The Class VmViewer.</span>
+<span class="source-line-no">095</span><span id="line-95"> */</span>
+<span class="source-line-no">096</span><span id="line-96">@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.ExcessiveImports",</span>
+<span class="source-line-no">097</span><span id="line-97">    "PMD.CouplingBetweenObjects", "PMD.GodClass", "PMD.TooManyMethods" })</span>
+<span class="source-line-no">098</span><span id="line-98">public class VmViewer extends FreeMarkerConlet&lt;VmViewer.ViewerModel&gt; {</span>
+<span class="source-line-no">099</span><span id="line-99"></span>
+<span class="source-line-no">100</span><span id="line-100">    private static final String VM_NAME_PROPERTY = "vmName";</span>
+<span class="source-line-no">101</span><span id="line-101">    private static final String RENDERED</span>
+<span class="source-line-no">102</span><span id="line-102">        = VmViewer.class.getName() + ".rendered";</span>
+<span class="source-line-no">103</span><span id="line-103">    private static final String PENDING</span>
+<span class="source-line-no">104</span><span id="line-104">        = VmViewer.class.getName() + ".pending";</span>
+<span class="source-line-no">105</span><span id="line-105">    private static final Set&lt;RenderMode&gt; MODES = RenderMode.asSet(</span>
+<span class="source-line-no">106</span><span id="line-106">        RenderMode.Preview, RenderMode.Edit);</span>
+<span class="source-line-no">107</span><span id="line-107">    private static final Set&lt;RenderMode&gt; MODES_FOR_GENERATED = RenderMode.asSet(</span>
+<span class="source-line-no">108</span><span id="line-108">        RenderMode.Preview, RenderMode.StickyPreview);</span>
+<span class="source-line-no">109</span><span id="line-109">    private final ChannelCache&lt;String, VmChannel,</span>
+<span class="source-line-no">110</span><span id="line-110">            VmDefinitionModel&gt; channelManager = new ChannelCache&lt;&gt;();</span>
+<span class="source-line-no">111</span><span id="line-111">    private static ObjectMapper objectMapper</span>
+<span class="source-line-no">112</span><span id="line-112">        = new ObjectMapper().registerModule(new JavaTimeModule());</span>
+<span class="source-line-no">113</span><span id="line-113">    private Class&lt;?&gt; preferredIpVersion = Inet4Address.class;</span>
+<span class="source-line-no">114</span><span id="line-114">    private final Set&lt;String&gt; syncUsers = new HashSet&lt;&gt;();</span>
+<span class="source-line-no">115</span><span id="line-115">    private final Set&lt;String&gt; syncRoles = new HashSet&lt;&gt;();</span>
+<span class="source-line-no">116</span><span id="line-116"></span>
+<span class="source-line-no">117</span><span id="line-117">    /**</span>
+<span class="source-line-no">118</span><span id="line-118">     * The periodically generated update event.</span>
+<span class="source-line-no">119</span><span id="line-119">     */</span>
+<span class="source-line-no">120</span><span id="line-120">    public static class Update extends Event&lt;Void&gt; {</span>
+<span class="source-line-no">121</span><span id="line-121">    }</span>
+<span class="source-line-no">122</span><span id="line-122"></span>
+<span class="source-line-no">123</span><span id="line-123">    /**</span>
+<span class="source-line-no">124</span><span id="line-124">     * Creates a new component with its channel set to the given channel.</span>
+<span class="source-line-no">125</span><span id="line-125">     * </span>
+<span class="source-line-no">126</span><span id="line-126">     * @param componentChannel the channel that the component's handlers listen</span>
+<span class="source-line-no">127</span><span id="line-127">     * on by default and that {@link Manager#fire(Event, Channel...)}</span>
+<span class="source-line-no">128</span><span id="line-128">     * sends the event to</span>
+<span class="source-line-no">129</span><span id="line-129">     */</span>
+<span class="source-line-no">130</span><span id="line-130">    public VmViewer(Channel componentChannel) {</span>
+<span class="source-line-no">131</span><span id="line-131">        super(componentChannel);</span>
+<span class="source-line-no">132</span><span id="line-132">    }</span>
+<span class="source-line-no">133</span><span id="line-133"></span>
+<span class="source-line-no">134</span><span id="line-134">    /**</span>
+<span class="source-line-no">135</span><span id="line-135">     * Configure the component.</span>
+<span class="source-line-no">136</span><span id="line-136">     *</span>
+<span class="source-line-no">137</span><span id="line-137">     * @param event the event</span>
+<span class="source-line-no">138</span><span id="line-138">     */</span>
+<span class="source-line-no">139</span><span id="line-139">    @SuppressWarnings("unchecked")</span>
+<span class="source-line-no">140</span><span id="line-140">    @Handler</span>
+<span class="source-line-no">141</span><span id="line-141">    public void onConfigurationUpdate(ConfigurationUpdate event) {</span>
+<span class="source-line-no">142</span><span id="line-142">        event.structured(componentPath()).ifPresent(c -&gt; {</span>
+<span class="source-line-no">143</span><span id="line-143">            try {</span>
+<span class="source-line-no">144</span><span id="line-144">                var dispRes = (Map&lt;String, Object&gt;) c</span>
+<span class="source-line-no">145</span><span id="line-145">                    .getOrDefault("displayResource", Collections.emptyMap());</span>
+<span class="source-line-no">146</span><span id="line-146">                switch ((String) dispRes.getOrDefault("preferredIpVersion",</span>
+<span class="source-line-no">147</span><span id="line-147">                    "")) {</span>
+<span class="source-line-no">148</span><span id="line-148">                case "ipv6":</span>
+<span class="source-line-no">149</span><span id="line-149">                    preferredIpVersion = Inet6Address.class;</span>
+<span class="source-line-no">150</span><span id="line-150">                    break;</span>
+<span class="source-line-no">151</span><span id="line-151">                case "ipv4":</span>
+<span class="source-line-no">152</span><span id="line-152">                default:</span>
+<span class="source-line-no">153</span><span id="line-153">                    preferredIpVersion = Inet4Address.class;</span>
+<span class="source-line-no">154</span><span id="line-154">                    break;</span>
+<span class="source-line-no">155</span><span id="line-155">                }</span>
+<span class="source-line-no">156</span><span id="line-156"></span>
+<span class="source-line-no">157</span><span id="line-157">                // Sync</span>
+<span class="source-line-no">158</span><span id="line-158">                for (var entry : (List&lt;Map&lt;String, String&gt;&gt;) c.getOrDefault(</span>
+<span class="source-line-no">159</span><span id="line-159">                    "syncPreviewsFor", Collections.emptyList())) {</span>
+<span class="source-line-no">160</span><span id="line-160">                    if (entry.containsKey("user")) {</span>
+<span class="source-line-no">161</span><span id="line-161">                        syncUsers.add(entry.get("user"));</span>
+<span class="source-line-no">162</span><span id="line-162">                    } else if (entry.containsKey("role")) {</span>
+<span class="source-line-no">163</span><span id="line-163">                        syncRoles.add(entry.get("role"));</span>
+<span class="source-line-no">164</span><span id="line-164">                    }</span>
+<span class="source-line-no">165</span><span id="line-165">                }</span>
+<span class="source-line-no">166</span><span id="line-166">            } catch (ClassCastException e) {</span>
+<span class="source-line-no">167</span><span id="line-167">                logger.config("Malformed configuration: " + e.getMessage());</span>
+<span class="source-line-no">168</span><span id="line-168">            }</span>
+<span class="source-line-no">169</span><span id="line-169">        });</span>
+<span class="source-line-no">170</span><span id="line-170">    }</span>
+<span class="source-line-no">171</span><span id="line-171"></span>
+<span class="source-line-no">172</span><span id="line-172">    private boolean syncPreviews(Session session) {</span>
+<span class="source-line-no">173</span><span id="line-173">        return WebConsoleUtils.userFromSession(session)</span>
+<span class="source-line-no">174</span><span id="line-174">            .filter(u -&gt; syncUsers.contains(u.getName())).isPresent()</span>
+<span class="source-line-no">175</span><span id="line-175">            || WebConsoleUtils.rolesFromSession(session).stream()</span>
+<span class="source-line-no">176</span><span id="line-176">                .filter(cr -&gt; syncRoles.contains(cr.getName())).findAny()</span>
+<span class="source-line-no">177</span><span id="line-177">                .isPresent();</span>
+<span class="source-line-no">178</span><span id="line-178">    }</span>
+<span class="source-line-no">179</span><span id="line-179"></span>
+<span class="source-line-no">180</span><span id="line-180">    /**</span>
+<span class="source-line-no">181</span><span id="line-181">     * On {@link ConsoleReady}, fire the {@link AddConletType}.</span>
+<span class="source-line-no">182</span><span id="line-182">     *</span>
+<span class="source-line-no">183</span><span id="line-183">     * @param event the event</span>
+<span class="source-line-no">184</span><span id="line-184">     * @param channel the channel</span>
+<span class="source-line-no">185</span><span id="line-185">     * @throws TemplateNotFoundException the template not found exception</span>
+<span class="source-line-no">186</span><span id="line-186">     * @throws MalformedTemplateNameException the malformed template name</span>
+<span class="source-line-no">187</span><span id="line-187">     *             exception</span>
+<span class="source-line-no">188</span><span id="line-188">     * @throws ParseException the parse exception</span>
+<span class="source-line-no">189</span><span id="line-189">     * @throws IOException Signals that an I/O exception has occurred.</span>
+<span class="source-line-no">190</span><span id="line-190">     */</span>
+<span class="source-line-no">191</span><span id="line-191">    @Handler</span>
+<span class="source-line-no">192</span><span id="line-192">    public void onConsoleReady(ConsoleReady event, ConsoleConnection channel)</span>
+<span class="source-line-no">193</span><span id="line-193">            throws TemplateNotFoundException, MalformedTemplateNameException,</span>
+<span class="source-line-no">194</span><span id="line-194">            ParseException, IOException {</span>
+<span class="source-line-no">195</span><span id="line-195">        // Add conlet resources to page</span>
+<span class="source-line-no">196</span><span id="line-196">        channel.respond(new AddConletType(type())</span>
+<span class="source-line-no">197</span><span id="line-197">            .setDisplayNames(</span>
+<span class="source-line-no">198</span><span id="line-198">                localizations(channel.supportedLocales(), "conletName"))</span>
+<span class="source-line-no">199</span><span id="line-199">            .addRenderMode(RenderMode.Preview)</span>
+<span class="source-line-no">200</span><span id="line-200">            .addScript(new ScriptResource().setScriptType("module")</span>
+<span class="source-line-no">201</span><span id="line-201">                .setScriptUri(event.renderSupport().conletResource(</span>
+<span class="source-line-no">202</span><span id="line-202">                    type(), "VmViewer-functions.js"))));</span>
+<span class="source-line-no">203</span><span id="line-203">        channel.session().put(RENDERED, new HashSet&lt;&gt;());</span>
+<span class="source-line-no">204</span><span id="line-204">    }</span>
+<span class="source-line-no">205</span><span id="line-205"></span>
+<span class="source-line-no">206</span><span id="line-206">    /**</span>
+<span class="source-line-no">207</span><span id="line-207">     * On console configured.</span>
+<span class="source-line-no">208</span><span id="line-208">     *</span>
+<span class="source-line-no">209</span><span id="line-209">     * @param event the event</span>
+<span class="source-line-no">210</span><span id="line-210">     * @param connection the console connection</span>
+<span class="source-line-no">211</span><span id="line-211">     * @throws InterruptedException the interrupted exception</span>
+<span class="source-line-no">212</span><span id="line-212">     */</span>
+<span class="source-line-no">213</span><span id="line-213">    @Handler</span>
+<span class="source-line-no">214</span><span id="line-214">    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")</span>
+<span class="source-line-no">215</span><span id="line-215">    public void onConsoleConfigured(ConsoleConfigured event,</span>
+<span class="source-line-no">216</span><span id="line-216">            ConsoleConnection connection) throws InterruptedException,</span>
+<span class="source-line-no">217</span><span id="line-217">            IOException {</span>
+<span class="source-line-no">218</span><span id="line-218">        @SuppressWarnings("unchecked")</span>
+<span class="source-line-no">219</span><span id="line-219">        final var rendered = (Set&lt;String&gt;) connection.session().get(RENDERED);</span>
+<span class="source-line-no">220</span><span id="line-220">        connection.session().remove(RENDERED);</span>
+<span class="source-line-no">221</span><span id="line-221">        if (!syncPreviews(connection.session())) {</span>
+<span class="source-line-no">222</span><span id="line-222">            return;</span>
+<span class="source-line-no">223</span><span id="line-223">        }</span>
+<span class="source-line-no">224</span><span id="line-224"></span>
+<span class="source-line-no">225</span><span id="line-225">        boolean foundMissing = false;</span>
+<span class="source-line-no">226</span><span id="line-226">        for (var vmName : accessibleVms(connection)) {</span>
+<span class="source-line-no">227</span><span id="line-227">            if (rendered.contains(vmName)) {</span>
+<span class="source-line-no">228</span><span id="line-228">                continue;</span>
+<span class="source-line-no">229</span><span id="line-229">            }</span>
+<span class="source-line-no">230</span><span id="line-230">            if (!foundMissing) {</span>
+<span class="source-line-no">231</span><span id="line-231">                // Suspending to allow rendering of conlets to be noticed</span>
+<span class="source-line-no">232</span><span id="line-232">                var failSafe = Components.schedule(t -&gt; event.resumeHandling(),</span>
+<span class="source-line-no">233</span><span id="line-233">                    Duration.ofSeconds(1));</span>
+<span class="source-line-no">234</span><span id="line-234">                event.suspendHandling(failSafe::cancel);</span>
+<span class="source-line-no">235</span><span id="line-235">                connection.setAssociated(PENDING, event);</span>
+<span class="source-line-no">236</span><span id="line-236">                foundMissing = true;</span>
+<span class="source-line-no">237</span><span id="line-237">            }</span>
+<span class="source-line-no">238</span><span id="line-238">            fire(new AddConletRequest(event.event().event().renderSupport(),</span>
+<span class="source-line-no">239</span><span id="line-239">                VmViewer.class.getName(),</span>
+<span class="source-line-no">240</span><span id="line-240">                RenderMode.asSet(RenderMode.Preview))</span>
+<span class="source-line-no">241</span><span id="line-241">                    .addProperty(VM_NAME_PROPERTY, vmName),</span>
+<span class="source-line-no">242</span><span id="line-242">                connection);</span>
+<span class="source-line-no">243</span><span id="line-243">        }</span>
+<span class="source-line-no">244</span><span id="line-244">    }</span>
+<span class="source-line-no">245</span><span id="line-245"></span>
+<span class="source-line-no">246</span><span id="line-246">    /**</span>
+<span class="source-line-no">247</span><span id="line-247">     * On console prepared.</span>
+<span class="source-line-no">248</span><span id="line-248">     *</span>
+<span class="source-line-no">249</span><span id="line-249">     * @param event the event</span>
+<span class="source-line-no">250</span><span id="line-250">     * @param connection the connection</span>
+<span class="source-line-no">251</span><span id="line-251">     */</span>
+<span class="source-line-no">252</span><span id="line-252">    @Handler</span>
+<span class="source-line-no">253</span><span id="line-253">    public void onConsolePrepared(ConsolePrepared event,</span>
+<span class="source-line-no">254</span><span id="line-254">            ConsoleConnection connection) {</span>
+<span class="source-line-no">255</span><span id="line-255">        if (syncPreviews(connection.session())) {</span>
+<span class="source-line-no">256</span><span id="line-256">            connection.respond(new UpdateConletType(type()));</span>
+<span class="source-line-no">257</span><span id="line-257">        }</span>
+<span class="source-line-no">258</span><span id="line-258">    }</span>
+<span class="source-line-no">259</span><span id="line-259"></span>
+<span class="source-line-no">260</span><span id="line-260">    private String storagePath(Session session, String conletId) {</span>
+<span class="source-line-no">261</span><span id="line-261">        return "/" + WebConsoleUtils.userFromSession(session)</span>
+<span class="source-line-no">262</span><span id="line-262">            .map(ConsoleUser::getName).orElse("")</span>
+<span class="source-line-no">263</span><span id="line-263">            + "/" + VmViewer.class.getName() + "/" + conletId;</span>
+<span class="source-line-no">264</span><span id="line-264">    }</span>
+<span class="source-line-no">265</span><span id="line-265"></span>
+<span class="source-line-no">266</span><span id="line-266">    @Override</span>
+<span class="source-line-no">267</span><span id="line-267">    protected Optional&lt;ViewerModel&gt; createNewState(AddConletRequest event,</span>
+<span class="source-line-no">268</span><span id="line-268">            ConsoleConnection connection, String conletId) throws Exception {</span>
+<span class="source-line-no">269</span><span id="line-269">        var model = new ViewerModel(conletId);</span>
+<span class="source-line-no">270</span><span id="line-270">        model.vmName = (String) event.properties().get(VM_NAME_PROPERTY);</span>
+<span class="source-line-no">271</span><span id="line-271">        if (model.vmName != null) {</span>
+<span class="source-line-no">272</span><span id="line-272">            model.setGenerated(true);</span>
+<span class="source-line-no">273</span><span id="line-273">        }</span>
+<span class="source-line-no">274</span><span id="line-274">        String jsonState = objectMapper.writeValueAsString(model);</span>
+<span class="source-line-no">275</span><span id="line-275">        connection.respond(new KeyValueStoreUpdate().update(</span>
+<span class="source-line-no">276</span><span id="line-276">            storagePath(connection.session(), model.getConletId()), jsonState));</span>
+<span class="source-line-no">277</span><span id="line-277">        return Optional.of(model);</span>
+<span class="source-line-no">278</span><span id="line-278">    }</span>
+<span class="source-line-no">279</span><span id="line-279"></span>
+<span class="source-line-no">280</span><span id="line-280">    @Override</span>
+<span class="source-line-no">281</span><span id="line-281">    protected Optional&lt;ViewerModel&gt; createStateRepresentation(Event&lt;?&gt; event,</span>
+<span class="source-line-no">282</span><span id="line-282">            ConsoleConnection connection, String conletId) throws Exception {</span>
+<span class="source-line-no">283</span><span id="line-283">        var model = new ViewerModel(conletId);</span>
+<span class="source-line-no">284</span><span id="line-284">        String jsonState = objectMapper.writeValueAsString(model);</span>
+<span class="source-line-no">285</span><span id="line-285">        connection.respond(new KeyValueStoreUpdate().update(</span>
+<span class="source-line-no">286</span><span id="line-286">            storagePath(connection.session(), model.getConletId()), jsonState));</span>
+<span class="source-line-no">287</span><span id="line-287">        return Optional.of(model);</span>
+<span class="source-line-no">288</span><span id="line-288">    }</span>
+<span class="source-line-no">289</span><span id="line-289"></span>
+<span class="source-line-no">290</span><span id="line-290">    @Override</span>
+<span class="source-line-no">291</span><span id="line-291">    @SuppressWarnings("PMD.EmptyCatchBlock")</span>
+<span class="source-line-no">292</span><span id="line-292">    protected Optional&lt;ViewerModel&gt; recreateState(Event&lt;?&gt; event,</span>
+<span class="source-line-no">293</span><span id="line-293">            ConsoleConnection channel, String conletId) throws Exception {</span>
+<span class="source-line-no">294</span><span id="line-294">        KeyValueStoreQuery query = new KeyValueStoreQuery(</span>
+<span class="source-line-no">295</span><span id="line-295">            storagePath(channel.session(), conletId), channel);</span>
+<span class="source-line-no">296</span><span id="line-296">        newEventPipeline().fire(query, channel);</span>
+<span class="source-line-no">297</span><span id="line-297">        try {</span>
+<span class="source-line-no">298</span><span id="line-298">            if (!query.results().isEmpty()) {</span>
+<span class="source-line-no">299</span><span id="line-299">                var json = query.results().get(0).values().stream().findFirst()</span>
+<span class="source-line-no">300</span><span id="line-300">                    .get();</span>
+<span class="source-line-no">301</span><span id="line-301">                ViewerModel model</span>
+<span class="source-line-no">302</span><span id="line-302">                    = objectMapper.readValue(json, ViewerModel.class);</span>
+<span class="source-line-no">303</span><span id="line-303">                return Optional.of(model);</span>
+<span class="source-line-no">304</span><span id="line-304">            }</span>
+<span class="source-line-no">305</span><span id="line-305">        } catch (InterruptedException e) {</span>
+<span class="source-line-no">306</span><span id="line-306">            // Means we have no result.</span>
+<span class="source-line-no">307</span><span id="line-307">        }</span>
+<span class="source-line-no">308</span><span id="line-308"></span>
+<span class="source-line-no">309</span><span id="line-309">        // Fall back to creating default state.</span>
+<span class="source-line-no">310</span><span id="line-310">        return createStateRepresentation(event, channel, conletId);</span>
+<span class="source-line-no">311</span><span id="line-311">    }</span>
+<span class="source-line-no">312</span><span id="line-312"></span>
+<span class="source-line-no">313</span><span id="line-313">    @Override</span>
+<span class="source-line-no">314</span><span id="line-314">    @SuppressWarnings({ "PMD.AvoidInstantiatingObjectsInLoops", "unchecked" })</span>
+<span class="source-line-no">315</span><span id="line-315">    protected Set&lt;RenderMode&gt; doRenderConlet(RenderConletRequestBase&lt;?&gt; event,</span>
+<span class="source-line-no">316</span><span id="line-316">            ConsoleConnection channel, String conletId, ViewerModel model)</span>
+<span class="source-line-no">317</span><span id="line-317">            throws Exception {</span>
+<span class="source-line-no">318</span><span id="line-318">        ResourceBundle resourceBundle = resourceBundle(channel.locale());</span>
+<span class="source-line-no">319</span><span id="line-319">        Set&lt;RenderMode&gt; renderedAs = new HashSet&lt;&gt;();</span>
+<span class="source-line-no">320</span><span id="line-320">        if (event.renderAs().contains(RenderMode.Preview)) {</span>
+<span class="source-line-no">321</span><span id="line-321">            channel.associated(PENDING, Event.class)</span>
+<span class="source-line-no">322</span><span id="line-322">                .ifPresent(e -&gt; {</span>
+<span class="source-line-no">323</span><span id="line-323">                    e.resumeHandling();</span>
+<span class="source-line-no">324</span><span id="line-324">                    channel.setAssociated(PENDING, null);</span>
+<span class="source-line-no">325</span><span id="line-325">                });</span>
+<span class="source-line-no">326</span><span id="line-326"></span>
+<span class="source-line-no">327</span><span id="line-327">            // Remove conlet if definition has been removed</span>
+<span class="source-line-no">328</span><span id="line-328">            if (model.vmName() != null</span>
+<span class="source-line-no">329</span><span id="line-329">                &amp;&amp; !channelManager.associated(model.vmName()).isPresent()) {</span>
+<span class="source-line-no">330</span><span id="line-330">                channel.respond(</span>
+<span class="source-line-no">331</span><span id="line-331">                    new DeleteConlet(conletId, Collections.emptySet()));</span>
+<span class="source-line-no">332</span><span id="line-332">                return Collections.emptySet();</span>
+<span class="source-line-no">333</span><span id="line-333">            }</span>
+<span class="source-line-no">334</span><span id="line-334"></span>
+<span class="source-line-no">335</span><span id="line-335">            // Don't render if user has not at least one permission</span>
+<span class="source-line-no">336</span><span id="line-336">            if (model.vmName() != null</span>
+<span class="source-line-no">337</span><span id="line-337">                &amp;&amp; channelManager.associated(model.vmName())</span>
+<span class="source-line-no">338</span><span id="line-338">                    .map(d -&gt; permissions(d, channel.session()).isEmpty())</span>
+<span class="source-line-no">339</span><span id="line-339">                    .orElse(true)) {</span>
+<span class="source-line-no">340</span><span id="line-340">                return Collections.emptySet();</span>
+<span class="source-line-no">341</span><span id="line-341">            }</span>
+<span class="source-line-no">342</span><span id="line-342"></span>
+<span class="source-line-no">343</span><span id="line-343">            // Render</span>
+<span class="source-line-no">344</span><span id="line-344">            Template tpl</span>
+<span class="source-line-no">345</span><span id="line-345">                = freemarkerConfig().getTemplate("VmViewer-preview.ftl.html");</span>
+<span class="source-line-no">346</span><span id="line-346">            channel.respond(new RenderConlet(type(), conletId,</span>
+<span class="source-line-no">347</span><span id="line-347">                processTemplate(event, tpl,</span>
+<span class="source-line-no">348</span><span id="line-348">                    fmModel(event, channel, conletId, model)))</span>
+<span class="source-line-no">349</span><span id="line-349">                        .setRenderAs(</span>
+<span class="source-line-no">350</span><span id="line-350">                            RenderMode.Preview.addModifiers(event.renderAs()))</span>
+<span class="source-line-no">351</span><span id="line-351">                        .setSupportedModes(</span>
+<span class="source-line-no">352</span><span id="line-352">                            model.isGenerated() ? MODES_FOR_GENERATED : MODES));</span>
+<span class="source-line-no">353</span><span id="line-353">            renderedAs.add(RenderMode.Preview);</span>
+<span class="source-line-no">354</span><span id="line-354">            if (!Strings.isNullOrEmpty(model.vmName())) {</span>
+<span class="source-line-no">355</span><span id="line-355">                Optional.ofNullable(channel.session().get(RENDERED))</span>
+<span class="source-line-no">356</span><span id="line-356">                    .ifPresent(s -&gt; ((Set&lt;String&gt;) s).add(model.vmName()));</span>
+<span class="source-line-no">357</span><span id="line-357">                updateConfig(channel, model);</span>
+<span class="source-line-no">358</span><span id="line-358">            }</span>
+<span class="source-line-no">359</span><span id="line-359">        }</span>
+<span class="source-line-no">360</span><span id="line-360">        if (event.renderAs().contains(RenderMode.Edit)) {</span>
+<span class="source-line-no">361</span><span id="line-361">            Template tpl = freemarkerConfig()</span>
+<span class="source-line-no">362</span><span id="line-362">                .getTemplate("VmViewer-edit.ftl.html");</span>
+<span class="source-line-no">363</span><span id="line-363">            var fmModel = fmModel(event, channel, conletId, model);</span>
+<span class="source-line-no">364</span><span id="line-364">            fmModel.put("vmNames", accessibleVms(channel));</span>
+<span class="source-line-no">365</span><span id="line-365">            channel.respond(new OpenModalDialog(type(), conletId,</span>
+<span class="source-line-no">366</span><span id="line-366">                processTemplate(event, tpl, fmModel))</span>
+<span class="source-line-no">367</span><span id="line-367">                    .addOption("cancelable", true)</span>
+<span class="source-line-no">368</span><span id="line-368">                    .addOption("okayLabel",</span>
+<span class="source-line-no">369</span><span id="line-369">                        resourceBundle.getString("okayLabel")));</span>
+<span class="source-line-no">370</span><span id="line-370">        }</span>
+<span class="source-line-no">371</span><span id="line-371">        return renderedAs;</span>
+<span class="source-line-no">372</span><span id="line-372">    }</span>
+<span class="source-line-no">373</span><span id="line-373"></span>
+<span class="source-line-no">374</span><span id="line-374">    private List&lt;String&gt; accessibleVms(ConsoleConnection channel) {</span>
+<span class="source-line-no">375</span><span id="line-375">        return channelManager.associated().stream()</span>
+<span class="source-line-no">376</span><span id="line-376">            .filter(d -&gt; !permissions(d, channel.session()).isEmpty())</span>
+<span class="source-line-no">377</span><span id="line-377">            .map(d -&gt; d.getMetadata().getName()).sorted().toList();</span>
+<span class="source-line-no">378</span><span id="line-378">    }</span>
+<span class="source-line-no">379</span><span id="line-379"></span>
+<span class="source-line-no">380</span><span id="line-380">    private Set&lt;Permission&gt; permissions(VmDefinitionModel vmDef,</span>
+<span class="source-line-no">381</span><span id="line-381">            Session session) {</span>
+<span class="source-line-no">382</span><span id="line-382">        var user = WebConsoleUtils.userFromSession(session)</span>
+<span class="source-line-no">383</span><span id="line-383">            .map(ConsoleUser::getName).orElse(null);</span>
+<span class="source-line-no">384</span><span id="line-384">        var roles = WebConsoleUtils.rolesFromSession(session)</span>
+<span class="source-line-no">385</span><span id="line-385">            .stream().map(ConsoleRole::getName).toList();</span>
+<span class="source-line-no">386</span><span id="line-386">        return vmDef.permissionsFor(user, roles);</span>
+<span class="source-line-no">387</span><span id="line-387">    }</span>
+<span class="source-line-no">388</span><span id="line-388"></span>
+<span class="source-line-no">389</span><span id="line-389">    private void updateConfig(ConsoleConnection channel, ViewerModel model) {</span>
+<span class="source-line-no">390</span><span id="line-390">        channel.respond(new NotifyConletView(type(),</span>
+<span class="source-line-no">391</span><span id="line-391">            model.getConletId(), "updateConfig", model.vmName()));</span>
+<span class="source-line-no">392</span><span id="line-392">        updateVmDef(channel, model);</span>
+<span class="source-line-no">393</span><span id="line-393">    }</span>
+<span class="source-line-no">394</span><span id="line-394"></span>
+<span class="source-line-no">395</span><span id="line-395">    private void updateVmDef(ConsoleConnection channel, ViewerModel model) {</span>
+<span class="source-line-no">396</span><span id="line-396">        if (Strings.isNullOrEmpty(model.vmName())) {</span>
+<span class="source-line-no">397</span><span id="line-397">            return;</span>
+<span class="source-line-no">398</span><span id="line-398">        }</span>
+<span class="source-line-no">399</span><span id="line-399">        channelManager.associated(model.vmName()).ifPresent(vmDef -&gt; {</span>
+<span class="source-line-no">400</span><span id="line-400">            try {</span>
+<span class="source-line-no">401</span><span id="line-401">                var def = JsonBeanDecoder.create(vmDef.data().toString())</span>
+<span class="source-line-no">402</span><span id="line-402">                    .readObject();</span>
+<span class="source-line-no">403</span><span id="line-403">                def.setField("userPermissions",</span>
+<span class="source-line-no">404</span><span id="line-404">                    permissions(vmDef, channel.session()).stream()</span>
+<span class="source-line-no">405</span><span id="line-405">                        .map(Permission::toString).toList());</span>
+<span class="source-line-no">406</span><span id="line-406">                channel.respond(new NotifyConletView(type(),</span>
+<span class="source-line-no">407</span><span id="line-407">                    model.getConletId(), "updateVmDefinition", def));</span>
+<span class="source-line-no">408</span><span id="line-408">            } catch (JsonDecodeException e) {</span>
+<span class="source-line-no">409</span><span id="line-409">                logger.log(Level.SEVERE, e,</span>
+<span class="source-line-no">410</span><span id="line-410">                    () -&gt; "Failed to serialize VM definition");</span>
+<span class="source-line-no">411</span><span id="line-411">            }</span>
+<span class="source-line-no">412</span><span id="line-412">        });</span>
+<span class="source-line-no">413</span><span id="line-413">    }</span>
+<span class="source-line-no">414</span><span id="line-414"></span>
+<span class="source-line-no">415</span><span id="line-415">    @Override</span>
+<span class="source-line-no">416</span><span id="line-416">    protected void doConletDeleted(ConletDeleted event,</span>
+<span class="source-line-no">417</span><span id="line-417">            ConsoleConnection channel, String conletId, ViewerModel conletState)</span>
+<span class="source-line-no">418</span><span id="line-418">            throws Exception {</span>
+<span class="source-line-no">419</span><span id="line-419">        if (event.renderModes().isEmpty()) {</span>
+<span class="source-line-no">420</span><span id="line-420">            channel.respond(new KeyValueStoreUpdate().delete(</span>
+<span class="source-line-no">421</span><span id="line-421">                storagePath(channel.session(), conletId)));</span>
+<span class="source-line-no">422</span><span id="line-422">        }</span>
+<span class="source-line-no">423</span><span id="line-423">    }</span>
+<span class="source-line-no">424</span><span id="line-424"></span>
+<span class="source-line-no">425</span><span id="line-425">    /**</span>
+<span class="source-line-no">426</span><span id="line-426">     * Track the VM definitions.</span>
+<span class="source-line-no">427</span><span id="line-427">     *</span>
+<span class="source-line-no">428</span><span id="line-428">     * @param event the event</span>
+<span class="source-line-no">429</span><span id="line-429">     * @param channel the channel</span>
+<span class="source-line-no">430</span><span id="line-430">     * @throws JsonDecodeException the json decode exception</span>
+<span class="source-line-no">431</span><span id="line-431">     * @throws IOException </span>
+<span class="source-line-no">432</span><span id="line-432">     */</span>
+<span class="source-line-no">433</span><span id="line-433">    @Handler(namedChannels = "manager")</span>
+<span class="source-line-no">434</span><span id="line-434">    @SuppressWarnings({ "PMD.ConfusingTernary", "PMD.CognitiveComplexity",</span>
+<span class="source-line-no">435</span><span id="line-435">        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.AvoidDuplicateLiterals",</span>
+<span class="source-line-no">436</span><span id="line-436">        "PMD.ConfusingArgumentToVarargsMethod" })</span>
+<span class="source-line-no">437</span><span id="line-437">    public void onVmDefChanged(VmDefChanged event, VmChannel channel)</span>
+<span class="source-line-no">438</span><span id="line-438">            throws JsonDecodeException, IOException {</span>
+<span class="source-line-no">439</span><span id="line-439">        var vmDef = new VmDefinitionModel(channel.client().getJSON()</span>
+<span class="source-line-no">440</span><span id="line-440">            .getGson(), event.vmDefinition().data());</span>
+<span class="source-line-no">441</span><span id="line-441">        GsonPtr.to(vmDef.data()).to("metadata").get(JsonObject.class)</span>
+<span class="source-line-no">442</span><span id="line-442">            .remove("managedFields");</span>
+<span class="source-line-no">443</span><span id="line-443">        var vmName = vmDef.getMetadata().getName();</span>
+<span class="source-line-no">444</span><span id="line-444">        if (event.type() == K8sObserver.ResponseType.DELETED) {</span>
+<span class="source-line-no">445</span><span id="line-445">            channelManager.remove(vmName);</span>
+<span class="source-line-no">446</span><span id="line-446">        } else {</span>
+<span class="source-line-no">447</span><span id="line-447">            channelManager.put(vmName, channel, vmDef);</span>
+<span class="source-line-no">448</span><span id="line-448">        }</span>
+<span class="source-line-no">449</span><span id="line-449">        for (var entry : conletIdsByConsoleConnection().entrySet()) {</span>
+<span class="source-line-no">450</span><span id="line-450">            var connection = entry.getKey();</span>
+<span class="source-line-no">451</span><span id="line-451">            for (var conletId : entry.getValue()) {</span>
+<span class="source-line-no">452</span><span id="line-452">                var model = stateFromSession(connection.session(), conletId);</span>
+<span class="source-line-no">453</span><span id="line-453">                if (model.isEmpty()</span>
+<span class="source-line-no">454</span><span id="line-454">                    || !Objects.areEqual(model.get().vmName(), vmName)) {</span>
+<span class="source-line-no">455</span><span id="line-455">                    continue;</span>
+<span class="source-line-no">456</span><span id="line-456">                }</span>
+<span class="source-line-no">457</span><span id="line-457">                if (event.type() == K8sObserver.ResponseType.DELETED) {</span>
+<span class="source-line-no">458</span><span id="line-458">                    connection.respond(</span>
+<span class="source-line-no">459</span><span id="line-459">                        new DeleteConlet(conletId, Collections.emptySet()));</span>
+<span class="source-line-no">460</span><span id="line-460">                } else {</span>
+<span class="source-line-no">461</span><span id="line-461">                    updateVmDef(connection, model.get());</span>
+<span class="source-line-no">462</span><span id="line-462">                }</span>
+<span class="source-line-no">463</span><span id="line-463">            }</span>
+<span class="source-line-no">464</span><span id="line-464">        }</span>
+<span class="source-line-no">465</span><span id="line-465">    }</span>
+<span class="source-line-no">466</span><span id="line-466"></span>
+<span class="source-line-no">467</span><span id="line-467">    @Override</span>
+<span class="source-line-no">468</span><span id="line-468">    @SuppressWarnings({ "PMD.AvoidDecimalLiteralsInBigDecimalConstructor",</span>
+<span class="source-line-no">469</span><span id="line-469">        "PMD.ConfusingArgumentToVarargsMethod", "PMD.NcssCount" })</span>
+<span class="source-line-no">470</span><span id="line-470">    protected void doUpdateConletState(NotifyConletModel event,</span>
+<span class="source-line-no">471</span><span id="line-471">            ConsoleConnection channel, ViewerModel model)</span>
+<span class="source-line-no">472</span><span id="line-472">            throws Exception {</span>
+<span class="source-line-no">473</span><span id="line-473">        event.stop();</span>
+<span class="source-line-no">474</span><span id="line-474">        var both = Optional.ofNullable(model.vmName())</span>
+<span class="source-line-no">475</span><span id="line-475">            .flatMap(vm -&gt; channelManager.both(vm));</span>
+<span class="source-line-no">476</span><span id="line-476">        if (both.isEmpty()) {</span>
+<span class="source-line-no">477</span><span id="line-477">            return;</span>
+<span class="source-line-no">478</span><span id="line-478">        }</span>
+<span class="source-line-no">479</span><span id="line-479">        var vmChannel = both.get().channel;</span>
+<span class="source-line-no">480</span><span id="line-480">        var vmDef = both.get().associated;</span>
+<span class="source-line-no">481</span><span id="line-481">        var vmName = vmDef.metadata().getName();</span>
+<span class="source-line-no">482</span><span id="line-482">        var perms = permissions(vmDef, channel.session());</span>
+<span class="source-line-no">483</span><span id="line-483">        var resourceBundle = resourceBundle(channel.locale());</span>
+<span class="source-line-no">484</span><span id="line-484">        switch (event.method()) {</span>
+<span class="source-line-no">485</span><span id="line-485">        case "selectedVm":</span>
+<span class="source-line-no">486</span><span id="line-486">            model.setVmName(event.params().asString(0));</span>
+<span class="source-line-no">487</span><span id="line-487">            String jsonState = objectMapper.writeValueAsString(model);</span>
+<span class="source-line-no">488</span><span id="line-488">            channel.respond(new KeyValueStoreUpdate().update(storagePath(</span>
+<span class="source-line-no">489</span><span id="line-489">                channel.session(), model.getConletId()), jsonState));</span>
+<span class="source-line-no">490</span><span id="line-490">            updateConfig(channel, model);</span>
+<span class="source-line-no">491</span><span id="line-491">            break;</span>
+<span class="source-line-no">492</span><span id="line-492">        case "start":</span>
+<span class="source-line-no">493</span><span id="line-493">            if (perms.contains(Permission.START)) {</span>
+<span class="source-line-no">494</span><span id="line-494">                fire(new ModifyVm(vmName, "state", "Running", vmChannel));</span>
+<span class="source-line-no">495</span><span id="line-495">            }</span>
+<span class="source-line-no">496</span><span id="line-496">            break;</span>
+<span class="source-line-no">497</span><span id="line-497">        case "stop":</span>
+<span class="source-line-no">498</span><span id="line-498">            if (perms.contains(Permission.STOP)) {</span>
+<span class="source-line-no">499</span><span id="line-499">                fire(new ModifyVm(vmName, "state", "Stopped", vmChannel));</span>
+<span class="source-line-no">500</span><span id="line-500">            }</span>
+<span class="source-line-no">501</span><span id="line-501">            break;</span>
+<span class="source-line-no">502</span><span id="line-502">        case "reset":</span>
+<span class="source-line-no">503</span><span id="line-503">            if (perms.contains(Permission.RESET)) {</span>
+<span class="source-line-no">504</span><span id="line-504">                confirmReset(event, channel, model, resourceBundle);</span>
+<span class="source-line-no">505</span><span id="line-505">            }</span>
+<span class="source-line-no">506</span><span id="line-506">            break;</span>
+<span class="source-line-no">507</span><span id="line-507">        case "resetConfirmed":</span>
+<span class="source-line-no">508</span><span id="line-508">            if (perms.contains(Permission.RESET)) {</span>
+<span class="source-line-no">509</span><span id="line-509">                fire(new ResetVm(vmName), vmChannel);</span>
+<span class="source-line-no">510</span><span id="line-510">            }</span>
+<span class="source-line-no">511</span><span id="line-511">            break;</span>
+<span class="source-line-no">512</span><span id="line-512">        case "openConsole":</span>
+<span class="source-line-no">513</span><span id="line-513">            if (perms.contains(Permission.ACCESS_CONSOLE)) {</span>
+<span class="source-line-no">514</span><span id="line-514">                var pwQuery = Event.onCompletion(new GetDisplayPassword(vmDef),</span>
+<span class="source-line-no">515</span><span id="line-515">                    e -&gt; e.password().ifPresent(</span>
+<span class="source-line-no">516</span><span id="line-516">                        pw -&gt; openConsole(vmName, channel, model, pw)));</span>
+<span class="source-line-no">517</span><span id="line-517">                fire(pwQuery, vmChannel);</span>
+<span class="source-line-no">518</span><span id="line-518">            }</span>
+<span class="source-line-no">519</span><span id="line-519">            break;</span>
+<span class="source-line-no">520</span><span id="line-520">        default:// ignore</span>
+<span class="source-line-no">521</span><span id="line-521">            break;</span>
+<span class="source-line-no">522</span><span id="line-522">        }</span>
+<span class="source-line-no">523</span><span id="line-523">    }</span>
+<span class="source-line-no">524</span><span id="line-524"></span>
+<span class="source-line-no">525</span><span id="line-525">    private void openConsole(String vmName, ConsoleConnection connection,</span>
+<span class="source-line-no">526</span><span id="line-526">            ViewerModel model, String password) {</span>
+<span class="source-line-no">527</span><span id="line-527">        var vmDef = channelManager.associated(vmName).orElse(null);</span>
+<span class="source-line-no">528</span><span id="line-528">        if (vmDef == null) {</span>
+<span class="source-line-no">529</span><span id="line-529">            return;</span>
+<span class="source-line-no">530</span><span id="line-530">        }</span>
+<span class="source-line-no">531</span><span id="line-531">        var addr = displayIp(vmDef);</span>
+<span class="source-line-no">532</span><span id="line-532">        if (addr.isEmpty()) {</span>
+<span class="source-line-no">533</span><span id="line-533">            logger.severe(() -&gt; "Failed to find display IP for " + vmName);</span>
+<span class="source-line-no">534</span><span id="line-534">            return;</span>
+<span class="source-line-no">535</span><span id="line-535">        }</span>
+<span class="source-line-no">536</span><span id="line-536">        var port = GsonPtr.to(vmDef.data()).get(JsonPrimitive.class, "spec",</span>
+<span class="source-line-no">537</span><span id="line-537">            "vm", "display", "spice", "port");</span>
+<span class="source-line-no">538</span><span id="line-538">        if (port.isEmpty()) {</span>
+<span class="source-line-no">539</span><span id="line-539">            logger.severe(() -&gt; "No port defined for display of " + vmName);</span>
+<span class="source-line-no">540</span><span id="line-540">            return;</span>
+<span class="source-line-no">541</span><span id="line-541">        }</span>
+<span class="source-line-no">542</span><span id="line-542">        var proxyUrl = GsonPtr.to(vmDef.data()).get(JsonPrimitive.class, "spec",</span>
+<span class="source-line-no">543</span><span id="line-543">            "vm", "display", "spice", "proxyUrl");</span>
+<span class="source-line-no">544</span><span id="line-544">        StringBuffer data = new StringBuffer(100)</span>
+<span class="source-line-no">545</span><span id="line-545">            .append("[virt-viewer]\ntype=spice\nhost=")</span>
+<span class="source-line-no">546</span><span id="line-546">            .append(addr.get().getHostAddress()).append("\nport=")</span>
+<span class="source-line-no">547</span><span id="line-547">            .append(Integer.toString(port.get().getAsInt()))</span>
+<span class="source-line-no">548</span><span id="line-548">            .append("\npassword=").append(password).append('\n');</span>
+<span class="source-line-no">549</span><span id="line-549">        proxyUrl.map(JsonPrimitive::getAsString).ifPresent(u -&gt; {</span>
+<span class="source-line-no">550</span><span id="line-550">            if (!Strings.isNullOrEmpty(u)) {</span>
+<span class="source-line-no">551</span><span id="line-551">                data.append("proxy=").append(u).append('\n');</span>
+<span class="source-line-no">552</span><span id="line-552">            }</span>
+<span class="source-line-no">553</span><span id="line-553">        });</span>
+<span class="source-line-no">554</span><span id="line-554">        connection.respond(new NotifyConletView(type(),</span>
+<span class="source-line-no">555</span><span id="line-555">            model.getConletId(), "openConsole", "application/x-virt-viewer",</span>
+<span class="source-line-no">556</span><span id="line-556">            Base64.getEncoder().encodeToString(data.toString().getBytes())));</span>
+<span class="source-line-no">557</span><span id="line-557">    }</span>
+<span class="source-line-no">558</span><span id="line-558"></span>
+<span class="source-line-no">559</span><span id="line-559">    private Optional&lt;InetAddress&gt; displayIp(K8sDynamicModel vmDef) {</span>
+<span class="source-line-no">560</span><span id="line-560">        var server = GsonPtr.to(vmDef.data()).get(JsonPrimitive.class, "spec",</span>
+<span class="source-line-no">561</span><span id="line-561">            "vm", "display", "spice", "server");</span>
+<span class="source-line-no">562</span><span id="line-562">        if (server.isPresent()) {</span>
+<span class="source-line-no">563</span><span id="line-563">            var srv = server.get().getAsString();</span>
+<span class="source-line-no">564</span><span id="line-564">            try {</span>
+<span class="source-line-no">565</span><span id="line-565">                var addr = InetAddress.getByName(srv);</span>
+<span class="source-line-no">566</span><span id="line-566">                logger.fine(() -&gt; "Using IP address from CRD for "</span>
+<span class="source-line-no">567</span><span id="line-567">                    + vmDef.getMetadata().getName() + ": " + addr);</span>
+<span class="source-line-no">568</span><span id="line-568">                return Optional.of(addr);</span>
+<span class="source-line-no">569</span><span id="line-569">            } catch (UnknownHostException e) {</span>
+<span class="source-line-no">570</span><span id="line-570">                logger.log(Level.SEVERE, e, () -&gt; "Invalid server address "</span>
+<span class="source-line-no">571</span><span id="line-571">                    + srv + ": " + e.getMessage());</span>
+<span class="source-line-no">572</span><span id="line-572">                return Optional.empty();</span>
+<span class="source-line-no">573</span><span id="line-573">            }</span>
+<span class="source-line-no">574</span><span id="line-574">        }</span>
+<span class="source-line-no">575</span><span id="line-575">        var addrs = GsonPtr.to(vmDef.data()).getAsListOf(JsonPrimitive.class,</span>
+<span class="source-line-no">576</span><span id="line-576">            "nodeAddresses").stream().map(JsonPrimitive::getAsString)</span>
+<span class="source-line-no">577</span><span id="line-577">            .map(a -&gt; {</span>
+<span class="source-line-no">578</span><span id="line-578">                try {</span>
+<span class="source-line-no">579</span><span id="line-579">                    return InetAddress.getByName(a);</span>
+<span class="source-line-no">580</span><span id="line-580">                } catch (UnknownHostException e) {</span>
+<span class="source-line-no">581</span><span id="line-581">                    logger.warning(() -&gt; "Invalid IP address: " + a);</span>
+<span class="source-line-no">582</span><span id="line-582">                    return null;</span>
+<span class="source-line-no">583</span><span id="line-583">                }</span>
+<span class="source-line-no">584</span><span id="line-584">            }).filter(a -&gt; a != null).toList();</span>
+<span class="source-line-no">585</span><span id="line-585">        logger.fine(() -&gt; "Known IP addresses for "</span>
+<span class="source-line-no">586</span><span id="line-586">            + vmDef.getMetadata().getName() + ": " + addrs);</span>
+<span class="source-line-no">587</span><span id="line-587">        return addrs.stream()</span>
+<span class="source-line-no">588</span><span id="line-588">            .filter(a -&gt; preferredIpVersion.isAssignableFrom(a.getClass()))</span>
+<span class="source-line-no">589</span><span id="line-589">            .findFirst().or(() -&gt; addrs.stream().findFirst());</span>
+<span class="source-line-no">590</span><span id="line-590">    }</span>
 <span class="source-line-no">591</span><span id="line-591"></span>
-<span class="source-line-no">592</span><span id="line-592">        private String vmName;</span>
-<span class="source-line-no">593</span><span id="line-593">        private boolean generated;</span>
-<span class="source-line-no">594</span><span id="line-594"></span>
-<span class="source-line-no">595</span><span id="line-595">        /**</span>
-<span class="source-line-no">596</span><span id="line-596">         * Instantiates a new vms model.</span>
-<span class="source-line-no">597</span><span id="line-597">         *</span>
-<span class="source-line-no">598</span><span id="line-598">         * @param conletId the conlet id</span>
-<span class="source-line-no">599</span><span id="line-599">         */</span>
-<span class="source-line-no">600</span><span id="line-600">        public ViewerModel(@JsonProperty("conletId") String conletId) {</span>
-<span class="source-line-no">601</span><span id="line-601">            super(conletId);</span>
-<span class="source-line-no">602</span><span id="line-602">        }</span>
-<span class="source-line-no">603</span><span id="line-603"></span>
-<span class="source-line-no">604</span><span id="line-604">        /**</span>
-<span class="source-line-no">605</span><span id="line-605">         * Gets the vm name.</span>
-<span class="source-line-no">606</span><span id="line-606">         *</span>
-<span class="source-line-no">607</span><span id="line-607">         * @return the vmName</span>
-<span class="source-line-no">608</span><span id="line-608">         */</span>
-<span class="source-line-no">609</span><span id="line-609">        @JsonGetter("vmName")</span>
-<span class="source-line-no">610</span><span id="line-610">        public String vmName() {</span>
-<span class="source-line-no">611</span><span id="line-611">            return vmName;</span>
-<span class="source-line-no">612</span><span id="line-612">        }</span>
-<span class="source-line-no">613</span><span id="line-613"></span>
-<span class="source-line-no">614</span><span id="line-614">        /**</span>
-<span class="source-line-no">615</span><span id="line-615">         * Sets the vm name.</span>
-<span class="source-line-no">616</span><span id="line-616">         *</span>
-<span class="source-line-no">617</span><span id="line-617">         * @param vmName the vmName to set</span>
-<span class="source-line-no">618</span><span id="line-618">         */</span>
-<span class="source-line-no">619</span><span id="line-619">        public void setVmName(String vmName) {</span>
-<span class="source-line-no">620</span><span id="line-620">            this.vmName = vmName;</span>
-<span class="source-line-no">621</span><span id="line-621">        }</span>
-<span class="source-line-no">622</span><span id="line-622"></span>
-<span class="source-line-no">623</span><span id="line-623">        /**</span>
-<span class="source-line-no">624</span><span id="line-624">         * Checks if is generated.</span>
-<span class="source-line-no">625</span><span id="line-625">         *</span>
-<span class="source-line-no">626</span><span id="line-626">         * @return the generated</span>
-<span class="source-line-no">627</span><span id="line-627">         */</span>
-<span class="source-line-no">628</span><span id="line-628">        public boolean isGenerated() {</span>
-<span class="source-line-no">629</span><span id="line-629">            return generated;</span>
-<span class="source-line-no">630</span><span id="line-630">        }</span>
-<span class="source-line-no">631</span><span id="line-631"></span>
-<span class="source-line-no">632</span><span id="line-632">        /**</span>
-<span class="source-line-no">633</span><span id="line-633">         * Sets the generated.</span>
-<span class="source-line-no">634</span><span id="line-634">         *</span>
-<span class="source-line-no">635</span><span id="line-635">         * @param generated the generated to set</span>
-<span class="source-line-no">636</span><span id="line-636">         */</span>
-<span class="source-line-no">637</span><span id="line-637">        public void setGenerated(boolean generated) {</span>
-<span class="source-line-no">638</span><span id="line-638">            this.generated = generated;</span>
-<span class="source-line-no">639</span><span id="line-639">        }</span>
-<span class="source-line-no">640</span><span id="line-640"></span>
-<span class="source-line-no">641</span><span id="line-641">    }</span>
-<span class="source-line-no">642</span><span id="line-642">}</span>
+<span class="source-line-no">592</span><span id="line-592">    private void confirmReset(NotifyConletModel event,</span>
+<span class="source-line-no">593</span><span id="line-593">            ConsoleConnection channel, ViewerModel model,</span>
+<span class="source-line-no">594</span><span id="line-594">            ResourceBundle resourceBundle) throws TemplateNotFoundException,</span>
+<span class="source-line-no">595</span><span id="line-595">            MalformedTemplateNameException, ParseException, IOException {</span>
+<span class="source-line-no">596</span><span id="line-596">        Template tpl = freemarkerConfig()</span>
+<span class="source-line-no">597</span><span id="line-597">            .getTemplate("VmViewer-confirmReset.ftl.html");</span>
+<span class="source-line-no">598</span><span id="line-598">        channel.respond(new OpenModalDialog(type(), model.getConletId(),</span>
+<span class="source-line-no">599</span><span id="line-599">            processTemplate(event, tpl,</span>
+<span class="source-line-no">600</span><span id="line-600">                fmModel(event, channel, model.getConletId(), model)))</span>
+<span class="source-line-no">601</span><span id="line-601">                    .addOption("cancelable", true).addOption("closeLabel", "")</span>
+<span class="source-line-no">602</span><span id="line-602">                    .addOption("title",</span>
+<span class="source-line-no">603</span><span id="line-603">                        resourceBundle.getString("confirmResetTitle")));</span>
+<span class="source-line-no">604</span><span id="line-604">    }</span>
+<span class="source-line-no">605</span><span id="line-605"></span>
+<span class="source-line-no">606</span><span id="line-606">    @Override</span>
+<span class="source-line-no">607</span><span id="line-607">    protected boolean doSetLocale(SetLocale event, ConsoleConnection channel,</span>
+<span class="source-line-no">608</span><span id="line-608">            String conletId) throws Exception {</span>
+<span class="source-line-no">609</span><span id="line-609">        return true;</span>
+<span class="source-line-no">610</span><span id="line-610">    }</span>
+<span class="source-line-no">611</span><span id="line-611"></span>
+<span class="source-line-no">612</span><span id="line-612">    /**</span>
+<span class="source-line-no">613</span><span id="line-613">     * The Class VmsModel.</span>
+<span class="source-line-no">614</span><span id="line-614">     */</span>
+<span class="source-line-no">615</span><span id="line-615">    @SuppressWarnings("PMD.DataClass")</span>
+<span class="source-line-no">616</span><span id="line-616">    public static class ViewerModel extends ConletBaseModel {</span>
+<span class="source-line-no">617</span><span id="line-617"></span>
+<span class="source-line-no">618</span><span id="line-618">        private String vmName;</span>
+<span class="source-line-no">619</span><span id="line-619">        private boolean generated;</span>
+<span class="source-line-no">620</span><span id="line-620"></span>
+<span class="source-line-no">621</span><span id="line-621">        /**</span>
+<span class="source-line-no">622</span><span id="line-622">         * Instantiates a new vms model.</span>
+<span class="source-line-no">623</span><span id="line-623">         *</span>
+<span class="source-line-no">624</span><span id="line-624">         * @param conletId the conlet id</span>
+<span class="source-line-no">625</span><span id="line-625">         */</span>
+<span class="source-line-no">626</span><span id="line-626">        public ViewerModel(@JsonProperty("conletId") String conletId) {</span>
+<span class="source-line-no">627</span><span id="line-627">            super(conletId);</span>
+<span class="source-line-no">628</span><span id="line-628">        }</span>
+<span class="source-line-no">629</span><span id="line-629"></span>
+<span class="source-line-no">630</span><span id="line-630">        /**</span>
+<span class="source-line-no">631</span><span id="line-631">         * Gets the vm name.</span>
+<span class="source-line-no">632</span><span id="line-632">         *</span>
+<span class="source-line-no">633</span><span id="line-633">         * @return the vmName</span>
+<span class="source-line-no">634</span><span id="line-634">         */</span>
+<span class="source-line-no">635</span><span id="line-635">        @JsonGetter("vmName")</span>
+<span class="source-line-no">636</span><span id="line-636">        public String vmName() {</span>
+<span class="source-line-no">637</span><span id="line-637">            return vmName;</span>
+<span class="source-line-no">638</span><span id="line-638">        }</span>
+<span class="source-line-no">639</span><span id="line-639"></span>
+<span class="source-line-no">640</span><span id="line-640">        /**</span>
+<span class="source-line-no">641</span><span id="line-641">         * Sets the vm name.</span>
+<span class="source-line-no">642</span><span id="line-642">         *</span>
+<span class="source-line-no">643</span><span id="line-643">         * @param vmName the vmName to set</span>
+<span class="source-line-no">644</span><span id="line-644">         */</span>
+<span class="source-line-no">645</span><span id="line-645">        public void setVmName(String vmName) {</span>
+<span class="source-line-no">646</span><span id="line-646">            this.vmName = vmName;</span>
+<span class="source-line-no">647</span><span id="line-647">        }</span>
+<span class="source-line-no">648</span><span id="line-648"></span>
+<span class="source-line-no">649</span><span id="line-649">        /**</span>
+<span class="source-line-no">650</span><span id="line-650">         * Checks if is generated.</span>
+<span class="source-line-no">651</span><span id="line-651">         *</span>
+<span class="source-line-no">652</span><span id="line-652">         * @return the generated</span>
+<span class="source-line-no">653</span><span id="line-653">         */</span>
+<span class="source-line-no">654</span><span id="line-654">        public boolean isGenerated() {</span>
+<span class="source-line-no">655</span><span id="line-655">            return generated;</span>
+<span class="source-line-no">656</span><span id="line-656">        }</span>
+<span class="source-line-no">657</span><span id="line-657"></span>
+<span class="source-line-no">658</span><span id="line-658">        /**</span>
+<span class="source-line-no">659</span><span id="line-659">         * Sets the generated.</span>
+<span class="source-line-no">660</span><span id="line-660">         *</span>
+<span class="source-line-no">661</span><span id="line-661">         * @param generated the generated to set</span>
+<span class="source-line-no">662</span><span id="line-662">         */</span>
+<span class="source-line-no">663</span><span id="line-663">        public void setGenerated(boolean generated) {</span>
+<span class="source-line-no">664</span><span id="line-664">            this.generated = generated;</span>
+<span class="source-line-no">665</span><span id="line-665">        }</span>
+<span class="source-line-no">666</span><span id="line-666"></span>
+<span class="source-line-no">667</span><span id="line-667">    }</span>
+<span class="source-line-no">668</span><span id="line-668">}</span>
 
 
 
