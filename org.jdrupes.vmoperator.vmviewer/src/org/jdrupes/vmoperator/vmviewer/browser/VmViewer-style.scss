@@ -61,6 +61,18 @@
   .jdrupes-vmoperator-vmviewer-preview-action-list {
     white-space: nowrap;
   }
+  
+  span.busy::before {
+    font: normal normal normal 14px/1 ForkAwesome;
+    font-size: 1.125em;
+    content: "\f1ce";
+    left: 1.45em;
+    top: 0.7em;
+    color: var(--info);
+    position: absolute;
+    animation: spin 2s linear infinite;
+    z-index: 100;
+  }  
 }
 
 .jdrupes-vmoperator-vmviewer.jdrupes-vmoperator-vmviewer-edit {
