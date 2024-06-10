@@ -61,15 +61,19 @@ java {
 
 jar {
     manifest {
-        inputs.property("gitDescriptor", { grgit.describe(always: true) })
+        def matchExpr = [ project.tagName + "*" ]
+        
+        inputs.property("gitDescriptor",
+            { grgit.describe(always: true, match: matchExpr) })
         
         // Set Git revision information in the manifests of built bundles
+        def gitDesc = grgit.describe(always: true, match: matchExpr)
         attributes([
             "Implementation-Title": project.name,
-            "Implementation-Version": "$project.version (built from ${grgit.describe(always: true)})",
+            "Implementation-Version": "$project.version (built from ${gitDesc})",
             "Implementation-Vendor": grgit.repository.jgit.repository.config.getString("user", null, "name")
                 + " (" + grgit.repository.jgit.repository.config.getString("user", null, "email") + ")",
-            "Git-Descriptor": grgit.describe(always: true),
+            "Git-Descriptor": gitDesc,
             "Git-SHA": grgit.head().id,
         ])
     }

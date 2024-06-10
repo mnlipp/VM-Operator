@@ -11,22 +11,24 @@ plugins {
     id 'pl.allegro.tech.build.axion-release'
 }
 
+def shortened = project.name.startsWith(project.group + ".") ?
+    project.name.substring(project.group.length() + 1) : project.name
+if (shortened == "manager") {
+    shortened = "manager-app";
+}
+var tagName = shortened.replace('.', '-') + "-"
+if (grgit.branch.current.name != "main"
+    && grgit.branch.current.name != "HEAD"
+    && !grgit.branch.current.name.startsWith("release")
+    && !grgit.branch.current.name.startsWith("develop")) {
+    tagName = tagName + grgit.branch.current.name.replace('/', '-') + "-"
+}
+project.ext.tagName = tagName
+
 scmVersion {
     versionIncrementer 'incrementMinor'
     tag {
-        def shortened = project.name.startsWith(project.group + ".") ?
-            project.name.substring(project.group.length() + 1) : project.name
-        if (shortened == "manager") {
-            shortened = "manager-app";
-        }
-        var p = shortened.replace('.', '-') + "-"
-        if (grgit.branch.current.name != "main"
-            && grgit.branch.current.name != "HEAD"
-            && !grgit.branch.current.name.startsWith("release")
-            && !grgit.branch.current.name.startsWith("develop")) {
-            p = p + grgit.branch.current.name.replace('/', '-') + "-"
-        }
-        prefix = p
+        prefix = project.tagName
     }
 }
 project.version = scmVersion.version
