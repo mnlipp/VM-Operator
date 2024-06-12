@@ -513,8 +513,8 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
         case "openConsole":
             if (perms.contains(Permission.ACCESS_CONSOLE)) {
                 var pwQuery = Event.onCompletion(new GetDisplayPassword(vmDef),
-                    e -> e.password().ifPresent(
-                        pw -> openConsole(vmName, channel, model, pw)));
+                    e -> openConsole(vmName, channel, model,
+                        e.password().orElse(null)));
                 fire(pwQuery, vmChannel);
             }
             break;
@@ -555,7 +555,10 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
             .append("[virt-viewer]\ntype=spice\nhost=")
             .append(addr.get().getHostAddress()).append("\nport=")
             .append(Integer.toString(port.get().getAsInt()))
-            .append("\npassword=").append(password).append('\n');
+            .append('\n');
+        if (password != null) {
+            data.append("password=").append(password).append('\n');
+        }
         proxyUrl.map(JsonPrimitive::getAsString).ifPresent(u -> {
             if (!Strings.isNullOrEmpty(u)) {
                 data.append("proxy=").append(u).append('\n');
