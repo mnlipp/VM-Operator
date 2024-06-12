@@ -526,8 +526,8 @@
 <span class="source-line-no">513</span><span id="line-513">        case "openConsole":</span>
 <span class="source-line-no">514</span><span id="line-514">            if (perms.contains(Permission.ACCESS_CONSOLE)) {</span>
 <span class="source-line-no">515</span><span id="line-515">                var pwQuery = Event.onCompletion(new GetDisplayPassword(vmDef),</span>
-<span class="source-line-no">516</span><span id="line-516">                    e -&gt; e.password().ifPresent(</span>
-<span class="source-line-no">517</span><span id="line-517">                        pw -&gt; openConsole(vmName, channel, model, pw)));</span>
+<span class="source-line-no">516</span><span id="line-516">                    e -&gt; openConsole(vmName, channel, model,</span>
+<span class="source-line-no">517</span><span id="line-517">                        e.password().orElse(null)));</span>
 <span class="source-line-no">518</span><span id="line-518">                fire(pwQuery, vmChannel);</span>
 <span class="source-line-no">519</span><span id="line-519">            }</span>
 <span class="source-line-no">520</span><span id="line-520">            break;</span>
@@ -568,127 +568,130 @@
 <span class="source-line-no">555</span><span id="line-555">            .append("[virt-viewer]\ntype=spice\nhost=")</span>
 <span class="source-line-no">556</span><span id="line-556">            .append(addr.get().getHostAddress()).append("\nport=")</span>
 <span class="source-line-no">557</span><span id="line-557">            .append(Integer.toString(port.get().getAsInt()))</span>
-<span class="source-line-no">558</span><span id="line-558">            .append("\npassword=").append(password).append('\n');</span>
-<span class="source-line-no">559</span><span id="line-559">        proxyUrl.map(JsonPrimitive::getAsString).ifPresent(u -&gt; {</span>
-<span class="source-line-no">560</span><span id="line-560">            if (!Strings.isNullOrEmpty(u)) {</span>
-<span class="source-line-no">561</span><span id="line-561">                data.append("proxy=").append(u).append('\n');</span>
-<span class="source-line-no">562</span><span id="line-562">            }</span>
-<span class="source-line-no">563</span><span id="line-563">        });</span>
-<span class="source-line-no">564</span><span id="line-564">        connection.respond(new NotifyConletView(type(),</span>
-<span class="source-line-no">565</span><span id="line-565">            model.getConletId(), "openConsole", "application/x-virt-viewer",</span>
-<span class="source-line-no">566</span><span id="line-566">            Base64.getEncoder().encodeToString(data.toString().getBytes())));</span>
-<span class="source-line-no">567</span><span id="line-567">    }</span>
-<span class="source-line-no">568</span><span id="line-568"></span>
-<span class="source-line-no">569</span><span id="line-569">    private Optional&lt;InetAddress&gt; displayIp(K8sDynamicModel vmDef) {</span>
-<span class="source-line-no">570</span><span id="line-570">        var server = GsonPtr.to(vmDef.data()).get(JsonPrimitive.class, "spec",</span>
-<span class="source-line-no">571</span><span id="line-571">            "vm", "display", "spice", "server");</span>
-<span class="source-line-no">572</span><span id="line-572">        if (server.isPresent()) {</span>
-<span class="source-line-no">573</span><span id="line-573">            var srv = server.get().getAsString();</span>
-<span class="source-line-no">574</span><span id="line-574">            try {</span>
-<span class="source-line-no">575</span><span id="line-575">                var addr = InetAddress.getByName(srv);</span>
-<span class="source-line-no">576</span><span id="line-576">                logger.fine(() -&gt; "Using IP address from CRD for "</span>
-<span class="source-line-no">577</span><span id="line-577">                    + vmDef.getMetadata().getName() + ": " + addr);</span>
-<span class="source-line-no">578</span><span id="line-578">                return Optional.of(addr);</span>
-<span class="source-line-no">579</span><span id="line-579">            } catch (UnknownHostException e) {</span>
-<span class="source-line-no">580</span><span id="line-580">                logger.log(Level.SEVERE, e, () -&gt; "Invalid server address "</span>
-<span class="source-line-no">581</span><span id="line-581">                    + srv + ": " + e.getMessage());</span>
-<span class="source-line-no">582</span><span id="line-582">                return Optional.empty();</span>
-<span class="source-line-no">583</span><span id="line-583">            }</span>
-<span class="source-line-no">584</span><span id="line-584">        }</span>
-<span class="source-line-no">585</span><span id="line-585">        var addrs = GsonPtr.to(vmDef.data()).getAsListOf(JsonPrimitive.class,</span>
-<span class="source-line-no">586</span><span id="line-586">            "nodeAddresses").stream().map(JsonPrimitive::getAsString)</span>
-<span class="source-line-no">587</span><span id="line-587">            .map(a -&gt; {</span>
-<span class="source-line-no">588</span><span id="line-588">                try {</span>
-<span class="source-line-no">589</span><span id="line-589">                    return InetAddress.getByName(a);</span>
-<span class="source-line-no">590</span><span id="line-590">                } catch (UnknownHostException e) {</span>
-<span class="source-line-no">591</span><span id="line-591">                    logger.warning(() -&gt; "Invalid IP address: " + a);</span>
-<span class="source-line-no">592</span><span id="line-592">                    return null;</span>
-<span class="source-line-no">593</span><span id="line-593">                }</span>
-<span class="source-line-no">594</span><span id="line-594">            }).filter(a -&gt; a != null).toList();</span>
-<span class="source-line-no">595</span><span id="line-595">        logger.fine(() -&gt; "Known IP addresses for "</span>
-<span class="source-line-no">596</span><span id="line-596">            + vmDef.getMetadata().getName() + ": " + addrs);</span>
-<span class="source-line-no">597</span><span id="line-597">        return addrs.stream()</span>
-<span class="source-line-no">598</span><span id="line-598">            .filter(a -&gt; preferredIpVersion.isAssignableFrom(a.getClass()))</span>
-<span class="source-line-no">599</span><span id="line-599">            .findFirst().or(() -&gt; addrs.stream().findFirst());</span>
-<span class="source-line-no">600</span><span id="line-600">    }</span>
-<span class="source-line-no">601</span><span id="line-601"></span>
-<span class="source-line-no">602</span><span id="line-602">    private void confirmReset(NotifyConletModel event,</span>
-<span class="source-line-no">603</span><span id="line-603">            ConsoleConnection channel, ViewerModel model,</span>
-<span class="source-line-no">604</span><span id="line-604">            ResourceBundle resourceBundle) throws TemplateNotFoundException,</span>
-<span class="source-line-no">605</span><span id="line-605">            MalformedTemplateNameException, ParseException, IOException {</span>
-<span class="source-line-no">606</span><span id="line-606">        Template tpl = freemarkerConfig()</span>
-<span class="source-line-no">607</span><span id="line-607">            .getTemplate("VmViewer-confirmReset.ftl.html");</span>
-<span class="source-line-no">608</span><span id="line-608">        channel.respond(new OpenModalDialog(type(), model.getConletId(),</span>
-<span class="source-line-no">609</span><span id="line-609">            processTemplate(event, tpl,</span>
-<span class="source-line-no">610</span><span id="line-610">                fmModel(event, channel, model.getConletId(), model)))</span>
-<span class="source-line-no">611</span><span id="line-611">                    .addOption("cancelable", true).addOption("closeLabel", "")</span>
-<span class="source-line-no">612</span><span id="line-612">                    .addOption("title",</span>
-<span class="source-line-no">613</span><span id="line-613">                        resourceBundle.getString("confirmResetTitle")));</span>
-<span class="source-line-no">614</span><span id="line-614">    }</span>
-<span class="source-line-no">615</span><span id="line-615"></span>
-<span class="source-line-no">616</span><span id="line-616">    @Override</span>
-<span class="source-line-no">617</span><span id="line-617">    protected boolean doSetLocale(SetLocale event, ConsoleConnection channel,</span>
-<span class="source-line-no">618</span><span id="line-618">            String conletId) throws Exception {</span>
-<span class="source-line-no">619</span><span id="line-619">        return true;</span>
-<span class="source-line-no">620</span><span id="line-620">    }</span>
-<span class="source-line-no">621</span><span id="line-621"></span>
-<span class="source-line-no">622</span><span id="line-622">    /**</span>
-<span class="source-line-no">623</span><span id="line-623">     * The Class VmsModel.</span>
-<span class="source-line-no">624</span><span id="line-624">     */</span>
-<span class="source-line-no">625</span><span id="line-625">    @SuppressWarnings("PMD.DataClass")</span>
-<span class="source-line-no">626</span><span id="line-626">    public static class ViewerModel extends ConletBaseModel {</span>
-<span class="source-line-no">627</span><span id="line-627"></span>
-<span class="source-line-no">628</span><span id="line-628">        private String vmName;</span>
-<span class="source-line-no">629</span><span id="line-629">        private boolean generated;</span>
+<span class="source-line-no">558</span><span id="line-558">            .append('\n');</span>
+<span class="source-line-no">559</span><span id="line-559">        if (password != null) {</span>
+<span class="source-line-no">560</span><span id="line-560">            data.append("password=").append(password).append('\n');</span>
+<span class="source-line-no">561</span><span id="line-561">        }</span>
+<span class="source-line-no">562</span><span id="line-562">        proxyUrl.map(JsonPrimitive::getAsString).ifPresent(u -&gt; {</span>
+<span class="source-line-no">563</span><span id="line-563">            if (!Strings.isNullOrEmpty(u)) {</span>
+<span class="source-line-no">564</span><span id="line-564">                data.append("proxy=").append(u).append('\n');</span>
+<span class="source-line-no">565</span><span id="line-565">            }</span>
+<span class="source-line-no">566</span><span id="line-566">        });</span>
+<span class="source-line-no">567</span><span id="line-567">        connection.respond(new NotifyConletView(type(),</span>
+<span class="source-line-no">568</span><span id="line-568">            model.getConletId(), "openConsole", "application/x-virt-viewer",</span>
+<span class="source-line-no">569</span><span id="line-569">            Base64.getEncoder().encodeToString(data.toString().getBytes())));</span>
+<span class="source-line-no">570</span><span id="line-570">    }</span>
+<span class="source-line-no">571</span><span id="line-571"></span>
+<span class="source-line-no">572</span><span id="line-572">    private Optional&lt;InetAddress&gt; displayIp(K8sDynamicModel vmDef) {</span>
+<span class="source-line-no">573</span><span id="line-573">        var server = GsonPtr.to(vmDef.data()).get(JsonPrimitive.class, "spec",</span>
+<span class="source-line-no">574</span><span id="line-574">            "vm", "display", "spice", "server");</span>
+<span class="source-line-no">575</span><span id="line-575">        if (server.isPresent()) {</span>
+<span class="source-line-no">576</span><span id="line-576">            var srv = server.get().getAsString();</span>
+<span class="source-line-no">577</span><span id="line-577">            try {</span>
+<span class="source-line-no">578</span><span id="line-578">                var addr = InetAddress.getByName(srv);</span>
+<span class="source-line-no">579</span><span id="line-579">                logger.fine(() -&gt; "Using IP address from CRD for "</span>
+<span class="source-line-no">580</span><span id="line-580">                    + vmDef.getMetadata().getName() + ": " + addr);</span>
+<span class="source-line-no">581</span><span id="line-581">                return Optional.of(addr);</span>
+<span class="source-line-no">582</span><span id="line-582">            } catch (UnknownHostException e) {</span>
+<span class="source-line-no">583</span><span id="line-583">                logger.log(Level.SEVERE, e, () -&gt; "Invalid server address "</span>
+<span class="source-line-no">584</span><span id="line-584">                    + srv + ": " + e.getMessage());</span>
+<span class="source-line-no">585</span><span id="line-585">                return Optional.empty();</span>
+<span class="source-line-no">586</span><span id="line-586">            }</span>
+<span class="source-line-no">587</span><span id="line-587">        }</span>
+<span class="source-line-no">588</span><span id="line-588">        var addrs = GsonPtr.to(vmDef.data()).getAsListOf(JsonPrimitive.class,</span>
+<span class="source-line-no">589</span><span id="line-589">            "nodeAddresses").stream().map(JsonPrimitive::getAsString)</span>
+<span class="source-line-no">590</span><span id="line-590">            .map(a -&gt; {</span>
+<span class="source-line-no">591</span><span id="line-591">                try {</span>
+<span class="source-line-no">592</span><span id="line-592">                    return InetAddress.getByName(a);</span>
+<span class="source-line-no">593</span><span id="line-593">                } catch (UnknownHostException e) {</span>
+<span class="source-line-no">594</span><span id="line-594">                    logger.warning(() -&gt; "Invalid IP address: " + a);</span>
+<span class="source-line-no">595</span><span id="line-595">                    return null;</span>
+<span class="source-line-no">596</span><span id="line-596">                }</span>
+<span class="source-line-no">597</span><span id="line-597">            }).filter(a -&gt; a != null).toList();</span>
+<span class="source-line-no">598</span><span id="line-598">        logger.fine(() -&gt; "Known IP addresses for "</span>
+<span class="source-line-no">599</span><span id="line-599">            + vmDef.getMetadata().getName() + ": " + addrs);</span>
+<span class="source-line-no">600</span><span id="line-600">        return addrs.stream()</span>
+<span class="source-line-no">601</span><span id="line-601">            .filter(a -&gt; preferredIpVersion.isAssignableFrom(a.getClass()))</span>
+<span class="source-line-no">602</span><span id="line-602">            .findFirst().or(() -&gt; addrs.stream().findFirst());</span>
+<span class="source-line-no">603</span><span id="line-603">    }</span>
+<span class="source-line-no">604</span><span id="line-604"></span>
+<span class="source-line-no">605</span><span id="line-605">    private void confirmReset(NotifyConletModel event,</span>
+<span class="source-line-no">606</span><span id="line-606">            ConsoleConnection channel, ViewerModel model,</span>
+<span class="source-line-no">607</span><span id="line-607">            ResourceBundle resourceBundle) throws TemplateNotFoundException,</span>
+<span class="source-line-no">608</span><span id="line-608">            MalformedTemplateNameException, ParseException, IOException {</span>
+<span class="source-line-no">609</span><span id="line-609">        Template tpl = freemarkerConfig()</span>
+<span class="source-line-no">610</span><span id="line-610">            .getTemplate("VmViewer-confirmReset.ftl.html");</span>
+<span class="source-line-no">611</span><span id="line-611">        channel.respond(new OpenModalDialog(type(), model.getConletId(),</span>
+<span class="source-line-no">612</span><span id="line-612">            processTemplate(event, tpl,</span>
+<span class="source-line-no">613</span><span id="line-613">                fmModel(event, channel, model.getConletId(), model)))</span>
+<span class="source-line-no">614</span><span id="line-614">                    .addOption("cancelable", true).addOption("closeLabel", "")</span>
+<span class="source-line-no">615</span><span id="line-615">                    .addOption("title",</span>
+<span class="source-line-no">616</span><span id="line-616">                        resourceBundle.getString("confirmResetTitle")));</span>
+<span class="source-line-no">617</span><span id="line-617">    }</span>
+<span class="source-line-no">618</span><span id="line-618"></span>
+<span class="source-line-no">619</span><span id="line-619">    @Override</span>
+<span class="source-line-no">620</span><span id="line-620">    protected boolean doSetLocale(SetLocale event, ConsoleConnection channel,</span>
+<span class="source-line-no">621</span><span id="line-621">            String conletId) throws Exception {</span>
+<span class="source-line-no">622</span><span id="line-622">        return true;</span>
+<span class="source-line-no">623</span><span id="line-623">    }</span>
+<span class="source-line-no">624</span><span id="line-624"></span>
+<span class="source-line-no">625</span><span id="line-625">    /**</span>
+<span class="source-line-no">626</span><span id="line-626">     * The Class VmsModel.</span>
+<span class="source-line-no">627</span><span id="line-627">     */</span>
+<span class="source-line-no">628</span><span id="line-628">    @SuppressWarnings("PMD.DataClass")</span>
+<span class="source-line-no">629</span><span id="line-629">    public static class ViewerModel extends ConletBaseModel {</span>
 <span class="source-line-no">630</span><span id="line-630"></span>
-<span class="source-line-no">631</span><span id="line-631">        /**</span>
-<span class="source-line-no">632</span><span id="line-632">         * Instantiates a new vms model.</span>
-<span class="source-line-no">633</span><span id="line-633">         *</span>
-<span class="source-line-no">634</span><span id="line-634">         * @param conletId the conlet id</span>
-<span class="source-line-no">635</span><span id="line-635">         */</span>
-<span class="source-line-no">636</span><span id="line-636">        public ViewerModel(@JsonProperty("conletId") String conletId) {</span>
-<span class="source-line-no">637</span><span id="line-637">            super(conletId);</span>
-<span class="source-line-no">638</span><span id="line-638">        }</span>
-<span class="source-line-no">639</span><span id="line-639"></span>
-<span class="source-line-no">640</span><span id="line-640">        /**</span>
-<span class="source-line-no">641</span><span id="line-641">         * Gets the vm name.</span>
-<span class="source-line-no">642</span><span id="line-642">         *</span>
-<span class="source-line-no">643</span><span id="line-643">         * @return the vmName</span>
-<span class="source-line-no">644</span><span id="line-644">         */</span>
-<span class="source-line-no">645</span><span id="line-645">        @JsonGetter("vmName")</span>
-<span class="source-line-no">646</span><span id="line-646">        public String vmName() {</span>
-<span class="source-line-no">647</span><span id="line-647">            return vmName;</span>
-<span class="source-line-no">648</span><span id="line-648">        }</span>
-<span class="source-line-no">649</span><span id="line-649"></span>
-<span class="source-line-no">650</span><span id="line-650">        /**</span>
-<span class="source-line-no">651</span><span id="line-651">         * Sets the vm name.</span>
-<span class="source-line-no">652</span><span id="line-652">         *</span>
-<span class="source-line-no">653</span><span id="line-653">         * @param vmName the vmName to set</span>
-<span class="source-line-no">654</span><span id="line-654">         */</span>
-<span class="source-line-no">655</span><span id="line-655">        public void setVmName(String vmName) {</span>
-<span class="source-line-no">656</span><span id="line-656">            this.vmName = vmName;</span>
-<span class="source-line-no">657</span><span id="line-657">        }</span>
-<span class="source-line-no">658</span><span id="line-658"></span>
-<span class="source-line-no">659</span><span id="line-659">        /**</span>
-<span class="source-line-no">660</span><span id="line-660">         * Checks if is generated.</span>
-<span class="source-line-no">661</span><span id="line-661">         *</span>
-<span class="source-line-no">662</span><span id="line-662">         * @return the generated</span>
-<span class="source-line-no">663</span><span id="line-663">         */</span>
-<span class="source-line-no">664</span><span id="line-664">        public boolean isGenerated() {</span>
-<span class="source-line-no">665</span><span id="line-665">            return generated;</span>
-<span class="source-line-no">666</span><span id="line-666">        }</span>
-<span class="source-line-no">667</span><span id="line-667"></span>
-<span class="source-line-no">668</span><span id="line-668">        /**</span>
-<span class="source-line-no">669</span><span id="line-669">         * Sets the generated.</span>
-<span class="source-line-no">670</span><span id="line-670">         *</span>
-<span class="source-line-no">671</span><span id="line-671">         * @param generated the generated to set</span>
-<span class="source-line-no">672</span><span id="line-672">         */</span>
-<span class="source-line-no">673</span><span id="line-673">        public void setGenerated(boolean generated) {</span>
-<span class="source-line-no">674</span><span id="line-674">            this.generated = generated;</span>
-<span class="source-line-no">675</span><span id="line-675">        }</span>
-<span class="source-line-no">676</span><span id="line-676"></span>
-<span class="source-line-no">677</span><span id="line-677">    }</span>
-<span class="source-line-no">678</span><span id="line-678">}</span>
+<span class="source-line-no">631</span><span id="line-631">        private String vmName;</span>
+<span class="source-line-no">632</span><span id="line-632">        private boolean generated;</span>
+<span class="source-line-no">633</span><span id="line-633"></span>
+<span class="source-line-no">634</span><span id="line-634">        /**</span>
+<span class="source-line-no">635</span><span id="line-635">         * Instantiates a new vms model.</span>
+<span class="source-line-no">636</span><span id="line-636">         *</span>
+<span class="source-line-no">637</span><span id="line-637">         * @param conletId the conlet id</span>
+<span class="source-line-no">638</span><span id="line-638">         */</span>
+<span class="source-line-no">639</span><span id="line-639">        public ViewerModel(@JsonProperty("conletId") String conletId) {</span>
+<span class="source-line-no">640</span><span id="line-640">            super(conletId);</span>
+<span class="source-line-no">641</span><span id="line-641">        }</span>
+<span class="source-line-no">642</span><span id="line-642"></span>
+<span class="source-line-no">643</span><span id="line-643">        /**</span>
+<span class="source-line-no">644</span><span id="line-644">         * Gets the vm name.</span>
+<span class="source-line-no">645</span><span id="line-645">         *</span>
+<span class="source-line-no">646</span><span id="line-646">         * @return the vmName</span>
+<span class="source-line-no">647</span><span id="line-647">         */</span>
+<span class="source-line-no">648</span><span id="line-648">        @JsonGetter("vmName")</span>
+<span class="source-line-no">649</span><span id="line-649">        public String vmName() {</span>
+<span class="source-line-no">650</span><span id="line-650">            return vmName;</span>
+<span class="source-line-no">651</span><span id="line-651">        }</span>
+<span class="source-line-no">652</span><span id="line-652"></span>
+<span class="source-line-no">653</span><span id="line-653">        /**</span>
+<span class="source-line-no">654</span><span id="line-654">         * Sets the vm name.</span>
+<span class="source-line-no">655</span><span id="line-655">         *</span>
+<span class="source-line-no">656</span><span id="line-656">         * @param vmName the vmName to set</span>
+<span class="source-line-no">657</span><span id="line-657">         */</span>
+<span class="source-line-no">658</span><span id="line-658">        public void setVmName(String vmName) {</span>
+<span class="source-line-no">659</span><span id="line-659">            this.vmName = vmName;</span>
+<span class="source-line-no">660</span><span id="line-660">        }</span>
+<span class="source-line-no">661</span><span id="line-661"></span>
+<span class="source-line-no">662</span><span id="line-662">        /**</span>
+<span class="source-line-no">663</span><span id="line-663">         * Checks if is generated.</span>
+<span class="source-line-no">664</span><span id="line-664">         *</span>
+<span class="source-line-no">665</span><span id="line-665">         * @return the generated</span>
+<span class="source-line-no">666</span><span id="line-666">         */</span>
+<span class="source-line-no">667</span><span id="line-667">        public boolean isGenerated() {</span>
+<span class="source-line-no">668</span><span id="line-668">            return generated;</span>
+<span class="source-line-no">669</span><span id="line-669">        }</span>
+<span class="source-line-no">670</span><span id="line-670"></span>
+<span class="source-line-no">671</span><span id="line-671">        /**</span>
+<span class="source-line-no">672</span><span id="line-672">         * Sets the generated.</span>
+<span class="source-line-no">673</span><span id="line-673">         *</span>
+<span class="source-line-no">674</span><span id="line-674">         * @param generated the generated to set</span>
+<span class="source-line-no">675</span><span id="line-675">         */</span>
+<span class="source-line-no">676</span><span id="line-676">        public void setGenerated(boolean generated) {</span>
+<span class="source-line-no">677</span><span id="line-677">            this.generated = generated;</span>
+<span class="source-line-no">678</span><span id="line-678">        }</span>
+<span class="source-line-no">679</span><span id="line-679"></span>
+<span class="source-line-no">680</span><span id="line-680">    }</span>
+<span class="source-line-no">681</span><span id="line-681">}</span>
 
 
 
