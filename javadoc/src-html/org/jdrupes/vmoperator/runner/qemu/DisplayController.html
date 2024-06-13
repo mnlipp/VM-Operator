@@ -40,7 +40,7 @@
 <span class="source-line-no">027</span><span id="line-27">import org.jdrupes.vmoperator.runner.qemu.commands.QmpSetPasswordExpiry;</span>
 <span class="source-line-no">028</span><span id="line-28">import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;</span>
 <span class="source-line-no">029</span><span id="line-29">import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;</span>
-<span class="source-line-no">030</span><span id="line-30">import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;</span>
+<span class="source-line-no">030</span><span id="line-30">import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.RunState;</span>
 <span class="source-line-no">031</span><span id="line-31">import org.jgrapes.core.Channel;</span>
 <span class="source-line-no">032</span><span id="line-32">import org.jgrapes.core.Component;</span>
 <span class="source-line-no">033</span><span id="line-33">import org.jgrapes.core.annotation.Handler;</span>
@@ -80,7 +80,7 @@
 <span class="source-line-no">067</span><span id="line-67">     */</span>
 <span class="source-line-no">068</span><span id="line-68">    @Handler</span>
 <span class="source-line-no">069</span><span id="line-69">    public void onConfigureQemu(ConfigureQemu event) {</span>
-<span class="source-line-no">070</span><span id="line-70">        if (event.state() == State.TERMINATING) {</span>
+<span class="source-line-no">070</span><span id="line-70">        if (event.runState() == RunState.TERMINATING) {</span>
 <span class="source-line-no">071</span><span id="line-71">            return;</span>
 <span class="source-line-no">072</span><span id="line-72">        }</span>
 <span class="source-line-no">073</span><span id="line-73">        protocol</span>

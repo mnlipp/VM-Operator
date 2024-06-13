@@ -74,7 +74,7 @@
 <span class="source-line-no">061</span><span id="line-61">import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;</span>
 <span class="source-line-no">062</span><span id="line-62">import org.jdrupes.vmoperator.runner.qemu.events.QmpConfigured;</span>
 <span class="source-line-no">063</span><span id="line-63">import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;</span>
-<span class="source-line-no">064</span><span id="line-64">import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;</span>
+<span class="source-line-no">064</span><span id="line-64">import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.RunState;</span>
 <span class="source-line-no">065</span><span id="line-65">import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;</span>
 <span class="source-line-no">066</span><span id="line-66">import org.jdrupes.vmoperator.util.FsdUtils;</span>
 <span class="source-line-no">067</span><span id="line-67">import org.jgrapes.core.Channel;</span>
@@ -230,7 +230,7 @@
 <span class="source-line-no">217</span><span id="line-217">    private CommandDefinition qemuDefinition;</span>
 <span class="source-line-no">218</span><span id="line-218">    private final QemuMonitor qemuMonitor;</span>
 <span class="source-line-no">219</span><span id="line-219">    private Integer resetCounter;</span>
-<span class="source-line-no">220</span><span id="line-220">    private State state = State.INITIALIZING;</span>
+<span class="source-line-no">220</span><span id="line-220">    private RunState state = RunState.INITIALIZING;</span>
 <span class="source-line-no">221</span><span id="line-221"></span>
 <span class="source-line-no">222</span><span id="line-222">    /** Preparatory actions for QEMU start */</span>
 <span class="source-line-no">223</span><span id="line-223">    @SuppressWarnings("PMD.FieldNamingConventions")</span>
@@ -480,7 +480,7 @@
 <span class="source-line-no">467</span><span id="line-467">     */</span>
 <span class="source-line-no">468</span><span id="line-468">    @Handler</span>
 <span class="source-line-no">469</span><span id="line-469">    public void onStarted(Started event) {</span>
-<span class="source-line-no">470</span><span id="line-470">        state = State.STARTING;</span>
+<span class="source-line-no">470</span><span id="line-470">        state = RunState.STARTING;</span>
 <span class="source-line-no">471</span><span id="line-471">        rep.fire(new RunnerStateChange(state, "RunnerStarted",</span>
 <span class="source-line-no">472</span><span id="line-472">            "Runner has been started"));</span>
 <span class="source-line-no">473</span><span id="line-473">        // Start first process(es)</span>
@@ -631,9 +631,9 @@
 <span class="source-line-no">618</span><span id="line-618">     */</span>
 <span class="source-line-no">619</span><span id="line-619">    @Handler(priority = -1000)</span>
 <span class="source-line-no">620</span><span id="line-620">    public void onConfigureQemuFinal(ConfigureQemu event) {</span>
-<span class="source-line-no">621</span><span id="line-621">        if (state == State.STARTING) {</span>
+<span class="source-line-no">621</span><span id="line-621">        if (state == RunState.STARTING) {</span>
 <span class="source-line-no">622</span><span id="line-622">            fire(new MonitorCommand(new QmpCont()));</span>
-<span class="source-line-no">623</span><span id="line-623">            state = State.RUNNING;</span>
+<span class="source-line-no">623</span><span id="line-623">            state = RunState.RUNNING;</span>
 <span class="source-line-no">624</span><span id="line-624">            rep.fire(new RunnerStateChange(state, "VmStarted",</span>
 <span class="source-line-no">625</span><span id="line-625">                "Qemu has been configured and is continuing"));</span>
 <span class="source-line-no">626</span><span id="line-626">        }</span>
@@ -646,7 +646,7 @@
 <span class="source-line-no">633</span><span id="line-633">     */</span>
 <span class="source-line-no">634</span><span id="line-634">    @Handler</span>
 <span class="source-line-no">635</span><span id="line-635">    public void onConfigureQemu(ConfigureQemu event) {</span>
-<span class="source-line-no">636</span><span id="line-636">        if (state == State.RUNNING) {</span>
+<span class="source-line-no">636</span><span id="line-636">        if (state == RunState.RUNNING) {</span>
 <span class="source-line-no">637</span><span id="line-637">            if (resetCounter != null</span>
 <span class="source-line-no">638</span><span id="line-638">                &amp;&amp; event.configuration().resetCounter != null</span>
 <span class="source-line-no">639</span><span id="line-639">                &amp;&amp; event.configuration().resetCounter &gt; resetCounter) {</span>
@@ -672,14 +672,14 @@
 <span class="source-line-no">659</span><span id="line-659">                return;</span>
 <span class="source-line-no">660</span><span id="line-660">            }</span>
 <span class="source-line-no">661</span><span id="line-661">            // No other process(es) may exit during startup</span>
-<span class="source-line-no">662</span><span id="line-662">            if (state == State.STARTING) {</span>
+<span class="source-line-no">662</span><span id="line-662">            if (state == RunState.STARTING) {</span>
 <span class="source-line-no">663</span><span id="line-663">                logger.severe(() -&gt; "Process " + procDef.name</span>
 <span class="source-line-no">664</span><span id="line-664">                    + " has exited with value " + event.exitValue()</span>
 <span class="source-line-no">665</span><span id="line-665">                    + " during startup.");</span>
 <span class="source-line-no">666</span><span id="line-666">                rep.fire(new Stop());</span>
 <span class="source-line-no">667</span><span id="line-667">                return;</span>
 <span class="source-line-no">668</span><span id="line-668">            }</span>
-<span class="source-line-no">669</span><span id="line-669">            if (procDef.equals(qemuDefinition) &amp;&amp; state == State.RUNNING) {</span>
+<span class="source-line-no">669</span><span id="line-669">            if (procDef.equals(qemuDefinition) &amp;&amp; state == RunState.RUNNING) {</span>
 <span class="source-line-no">670</span><span id="line-670">                rep.fire(new Exit(event.exitValue()));</span>
 <span class="source-line-no">671</span><span id="line-671">            }</span>
 <span class="source-line-no">672</span><span id="line-672">            logger.info(() -&gt; "Process " + procDef.name</span>
@@ -706,7 +706,7 @@
 <span class="source-line-no">693</span><span id="line-693">     */</span>
 <span class="source-line-no">694</span><span id="line-694">    @Handler(priority = 10_000)</span>
 <span class="source-line-no">695</span><span id="line-695">    public void onStopFirst(Stop event) {</span>
-<span class="source-line-no">696</span><span id="line-696">        state = State.TERMINATING;</span>
+<span class="source-line-no">696</span><span id="line-696">        state = RunState.TERMINATING;</span>
 <span class="source-line-no">697</span><span id="line-697">        rep.fire(new RunnerStateChange(state, "VmTerminating",</span>
 <span class="source-line-no">698</span><span id="line-698">            "The VM is being shut down", exitStatus != 0));</span>
 <span class="source-line-no">699</span><span id="line-699">    }</span>
@@ -718,14 +718,14 @@
 <span class="source-line-no">705</span><span id="line-705">     */</span>
 <span class="source-line-no">706</span><span id="line-706">    @Handler(priority = -10_000)</span>
 <span class="source-line-no">707</span><span id="line-707">    public void onStopLast(Stop event) {</span>
-<span class="source-line-no">708</span><span id="line-708">        state = State.STOPPED;</span>
+<span class="source-line-no">708</span><span id="line-708">        state = RunState.STOPPED;</span>
 <span class="source-line-no">709</span><span id="line-709">        rep.fire(new RunnerStateChange(state, "VmStopped",</span>
 <span class="source-line-no">710</span><span id="line-710">            "The VM has been shut down"));</span>
 <span class="source-line-no">711</span><span id="line-711">    }</span>
 <span class="source-line-no">712</span><span id="line-712"></span>
 <span class="source-line-no">713</span><span id="line-713">    @SuppressWarnings("PMD.ConfusingArgumentToVarargsMethod")</span>
 <span class="source-line-no">714</span><span id="line-714">    private void shutdown() {</span>
-<span class="source-line-no">715</span><span id="line-715">        if (!Set.of(State.TERMINATING, State.STOPPED).contains(state)) {</span>
+<span class="source-line-no">715</span><span id="line-715">        if (!Set.of(RunState.TERMINATING, RunState.STOPPED).contains(state)) {</span>
 <span class="source-line-no">716</span><span id="line-716">            fire(new Stop());</span>
 <span class="source-line-no">717</span><span id="line-717">        }</span>
 <span class="source-line-no">718</span><span id="line-718">        try {</span>
