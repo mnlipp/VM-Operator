@@ -5,6 +5,15 @@ title: Upgrading
 
 # Upgrading
 
+## To version 3.0.0
+
+All configuration files are backward compatible to version 2.3.0.
+Note that in order to make use of the new viewer component, 
+[permissions](https://mnlipp.github.io/VM-Operator/user-gui.html#control-access-to-vms)
+must be configured in the CR definition. Also note that 
+[display secrets](https://mnlipp.github.io/VM-Operator/user-gui.html#securing-access)
+are automatically created unless explicitly disabled.
+
 ## To version 2.3.0
 
 Starting with version 2.3.0, the web GUI uses a login conlet that
