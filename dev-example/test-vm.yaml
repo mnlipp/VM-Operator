@@ -7,8 +7,7 @@ spec:
   image:
     repository: docker-registry.lan.mnl.de
     path: vmoperator/org.jdrupes.vmoperator.runner.qemu-alpine
-    version: latest
-    pullPolicy: Always
+    version: 3.0.0
 
   permissions:
     - user: admin
