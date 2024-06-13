@@ -65,6 +65,7 @@ challenging than editing libvirt's XML.
 
 ## Running in a Pod
 
+The real purpose of the runner is to run a VM on Kubernetes in a pod.
 When running in a Kubernetes pod, `/etc/opt/vmrunner/config.yaml` should be
 provided by a
 [ConfigMap](https://kubernetes.io/docs/concepts/configuration/configmap/).
