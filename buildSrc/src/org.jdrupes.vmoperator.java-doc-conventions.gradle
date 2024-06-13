@@ -22,8 +22,8 @@ configurations {
 }
 
 dependencies {
-    markdownDoclet "org.jdrupes.mdoclet:doclet:3.1.0"
-    javadocTaglets "org.jdrupes.taglets:plantuml-taglet:2.1.0"
+    markdownDoclet "org.jdrupes.mdoclet:doclet:4.0.0"
+    javadocTaglets "org.jdrupes.taglets:plantuml-taglet:3.0.0"
 }
 
 task javadocResources(type: Copy) {
@@ -35,7 +35,7 @@ task javadocResources(type: Copy) {
 
 task apidocs (type: JavaExec) {
     // Does not work on JitPack, no /usr/bin/dot
-    enabled = JavaVersion.current() == JavaVersion.VERSION_17
+    enabled = JavaVersion.current() == JavaVersion.VERSION_21
 
     dependsOn javadocResources
 
@@ -46,7 +46,7 @@ task apidocs (type: JavaExec) {
 
     jvmArgs = ['--add-exports=jdk.javadoc/jdk.javadoc.internal.tool=ALL-UNNAMED',
                '--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED']
-    main = 'jdk.javadoc.internal.tool.Main'
+    mainClass = 'jdk.javadoc.internal.tool.Main'
 
     gradle.projectsEvaluated {
         // Make sure that other projects' compileClasspaths are resolved
@@ -69,7 +69,7 @@ task apidocs (type: JavaExec) {
             '-package',
             '-use',
             '-linksource',
-            '-link', 'https://docs.oracle.com/en/java/javase/17/docs/api/',
+            '-link', 'https://docs.oracle.com/en/java/javase/21/docs/api/',
             '-link', 'https://mnlipp.github.io/jgrapes/latest-release/javadoc/',
             '-link', 'https://freemarker.apache.org/docs/api/',
             '--add-exports', 'jdk.javadoc/jdk.javadoc.internal.tool=ALL-UNNAMED',
