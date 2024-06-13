@@ -33,7 +33,7 @@ import org.jdrupes.vmoperator.runner.qemu.events.CpuAdded;
 import org.jdrupes.vmoperator.runner.qemu.events.CpuDeleted;
 import org.jdrupes.vmoperator.runner.qemu.events.HotpluggableCpuStatus;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
-import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;
+import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.RunState;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.annotation.Handler;
@@ -64,7 +64,7 @@ public class CpuController extends Component {
      */
     @Handler
     public void onConfigureQemu(ConfigureQemu event) {
-        if (event.state() == State.TERMINATING) {
+        if (event.runState() == RunState.TERMINATING) {
             return;
         }
         Optional.ofNullable(event.configuration().vm.currentCpus)

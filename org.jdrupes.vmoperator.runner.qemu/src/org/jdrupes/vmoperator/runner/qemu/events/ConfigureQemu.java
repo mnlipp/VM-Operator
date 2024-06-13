@@ -19,7 +19,7 @@
 package org.jdrupes.vmoperator.runner.qemu.events;
 
 import org.jdrupes.vmoperator.runner.qemu.Configuration;
-import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;
+import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.RunState;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Event;
 
@@ -34,14 +34,14 @@ import org.jgrapes.core.Event;
 public class ConfigureQemu extends Event<Void> {
 
     private final Configuration configuration;
-    private final State state;
+    private final RunState state;
 
     /**
      * Instantiates a new configuration event.
      *
      * @param channels the channels
      */
-    public ConfigureQemu(Configuration configuration, State state,
+    public ConfigureQemu(Configuration configuration, RunState state,
             Channel... channels) {
         super(channels);
         this.state = state;
@@ -62,7 +62,7 @@ public class ConfigureQemu extends Event<Void> {
      *
      * @return the state
      */
-    public State state() {
+    public RunState runState() {
         return state;
     }
 }

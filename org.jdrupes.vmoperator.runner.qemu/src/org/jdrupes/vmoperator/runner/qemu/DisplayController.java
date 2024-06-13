@@ -27,7 +27,7 @@ import org.jdrupes.vmoperator.runner.qemu.commands.QmpSetDisplayPassword;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpSetPasswordExpiry;
 import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
-import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;
+import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.RunState;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.annotation.Handler;
@@ -67,7 +67,7 @@ public class DisplayController extends Component {
      */
     @Handler
     public void onConfigureQemu(ConfigureQemu event) {
-        if (event.state() == State.TERMINATING) {
+        if (event.runState() == RunState.TERMINATING) {
             return;
         }
         protocol

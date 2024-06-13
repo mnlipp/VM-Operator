@@ -61,7 +61,7 @@ import org.jdrupes.vmoperator.runner.qemu.events.Exit;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
 import org.jdrupes.vmoperator.runner.qemu.events.QmpConfigured;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;
-import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;
+import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.RunState;
 import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
 import org.jdrupes.vmoperator.util.FsdUtils;
 import org.jgrapes.core.Channel;
@@ -217,7 +217,7 @@ public class Runner extends Component {
     private CommandDefinition qemuDefinition;
     private final QemuMonitor qemuMonitor;
     private Integer resetCounter;
-    private State state = State.INITIALIZING;
+    private RunState state = RunState.INITIALIZING;
 
     /** Preparatory actions for QEMU start */
     @SuppressWarnings("PMD.FieldNamingConventions")
@@ -467,7 +467,7 @@ public class Runner extends Component {
      */
     @Handler
     public void onStarted(Started event) {
-        state = State.STARTING;
+        state = RunState.STARTING;
         rep.fire(new RunnerStateChange(state, "RunnerStarted",
             "Runner has been started"));
         // Start first process(es)
@@ -618,9 +618,9 @@ public class Runner extends Component {
      */
     @Handler(priority = -1000)
     public void onConfigureQemuFinal(ConfigureQemu event) {
-        if (state == State.STARTING) {
+        if (state == RunState.STARTING) {
             fire(new MonitorCommand(new QmpCont()));
-            state = State.RUNNING;
+            state = RunState.RUNNING;
             rep.fire(new RunnerStateChange(state, "VmStarted",
                 "Qemu has been configured and is continuing"));
         }
@@ -633,7 +633,7 @@ public class Runner extends Component {
      */
     @Handler
     public void onConfigureQemu(ConfigureQemu event) {
-        if (state == State.RUNNING) {
+        if (state == RunState.RUNNING) {
             if (resetCounter != null
                 && event.configuration().resetCounter != null
                 && event.configuration().resetCounter > resetCounter) {
@@ -659,14 +659,14 @@ public class Runner extends Component {
                 return;
             }
             // No other process(es) may exit during startup
-            if (state == State.STARTING) {
+            if (state == RunState.STARTING) {
                 logger.severe(() -> "Process " + procDef.name
                     + " has exited with value " + event.exitValue()
                     + " during startup.");
                 rep.fire(new Stop());
                 return;
             }
-            if (procDef.equals(qemuDefinition) && state == State.RUNNING) {
+            if (procDef.equals(qemuDefinition) && state == RunState.RUNNING) {
                 rep.fire(new Exit(event.exitValue()));
             }
             logger.info(() -> "Process " + procDef.name
@@ -693,7 +693,7 @@ public class Runner extends Component {
      */
     @Handler(priority = 10_000)
     public void onStopFirst(Stop event) {
-        state = State.TERMINATING;
+        state = RunState.TERMINATING;
         rep.fire(new RunnerStateChange(state, "VmTerminating",
             "The VM is being shut down", exitStatus != 0));
     }
@@ -705,14 +705,14 @@ public class Runner extends Component {
      */
     @Handler(priority = -10_000)
     public void onStopLast(Stop event) {
-        state = State.STOPPED;
+        state = RunState.STOPPED;
         rep.fire(new RunnerStateChange(state, "VmStopped",
             "The VM has been shut down"));
     }
 
     @SuppressWarnings("PMD.ConfusingArgumentToVarargsMethod")
     private void shutdown() {
-        if (!Set.of(State.TERMINATING, State.STOPPED).contains(state)) {
+        if (!Set.of(RunState.TERMINATING, RunState.STOPPED).contains(state)) {
             fire(new Stop());
         }
         try {
