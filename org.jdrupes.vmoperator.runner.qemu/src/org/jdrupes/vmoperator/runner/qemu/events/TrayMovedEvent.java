@@ -50,7 +50,7 @@ public class TrayMovedEvent extends MonitorEvent {
      *
      * @return the tray state
      */
-    public TrayState state() {
+    public TrayState trayState() {
         return data().get("tray-open").asBoolean()
             ? TrayState.OPEN
             : TrayState.CLOSED;

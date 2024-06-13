@@ -31,11 +31,11 @@ public class RunnerStateChange extends Event<Void> {
     /**
      * The state.
      */
-    public enum State {
+    public enum RunState {
         INITIALIZING, STARTING, RUNNING, TERMINATING, STOPPED
     }
 
-    private final State state;
+    private final RunState state;
     private final String reason;
     private final String message;
     private final boolean failed;
@@ -48,7 +48,7 @@ public class RunnerStateChange extends Event<Void> {
      * @param message the message
      * @param channels the channels
      */
-    public RunnerStateChange(State state, String reason, String message,
+    public RunnerStateChange(RunState state, String reason, String message,
             Channel... channels) {
         this(state, reason, message, false, channels);
     }
@@ -62,7 +62,7 @@ public class RunnerStateChange extends Event<Void> {
      * @param failed the failed
      * @param channels the channels
      */
-    public RunnerStateChange(State state, String reason, String message,
+    public RunnerStateChange(RunState state, String reason, String message,
             boolean failed, Channel... channels) {
         super(channels);
         this.state = state;
@@ -76,7 +76,7 @@ public class RunnerStateChange extends Event<Void> {
      *
      * @return the state
      */
-    public State state() {
+    public RunState runState() {
         return state;
     }
 

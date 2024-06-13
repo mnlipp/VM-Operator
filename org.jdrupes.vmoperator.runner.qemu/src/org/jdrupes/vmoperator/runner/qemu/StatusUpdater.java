@@ -48,7 +48,7 @@ import org.jdrupes.vmoperator.runner.qemu.events.DisplayPasswordChanged;
 import org.jdrupes.vmoperator.runner.qemu.events.Exit;
 import org.jdrupes.vmoperator.runner.qemu.events.HotpluggableCpuStatus;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;
-import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;
+import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.RunState;
 import org.jdrupes.vmoperator.runner.qemu.events.ShutdownEvent;
 import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
@@ -65,8 +65,8 @@ import org.jgrapes.util.events.InitialConfiguration;
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class StatusUpdater extends Component {
 
-    private static final Set<State> RUNNING_STATES
-        = Set.of(State.RUNNING, State.TERMINATING);
+    private static final Set<RunState> RUNNING_STATES
+        = Set.of(RunState.RUNNING, RunState.TERMINATING);
 
     private String namespace;
     private String vmName;
@@ -240,11 +240,11 @@ public class StatusUpdater extends Component {
                         updateRunningCondition(event, from, cond);
                     }
                 });
-            if (event.state() == State.STARTING) {
+            if (event.runState() == RunState.STARTING) {
                 status.addProperty("ram", GsonPtr.to(from.data())
                     .getAsString("spec", "vm", "maximumRam").orElse("0"));
                 status.addProperty("cpus", 1);
-            } else if (event.state() == State.STOPPED) {
+            } else if (event.runState() == RunState.STOPPED) {
                 status.addProperty("ram", "0");
                 status.addProperty("cpus", 0);
             }
@@ -252,7 +252,7 @@ public class StatusUpdater extends Component {
         });
 
         // Maybe stop VM
-        if (event.state() == State.TERMINATING && !event.failed()
+        if (event.runState() == RunState.TERMINATING && !event.failed()
             && guestShutdownStops && shutdownByGuest) {
             logger.info(() -> "Stopping VM because of shutdown by guest.");
             var res = vmStub.patch(V1Patch.PATCH_FORMAT_JSON_PATCH,
@@ -277,13 +277,13 @@ public class StatusUpdater extends Component {
             K8sDynamicModel from, JsonObject cond) {
         boolean reportedRunning
             = "True".equals(cond.get("status").getAsString());
-        if (RUNNING_STATES.contains(event.state())
+        if (RUNNING_STATES.contains(event.runState())
             && !reportedRunning) {
             cond.addProperty("status", "True");
             cond.addProperty("lastTransitionTime",
                 Instant.now().toString());
         }
-        if (!RUNNING_STATES.contains(event.state())
+        if (!RUNNING_STATES.contains(event.runState())
             && reportedRunning) {
             cond.addProperty("status", "False");
             cond.addProperty("lastTransitionTime",

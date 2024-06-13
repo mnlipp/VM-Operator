@@ -27,7 +27,7 @@ import org.jdrupes.vmoperator.runner.qemu.commands.QmpOpenTray;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpRemoveMedium;
 import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
-import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;
+import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.RunState;
 import org.jdrupes.vmoperator.runner.qemu.events.TrayMovedEvent;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
@@ -69,7 +69,7 @@ public class CdMediaController extends Component {
     @SuppressWarnings({ "PMD.AvoidLiteralsInIfCondition",
         "PMD.AvoidInstantiatingObjectsInLoops" })
     public void onConfigureQemu(ConfigureQemu event) {
-        if (event.state() == State.TERMINATING) {
+        if (event.runState() == RunState.TERMINATING) {
             return;
         }
 
@@ -82,7 +82,7 @@ public class CdMediaController extends Component {
             }
             var driveId = "cd" + cdCounter++;
             var newFile = Optional.ofNullable(drives[i].file).orElse("");
-            if (event.state() == State.STARTING) {
+            if (event.runState() == RunState.STARTING) {
                 current.put(driveId, newFile);
                 continue;
             }
@@ -116,8 +116,8 @@ public class CdMediaController extends Component {
      */
     @Handler
     public void onTrayMovedEvent(TrayMovedEvent event) {
-        trayState.put(event.driveId(), event.state());
-        if (event.state() == TrayState.OPEN
+        trayState.put(event.driveId(), event.trayState());
+        if (event.trayState() == TrayState.OPEN
             && pending.containsKey(event.driveId())) {
             changeMedium(event.driveId());
         }
