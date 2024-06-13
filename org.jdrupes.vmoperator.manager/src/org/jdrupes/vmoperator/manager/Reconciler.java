@@ -184,12 +184,8 @@ public class Reconciler extends Component {
      * @param event the event
      * @param channel the channel
      * @throws ApiException the api exception
-     * @throws IOException 
-     * @throws ParseException 
-     * @throws MalformedTemplateNameException 
-     * @throws TemplateNotFoundException 
-     * @throws TemplateException 
-     * @throws KubectlException 
+     * @throws TemplateException the template exception
+     * @throws IOException Signals that an I/O exception has occurred.
      */
     @Handler
     @SuppressWarnings("PMD.ConfusingTernary")
