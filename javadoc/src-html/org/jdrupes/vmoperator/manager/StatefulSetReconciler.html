@@ -35,14 +35,14 @@
 <span class="source-line-no">022</span><span id="line-22">import freemarker.template.TemplateException;</span>
 <span class="source-line-no">023</span><span id="line-23">import io.kubernetes.client.custom.V1Patch;</span>
 <span class="source-line-no">024</span><span id="line-24">import io.kubernetes.client.openapi.ApiException;</span>
-<span class="source-line-no">025</span><span id="line-25">import io.kubernetes.client.util.generic.dynamic.Dynamics;</span>
-<span class="source-line-no">026</span><span id="line-26">import io.kubernetes.client.util.generic.options.PatchOptions;</span>
-<span class="source-line-no">027</span><span id="line-27">import java.io.IOException;</span>
-<span class="source-line-no">028</span><span id="line-28">import java.io.StringWriter;</span>
-<span class="source-line-no">029</span><span id="line-29">import java.util.Map;</span>
-<span class="source-line-no">030</span><span id="line-30">import java.util.logging.Logger;</span>
-<span class="source-line-no">031</span><span id="line-31">import org.jdrupes.vmoperator.common.K8sV1SecretStub;</span>
-<span class="source-line-no">032</span><span id="line-32">import org.jdrupes.vmoperator.common.K8sV1StatefulSetStub;</span>
+<span class="source-line-no">025</span><span id="line-25">import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;</span>
+<span class="source-line-no">026</span><span id="line-26">import io.kubernetes.client.util.generic.dynamic.Dynamics;</span>
+<span class="source-line-no">027</span><span id="line-27">import io.kubernetes.client.util.generic.options.PatchOptions;</span>
+<span class="source-line-no">028</span><span id="line-28">import java.io.IOException;</span>
+<span class="source-line-no">029</span><span id="line-29">import java.io.StringWriter;</span>
+<span class="source-line-no">030</span><span id="line-30">import java.util.Map;</span>
+<span class="source-line-no">031</span><span id="line-31">import java.util.logging.Logger;</span>
+<span class="source-line-no">032</span><span id="line-32">import org.jdrupes.vmoperator.common.K8s;</span>
 <span class="source-line-no">033</span><span id="line-33">import org.jdrupes.vmoperator.manager.events.VmChannel;</span>
 <span class="source-line-no">034</span><span id="line-34">import org.jdrupes.vmoperator.manager.events.VmDefChanged;</span>
 <span class="source-line-no">035</span><span id="line-35">import org.jdrupes.vmoperator.util.GsonPtr;</span>
@@ -81,50 +81,43 @@
 <span class="source-line-no">068</span><span id="line-68">    public void reconcile(VmDefChanged event, Map&lt;String, Object&gt; model,</span>
 <span class="source-line-no">069</span><span id="line-69">            VmChannel channel)</span>
 <span class="source-line-no">070</span><span id="line-70">            throws IOException, TemplateException, ApiException {</span>
-<span class="source-line-no">071</span><span id="line-71">        var metadata = event.vmDefinition().getMetadata();</span>
-<span class="source-line-no">072</span><span id="line-72"></span>
-<span class="source-line-no">073</span><span id="line-73">        // Check if we have a display secret</span>
-<span class="source-line-no">074</span><span id="line-74">        var dsStub = K8sV1SecretStub.get(channel.client(),</span>
-<span class="source-line-no">075</span><span id="line-75">            metadata.getNamespace(), metadata.getName() + "-display-secret");</span>
-<span class="source-line-no">076</span><span id="line-76">        dsStub.model().ifPresent(m -&gt; {</span>
-<span class="source-line-no">077</span><span id="line-77">            model.put("displaySecret", m.getMetadata().getName());</span>
-<span class="source-line-no">078</span><span id="line-78">        });</span>
-<span class="source-line-no">079</span><span id="line-79"></span>
-<span class="source-line-no">080</span><span id="line-80">        // Combine template and data and parse result</span>
-<span class="source-line-no">081</span><span id="line-81">        var fmTemplate = fmConfig.getTemplate("runnerSts.ftl.yaml");</span>
-<span class="source-line-no">082</span><span id="line-82">        StringWriter out = new StringWriter();</span>
-<span class="source-line-no">083</span><span id="line-83">        fmTemplate.process(model, out);</span>
-<span class="source-line-no">084</span><span id="line-84">        // Avoid Yaml.load due to</span>
-<span class="source-line-no">085</span><span id="line-85">        // https://github.com/kubernetes-client/java/issues/2741</span>
-<span class="source-line-no">086</span><span id="line-86">        var stsDef = Dynamics.newFromYaml(</span>
-<span class="source-line-no">087</span><span id="line-87">            new Yaml(new SafeConstructor(new LoaderOptions())), out.toString());</span>
-<span class="source-line-no">088</span><span id="line-88"></span>
-<span class="source-line-no">089</span><span id="line-89">        // If exists apply changes only when transitioning state</span>
-<span class="source-line-no">090</span><span id="line-90">        // or not running.</span>
-<span class="source-line-no">091</span><span id="line-91">        var stsStub = K8sV1StatefulSetStub.get(channel.client(),</span>
-<span class="source-line-no">092</span><span id="line-92">            metadata.getNamespace(), metadata.getName());</span>
-<span class="source-line-no">093</span><span id="line-93">        stsStub.model().ifPresent(sts -&gt; {</span>
-<span class="source-line-no">094</span><span id="line-94">            var current = sts.getSpec().getReplicas();</span>
-<span class="source-line-no">095</span><span id="line-95">            var desired = GsonPtr.to(stsDef.getRaw())</span>
-<span class="source-line-no">096</span><span id="line-96">                .to("spec").getAsInt("replicas").orElse(1);</span>
-<span class="source-line-no">097</span><span id="line-97">            if (current == 1 &amp;&amp; desired == 1) {</span>
-<span class="source-line-no">098</span><span id="line-98">                return;</span>
-<span class="source-line-no">099</span><span id="line-99">            }</span>
-<span class="source-line-no">100</span><span id="line-100">        });</span>
-<span class="source-line-no">101</span><span id="line-101"></span>
-<span class="source-line-no">102</span><span id="line-102">        // Do apply changes</span>
-<span class="source-line-no">103</span><span id="line-103">        PatchOptions opts = new PatchOptions();</span>
-<span class="source-line-no">104</span><span id="line-104">        opts.setForce(true);</span>
-<span class="source-line-no">105</span><span id="line-105">        opts.setFieldManager("kubernetes-java-kubectl-apply");</span>
-<span class="source-line-no">106</span><span id="line-106">        if (stsStub.patch(V1Patch.PATCH_FORMAT_APPLY_YAML,</span>
-<span class="source-line-no">107</span><span id="line-107">            new V1Patch(channel.client().getJSON().serialize(stsDef)), opts)</span>
-<span class="source-line-no">108</span><span id="line-108">            .isEmpty()) {</span>
-<span class="source-line-no">109</span><span id="line-109">            logger.warning(</span>
-<span class="source-line-no">110</span><span id="line-110">                () -&gt; "Could not patch stateful set for " + stsStub.name());</span>
-<span class="source-line-no">111</span><span id="line-111">        }</span>
-<span class="source-line-no">112</span><span id="line-112">    }</span>
-<span class="source-line-no">113</span><span id="line-113"></span>
-<span class="source-line-no">114</span><span id="line-114">}</span>
+<span class="source-line-no">071</span><span id="line-71">        DynamicKubernetesApi stsApi = new DynamicKubernetesApi("apps", "v1",</span>
+<span class="source-line-no">072</span><span id="line-72">            "statefulsets", channel.client());</span>
+<span class="source-line-no">073</span><span id="line-73">        var metadata = event.vmDefinition().getMetadata();</span>
+<span class="source-line-no">074</span><span id="line-74"></span>
+<span class="source-line-no">075</span><span id="line-75">        // Combine template and data and parse result</span>
+<span class="source-line-no">076</span><span id="line-76">        var fmTemplate = fmConfig.getTemplate("runnerSts.ftl.yaml");</span>
+<span class="source-line-no">077</span><span id="line-77">        StringWriter out = new StringWriter();</span>
+<span class="source-line-no">078</span><span id="line-78">        fmTemplate.process(model, out);</span>
+<span class="source-line-no">079</span><span id="line-79">        // Avoid Yaml.load due to</span>
+<span class="source-line-no">080</span><span id="line-80">        // https://github.com/kubernetes-client/java/issues/2741</span>
+<span class="source-line-no">081</span><span id="line-81">        var stsDef = Dynamics.newFromYaml(</span>
+<span class="source-line-no">082</span><span id="line-82">            new Yaml(new SafeConstructor(new LoaderOptions())), out.toString());</span>
+<span class="source-line-no">083</span><span id="line-83"></span>
+<span class="source-line-no">084</span><span id="line-84">        // If exists apply changes only when transitioning state</span>
+<span class="source-line-no">085</span><span id="line-85">        // or not running.</span>
+<span class="source-line-no">086</span><span id="line-86">        var existing = K8s.get(stsApi, metadata);</span>
+<span class="source-line-no">087</span><span id="line-87">        if (existing.isPresent()) {</span>
+<span class="source-line-no">088</span><span id="line-88">            var current = GsonPtr.to(existing.get().getRaw())</span>
+<span class="source-line-no">089</span><span id="line-89">                .to("spec").getAsInt("replicas").orElse(1);</span>
+<span class="source-line-no">090</span><span id="line-90">            var desired = GsonPtr.to(stsDef.getRaw())</span>
+<span class="source-line-no">091</span><span id="line-91">                .to("spec").getAsInt("replicas").orElse(1);</span>
+<span class="source-line-no">092</span><span id="line-92">            if (current == 1 &amp;&amp; desired == 1) {</span>
+<span class="source-line-no">093</span><span id="line-93">                return;</span>
+<span class="source-line-no">094</span><span id="line-94">            }</span>
+<span class="source-line-no">095</span><span id="line-95">        }</span>
+<span class="source-line-no">096</span><span id="line-96"></span>
+<span class="source-line-no">097</span><span id="line-97">        // Do apply changes</span>
+<span class="source-line-no">098</span><span id="line-98">        PatchOptions opts = new PatchOptions();</span>
+<span class="source-line-no">099</span><span id="line-99">        opts.setForce(true);</span>
+<span class="source-line-no">100</span><span id="line-100">        opts.setFieldManager("kubernetes-java-kubectl-apply");</span>
+<span class="source-line-no">101</span><span id="line-101">        stsApi.patch(stsDef.getMetadata().getNamespace(),</span>
+<span class="source-line-no">102</span><span id="line-102">            stsDef.getMetadata().getName(), V1Patch.PATCH_FORMAT_APPLY_YAML,</span>
+<span class="source-line-no">103</span><span id="line-103">            new V1Patch(channel.client().getJSON().serialize(stsDef)),</span>
+<span class="source-line-no">104</span><span id="line-104">            opts).throwsApiException();</span>
+<span class="source-line-no">105</span><span id="line-105">    }</span>
+<span class="source-line-no">106</span><span id="line-106"></span>
+<span class="source-line-no">107</span><span id="line-107">}</span>
 
 
 

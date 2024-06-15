@@ -34,8 +34,8 @@
 <span class="source-line-no">021</span><span id="line-21">import java.math.BigInteger;</span>
 <span class="source-line-no">022</span><span id="line-22">import java.util.Optional;</span>
 <span class="source-line-no">023</span><span id="line-23">import org.jdrupes.vmoperator.runner.qemu.commands.QmpSetBalloon;</span>
-<span class="source-line-no">024</span><span id="line-24">import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;</span>
-<span class="source-line-no">025</span><span id="line-25">import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;</span>
+<span class="source-line-no">024</span><span id="line-24">import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;</span>
+<span class="source-line-no">025</span><span id="line-25">import org.jdrupes.vmoperator.runner.qemu.events.RunnerConfigurationUpdate;</span>
 <span class="source-line-no">026</span><span id="line-26">import org.jgrapes.core.Channel;</span>
 <span class="source-line-no">027</span><span id="line-27">import org.jgrapes.core.Component;</span>
 <span class="source-line-no">028</span><span id="line-28">import org.jgrapes.core.annotation.Handler;</span>
@@ -63,7 +63,7 @@
 <span class="source-line-no">050</span><span id="line-50">     * @param event the event</span>
 <span class="source-line-no">051</span><span id="line-51">     */</span>
 <span class="source-line-no">052</span><span id="line-52">    @Handler</span>
-<span class="source-line-no">053</span><span id="line-53">    public void onConfigureQemu(ConfigureQemu event) {</span>
+<span class="source-line-no">053</span><span id="line-53">    public void onConfigureQemu(RunnerConfigurationUpdate event) {</span>
 <span class="source-line-no">054</span><span id="line-54">        Optional.ofNullable(event.configuration().vm.currentRam)</span>
 <span class="source-line-no">055</span><span id="line-55">            .ifPresent(cr -&gt; {</span>
 <span class="source-line-no">056</span><span id="line-56">                if (currentRam != null &amp;&amp; currentRam.equals(cr)) {</span>

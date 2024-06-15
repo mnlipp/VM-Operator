@@ -42,11 +42,11 @@
 <span class="source-line-no">029</span><span id="line-29">import io.kubernetes.client.util.generic.dynamic.Dynamics;</span>
 <span class="source-line-no">030</span><span id="line-30">import java.io.IOException;</span>
 <span class="source-line-no">031</span><span id="line-31">import java.io.StringWriter;</span>
-<span class="source-line-no">032</span><span id="line-32">import java.util.Map;</span>
-<span class="source-line-no">033</span><span id="line-33">import java.util.Optional;</span>
-<span class="source-line-no">034</span><span id="line-34">import java.util.logging.Logger;</span>
-<span class="source-line-no">035</span><span id="line-35">import org.jdrupes.vmoperator.common.K8s;</span>
-<span class="source-line-no">036</span><span id="line-36">import org.jdrupes.vmoperator.common.K8sDynamicModel;</span>
+<span class="source-line-no">032</span><span id="line-32">import java.util.Collections;</span>
+<span class="source-line-no">033</span><span id="line-33">import java.util.Map;</span>
+<span class="source-line-no">034</span><span id="line-34">import java.util.Optional;</span>
+<span class="source-line-no">035</span><span id="line-35">import java.util.logging.Logger;</span>
+<span class="source-line-no">036</span><span id="line-36">import org.jdrupes.vmoperator.common.K8s;</span>
 <span class="source-line-no">037</span><span id="line-37">import org.jdrupes.vmoperator.manager.events.VmChannel;</span>
 <span class="source-line-no">038</span><span id="line-38">import org.jdrupes.vmoperator.manager.events.VmDefChanged;</span>
 <span class="source-line-no">039</span><span id="line-39">import org.jdrupes.vmoperator.util.GsonPtr;</span>
@@ -92,84 +92,88 @@
 <span class="source-line-no">079</span><span id="line-79">            Map&lt;String, Object&gt; model, VmChannel channel)</span>
 <span class="source-line-no">080</span><span id="line-80">            throws IOException, TemplateException, ApiException {</span>
 <span class="source-line-no">081</span><span id="line-81">        // Check if to be generated</span>
-<span class="source-line-no">082</span><span id="line-82">        @SuppressWarnings({ "PMD.AvoidDuplicateLiterals", "unchecked" })</span>
-<span class="source-line-no">083</span><span id="line-83">        var lbsDef = Optional.of(model)</span>
+<span class="source-line-no">082</span><span id="line-82">        @SuppressWarnings({ "unchecked", "PMD.AvoidDuplicateLiterals" })</span>
+<span class="source-line-no">083</span><span id="line-83">        var lbs = Optional.of(model)</span>
 <span class="source-line-no">084</span><span id="line-84">            .map(m -&gt; (Map&lt;String, Object&gt;) m.get("reconciler"))</span>
 <span class="source-line-no">085</span><span id="line-85">            .map(c -&gt; c.get(LOAD_BALANCER_SERVICE)).orElse(Boolean.FALSE);</span>
-<span class="source-line-no">086</span><span id="line-86">        if (!(lbsDef instanceof Map) &amp;&amp; !(lbsDef instanceof Boolean)) {</span>
-<span class="source-line-no">087</span><span id="line-87">            logger.warning(() -&gt; "\"" + LOAD_BALANCER_SERVICE</span>
-<span class="source-line-no">088</span><span id="line-88">                + "\" in configuration must be boolean or mapping but is "</span>
-<span class="source-line-no">089</span><span id="line-89">                + lbsDef.getClass() + ".");</span>
-<span class="source-line-no">090</span><span id="line-90">            return;</span>
-<span class="source-line-no">091</span><span id="line-91">        }</span>
-<span class="source-line-no">092</span><span id="line-92">        if (lbsDef instanceof Boolean isOn &amp;&amp; !isOn) {</span>
+<span class="source-line-no">086</span><span id="line-86">        if (lbs instanceof Boolean isOn &amp;&amp; !isOn) {</span>
+<span class="source-line-no">087</span><span id="line-87">            return;</span>
+<span class="source-line-no">088</span><span id="line-88">        }</span>
+<span class="source-line-no">089</span><span id="line-89">        if (!(lbs instanceof Map)) {</span>
+<span class="source-line-no">090</span><span id="line-90">            logger.warning(() -&gt; "\"" + LOAD_BALANCER_SERVICE</span>
+<span class="source-line-no">091</span><span id="line-91">                + "\" in configuration must be boolean or mapping but is "</span>
+<span class="source-line-no">092</span><span id="line-92">                + lbs.getClass() + ".");</span>
 <span class="source-line-no">093</span><span id="line-93">            return;</span>
 <span class="source-line-no">094</span><span id="line-94">        }</span>
-<span class="source-line-no">095</span><span id="line-95">        JsonObject cfgMeta = new JsonObject();</span>
-<span class="source-line-no">096</span><span id="line-96">        if (lbsDef instanceof Map) {</span>
-<span class="source-line-no">097</span><span id="line-97">            var json = channel.client().getJSON();</span>
-<span class="source-line-no">098</span><span id="line-98">            cfgMeta</span>
-<span class="source-line-no">099</span><span id="line-99">                = json.deserialize(json.serialize(lbsDef), JsonObject.class);</span>
-<span class="source-line-no">100</span><span id="line-100">        }</span>
-<span class="source-line-no">101</span><span id="line-101"></span>
-<span class="source-line-no">102</span><span id="line-102">        // Combine template and data and parse result</span>
-<span class="source-line-no">103</span><span id="line-103">        var fmTemplate = fmConfig.getTemplate("runnerLoadBalancer.ftl.yaml");</span>
-<span class="source-line-no">104</span><span id="line-104">        StringWriter out = new StringWriter();</span>
-<span class="source-line-no">105</span><span id="line-105">        fmTemplate.process(model, out);</span>
-<span class="source-line-no">106</span><span id="line-106">        // Avoid Yaml.load due to</span>
-<span class="source-line-no">107</span><span id="line-107">        // https://github.com/kubernetes-client/java/issues/2741</span>
-<span class="source-line-no">108</span><span id="line-108">        var svcDef = Dynamics.newFromYaml(</span>
-<span class="source-line-no">109</span><span id="line-109">            new Yaml(new SafeConstructor(new LoaderOptions())), out.toString());</span>
-<span class="source-line-no">110</span><span id="line-110">        mergeMetadata(svcDef, cfgMeta, event.vmDefinition());</span>
+<span class="source-line-no">095</span><span id="line-95"></span>
+<span class="source-line-no">096</span><span id="line-96">        // Combine template and data and parse result</span>
+<span class="source-line-no">097</span><span id="line-97">        var fmTemplate = fmConfig.getTemplate("runnerLoadBalancer.ftl.yaml");</span>
+<span class="source-line-no">098</span><span id="line-98">        StringWriter out = new StringWriter();</span>
+<span class="source-line-no">099</span><span id="line-99">        fmTemplate.process(model, out);</span>
+<span class="source-line-no">100</span><span id="line-100">        // Avoid Yaml.load due to</span>
+<span class="source-line-no">101</span><span id="line-101">        // https://github.com/kubernetes-client/java/issues/2741</span>
+<span class="source-line-no">102</span><span id="line-102">        var svcDef = Dynamics.newFromYaml(</span>
+<span class="source-line-no">103</span><span id="line-103">            new Yaml(new SafeConstructor(new LoaderOptions())), out.toString());</span>
+<span class="source-line-no">104</span><span id="line-104">        mergeMetadata(svcDef, lbs, channel);</span>
+<span class="source-line-no">105</span><span id="line-105"></span>
+<span class="source-line-no">106</span><span id="line-106">        // Apply</span>
+<span class="source-line-no">107</span><span id="line-107">        DynamicKubernetesApi svcApi = new DynamicKubernetesApi("", "v1",</span>
+<span class="source-line-no">108</span><span id="line-108">            "services", channel.client());</span>
+<span class="source-line-no">109</span><span id="line-109">        K8s.apply(svcApi, svcDef, svcDef.getRaw().toString());</span>
+<span class="source-line-no">110</span><span id="line-110">    }</span>
 <span class="source-line-no">111</span><span id="line-111"></span>
-<span class="source-line-no">112</span><span id="line-112">        // Apply</span>
-<span class="source-line-no">113</span><span id="line-113">        DynamicKubernetesApi svcApi = new DynamicKubernetesApi("", "v1",</span>
-<span class="source-line-no">114</span><span id="line-114">            "services", channel.client());</span>
-<span class="source-line-no">115</span><span id="line-115">        K8s.apply(svcApi, svcDef, svcDef.getRaw().toString());</span>
-<span class="source-line-no">116</span><span id="line-116">    }</span>
-<span class="source-line-no">117</span><span id="line-117"></span>
-<span class="source-line-no">118</span><span id="line-118">    private void mergeMetadata(DynamicKubernetesObject svcDef,</span>
-<span class="source-line-no">119</span><span id="line-119">            JsonObject cfgMeta, K8sDynamicModel vmDefinition) {</span>
-<span class="source-line-no">120</span><span id="line-120">        // Get metadata from VM definition</span>
-<span class="source-line-no">121</span><span id="line-121">        var vmMeta = GsonPtr.to(vmDefinition.data()).to("spec")</span>
-<span class="source-line-no">122</span><span id="line-122">            .get(JsonObject.class, LOAD_BALANCER_SERVICE)</span>
-<span class="source-line-no">123</span><span id="line-123">            .map(JsonObject::deepCopy).orElseGet(() -&gt; new JsonObject());</span>
-<span class="source-line-no">124</span><span id="line-124"></span>
-<span class="source-line-no">125</span><span id="line-125">        // Merge Data from VM definition into config data</span>
-<span class="source-line-no">126</span><span id="line-126">        mergeReplace(GsonPtr.to(cfgMeta).to(LABELS).get(JsonObject.class),</span>
-<span class="source-line-no">127</span><span id="line-127">            GsonPtr.to(vmMeta).to(LABELS).get(JsonObject.class));</span>
-<span class="source-line-no">128</span><span id="line-128">        mergeReplace(</span>
-<span class="source-line-no">129</span><span id="line-129">            GsonPtr.to(cfgMeta).to(ANNOTATIONS).get(JsonObject.class),</span>
-<span class="source-line-no">130</span><span id="line-130">            GsonPtr.to(vmMeta).to(ANNOTATIONS).get(JsonObject.class));</span>
-<span class="source-line-no">131</span><span id="line-131"></span>
-<span class="source-line-no">132</span><span id="line-132">        // Merge additional data into service definition</span>
-<span class="source-line-no">133</span><span id="line-133">        var svcMeta = GsonPtr.to(svcDef.getRaw()).to(METADATA);</span>
-<span class="source-line-no">134</span><span id="line-134">        mergeIfAbsent(svcMeta.to(LABELS).get(JsonObject.class),</span>
-<span class="source-line-no">135</span><span id="line-135">            GsonPtr.to(cfgMeta).to(LABELS).get(JsonObject.class));</span>
-<span class="source-line-no">136</span><span id="line-136">        mergeIfAbsent(svcMeta.to(ANNOTATIONS).get(JsonObject.class),</span>
-<span class="source-line-no">137</span><span id="line-137">            GsonPtr.to(cfgMeta).to(ANNOTATIONS).get(JsonObject.class));</span>
-<span class="source-line-no">138</span><span id="line-138">    }</span>
-<span class="source-line-no">139</span><span id="line-139"></span>
-<span class="source-line-no">140</span><span id="line-140">    private void mergeReplace(JsonObject dest, JsonObject src) {</span>
-<span class="source-line-no">141</span><span id="line-141">        for (var e : src.entrySet()) {</span>
-<span class="source-line-no">142</span><span id="line-142">            if (e.getValue().isJsonNull()) {</span>
-<span class="source-line-no">143</span><span id="line-143">                dest.remove(e.getKey());</span>
-<span class="source-line-no">144</span><span id="line-144">                continue;</span>
-<span class="source-line-no">145</span><span id="line-145">            }</span>
-<span class="source-line-no">146</span><span id="line-146">            dest.add(e.getKey(), e.getValue());</span>
-<span class="source-line-no">147</span><span id="line-147">        }</span>
-<span class="source-line-no">148</span><span id="line-148">    }</span>
-<span class="source-line-no">149</span><span id="line-149"></span>
-<span class="source-line-no">150</span><span id="line-150">    private void mergeIfAbsent(JsonObject dest, JsonObject src) {</span>
-<span class="source-line-no">151</span><span id="line-151">        for (var e : src.entrySet()) {</span>
-<span class="source-line-no">152</span><span id="line-152">            if (dest.has(e.getKey())) {</span>
-<span class="source-line-no">153</span><span id="line-153">                continue;</span>
-<span class="source-line-no">154</span><span id="line-154">            }</span>
-<span class="source-line-no">155</span><span id="line-155">            dest.add(e.getKey(), e.getValue());</span>
-<span class="source-line-no">156</span><span id="line-156">        }</span>
-<span class="source-line-no">157</span><span id="line-157">    }</span>
-<span class="source-line-no">158</span><span id="line-158"></span>
-<span class="source-line-no">159</span><span id="line-159">}</span>
+<span class="source-line-no">112</span><span id="line-112">    @SuppressWarnings("unchecked")</span>
+<span class="source-line-no">113</span><span id="line-113">    private void mergeMetadata(DynamicKubernetesObject svcDef,</span>
+<span class="source-line-no">114</span><span id="line-114">            Object lbsConfig, VmChannel channel) {</span>
+<span class="source-line-no">115</span><span id="line-115">        // Get metadata from config</span>
+<span class="source-line-no">116</span><span id="line-116">        Map&lt;String, Object&gt; asmData = Collections.emptyMap();</span>
+<span class="source-line-no">117</span><span id="line-117">        if (lbsConfig instanceof Map config) {</span>
+<span class="source-line-no">118</span><span id="line-118">            asmData = (Map&lt;String, Object&gt;) config;</span>
+<span class="source-line-no">119</span><span id="line-119">        }</span>
+<span class="source-line-no">120</span><span id="line-120">        var json = channel.client().getJSON();</span>
+<span class="source-line-no">121</span><span id="line-121">        JsonObject cfgMeta</span>
+<span class="source-line-no">122</span><span id="line-122">            = json.deserialize(json.serialize(asmData), JsonObject.class);</span>
+<span class="source-line-no">123</span><span id="line-123"></span>
+<span class="source-line-no">124</span><span id="line-124">        // Get metadata from VM definition</span>
+<span class="source-line-no">125</span><span id="line-125">        var vmMeta = GsonPtr.to(channel.vmDefinition().getRaw()).to("spec")</span>
+<span class="source-line-no">126</span><span id="line-126">            .get(JsonObject.class, LOAD_BALANCER_SERVICE)</span>
+<span class="source-line-no">127</span><span id="line-127">            .map(JsonObject::deepCopy).orElseGet(() -&gt; new JsonObject());</span>
+<span class="source-line-no">128</span><span id="line-128"></span>
+<span class="source-line-no">129</span><span id="line-129">        // Merge Data from VM definition into config data</span>
+<span class="source-line-no">130</span><span id="line-130">        mergeReplace(GsonPtr.to(cfgMeta).to(LABELS).get(JsonObject.class),</span>
+<span class="source-line-no">131</span><span id="line-131">            GsonPtr.to(vmMeta).to(LABELS).get(JsonObject.class));</span>
+<span class="source-line-no">132</span><span id="line-132">        mergeReplace(</span>
+<span class="source-line-no">133</span><span id="line-133">            GsonPtr.to(cfgMeta).to(ANNOTATIONS).get(JsonObject.class),</span>
+<span class="source-line-no">134</span><span id="line-134">            GsonPtr.to(vmMeta).to(ANNOTATIONS).get(JsonObject.class));</span>
+<span class="source-line-no">135</span><span id="line-135"></span>
+<span class="source-line-no">136</span><span id="line-136">        // Merge additional data into service definition</span>
+<span class="source-line-no">137</span><span id="line-137">        var svcMeta = GsonPtr.to(svcDef.getRaw()).to(METADATA);</span>
+<span class="source-line-no">138</span><span id="line-138">        mergeIfAbsent(svcMeta.to(LABELS).get(JsonObject.class),</span>
+<span class="source-line-no">139</span><span id="line-139">            GsonPtr.to(cfgMeta).to(LABELS).get(JsonObject.class));</span>
+<span class="source-line-no">140</span><span id="line-140">        mergeIfAbsent(svcMeta.to(ANNOTATIONS).get(JsonObject.class),</span>
+<span class="source-line-no">141</span><span id="line-141">            GsonPtr.to(cfgMeta).to(ANNOTATIONS).get(JsonObject.class));</span>
+<span class="source-line-no">142</span><span id="line-142">    }</span>
+<span class="source-line-no">143</span><span id="line-143"></span>
+<span class="source-line-no">144</span><span id="line-144">    private void mergeReplace(JsonObject dest, JsonObject src) {</span>
+<span class="source-line-no">145</span><span id="line-145">        for (var e : src.entrySet()) {</span>
+<span class="source-line-no">146</span><span id="line-146">            if (e.getValue().isJsonNull()) {</span>
+<span class="source-line-no">147</span><span id="line-147">                dest.remove(e.getKey());</span>
+<span class="source-line-no">148</span><span id="line-148">                continue;</span>
+<span class="source-line-no">149</span><span id="line-149">            }</span>
+<span class="source-line-no">150</span><span id="line-150">            dest.add(e.getKey(), e.getValue());</span>
+<span class="source-line-no">151</span><span id="line-151">        }</span>
+<span class="source-line-no">152</span><span id="line-152">    }</span>
+<span class="source-line-no">153</span><span id="line-153"></span>
+<span class="source-line-no">154</span><span id="line-154">    private void mergeIfAbsent(JsonObject dest, JsonObject src) {</span>
+<span class="source-line-no">155</span><span id="line-155">        for (var e : src.entrySet()) {</span>
+<span class="source-line-no">156</span><span id="line-156">            if (dest.has(e.getKey())) {</span>
+<span class="source-line-no">157</span><span id="line-157">                continue;</span>
+<span class="source-line-no">158</span><span id="line-158">            }</span>
+<span class="source-line-no">159</span><span id="line-159">            dest.add(e.getKey(), e.getValue());</span>
+<span class="source-line-no">160</span><span id="line-160">        }</span>
+<span class="source-line-no">161</span><span id="line-161">    }</span>
+<span class="source-line-no">162</span><span id="line-162"></span>
+<span class="source-line-no">163</span><span id="line-163">}</span>
 
 
 

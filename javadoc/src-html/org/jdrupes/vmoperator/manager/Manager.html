@@ -31,306 +31,232 @@
 <span class="source-line-no">018</span><span id="line-18"></span>
 <span class="source-line-no">019</span><span id="line-19">package org.jdrupes.vmoperator.manager;</span>
 <span class="source-line-no">020</span><span id="line-20"></span>
-<span class="source-line-no">021</span><span id="line-21">import freemarker.template.TemplateMethodModelEx;</span>
-<span class="source-line-no">022</span><span id="line-22">import freemarker.template.TemplateModelException;</span>
-<span class="source-line-no">023</span><span id="line-23">import java.io.File;</span>
-<span class="source-line-no">024</span><span id="line-24">import java.io.IOException;</span>
-<span class="source-line-no">025</span><span id="line-25">import java.io.InputStream;</span>
-<span class="source-line-no">026</span><span id="line-26">import java.net.InetSocketAddress;</span>
-<span class="source-line-no">027</span><span id="line-27">import java.net.URI;</span>
-<span class="source-line-no">028</span><span id="line-28">import java.net.URISyntaxException;</span>
-<span class="source-line-no">029</span><span id="line-29">import java.nio.file.Files;</span>
-<span class="source-line-no">030</span><span id="line-30">import java.util.Arrays;</span>
-<span class="source-line-no">031</span><span id="line-31">import java.util.Collections;</span>
-<span class="source-line-no">032</span><span id="line-32">import java.util.List;</span>
-<span class="source-line-no">033</span><span id="line-33">import java.util.Map;</span>
-<span class="source-line-no">034</span><span id="line-34">import java.util.Optional;</span>
-<span class="source-line-no">035</span><span id="line-35">import java.util.logging.Level;</span>
-<span class="source-line-no">036</span><span id="line-36">import java.util.logging.LogManager;</span>
-<span class="source-line-no">037</span><span id="line-37">import java.util.logging.Logger;</span>
-<span class="source-line-no">038</span><span id="line-38">import org.apache.commons.cli.CommandLine;</span>
-<span class="source-line-no">039</span><span id="line-39">import org.apache.commons.cli.CommandLineParser;</span>
-<span class="source-line-no">040</span><span id="line-40">import org.apache.commons.cli.DefaultParser;</span>
-<span class="source-line-no">041</span><span id="line-41">import org.apache.commons.cli.Option;</span>
-<span class="source-line-no">042</span><span id="line-42">import org.apache.commons.cli.Options;</span>
-<span class="source-line-no">043</span><span id="line-43">import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;</span>
-<span class="source-line-no">044</span><span id="line-44">import org.jdrupes.vmoperator.manager.events.Exit;</span>
-<span class="source-line-no">045</span><span id="line-45">import org.jdrupes.vmoperator.util.FsdUtils;</span>
-<span class="source-line-no">046</span><span id="line-46">import org.jgrapes.core.Channel;</span>
-<span class="source-line-no">047</span><span id="line-47">import org.jgrapes.core.Component;</span>
-<span class="source-line-no">048</span><span id="line-48">import org.jgrapes.core.Components;</span>
-<span class="source-line-no">049</span><span id="line-49">import org.jgrapes.core.NamedChannel;</span>
-<span class="source-line-no">050</span><span id="line-50">import org.jgrapes.core.annotation.Handler;</span>
-<span class="source-line-no">051</span><span id="line-51">import org.jgrapes.core.events.HandlingError;</span>
-<span class="source-line-no">052</span><span id="line-52">import org.jgrapes.core.events.Stop;</span>
-<span class="source-line-no">053</span><span id="line-53">import org.jgrapes.http.HttpServer;</span>
-<span class="source-line-no">054</span><span id="line-54">import org.jgrapes.http.InMemorySessionManager;</span>
-<span class="source-line-no">055</span><span id="line-55">import org.jgrapes.http.LanguageSelector;</span>
-<span class="source-line-no">056</span><span id="line-56">import org.jgrapes.http.events.Request;</span>
-<span class="source-line-no">057</span><span id="line-57">import org.jgrapes.io.NioDispatcher;</span>
-<span class="source-line-no">058</span><span id="line-58">import org.jgrapes.io.util.PermitsPool;</span>
-<span class="source-line-no">059</span><span id="line-59">import org.jgrapes.net.SocketServer;</span>
-<span class="source-line-no">060</span><span id="line-60">import org.jgrapes.util.ComponentCollector;</span>
-<span class="source-line-no">061</span><span id="line-61">import org.jgrapes.util.FileSystemWatcher;</span>
-<span class="source-line-no">062</span><span id="line-62">import org.jgrapes.util.YamlConfigurationStore;</span>
-<span class="source-line-no">063</span><span id="line-63">import org.jgrapes.util.events.ConfigurationUpdate;</span>
-<span class="source-line-no">064</span><span id="line-64">import org.jgrapes.util.events.WatchFile;</span>
-<span class="source-line-no">065</span><span id="line-65">import org.jgrapes.webconlet.locallogin.LoginConlet;</span>
-<span class="source-line-no">066</span><span id="line-66">import org.jgrapes.webconsole.base.BrowserLocalBackedKVStore;</span>
-<span class="source-line-no">067</span><span id="line-67">import org.jgrapes.webconsole.base.ConletComponentFactory;</span>
-<span class="source-line-no">068</span><span id="line-68">import org.jgrapes.webconsole.base.ConsoleWeblet;</span>
-<span class="source-line-no">069</span><span id="line-69">import org.jgrapes.webconsole.base.KVStoreBasedConsolePolicy;</span>
-<span class="source-line-no">070</span><span id="line-70">import org.jgrapes.webconsole.base.PageResourceProviderFactory;</span>
-<span class="source-line-no">071</span><span id="line-71">import org.jgrapes.webconsole.base.WebConsole;</span>
-<span class="source-line-no">072</span><span id="line-72">import org.jgrapes.webconsole.rbac.RoleConfigurator;</span>
-<span class="source-line-no">073</span><span id="line-73">import org.jgrapes.webconsole.rbac.RoleConletFilter;</span>
-<span class="source-line-no">074</span><span id="line-74">import org.jgrapes.webconsole.vuejs.VueJsConsoleWeblet;</span>
+<span class="source-line-no">021</span><span id="line-21">import java.io.File;</span>
+<span class="source-line-no">022</span><span id="line-22">import java.io.IOException;</span>
+<span class="source-line-no">023</span><span id="line-23">import java.io.InputStream;</span>
+<span class="source-line-no">024</span><span id="line-24">import java.net.InetSocketAddress;</span>
+<span class="source-line-no">025</span><span id="line-25">import java.net.URI;</span>
+<span class="source-line-no">026</span><span id="line-26">import java.net.URISyntaxException;</span>
+<span class="source-line-no">027</span><span id="line-27">import java.nio.file.Files;</span>
+<span class="source-line-no">028</span><span id="line-28">import java.util.Arrays;</span>
+<span class="source-line-no">029</span><span id="line-29">import java.util.Collections;</span>
+<span class="source-line-no">030</span><span id="line-30">import java.util.logging.Level;</span>
+<span class="source-line-no">031</span><span id="line-31">import java.util.logging.LogManager;</span>
+<span class="source-line-no">032</span><span id="line-32">import java.util.logging.Logger;</span>
+<span class="source-line-no">033</span><span id="line-33">import org.apache.commons.cli.CommandLine;</span>
+<span class="source-line-no">034</span><span id="line-34">import org.apache.commons.cli.CommandLineParser;</span>
+<span class="source-line-no">035</span><span id="line-35">import org.apache.commons.cli.DefaultParser;</span>
+<span class="source-line-no">036</span><span id="line-36">import org.apache.commons.cli.Option;</span>
+<span class="source-line-no">037</span><span id="line-37">import org.apache.commons.cli.Options;</span>
+<span class="source-line-no">038</span><span id="line-38">import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;</span>
+<span class="source-line-no">039</span><span id="line-39">import org.jdrupes.vmoperator.util.FsdUtils;</span>
+<span class="source-line-no">040</span><span id="line-40">import org.jgrapes.core.Channel;</span>
+<span class="source-line-no">041</span><span id="line-41">import org.jgrapes.core.Component;</span>
+<span class="source-line-no">042</span><span id="line-42">import org.jgrapes.core.Components;</span>
+<span class="source-line-no">043</span><span id="line-43">import org.jgrapes.core.NamedChannel;</span>
+<span class="source-line-no">044</span><span id="line-44">import org.jgrapes.core.annotation.Handler;</span>
+<span class="source-line-no">045</span><span id="line-45">import org.jgrapes.core.events.HandlingError;</span>
+<span class="source-line-no">046</span><span id="line-46">import org.jgrapes.core.events.Stop;</span>
+<span class="source-line-no">047</span><span id="line-47">import org.jgrapes.http.HttpServer;</span>
+<span class="source-line-no">048</span><span id="line-48">import org.jgrapes.http.InMemorySessionManager;</span>
+<span class="source-line-no">049</span><span id="line-49">import org.jgrapes.http.LanguageSelector;</span>
+<span class="source-line-no">050</span><span id="line-50">import org.jgrapes.http.events.Request;</span>
+<span class="source-line-no">051</span><span id="line-51">import org.jgrapes.io.NioDispatcher;</span>
+<span class="source-line-no">052</span><span id="line-52">import org.jgrapes.io.util.PermitsPool;</span>
+<span class="source-line-no">053</span><span id="line-53">import org.jgrapes.net.SocketServer;</span>
+<span class="source-line-no">054</span><span id="line-54">import org.jgrapes.util.ComponentCollector;</span>
+<span class="source-line-no">055</span><span id="line-55">import org.jgrapes.util.FileSystemWatcher;</span>
+<span class="source-line-no">056</span><span id="line-56">import org.jgrapes.util.YamlConfigurationStore;</span>
+<span class="source-line-no">057</span><span id="line-57">import org.jgrapes.util.events.WatchFile;</span>
+<span class="source-line-no">058</span><span id="line-58">import org.jgrapes.webconlet.locallogin.LoginConlet;</span>
+<span class="source-line-no">059</span><span id="line-59">import org.jgrapes.webconsole.base.BrowserLocalBackedKVStore;</span>
+<span class="source-line-no">060</span><span id="line-60">import org.jgrapes.webconsole.base.ConletComponentFactory;</span>
+<span class="source-line-no">061</span><span id="line-61">import org.jgrapes.webconsole.base.ConsoleWeblet;</span>
+<span class="source-line-no">062</span><span id="line-62">import org.jgrapes.webconsole.base.KVStoreBasedConsolePolicy;</span>
+<span class="source-line-no">063</span><span id="line-63">import org.jgrapes.webconsole.base.PageResourceProviderFactory;</span>
+<span class="source-line-no">064</span><span id="line-64">import org.jgrapes.webconsole.base.WebConsole;</span>
+<span class="source-line-no">065</span><span id="line-65">import org.jgrapes.webconsole.rbac.RoleConfigurator;</span>
+<span class="source-line-no">066</span><span id="line-66">import org.jgrapes.webconsole.rbac.RoleConletFilter;</span>
+<span class="source-line-no">067</span><span id="line-67">import org.jgrapes.webconsole.vuejs.VueJsConsoleWeblet;</span>
+<span class="source-line-no">068</span><span id="line-68"></span>
+<span class="source-line-no">069</span><span id="line-69">/**</span>
+<span class="source-line-no">070</span><span id="line-70"> * The application class.</span>
+<span class="source-line-no">071</span><span id="line-71"> */</span>
+<span class="source-line-no">072</span><span id="line-72">public class Manager extends Component {</span>
+<span class="source-line-no">073</span><span id="line-73"></span>
+<span class="source-line-no">074</span><span id="line-74">    private static Manager app;</span>
 <span class="source-line-no">075</span><span id="line-75"></span>
-<span class="source-line-no">076</span><span id="line-76">/**</span>
-<span class="source-line-no">077</span><span id="line-77"> * The application class.</span>
-<span class="source-line-no">078</span><span id="line-78"> */</span>
-<span class="source-line-no">079</span><span id="line-79">@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.ExcessiveImports" })</span>
-<span class="source-line-no">080</span><span id="line-80">public class Manager extends Component {</span>
-<span class="source-line-no">081</span><span id="line-81"></span>
-<span class="source-line-no">082</span><span id="line-82">    private static String version;</span>
-<span class="source-line-no">083</span><span id="line-83">    private static Manager app;</span>
-<span class="source-line-no">084</span><span id="line-84">    private String clusterName;</span>
-<span class="source-line-no">085</span><span id="line-85">    private String namespace = "unknown";</span>
-<span class="source-line-no">086</span><span id="line-86">    private static int exitStatus;</span>
-<span class="source-line-no">087</span><span id="line-87"></span>
-<span class="source-line-no">088</span><span id="line-88">    /**</span>
-<span class="source-line-no">089</span><span id="line-89">     * Instantiates a new manager.</span>
-<span class="source-line-no">090</span><span id="line-90">     * @param cmdLine </span>
-<span class="source-line-no">091</span><span id="line-91">     *</span>
-<span class="source-line-no">092</span><span id="line-92">     * @throws IOException Signals that an I/O exception has occurred.</span>
-<span class="source-line-no">093</span><span id="line-93">     */</span>
-<span class="source-line-no">094</span><span id="line-94">    @SuppressWarnings({ "PMD.TooFewBranchesForASwitchStatement",</span>
-<span class="source-line-no">095</span><span id="line-95">        "PMD.NcssCount" })</span>
-<span class="source-line-no">096</span><span id="line-96">    public Manager(CommandLine cmdLine) throws IOException {</span>
-<span class="source-line-no">097</span><span id="line-97">        super(new NamedChannel("manager"));</span>
-<span class="source-line-no">098</span><span id="line-98">        // Prepare component tree</span>
-<span class="source-line-no">099</span><span id="line-99">        attach(new NioDispatcher());</span>
-<span class="source-line-no">100</span><span id="line-100">        attach(new FileSystemWatcher(channel()));</span>
-<span class="source-line-no">101</span><span id="line-101">        attach(new Controller(channel()));</span>
+<span class="source-line-no">076</span><span id="line-76">    /**</span>
+<span class="source-line-no">077</span><span id="line-77">     * Instantiates a new manager.</span>
+<span class="source-line-no">078</span><span id="line-78">     * @param cmdLine </span>
+<span class="source-line-no">079</span><span id="line-79">     *</span>
+<span class="source-line-no">080</span><span id="line-80">     * @throws IOException Signals that an I/O exception has occurred.</span>
+<span class="source-line-no">081</span><span id="line-81">     */</span>
+<span class="source-line-no">082</span><span id="line-82">    @SuppressWarnings("PMD.TooFewBranchesForASwitchStatement")</span>
+<span class="source-line-no">083</span><span id="line-83">    public Manager(CommandLine cmdLine) throws IOException {</span>
+<span class="source-line-no">084</span><span id="line-84">        // Prepare component tree</span>
+<span class="source-line-no">085</span><span id="line-85">        attach(new NioDispatcher());</span>
+<span class="source-line-no">086</span><span id="line-86">        Channel mgrChannel = new NamedChannel("manager");</span>
+<span class="source-line-no">087</span><span id="line-87">        attach(new FileSystemWatcher(mgrChannel));</span>
+<span class="source-line-no">088</span><span id="line-88">        attach(new Controller(mgrChannel));</span>
+<span class="source-line-no">089</span><span id="line-89"></span>
+<span class="source-line-no">090</span><span id="line-90">        // Configuration store with file in /etc/opt (default)</span>
+<span class="source-line-no">091</span><span id="line-91">        File cfgFile = new File(cmdLine.getOptionValue('c',</span>
+<span class="source-line-no">092</span><span id="line-92">            "/etc/opt/" + VM_OP_NAME.replace("-", "") + "/config.yaml"))</span>
+<span class="source-line-no">093</span><span id="line-93">                .getCanonicalFile();</span>
+<span class="source-line-no">094</span><span id="line-94">        logger.config(() -&gt; "Using configuration from: " + cfgFile.getPath());</span>
+<span class="source-line-no">095</span><span id="line-95">        // Don't rely on night config to produce a good exception</span>
+<span class="source-line-no">096</span><span id="line-96">        // for this simple case</span>
+<span class="source-line-no">097</span><span id="line-97">        if (!Files.isReadable(cfgFile.toPath())) {</span>
+<span class="source-line-no">098</span><span id="line-98">            throw new IOException("Cannot read configuration file " + cfgFile);</span>
+<span class="source-line-no">099</span><span id="line-99">        }</span>
+<span class="source-line-no">100</span><span id="line-100">        attach(new YamlConfigurationStore(mgrChannel, cfgFile, false));</span>
+<span class="source-line-no">101</span><span id="line-101">        fire(new WatchFile(cfgFile.toPath()));</span>
 <span class="source-line-no">102</span><span id="line-102"></span>
-<span class="source-line-no">103</span><span id="line-103">        // Configuration store with file in /etc/opt (default)</span>
-<span class="source-line-no">104</span><span id="line-104">        File cfgFile = new File(cmdLine.getOptionValue('c',</span>
-<span class="source-line-no">105</span><span id="line-105">            "/etc/opt/" + VM_OP_NAME.replace("-", "") + "/config.yaml"));</span>
-<span class="source-line-no">106</span><span id="line-106">        logger.config(() -&gt; "Using configuration from: " + cfgFile.getPath());</span>
-<span class="source-line-no">107</span><span id="line-107">        // Don't rely on night config to produce a good exception</span>
-<span class="source-line-no">108</span><span id="line-108">        // for this simple case</span>
-<span class="source-line-no">109</span><span id="line-109">        if (!Files.isReadable(cfgFile.toPath())) {</span>
-<span class="source-line-no">110</span><span id="line-110">            throw new IOException("Cannot read configuration file " + cfgFile);</span>
-<span class="source-line-no">111</span><span id="line-111">        }</span>
-<span class="source-line-no">112</span><span id="line-112">        attach(new YamlConfigurationStore(channel(), cfgFile, false));</span>
-<span class="source-line-no">113</span><span id="line-113">        fire(new WatchFile(cfgFile.toPath()), channel());</span>
-<span class="source-line-no">114</span><span id="line-114"></span>
-<span class="source-line-no">115</span><span id="line-115">        // Prepare GUI</span>
-<span class="source-line-no">116</span><span id="line-116">        Channel httpTransport = new NamedChannel("guiTransport");</span>
-<span class="source-line-no">117</span><span id="line-117">        attach(new SocketServer(httpTransport)</span>
-<span class="source-line-no">118</span><span id="line-118">            .setConnectionLimiter(new PermitsPool(300))</span>
-<span class="source-line-no">119</span><span id="line-119">            .setMinimalPurgeableTime(1000)</span>
-<span class="source-line-no">120</span><span id="line-120">            .setServerAddress(new InetSocketAddress(8080))</span>
-<span class="source-line-no">121</span><span id="line-121">            .setName("GuiSocketServer"));</span>
-<span class="source-line-no">122</span><span id="line-122"></span>
-<span class="source-line-no">123</span><span id="line-123">        // Create an HTTP server as converter between transport and application</span>
-<span class="source-line-no">124</span><span id="line-124">        // layer.</span>
-<span class="source-line-no">125</span><span id="line-125">        Channel httpChannel = new NamedChannel("guiHttp");</span>
-<span class="source-line-no">126</span><span id="line-126">        HttpServer guiHttpServer = attach(new HttpServer(httpChannel,</span>
-<span class="source-line-no">127</span><span id="line-127">            httpTransport, Request.In.Get.class, Request.In.Post.class));</span>
-<span class="source-line-no">128</span><span id="line-128">        guiHttpServer.setName("GuiHttpServer");</span>
-<span class="source-line-no">129</span><span id="line-129"></span>
-<span class="source-line-no">130</span><span id="line-130">        // Build HTTP application layer</span>
-<span class="source-line-no">131</span><span id="line-131">        guiHttpServer.attach(new InMemorySessionManager(httpChannel));</span>
-<span class="source-line-no">132</span><span id="line-132">        guiHttpServer.attach(new LanguageSelector(httpChannel));</span>
-<span class="source-line-no">133</span><span id="line-133">        URI rootUri;</span>
-<span class="source-line-no">134</span><span id="line-134">        try {</span>
-<span class="source-line-no">135</span><span id="line-135">            rootUri = new URI("/");</span>
-<span class="source-line-no">136</span><span id="line-136">        } catch (URISyntaxException e) {</span>
-<span class="source-line-no">137</span><span id="line-137">            // Cannot happen</span>
-<span class="source-line-no">138</span><span id="line-138">            return;</span>
-<span class="source-line-no">139</span><span id="line-139">        }</span>
-<span class="source-line-no">140</span><span id="line-140">        ConsoleWeblet consoleWeblet = guiHttpServer</span>
-<span class="source-line-no">141</span><span id="line-141">            .attach(new VueJsConsoleWeblet(httpChannel, Channel.SELF, rootUri) {</span>
-<span class="source-line-no">142</span><span id="line-142">                @Override</span>
-<span class="source-line-no">143</span><span id="line-143">                protected Map&lt;String, Object&gt; createConsoleBaseModel() {</span>
-<span class="source-line-no">144</span><span id="line-144">                    return augmentBaseModel(super.createConsoleBaseModel());</span>
-<span class="source-line-no">145</span><span id="line-145">                }</span>
-<span class="source-line-no">146</span><span id="line-146">            })</span>
-<span class="source-line-no">147</span><span id="line-147">            .prependClassTemplateLoader(getClass())</span>
-<span class="source-line-no">148</span><span id="line-148">            .prependResourceBundleProvider(getClass())</span>
-<span class="source-line-no">149</span><span id="line-149">            .prependConsoleResourceProvider(getClass());</span>
-<span class="source-line-no">150</span><span id="line-150">        consoleWeblet.setName("ConsoleWeblet");</span>
-<span class="source-line-no">151</span><span id="line-151">        WebConsole console = consoleWeblet.console();</span>
-<span class="source-line-no">152</span><span id="line-152">        console.attach(new BrowserLocalBackedKVStore(</span>
-<span class="source-line-no">153</span><span id="line-153">            console.channel(), consoleWeblet.prefix().getPath()));</span>
-<span class="source-line-no">154</span><span id="line-154">        console.attach(new KVStoreBasedConsolePolicy(console.channel()));</span>
-<span class="source-line-no">155</span><span id="line-155">        console.attach(new AvoidEmptyPolicy(console.channel()));</span>
-<span class="source-line-no">156</span><span id="line-156">        console.attach(new RoleConfigurator(console.channel()));</span>
-<span class="source-line-no">157</span><span id="line-157">        console.attach(new RoleConletFilter(console.channel()));</span>
-<span class="source-line-no">158</span><span id="line-158">        console.attach(new LoginConlet(console.channel()));</span>
-<span class="source-line-no">159</span><span id="line-159">        // Add all available page resource providers</span>
-<span class="source-line-no">160</span><span id="line-160">        console.attach(new ComponentCollector&lt;&gt;(</span>
-<span class="source-line-no">161</span><span id="line-161">            PageResourceProviderFactory.class, console.channel()));</span>
-<span class="source-line-no">162</span><span id="line-162">        // Add all available conlets</span>
-<span class="source-line-no">163</span><span id="line-163">        console.attach(new ComponentCollector&lt;&gt;(</span>
-<span class="source-line-no">164</span><span id="line-164">            ConletComponentFactory.class, console.channel(), type -&gt; {</span>
-<span class="source-line-no">165</span><span id="line-165">                if (LoginConlet.class.getName().equals(type)) {</span>
-<span class="source-line-no">166</span><span id="line-166">                    // Explicitly added, see above</span>
-<span class="source-line-no">167</span><span id="line-167">                    return Collections.emptyList();</span>
-<span class="source-line-no">168</span><span id="line-168">                } else {</span>
-<span class="source-line-no">169</span><span id="line-169">                    return Arrays.asList(Collections.emptyMap());</span>
-<span class="source-line-no">170</span><span id="line-170">                }</span>
-<span class="source-line-no">171</span><span id="line-171">            }));</span>
-<span class="source-line-no">172</span><span id="line-172">    }</span>
-<span class="source-line-no">173</span><span id="line-173"></span>
-<span class="source-line-no">174</span><span id="line-174">    private Map&lt;String, Object&gt; augmentBaseModel(Map&lt;String, Object&gt; base) {</span>
-<span class="source-line-no">175</span><span id="line-175">        base.put("version", version);</span>
-<span class="source-line-no">176</span><span id="line-176">        base.put("clusterName", new TemplateMethodModelEx() {</span>
-<span class="source-line-no">177</span><span id="line-177">            @Override</span>
-<span class="source-line-no">178</span><span id="line-178">            public Object exec(@SuppressWarnings("rawtypes") List arguments)</span>
-<span class="source-line-no">179</span><span id="line-179">                    throws TemplateModelException {</span>
-<span class="source-line-no">180</span><span id="line-180">                return clusterName;</span>
-<span class="source-line-no">181</span><span id="line-181">            }</span>
-<span class="source-line-no">182</span><span id="line-182">        });</span>
-<span class="source-line-no">183</span><span id="line-183">        base.put("namespace", new TemplateMethodModelEx() {</span>
-<span class="source-line-no">184</span><span id="line-184">            @Override</span>
-<span class="source-line-no">185</span><span id="line-185">            public Object exec(@SuppressWarnings("rawtypes") List arguments)</span>
-<span class="source-line-no">186</span><span id="line-186">                    throws TemplateModelException {</span>
-<span class="source-line-no">187</span><span id="line-187">                return namespace;</span>
-<span class="source-line-no">188</span><span id="line-188">            }</span>
-<span class="source-line-no">189</span><span id="line-189">        });</span>
-<span class="source-line-no">190</span><span id="line-190">        return base;</span>
-<span class="source-line-no">191</span><span id="line-191">    }</span>
-<span class="source-line-no">192</span><span id="line-192"></span>
-<span class="source-line-no">193</span><span id="line-193">    /**</span>
-<span class="source-line-no">194</span><span id="line-194">     * Configure the component.</span>
-<span class="source-line-no">195</span><span id="line-195">     *</span>
-<span class="source-line-no">196</span><span id="line-196">     * @param event the event</span>
-<span class="source-line-no">197</span><span id="line-197">     */</span>
-<span class="source-line-no">198</span><span id="line-198">    @Handler</span>
-<span class="source-line-no">199</span><span id="line-199">    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")</span>
-<span class="source-line-no">200</span><span id="line-200">    public void onConfigurationUpdate(ConfigurationUpdate event) {</span>
-<span class="source-line-no">201</span><span id="line-201">        event.structured(componentPath()).ifPresent(c -&gt; {</span>
-<span class="source-line-no">202</span><span id="line-202">            if (c.containsKey("clusterName")) {</span>
-<span class="source-line-no">203</span><span id="line-203">                clusterName = (String) c.get("clusterName");</span>
-<span class="source-line-no">204</span><span id="line-204">            } else {</span>
-<span class="source-line-no">205</span><span id="line-205">                clusterName = null;</span>
-<span class="source-line-no">206</span><span id="line-206">            }</span>
-<span class="source-line-no">207</span><span id="line-207">        });</span>
-<span class="source-line-no">208</span><span id="line-208">        event.structured(componentPath() + "/Controller").ifPresent(c -&gt; {</span>
-<span class="source-line-no">209</span><span id="line-209">            if (c.containsKey("namespace")) {</span>
-<span class="source-line-no">210</span><span id="line-210">                namespace = (String) c.get("namespace");</span>
-<span class="source-line-no">211</span><span id="line-211">            }</span>
-<span class="source-line-no">212</span><span id="line-212">        });</span>
-<span class="source-line-no">213</span><span id="line-213">    }</span>
-<span class="source-line-no">214</span><span id="line-214"></span>
-<span class="source-line-no">215</span><span id="line-215">    /**</span>
-<span class="source-line-no">216</span><span id="line-216">     * Log the exception when a handling error is reported.</span>
-<span class="source-line-no">217</span><span id="line-217">     *</span>
-<span class="source-line-no">218</span><span id="line-218">     * @param event the event</span>
-<span class="source-line-no">219</span><span id="line-219">     */</span>
-<span class="source-line-no">220</span><span id="line-220">    @Handler(channels = Channel.class, priority = -10_000)</span>
-<span class="source-line-no">221</span><span id="line-221">    @SuppressWarnings("PMD.GuardLogStatement")</span>
-<span class="source-line-no">222</span><span id="line-222">    public void onHandlingError(HandlingError event) {</span>
-<span class="source-line-no">223</span><span id="line-223">        logger.log(Level.WARNING, event.throwable(),</span>
-<span class="source-line-no">224</span><span id="line-224">            () -&gt; "Problem invoking handler with " + event.event() + ": "</span>
-<span class="source-line-no">225</span><span id="line-225">                + event.message());</span>
-<span class="source-line-no">226</span><span id="line-226">        event.stop();</span>
-<span class="source-line-no">227</span><span id="line-227">    }</span>
-<span class="source-line-no">228</span><span id="line-228"></span>
-<span class="source-line-no">229</span><span id="line-229">    /**</span>
-<span class="source-line-no">230</span><span id="line-230">     * On exit.</span>
-<span class="source-line-no">231</span><span id="line-231">     *</span>
-<span class="source-line-no">232</span><span id="line-232">     * @param event the event</span>
-<span class="source-line-no">233</span><span id="line-233">     */</span>
-<span class="source-line-no">234</span><span id="line-234">    @Handler</span>
-<span class="source-line-no">235</span><span id="line-235">    public void onExit(Exit event) {</span>
-<span class="source-line-no">236</span><span id="line-236">        exitStatus = event.exitStatus();</span>
-<span class="source-line-no">237</span><span id="line-237">    }</span>
-<span class="source-line-no">238</span><span id="line-238"></span>
-<span class="source-line-no">239</span><span id="line-239">    /**</span>
-<span class="source-line-no">240</span><span id="line-240">     * On stop.</span>
-<span class="source-line-no">241</span><span id="line-241">     *</span>
-<span class="source-line-no">242</span><span id="line-242">     * @param event the event</span>
-<span class="source-line-no">243</span><span id="line-243">     */</span>
-<span class="source-line-no">244</span><span id="line-244">    @Handler(priority = -1000)</span>
-<span class="source-line-no">245</span><span id="line-245">    public void onStop(Stop event) {</span>
-<span class="source-line-no">246</span><span id="line-246">        logger.fine(() -&gt; "Application stopped.");</span>
-<span class="source-line-no">247</span><span id="line-247">    }</span>
-<span class="source-line-no">248</span><span id="line-248"></span>
-<span class="source-line-no">249</span><span id="line-249">    static {</span>
-<span class="source-line-no">250</span><span id="line-250">        try {</span>
-<span class="source-line-no">251</span><span id="line-251">            // Get logging properties from file and put them in effect</span>
-<span class="source-line-no">252</span><span id="line-252">            InputStream props;</span>
-<span class="source-line-no">253</span><span id="line-253">            var path = FsdUtils.findConfigFile(VM_OP_NAME.replace("-", ""),</span>
-<span class="source-line-no">254</span><span id="line-254">                "logging.properties");</span>
-<span class="source-line-no">255</span><span id="line-255">            if (path.isPresent()) {</span>
-<span class="source-line-no">256</span><span id="line-256">                props = Files.newInputStream(path.get());</span>
-<span class="source-line-no">257</span><span id="line-257">            } else {</span>
-<span class="source-line-no">258</span><span id="line-258">                props</span>
-<span class="source-line-no">259</span><span id="line-259">                    = Manager.class.getResourceAsStream("logging.properties");</span>
-<span class="source-line-no">260</span><span id="line-260">            }</span>
-<span class="source-line-no">261</span><span id="line-261">            LogManager.getLogManager().readConfiguration(props);</span>
-<span class="source-line-no">262</span><span id="line-262">        } catch (IOException e) {</span>
-<span class="source-line-no">263</span><span id="line-263">            e.printStackTrace(); // NOPMD</span>
-<span class="source-line-no">264</span><span id="line-264">        }</span>
-<span class="source-line-no">265</span><span id="line-265">    }</span>
-<span class="source-line-no">266</span><span id="line-266"></span>
-<span class="source-line-no">267</span><span id="line-267">    /**</span>
-<span class="source-line-no">268</span><span id="line-268">     * The main method.</span>
-<span class="source-line-no">269</span><span id="line-269">     *</span>
-<span class="source-line-no">270</span><span id="line-270">     * @param args the arguments</span>
-<span class="source-line-no">271</span><span id="line-271">     * @throws Exception the exception</span>
-<span class="source-line-no">272</span><span id="line-272">     */</span>
-<span class="source-line-no">273</span><span id="line-273">    @SuppressWarnings("PMD.SignatureDeclareThrowsException")</span>
-<span class="source-line-no">274</span><span id="line-274">    public static void main(String[] args) {</span>
-<span class="source-line-no">275</span><span id="line-275">        try {</span>
-<span class="source-line-no">276</span><span id="line-276">            // Instance logger is not available yet.</span>
-<span class="source-line-no">277</span><span id="line-277">            var logger = Logger.getLogger(Manager.class.getName());</span>
-<span class="source-line-no">278</span><span id="line-278">            version = Optional.ofNullable(</span>
-<span class="source-line-no">279</span><span id="line-279">                Manager.class.getPackage().getImplementationVersion())</span>
-<span class="source-line-no">280</span><span id="line-280">                .orElse("unknown");</span>
-<span class="source-line-no">281</span><span id="line-281">            logger.config(() -&gt; "Version: " + version);</span>
-<span class="source-line-no">282</span><span id="line-282">            logger.config(() -&gt; "running on "</span>
-<span class="source-line-no">283</span><span id="line-283">                + System.getProperty("java.vm.name")</span>
-<span class="source-line-no">284</span><span id="line-284">                + " (" + System.getProperty("java.vm.version") + ")"</span>
-<span class="source-line-no">285</span><span id="line-285">                + " from " + System.getProperty("java.vm.vendor"));</span>
-<span class="source-line-no">286</span><span id="line-286"></span>
-<span class="source-line-no">287</span><span id="line-287">            // Parse the command line arguments</span>
-<span class="source-line-no">288</span><span id="line-288">            CommandLineParser parser = new DefaultParser();</span>
-<span class="source-line-no">289</span><span id="line-289">            final Options options = new Options();</span>
-<span class="source-line-no">290</span><span id="line-290">            options.addOption(new Option("c", "config", true, "The configura"</span>
-<span class="source-line-no">291</span><span id="line-291">                + "tion file (defaults to /etc/opt/vmoperator/config.yaml)."));</span>
-<span class="source-line-no">292</span><span id="line-292">            CommandLine cmd = parser.parse(options, args);</span>
-<span class="source-line-no">293</span><span id="line-293"></span>
-<span class="source-line-no">294</span><span id="line-294">            // The Manager is the root component</span>
-<span class="source-line-no">295</span><span id="line-295">            app = new Manager(cmd);</span>
-<span class="source-line-no">296</span><span id="line-296"></span>
-<span class="source-line-no">297</span><span id="line-297">            // Prepare generation of Stop event</span>
-<span class="source-line-no">298</span><span id="line-298">            Runtime.getRuntime().addShutdownHook(new Thread(() -&gt; {</span>
-<span class="source-line-no">299</span><span id="line-299">                try {</span>
-<span class="source-line-no">300</span><span id="line-300">                    app.fire(new Stop());</span>
-<span class="source-line-no">301</span><span id="line-301">                    Components.awaitExhaustion();</span>
-<span class="source-line-no">302</span><span id="line-302">                } catch (InterruptedException e) {</span>
-<span class="source-line-no">303</span><span id="line-303">                    // Cannot do anything about this.</span>
-<span class="source-line-no">304</span><span id="line-304">                }</span>
-<span class="source-line-no">305</span><span id="line-305">            }));</span>
-<span class="source-line-no">306</span><span id="line-306"></span>
-<span class="source-line-no">307</span><span id="line-307">            // Start the application</span>
-<span class="source-line-no">308</span><span id="line-308">            Components.start(app);</span>
-<span class="source-line-no">309</span><span id="line-309"></span>
-<span class="source-line-no">310</span><span id="line-310">            // Wait for (regular) termination</span>
-<span class="source-line-no">311</span><span id="line-311">            Components.awaitExhaustion();</span>
-<span class="source-line-no">312</span><span id="line-312">            System.exit(exitStatus);</span>
-<span class="source-line-no">313</span><span id="line-313">        } catch (IOException | InterruptedException</span>
-<span class="source-line-no">314</span><span id="line-314">                | org.apache.commons.cli.ParseException e) {</span>
-<span class="source-line-no">315</span><span id="line-315">            Logger.getLogger(Manager.class.getName()).log(Level.SEVERE, e,</span>
-<span class="source-line-no">316</span><span id="line-316">                () -&gt; "Failed to start manager: " + e.getMessage());</span>
-<span class="source-line-no">317</span><span id="line-317">        }</span>
-<span class="source-line-no">318</span><span id="line-318">    }</span>
-<span class="source-line-no">319</span><span id="line-319"></span>
-<span class="source-line-no">320</span><span id="line-320">}</span>
+<span class="source-line-no">103</span><span id="line-103">        // Prepare GUI</span>
+<span class="source-line-no">104</span><span id="line-104">        Channel httpTransport = new NamedChannel("guiTransport");</span>
+<span class="source-line-no">105</span><span id="line-105">        attach(new SocketServer(httpTransport)</span>
+<span class="source-line-no">106</span><span id="line-106">            .setConnectionLimiter(new PermitsPool(300))</span>
+<span class="source-line-no">107</span><span id="line-107">            .setMinimalPurgeableTime(1000)</span>
+<span class="source-line-no">108</span><span id="line-108">            .setServerAddress(new InetSocketAddress(8080))</span>
+<span class="source-line-no">109</span><span id="line-109">            .setName("GuiSocketServer"));</span>
+<span class="source-line-no">110</span><span id="line-110"></span>
+<span class="source-line-no">111</span><span id="line-111">        // Create an HTTP server as converter between transport and application</span>
+<span class="source-line-no">112</span><span id="line-112">        // layer.</span>
+<span class="source-line-no">113</span><span id="line-113">        Channel httpChannel = new NamedChannel("guiHttp");</span>
+<span class="source-line-no">114</span><span id="line-114">        HttpServer guiHttpServer = attach(new HttpServer(httpChannel,</span>
+<span class="source-line-no">115</span><span id="line-115">            httpTransport, Request.In.Get.class, Request.In.Post.class));</span>
+<span class="source-line-no">116</span><span id="line-116">        guiHttpServer.setName("GuiHttpServer");</span>
+<span class="source-line-no">117</span><span id="line-117"></span>
+<span class="source-line-no">118</span><span id="line-118">        // Build HTTP application layer</span>
+<span class="source-line-no">119</span><span id="line-119">        guiHttpServer.attach(new InMemorySessionManager(httpChannel));</span>
+<span class="source-line-no">120</span><span id="line-120">        guiHttpServer.attach(new LanguageSelector(httpChannel));</span>
+<span class="source-line-no">121</span><span id="line-121">        URI rootUri;</span>
+<span class="source-line-no">122</span><span id="line-122">        try {</span>
+<span class="source-line-no">123</span><span id="line-123">            rootUri = new URI("/");</span>
+<span class="source-line-no">124</span><span id="line-124">        } catch (URISyntaxException e) {</span>
+<span class="source-line-no">125</span><span id="line-125">            // Cannot happen</span>
+<span class="source-line-no">126</span><span id="line-126">            return;</span>
+<span class="source-line-no">127</span><span id="line-127">        }</span>
+<span class="source-line-no">128</span><span id="line-128">        ConsoleWeblet consoleWeblet = guiHttpServer</span>
+<span class="source-line-no">129</span><span id="line-129">            .attach(new VueJsConsoleWeblet(httpChannel, Channel.SELF, rootUri))</span>
+<span class="source-line-no">130</span><span id="line-130">            .prependClassTemplateLoader(getClass())</span>
+<span class="source-line-no">131</span><span id="line-131">            .prependResourceBundleProvider(getClass())</span>
+<span class="source-line-no">132</span><span id="line-132">            .prependConsoleResourceProvider(getClass());</span>
+<span class="source-line-no">133</span><span id="line-133">        consoleWeblet.setName("ConsoleWeblet");</span>
+<span class="source-line-no">134</span><span id="line-134">        WebConsole console = consoleWeblet.console();</span>
+<span class="source-line-no">135</span><span id="line-135">        console.attach(new BrowserLocalBackedKVStore(</span>
+<span class="source-line-no">136</span><span id="line-136">            console.channel(), consoleWeblet.prefix().getPath()));</span>
+<span class="source-line-no">137</span><span id="line-137">        console.attach(new KVStoreBasedConsolePolicy(console.channel()));</span>
+<span class="source-line-no">138</span><span id="line-138">        console.attach(new AvoidEmptyPolicy(console.channel()));</span>
+<span class="source-line-no">139</span><span id="line-139">        console.attach(new RoleConfigurator(console.channel()));</span>
+<span class="source-line-no">140</span><span id="line-140">        console.attach(new RoleConletFilter(console.channel()));</span>
+<span class="source-line-no">141</span><span id="line-141">        console.attach(new LoginConlet(console.channel()));</span>
+<span class="source-line-no">142</span><span id="line-142">        // Add all available page resource providers</span>
+<span class="source-line-no">143</span><span id="line-143">        console.attach(new ComponentCollector&lt;&gt;(</span>
+<span class="source-line-no">144</span><span id="line-144">            PageResourceProviderFactory.class, console.channel()));</span>
+<span class="source-line-no">145</span><span id="line-145">        // Add all available conlets</span>
+<span class="source-line-no">146</span><span id="line-146">        console.attach(new ComponentCollector&lt;&gt;(</span>
+<span class="source-line-no">147</span><span id="line-147">            ConletComponentFactory.class, console.channel(), type -&gt; {</span>
+<span class="source-line-no">148</span><span id="line-148">                if (LoginConlet.class.getName().equals(type)) {</span>
+<span class="source-line-no">149</span><span id="line-149">                    // Explicitly added, see above</span>
+<span class="source-line-no">150</span><span id="line-150">                    return Collections.emptyList();</span>
+<span class="source-line-no">151</span><span id="line-151">                } else {</span>
+<span class="source-line-no">152</span><span id="line-152">                    return Arrays.asList(Collections.emptyMap());</span>
+<span class="source-line-no">153</span><span id="line-153">                }</span>
+<span class="source-line-no">154</span><span id="line-154">            }));</span>
+<span class="source-line-no">155</span><span id="line-155">    }</span>
+<span class="source-line-no">156</span><span id="line-156"></span>
+<span class="source-line-no">157</span><span id="line-157">    /**</span>
+<span class="source-line-no">158</span><span id="line-158">     * Log the exception when a handling error is reported.</span>
+<span class="source-line-no">159</span><span id="line-159">     *</span>
+<span class="source-line-no">160</span><span id="line-160">     * @param event the event</span>
+<span class="source-line-no">161</span><span id="line-161">     */</span>
+<span class="source-line-no">162</span><span id="line-162">    @Handler(channels = Channel.class, priority = -10_000)</span>
+<span class="source-line-no">163</span><span id="line-163">    @SuppressWarnings("PMD.GuardLogStatement")</span>
+<span class="source-line-no">164</span><span id="line-164">    public void onHandlingError(HandlingError event) {</span>
+<span class="source-line-no">165</span><span id="line-165">        logger.log(Level.WARNING, event.throwable(),</span>
+<span class="source-line-no">166</span><span id="line-166">            () -&gt; "Problem invoking handler with " + event.event() + ": "</span>
+<span class="source-line-no">167</span><span id="line-167">                + event.message());</span>
+<span class="source-line-no">168</span><span id="line-168">        event.stop();</span>
+<span class="source-line-no">169</span><span id="line-169">    }</span>
+<span class="source-line-no">170</span><span id="line-170"></span>
+<span class="source-line-no">171</span><span id="line-171">    /**</span>
+<span class="source-line-no">172</span><span id="line-172">     * On stop.</span>
+<span class="source-line-no">173</span><span id="line-173">     *</span>
+<span class="source-line-no">174</span><span id="line-174">     * @param event the event</span>
+<span class="source-line-no">175</span><span id="line-175">     */</span>
+<span class="source-line-no">176</span><span id="line-176">    @Handler(priority = -1000)</span>
+<span class="source-line-no">177</span><span id="line-177">    public void onStop(Stop event) {</span>
+<span class="source-line-no">178</span><span id="line-178">        logger.fine(() -&gt; "Application stopped.");</span>
+<span class="source-line-no">179</span><span id="line-179">    }</span>
+<span class="source-line-no">180</span><span id="line-180"></span>
+<span class="source-line-no">181</span><span id="line-181">    static {</span>
+<span class="source-line-no">182</span><span id="line-182">        try {</span>
+<span class="source-line-no">183</span><span id="line-183">            // Get logging properties from file and put them in effect</span>
+<span class="source-line-no">184</span><span id="line-184">            InputStream props;</span>
+<span class="source-line-no">185</span><span id="line-185">            var path = FsdUtils.findConfigFile(VM_OP_NAME.replace("-", ""),</span>
+<span class="source-line-no">186</span><span id="line-186">                "logging.properties");</span>
+<span class="source-line-no">187</span><span id="line-187">            if (path.isPresent()) {</span>
+<span class="source-line-no">188</span><span id="line-188">                props = Files.newInputStream(path.get());</span>
+<span class="source-line-no">189</span><span id="line-189">            } else {</span>
+<span class="source-line-no">190</span><span id="line-190">                props</span>
+<span class="source-line-no">191</span><span id="line-191">                    = Manager.class.getResourceAsStream("logging.properties");</span>
+<span class="source-line-no">192</span><span id="line-192">            }</span>
+<span class="source-line-no">193</span><span id="line-193">            LogManager.getLogManager().readConfiguration(props);</span>
+<span class="source-line-no">194</span><span id="line-194">        } catch (IOException e) {</span>
+<span class="source-line-no">195</span><span id="line-195">            e.printStackTrace(); // NOPMD</span>
+<span class="source-line-no">196</span><span id="line-196">        }</span>
+<span class="source-line-no">197</span><span id="line-197">    }</span>
+<span class="source-line-no">198</span><span id="line-198"></span>
+<span class="source-line-no">199</span><span id="line-199">    /**</span>
+<span class="source-line-no">200</span><span id="line-200">     * The main method.</span>
+<span class="source-line-no">201</span><span id="line-201">     *</span>
+<span class="source-line-no">202</span><span id="line-202">     * @param args the arguments</span>
+<span class="source-line-no">203</span><span id="line-203">     * @throws Exception the exception</span>
+<span class="source-line-no">204</span><span id="line-204">     */</span>
+<span class="source-line-no">205</span><span id="line-205">    @SuppressWarnings("PMD.SignatureDeclareThrowsException")</span>
+<span class="source-line-no">206</span><span id="line-206">    public static void main(String[] args) {</span>
+<span class="source-line-no">207</span><span id="line-207">        try {</span>
+<span class="source-line-no">208</span><span id="line-208">            // Instance logger is not available yet.</span>
+<span class="source-line-no">209</span><span id="line-209">            var logger = Logger.getLogger(Manager.class.getName());</span>
+<span class="source-line-no">210</span><span id="line-210">            logger.config(() -&gt; "Version: "</span>
+<span class="source-line-no">211</span><span id="line-211">                + Manager.class.getPackage().getImplementationVersion());</span>
+<span class="source-line-no">212</span><span id="line-212">            logger.config(() -&gt; "running on "</span>
+<span class="source-line-no">213</span><span id="line-213">                + System.getProperty("java.vm.name")</span>
+<span class="source-line-no">214</span><span id="line-214">                + " (" + System.getProperty("java.vm.version") + ")"</span>
+<span class="source-line-no">215</span><span id="line-215">                + " from " + System.getProperty("java.vm.vendor"));</span>
+<span class="source-line-no">216</span><span id="line-216"></span>
+<span class="source-line-no">217</span><span id="line-217">            // Parse the command line arguments</span>
+<span class="source-line-no">218</span><span id="line-218">            CommandLineParser parser = new DefaultParser();</span>
+<span class="source-line-no">219</span><span id="line-219">            final Options options = new Options();</span>
+<span class="source-line-no">220</span><span id="line-220">            options.addOption(new Option("c", "config", true, "The configura"</span>
+<span class="source-line-no">221</span><span id="line-221">                + "tion file (defaults to /etc/opt/vmoperator/config.yaml)."));</span>
+<span class="source-line-no">222</span><span id="line-222">            CommandLine cmd = parser.parse(options, args);</span>
+<span class="source-line-no">223</span><span id="line-223"></span>
+<span class="source-line-no">224</span><span id="line-224">            // The Manager is the root component</span>
+<span class="source-line-no">225</span><span id="line-225">            app = new Manager(cmd);</span>
+<span class="source-line-no">226</span><span id="line-226"></span>
+<span class="source-line-no">227</span><span id="line-227">            // Prepare generation of Stop event</span>
+<span class="source-line-no">228</span><span id="line-228">            Runtime.getRuntime().addShutdownHook(new Thread(() -&gt; {</span>
+<span class="source-line-no">229</span><span id="line-229">                try {</span>
+<span class="source-line-no">230</span><span id="line-230">                    app.fire(new Stop());</span>
+<span class="source-line-no">231</span><span id="line-231">                    Components.awaitExhaustion();</span>
+<span class="source-line-no">232</span><span id="line-232">                } catch (InterruptedException e) {</span>
+<span class="source-line-no">233</span><span id="line-233">                    // Cannot do anything about this.</span>
+<span class="source-line-no">234</span><span id="line-234">                }</span>
+<span class="source-line-no">235</span><span id="line-235">            }));</span>
+<span class="source-line-no">236</span><span id="line-236"></span>
+<span class="source-line-no">237</span><span id="line-237">            // Start the application</span>
+<span class="source-line-no">238</span><span id="line-238">            Components.start(app);</span>
+<span class="source-line-no">239</span><span id="line-239">        } catch (IOException | InterruptedException</span>
+<span class="source-line-no">240</span><span id="line-240">                | org.apache.commons.cli.ParseException e) {</span>
+<span class="source-line-no">241</span><span id="line-241">            Logger.getLogger(Manager.class.getName()).log(Level.SEVERE, e,</span>
+<span class="source-line-no">242</span><span id="line-242">                () -&gt; "Failed to start manager: " + e.getMessage());</span>
+<span class="source-line-no">243</span><span id="line-243">        }</span>
+<span class="source-line-no">244</span><span id="line-244">    }</span>
+<span class="source-line-no">245</span><span id="line-245"></span>
+<span class="source-line-no">246</span><span id="line-246">}</span>
 
 
 
