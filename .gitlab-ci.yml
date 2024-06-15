@@ -9,9 +9,9 @@ stages:
 
 .gradle-job:
   extends: .any-job
-  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/eclipse-temurin:21-jdk-alpine
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/ubuntu:latest
   before_script:
-    - apk add npm
+    - apt install openjdk-21-jdk
   
 build-gradle:
   stage: build
