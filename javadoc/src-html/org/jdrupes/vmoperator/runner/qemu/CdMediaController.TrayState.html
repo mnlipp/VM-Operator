@@ -40,7 +40,7 @@
 <span class="source-line-no">027</span><span id="line-27">import org.jdrupes.vmoperator.runner.qemu.commands.QmpRemoveMedium;</span>
 <span class="source-line-no">028</span><span id="line-28">import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;</span>
 <span class="source-line-no">029</span><span id="line-29">import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;</span>
-<span class="source-line-no">030</span><span id="line-30">import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.RunState;</span>
+<span class="source-line-no">030</span><span id="line-30">import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.State;</span>
 <span class="source-line-no">031</span><span id="line-31">import org.jdrupes.vmoperator.runner.qemu.events.TrayMovedEvent;</span>
 <span class="source-line-no">032</span><span id="line-32">import org.jgrapes.core.Channel;</span>
 <span class="source-line-no">033</span><span id="line-33">import org.jgrapes.core.Component;</span>
@@ -82,7 +82,7 @@
 <span class="source-line-no">069</span><span id="line-69">    @SuppressWarnings({ "PMD.AvoidLiteralsInIfCondition",</span>
 <span class="source-line-no">070</span><span id="line-70">        "PMD.AvoidInstantiatingObjectsInLoops" })</span>
 <span class="source-line-no">071</span><span id="line-71">    public void onConfigureQemu(ConfigureQemu event) {</span>
-<span class="source-line-no">072</span><span id="line-72">        if (event.runState() == RunState.TERMINATING) {</span>
+<span class="source-line-no">072</span><span id="line-72">        if (event.state() == State.TERMINATING) {</span>
 <span class="source-line-no">073</span><span id="line-73">            return;</span>
 <span class="source-line-no">074</span><span id="line-74">        }</span>
 <span class="source-line-no">075</span><span id="line-75"></span>
@@ -95,7 +95,7 @@
 <span class="source-line-no">082</span><span id="line-82">            }</span>
 <span class="source-line-no">083</span><span id="line-83">            var driveId = "cd" + cdCounter++;</span>
 <span class="source-line-no">084</span><span id="line-84">            var newFile = Optional.ofNullable(drives[i].file).orElse("");</span>
-<span class="source-line-no">085</span><span id="line-85">            if (event.runState() == RunState.STARTING) {</span>
+<span class="source-line-no">085</span><span id="line-85">            if (event.state() == State.STARTING) {</span>
 <span class="source-line-no">086</span><span id="line-86">                current.put(driveId, newFile);</span>
 <span class="source-line-no">087</span><span id="line-87">                continue;</span>
 <span class="source-line-no">088</span><span id="line-88">            }</span>
@@ -129,8 +129,8 @@
 <span class="source-line-no">116</span><span id="line-116">     */</span>
 <span class="source-line-no">117</span><span id="line-117">    @Handler</span>
 <span class="source-line-no">118</span><span id="line-118">    public void onTrayMovedEvent(TrayMovedEvent event) {</span>
-<span class="source-line-no">119</span><span id="line-119">        trayState.put(event.driveId(), event.trayState());</span>
-<span class="source-line-no">120</span><span id="line-120">        if (event.trayState() == TrayState.OPEN</span>
+<span class="source-line-no">119</span><span id="line-119">        trayState.put(event.driveId(), event.state());</span>
+<span class="source-line-no">120</span><span id="line-120">        if (event.state() == TrayState.OPEN</span>
 <span class="source-line-no">121</span><span id="line-121">            &amp;&amp; pending.containsKey(event.driveId())) {</span>
 <span class="source-line-no">122</span><span id="line-122">            changeMedium(event.driveId());</span>
 <span class="source-line-no">123</span><span id="line-123">        }</span>
