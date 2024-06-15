@@ -10,6 +10,8 @@ stages:
 .gradle-job:
   extends: .any-job
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/eclipse-temurin:21-jdk-alpine
+  before_script:
+    - apk add npm
   
 build-gradle:
   stage: build
