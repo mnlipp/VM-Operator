@@ -1,8 +1,3 @@
-default:
-  only:
-    variables:
-      - $CI_SERVER_HOST == "gitlab.mnl.de"
-
 stages:
   - build
   - test
@@ -10,6 +5,8 @@ stages:
 
 test-pages:
   stage: test
+  rules:
+    - if: $CI_SERVER_HOST == "gitlab.mnl.de"
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/ruby:3.2
   variables:
     JEKYLL_ENV: production
@@ -27,6 +24,8 @@ test-pages:
       
 deploy-pages:
   stage: deploy
+  rules:
+    - if: $CI_SERVER_HOST == "gitlab.mnl.de"
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/ruby:3.2
   variables:
     JEKYLL_ENV: production
