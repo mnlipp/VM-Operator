@@ -3,10 +3,12 @@ stages:
   - test
   - deploy
 
-test-pages:
-  stage: test
+.any-job:
   rules:
     - if: $CI_SERVER_HOST == "gitlab.mnl.de"
+
+.pages-job:
+  extends: .any-job
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/ruby:3.2
   variables:
     JEKYLL_ENV: production
@@ -16,6 +18,10 @@ test-pages:
     - git checkout gh-pages
     - gem install bundler
     - bundle install
+
+test-pages:
+  stage: test
+  extends: .pages-job
   script:
     - bundle exec jekyll build -d test
   artifacts:
@@ -24,17 +30,7 @@ test-pages:
       
 deploy-pages:
   stage: deploy
-  rules:
-    - if: $CI_SERVER_HOST == "gitlab.mnl.de"
-  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/ruby:3.2
-  variables:
-    JEKYLL_ENV: production
-    LC_ALL: C.UTF-8
-  before_script:
-    - git fetch origin gh-pages
-    - git checkout gh-pages
-    - gem install bundler
-    - bundle install
+  extends: .pages-job
   script:
     - bundle exec jekyll build -d public
   artifacts:
