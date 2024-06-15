@@ -7,6 +7,22 @@ stages:
   rules:
     - if: $CI_SERVER_HOST == "gitlab.mnl.de"
 
+.gradle-job:
+  extends: .any-job
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/eclipse-temurin:21-jre-alpine
+  
+build-gradle:
+  stage: build
+  extends: .gradle-job  
+  script:
+    - ./gradlew build
+  cache:
+    key: "$CI_COMMIT_REF_NAME"
+    policy: push
+    paths:
+      - build
+      - .gradle
+
 .pages-job:
   extends: .any-job
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/ruby:3.2
