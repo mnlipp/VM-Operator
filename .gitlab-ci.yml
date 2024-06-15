@@ -1,7 +1,7 @@
 default:
   # Template project: https://gitlab.com/pages/jekyll
   # Docs: https://docs.gitlab.com/ee/pages/
-  image: ${CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX}/ruby:3.2
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/ruby:3.2
   before_script:
     - git fetch origin gh-pages
     - git checkout gh-pages
