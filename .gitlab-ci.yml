@@ -9,7 +9,7 @@ stages:
 
 .gradle-job:
   extends: .any-job
-  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/eclipse-temurin:21-jre-alpine
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/eclipse-temurin:21-jdk-alpine
   
 build-gradle:
   stage: build
