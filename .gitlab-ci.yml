@@ -11,6 +11,7 @@ stages:
   extends: .any-job
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/ubuntu:latest
   before_script:
+    - apt update
     - apt install openjdk-21-jdk
   
 build-gradle:
