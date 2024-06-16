@@ -14,7 +14,7 @@ stages:
     - >
       pacman -Sy --confirm java-runtime-common jdk21-openjdk npm python
       || echo "Ignore exit code $?"
-    - archlinux-java set java-21-openjdk
+    - /usr/bin/archlinux-java set java-21-openjdk
   
 build-gradle:
   stage: build
