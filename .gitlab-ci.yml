@@ -9,10 +9,10 @@ stages:
 
 .gradle-job:
   extends: .any-job
-  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/ubuntu:latest
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/alpine:latest
   before_script:
-    - apt update
-    - apt install -y openjdk-21-jdk
+    - apk add openjdk21-jdk
+    - apk add npm
   
 build-gradle:
   stage: build
