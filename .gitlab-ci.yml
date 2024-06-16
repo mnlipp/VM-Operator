@@ -11,7 +11,9 @@ stages:
   extends: .any-job
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/archlinux:base-devel
   before_script:
-    - pacman -Sy --confirm jdk21-openjdk npm python || echo "Ignore exit code $?"
+    - >
+      pacman -Sy --confirm java-runtime-common jdk21-openjdk npm python
+      || echo "Ignore exit code $?"
     - archlinux-java set java-21-openjdk
   
 build-gradle:
