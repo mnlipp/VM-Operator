@@ -11,8 +11,7 @@ stages:
   extends: .any-job
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/alpine:latest
   before_script:
-    - apk add openjdk21-jdk
-    - apk add npm
+    - apk add --no-cache openjdk21-jdk npm python3
   
 build-gradle:
   stage: build
