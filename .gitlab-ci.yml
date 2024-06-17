@@ -9,11 +9,9 @@ stages:
 
 .gradle-job:
   extends: .any-job
-  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/archlinux:base-devel
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/fedora:40
   before_script:
-    - >
-      pacman -Sy --noconfirm java-runtime-common jdk21-openjdk 
-      nodejs npm python gcc icu
+    - dnf install java-21-openjdk nodejs python gcc gcc-c++ git
   
 build-gradle:
   stage: build
@@ -24,8 +22,9 @@ build-gradle:
     key: "$CI_COMMIT_REF_NAME"
     policy: push
     paths:
-      - build
       - .gradle
+      - node_modules
+      - "*/build"
 
 .pages-job:
   extends: .any-job
