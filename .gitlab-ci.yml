@@ -13,7 +13,7 @@ stages:
   before_script:
     - >
       pacman -Sy --noconfirm java-runtime-common jdk21-openjdk 
-      node npm python gcc icu
+      nodejs npm python gcc icu
   
 build-gradle:
   stage: build
