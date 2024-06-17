@@ -11,7 +11,7 @@ stages:
   extends: .any-job
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/fedora:40
   before_script:
-    - dnf install java-21-openjdk nodejs python gcc gcc-c++ git
+    - dnf install -y java-21-openjdk nodejs python gcc gcc-c++ git
   
 build-gradle:
   stage: build
