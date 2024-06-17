@@ -18,7 +18,7 @@ build-gradle:
   stage: build
   extends: .gradle-job  
   script:
-    - ./gradlew -Pdocker.registry=$CI_REGISTRY pushImage
+    - ./gradlew -Pdocker.registry=$CI_REGISTRY_IMAGE pushImage
   cache:
     key: "$CI_COMMIT_REF_NAME"
     policy: push
