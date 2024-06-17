@@ -1,5 +1,0 @@
-FROM docker.io/fedora:40
-
-RUN dnf install -y java-21-openjdk nodejs python gcc gcc-c++ git podman
-
-CMD ["/bin/bash"]
