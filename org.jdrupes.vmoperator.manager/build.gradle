@@ -94,7 +94,7 @@ task pushForTest(type: Exec) {
 
     commandLine 'podman', 'push', '--tls-verify=false', \
         "localhost/${project.name}:${project.gitBranch}", \
-        "${project.rootProject.properties['docker.registry']}" \
+        "${project.rootProject.properties['docker.testRegistry']}" \
             + "/${project.name}:test"
 }
 
