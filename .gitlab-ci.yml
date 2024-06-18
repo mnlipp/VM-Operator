@@ -10,7 +10,7 @@ stages:
 
 .gradle-job:
   extends: .any-job
-  image: registry.mnl.de/org/jgrapes/jdk21-builder:v1
+  image: registry.mnl.de/org/jgrapes/jdk21-builder:v2
   cache:
     - key: dependencies
       policy: pull-push  
