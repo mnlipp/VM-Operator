@@ -55,18 +55,22 @@ publish-images:
 test-pages:
   stage: test
   extends: .pages-job
+  rules:
+    - if: $CI_COMMIT_BRANCH == "gh-pages"
   script:
     - bundle exec jekyll build -d test
   artifacts:
     paths:
       - test
       
-publish-pages:
-  stage: publish
-  extends: .pages-job
-  script:
-    - bundle exec jekyll build -d public
-  artifacts:
-    paths:
-      - public
-  environment: production
+#publish-pages:
+#  stage: publish
+#  extends: .pages-job
+#  rules:
+#    - if: $CI_COMMIT_BRANCH == "gh-pages"
+#  script:
+#    - bundle exec jekyll build -d public
+#  artifacts:
+#    paths:
+#      - public
+#  environment: production
