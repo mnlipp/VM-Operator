@@ -9,10 +9,11 @@ stages:
 
 .gradle-job:
   extends: .any-job
-  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/fedora:40
+  image: registry.mnl.de/org/jgrapes/jdk21-builder:v1
+  variables:
+    GIT_STRATEGY: clone
   before_script:
-    - dnf install -y java-21-openjdk-headless nodejs python gcc gcc-c++ git podman
-    - podman login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - echo -n $CI_REGISTRY_PASSWORD | podman login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
   
 build-gradle:
   stage: build
