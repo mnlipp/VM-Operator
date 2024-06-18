@@ -10,8 +10,6 @@ stages:
 .gradle-job:
   extends: .any-job
   image: registry.mnl.de/org/jgrapes/jdk21-builder:v1
-  variables:
-    GIT_STRATEGY: clone
   cache:
     - key: dependencies
       policy: pull-push  
@@ -25,7 +23,9 @@ stages:
         - "*/build"
   before_script:
     - echo -n $CI_REGISTRY_PASSWORD | podman login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
-    - git fetch --tags
+    - git switch $CI_COMMIT_REF_NAME
+    - git pull
+    - git reset --hard $CI_COMMIT_SHA
   
 build-gradle:
   stage: build
