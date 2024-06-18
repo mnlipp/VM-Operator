@@ -21,6 +21,10 @@
         "typedoc-plugin-missing-exports": "^2.1.0",
         "typescript": "^5.2.2"
     },
+    "overrides": {
+      "node-gyp": "^10.1.0",
+      "glob": "^9.0.0"
+    },
     "eslintConfig": {
         "root": true,
         "extends": "eslint:recommended",
