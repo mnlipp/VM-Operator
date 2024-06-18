@@ -20,6 +20,7 @@ stages:
     - key: "$CI_COMMIT_SHA"
       policy: pull-push
       paths:
+        - build
         - "*/build"
   before_script:
     - echo -n $CI_REGISTRY_PASSWORD | podman login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
