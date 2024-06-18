@@ -15,9 +15,8 @@ stages:
       policy: pull-push  
       paths:
         - .gradle
-        - .m2
         - node_modules
-    - key: "$CI_COMMIT_REF_NAME"
+    - key: "$CI_COMMIT_SHA"
       policy: pull-push
       paths:
         - "*/build"
