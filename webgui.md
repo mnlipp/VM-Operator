@@ -7,7 +7,7 @@ title: VM-Operator Web-GUI
 
 The manager component provides a GUI via a web server. The web GUI is
 implemented using components from the
-[JGrapes WebConsole](https://mnlipp.github.io/jgrapes/WebConsole.html)
+[JGrapes WebConsole](https://jgrapes.org/WebConsole.html)
 project. Configuration of the GUI therefore follows the conventions
 of that framework.
 
@@ -100,10 +100,10 @@ and role management.
 How local users can be configured should be obvious from the example.
 The configuration of OIDC providers for user authentication (and 
 optionally for role assignment) is explained in the documentation of the 
-[login conlet](https://mnlipp.github.io/jgrapes/javadoc-webconsole/org/jgrapes/webconlet/oidclogin/LoginConlet.html).
+[login conlet](https://jgrapes.org/javadoc-webconsole/org/jgrapes/webconlet/oidclogin/LoginConlet.html).
 Details about the `RoleConfigurator` and `RoleConletFilter` can also be found
 in the documentation of the
-[JGrapes WebConsole](https://mnlipp.github.io/jgrapes/WebConsole.html)
+[JGrapes WebConsole](https://jgrapes.org/WebConsole.html)
 project.
 
 The configuration above allows all users with role "admin" to use all

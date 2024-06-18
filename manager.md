@@ -128,7 +128,7 @@ into the container that runs the manager and are evaluated by the manager
 on startup. If no files are provided, the manager uses built-in defaults.
 
 The configuration file for the Manager follows the conventions of
-the [JGrapes](https://mnlipp.github.io/jgrapes/) component framework.
+the [JGrapes](https://jgrapes.org/) component framework.
 The keys that start with a slash select the component within the 
 application's component hierarchy. The mapping associated with the
 selected component configures this component's properties.

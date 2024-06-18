@@ -38,9 +38,9 @@ using the `-c` (or `--config`) command line option.
 A sample configuration file with annotated options can be found
 [here](https://github.com/mnlipp/VM-Operator/blob/main/org.jdrupes.vmoperator.runner.qemu/config-sample.yaml).
 As the runner implementation uses the 
-[JGrapes](https://mnlipp.github.io/jgrapes/) framework, the file 
+[JGrapes](https://jgrapes.org/) framework, the file 
 follows the framework's 
-[conventions](https://mnlipp.github.io/jgrapes/latest-release/javadoc/org/jgrapes/util/YamlConfigurationStore.html). The top level "`/Runner`" selects
+[conventions](https://jgrapes.org/latest-release/javadoc/org/jgrapes/util/YamlConfigurationStore.html). The top level "`/Runner`" selects
 the component to be configured. Nested within is the information
 to be applied to the component.
 
