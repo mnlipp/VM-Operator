@@ -1,6 +1,7 @@
 stages:
   - build
   - test
+  - publish
   - deploy
 
 .any-job:
@@ -26,8 +27,14 @@ stages:
     - git pull
     - git reset --hard $CI_COMMIT_SHA
   
-build-gradle:
+build-jars:
   stage: build
+  extends: .gradle-job  
+  script:
+    - ./gradlew -Pdocker.registry=$CI_REGISTRY_IMAGE build apidocs
+
+publish-images:
+  stage: publish
   extends: .gradle-job  
   script:
     - ./gradlew -Pdocker.registry=$CI_REGISTRY_IMAGE pushImage
@@ -53,8 +60,8 @@ test-pages:
     paths:
       - test
       
-deploy-pages:
-  stage: deploy
+publish-pages:
+  stage: publish
   extends: .pages-job
   script:
     - bundle exec jekyll build -d public
