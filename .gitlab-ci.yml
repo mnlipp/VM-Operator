@@ -12,21 +12,26 @@ stages:
   image: registry.mnl.de/org/jgrapes/jdk21-builder:v1
   variables:
     GIT_STRATEGY: clone
+  cache:
+    - key: dependencies
+      policy: pull-push  
+      paths:
+        - .gradle
+        - .m2
+        - node_modules
+    - key: "$CI_COMMIT_REF_NAME"
+      policy: pull-push
+      paths:
+        - "*/build"
   before_script:
     - echo -n $CI_REGISTRY_PASSWORD | podman login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+    - git fetch --tags
   
 build-gradle:
   stage: build
   extends: .gradle-job  
   script:
     - ./gradlew -Pdocker.registry=$CI_REGISTRY_IMAGE pushImage
-  cache:
-    key: "$CI_COMMIT_REF_NAME"
-    policy: push
-    paths:
-      - .gradle
-      - node_modules
-      - "*/build"
 
 .pages-job:
   extends: .any-job
