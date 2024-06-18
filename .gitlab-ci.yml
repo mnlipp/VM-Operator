@@ -11,7 +11,7 @@ stages:
   extends: .any-job
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/fedora:40
   before_script:
-    - dnf install -y java-21-openjdk nodejs python gcc gcc-c++ git podman
+    - dnf install -y java-21-openjdk-headless nodejs python gcc gcc-c++ git podman
     - podman login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
   
 build-gradle:
