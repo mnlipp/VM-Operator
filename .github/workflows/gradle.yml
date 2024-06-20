@@ -28,4 +28,4 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
     - name: Build with Gradle
-      run: ./gradlew -Prepo.access.token=${{ secrets.REPO_ACCESS_TOKEN }} stage
+      run: ./gradlew -Pwebsite.push.token=${{ secrets.WEBSITE_PUSH_TOKEN }} stage
