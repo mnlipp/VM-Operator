@@ -1,0 +1,10 @@
+plugins:
+  - jekyll-seo-tag
+
+author: Michael N. Lipp
+
+logo: VM-Operator.svg
+
+tagline: VM-Operator by mnlipp 
+
+description: A Kubernetes operator for running virtual machines (notably Qemu VMs) as pods.
