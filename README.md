@@ -8,5 +8,5 @@
 The goal of this project is to provide the means for running Qemu
 based VMs in Kubernetes pods.
 
-See the [project's home page](https://mnlipp.github.io/VM-Operator/)
+See the [project's home page](https://jdrupes.org/vm-operator/)
 for details.
