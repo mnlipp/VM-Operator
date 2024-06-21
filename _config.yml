@@ -1,3 +1,5 @@
+url: "https://jdrupes.org/vm-operator"
+
 plugins:
   - jekyll-seo-tag
 
