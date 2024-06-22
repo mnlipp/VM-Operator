@@ -37,6 +37,8 @@ build-jars:
 publish-images:
   stage: publish
   extends: .gradle-job  
+  dependencies:
+    - build-jars
   script:
     - ./gradlew -Pdocker.registry=$CI_REGISTRY_IMAGE pushImage
 
