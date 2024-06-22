@@ -1,4 +1,4 @@
-FROM docker.io/eclipse-temurin:17-jre-alpine
+FROM docker.io/eclipse-temurin:21-jre-alpine
 
 COPY build/install/vm-manager /opt/vmmanager
 

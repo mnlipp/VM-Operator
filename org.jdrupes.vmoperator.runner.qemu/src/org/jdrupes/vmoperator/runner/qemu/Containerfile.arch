@@ -1,11 +1,11 @@
-FROM archlinux/archlinux:latest
+FROM docker.io/archlinux/archlinux:latest
 
 RUN systemd-firstboot
 
 RUN pacman-key --init \
     && pacman -Sy --noconfirm archlinux-keyring && pacman -Su --noconfirm \
     && pacman -S --noconfirm which qemu-full virtiofsd \
-        edk2-ovmf swtpm iproute2 bridge-utils jre17-openjdk-headless \
+        edk2-ovmf swtpm iproute2 bridge-utils jre21-openjdk-headless \
         mtools \
     && pacman -Scc --noconfirm
 

@@ -45,45 +45,36 @@ application {
     mainClass = 'org.jdrupes.vmoperator.manager.Manager'
 }
 
+project.ext.gitBranch = grgit.branch.current.name.replace('/', '-')
+
 task buildImage(type: Exec) {
     dependsOn installDist
     inputs.files 'src/org/jdrupes/vmoperator/manager/Containerfile'
     
     commandLine 'podman', 'build', '--pull',
-        '-t', "${project.name}:${project.version}",\
+        '-t', "${project.name}:${project.gitBranch}",\
         '-f', 'src/org/jdrupes/vmoperator/manager/Containerfile', '.'
-}
-
-task tagLatestImage(type: Exec) {
-    dependsOn buildImage
-    
-    enabled = !project.version.contains("SNAPSHOT")
-        && !project.version.contains("alpha") \
-        && !project.version.contains("beta") \
-        || project.rootProject.properties['docker.testRegistry'] \
-            && project.rootProject.properties['docker.registry'] \
-            == project.rootProject.properties['docker.testRegistry']
-
-    commandLine 'podman', 'tag', "${project.name}:${project.version}",\
-        "${project.name}:latest"
-}
-
-task buildLatestImage {
-    dependsOn buildImage
-    dependsOn tagLatestImage
 }
 
 task pushImage(type: Exec) {
     dependsOn buildImage
+    // Don't push without testing first
+    dependsOn test
 
+    def registry = "${project.rootProject.properties['docker.registry']}"
     commandLine 'podman', 'push', '--tls-verify=false', \
-        "localhost/${project.name}:${project.version}", \
-        "${project.rootProject.properties['docker.registry']}" \
-            + "/${project.name}:${project.version}"
+        "localhost/${project.name}:${project.gitBranch}", \
+        "${registry}/${project.name}:${project.gitBranch}"
+        
+    if (!project.version.contains("SNAPSHOT")) {
+        commandLine 'podman', 'tag', \
+            "${registry}/${project.name}:${project.gitBranch}",\
+            "${registry}/${project.name}:${project.version}"
+    }
 }
 
-task pushLatestImage(type: Exec) {
-    dependsOn buildLatestImage
+task tagAsLatest(type: Exec) {
+    dependsOn pushImage
 
     enabled = !project.version.contains("SNAPSHOT")
         && !project.version.contains("alpha") \
@@ -92,26 +83,19 @@ task pushLatestImage(type: Exec) {
             && project.rootProject.properties['docker.registry'] \
             == project.rootProject.properties['docker.testRegistry']
 
-    commandLine 'podman', 'push', '--tls-verify=false', \
-        "localhost/${project.name}:${project.version}", \
-        "${project.rootProject.properties['docker.registry']}" \
-            + "/${project.name}:latest"
+    def registry = "${project.rootProject.properties['docker.registry']}"
+    commandLine 'podman', 'tag', \
+        "${registry}/${project.name}:${project.version}",\
+        "${registry}/${project.name}:latest"
 }
 
 task pushForTest(type: Exec) {
     dependsOn buildImage
 
     commandLine 'podman', 'push', '--tls-verify=false', \
-        "localhost/${project.name}:${project.version}", \
-        "${project.rootProject.properties['docker.registry']}" \
+        "localhost/${project.name}:${project.gitBranch}", \
+        "${project.rootProject.properties['docker.testRegistry']}" \
             + "/${project.name}:test"
-}
-
-task pushImages {
-	// Don't push without testing first
-    dependsOn test
-    dependsOn pushImage
-    dependsOn pushLatestImage
 }
 
 test {

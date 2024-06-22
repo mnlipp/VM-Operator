@@ -27,7 +27,7 @@ task stage {
             tc -> tc.findByName("build") }.flatten()
     }
     
-    if (JavaVersion.current() == JavaVersion.VERSION_17) {
+    if (JavaVersion.current() == JavaVersion.VERSION_21) {
         // Publish JavaDoc
         dependsOn gitPublishPush
     }

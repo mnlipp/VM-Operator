@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="referrer" content="no-referrer">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
+    <link rel="stylesheet" href="../stylesheets/styles.css">
+    <link rel="stylesheet" href="../stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    {% seo %}
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <div>
+        <div style="float: left;">
+          <h1><a style="color: #222;" href="http://vm-operator.jdrupes.org">VM-Operator</a></h1>
+          <h3>By <a href="https://github.com/mnlipp">Michael N. Lipp</a></h3>
+          <p><a rel="me" href="https://fosstodon.org/@mnl"><img alt="Mastodon Follow" 
+            src="https://img.shields.io/mastodon/follow/108843609567976408?domain=https%3A%2F%2Ffosstodon.org&style=social"></a></p>
+        </div>
+        <div style="float: right; width: 7em;">
+          <img alt="VM-Operator Logo" src="VM-Operator.svg">
+        </div>
+        <div style="clear:both;"></div>
+        </div>
+        <p></p>
+
+        <p class="view"><a href="https://github.com/mnlipp/VM-Operator">View GitHub Project</a></p>
+
+        <p></p>
+
+        <p class="part-entry"><a href="index.html">Overview</a></p>
+        <p class="part-entry"><a href="runner.html">The Runner</a></p>
+        <p class="part-list-title"><a href="manager.html">The Manager</a></p>
+        <ul style="margin-bottom: 0;" class="no-bullets">
+        <li><p class="part-entry"><a href="controller.html">The Controller</a></p></li>
+        </ul>
+        <p class="part-list-title"><a href="webgui.html">The Web-GUI</a></p>
+        <ul style="margin-bottom: 0;" class="no-bullets">
+        <li><p class="part-entry"><a href="admin-gui.html">For Admins</a></p></li>
+        <li><p class="part-entry"><a href="user-gui.html">For Users</a></p></li>
+        </ulstyle="margin-bottom: 0;">
+        <p class="part-list-title"><a href="upgrading.html">Upgrading</a></p>
+        <p class="part-list-title"><a href="latest-release/javadoc/index.html">Javadoc</a></p>
+
+      </header>
+      <section>
+        <div class="post-date"><span class="post-meta">{{ page.date | date: "%b %-d, %Y" }}</span></div>
+        {% if page.tocTitle %}
+          <h1>{{ page.tocTitle }}</h1>
+          {% include toc.html html=content %}
+        {% endif %}
+
+        {{ content }}
+      </section>
+      <footer>
+        <p><small>Hosted on GitHub Pages &mdash; <a href="https://github.com/site/terms">Terms</a>
+        &mdash; <a href="https://github.com/site/privacy">Privacy</a> 
+        &mdash; Theme derived from <a href="https://github.com/orderedlist/minimal">minimal</a></small></p>
+      </footer>
+    </div>
+
+    {% include matomo.html %}
+
+  </body>
+</html>
