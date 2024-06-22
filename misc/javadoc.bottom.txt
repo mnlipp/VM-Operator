@@ -4,7 +4,7 @@
     <a href="https://github.com/site/terms" target="_top">Terms</a>
     &mdash; <a href="https://github.com/site/privacy" target="_top">Privacy</a></p>
     <script type="text/javascript">
-    if (location.hostname.indexOf("github") !== -1 || location.hostname.indexOf("jgrapes.org") !== -1) {
+    if (location.hostname.indexOf("github") !== -1 || location.hostname.indexOf("jdrupes.org") !== -1) {
         document.getElementById("githubfooter").style.visibility="visible";
     }
     </script>
