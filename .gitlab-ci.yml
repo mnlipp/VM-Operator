@@ -40,7 +40,7 @@ publish-images:
   dependencies:
     - build-jars
   script:
-    - ./gradlew -Pdocker.registry=$CI_REGISTRY_IMAGE pushImage
+    - ./gradlew -Pdocker.registry=$CI_REGISTRY_IMAGE publishImage
 
 .pages-job:
   extends: .any-job
