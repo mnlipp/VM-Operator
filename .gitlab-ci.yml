@@ -24,7 +24,7 @@ stages:
         - "*/build"
   before_script:
     - echo -n $CI_REGISTRY_PASSWORD | podman login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
-    - git switch $CI_COMMIT_REF_NAME
+    - git switch $CI_COMMIT_BRANCH
     - git pull
     - git reset --hard $CI_COMMIT_SHA
   
