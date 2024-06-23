@@ -12,7 +12,7 @@ stages:
   extends: .any-job
   image: registry.mnl.de/org/jgrapes/jdk21-builder:v2
   cache:
-    - key: dependencies-CI_COMMIT_BRANCH
+    - key: dependencies-${CI_COMMIT_BRANCH}
       policy: pull-push  
       paths:
         - .gradle
