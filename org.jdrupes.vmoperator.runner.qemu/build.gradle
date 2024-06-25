@@ -32,8 +32,9 @@ application {
 }
 
 project.ext.gitBranch = grgit.branch.current.name.replace('/', '-')
+def registry = "${project.rootProject.properties['docker.registry']}"
 
-task buildArchImage(type: Exec) {
+task buildImageArch(type: Exec) {
     dependsOn installDist
     inputs.files 'src/org/jdrupes/vmoperator/runner/qemu/Containerfile.arch'
     
@@ -42,23 +43,26 @@ task buildArchImage(type: Exec) {
         '-f', 'src/org/jdrupes/vmoperator/runner/qemu/Containerfile.arch', '.'
 }
 
-task pushArchImage(type: Exec) {
-    dependsOn buildArchImage
+task pushImageArch(type: Exec) {
+    dependsOn buildImageArch
 
-    def registry = "${project.rootProject.properties['docker.registry']}"
     commandLine 'podman', 'push', '--tls-verify=false', \
-        "localhost/${project.name}-arch:${project.gitBranch}", \
+        "${project.name}-arch:${project.gitBranch}", \
         "${registry}/${project.name}-arch:${project.gitBranch}"
-        
-    if (!project.version.contains("SNAPSHOT")) {
-        commandLine 'podman', 'tag', \
-            "${registry}/${project.name}-arch:${project.gitBranch}",\
-            "${registry}/${project.name}-arch:${project.version}"
-    }
+}
+
+task tagWithVersionArch(type: Exec) {
+    dependsOn pushImageArch
+
+    enabled = !project.version.contains("SNAPSHOT")
+    
+    commandLine 'podman', 'push', \
+        "${project.name}-arch:${project.gitBranch}",\
+        "${registry}/${project.name}-arch:${project.version}"
 }
 
 task tagAsLatestArch(type: Exec) {
-    dependsOn pushArchImage
+    dependsOn tagWithVersionArch
 
     enabled = !project.version.contains("SNAPSHOT")
         && !project.version.contains("alpha") \
@@ -67,13 +71,12 @@ task tagAsLatestArch(type: Exec) {
             && project.rootProject.properties['docker.registry'] \
             == project.rootProject.properties['docker.testRegistry']
 
-    def registry = "${project.rootProject.properties['docker.registry']}"
-    commandLine 'podman', 'tag', \
-        "${registry}/${project.name}-arch:${project.version}",\
+    commandLine 'podman', 'push', \
+        "${project.name}-arch:${project.gitBranch}",\
         "${registry}/${project.name}-arch:latest"
 }
 
-task buildAlpineImage(type: Exec) {
+task buildImageAlpine(type: Exec) {
     dependsOn installDist
     inputs.files 'src/org/jdrupes/vmoperator/runner/qemu/Containerfile.alpine'
     
@@ -82,23 +85,26 @@ task buildAlpineImage(type: Exec) {
         '-f', 'src/org/jdrupes/vmoperator/runner/qemu/Containerfile.alpine', '.'
 }
 
-task pushAlpineImage(type: Exec) {
-    dependsOn buildAlpineImage
+task pushImageAlpine(type: Exec) {
+    dependsOn buildImageAlpine
 
-    def registry = "${project.rootProject.properties['docker.registry']}"
     commandLine 'podman', 'push', '--tls-verify=false', \
         "localhost/${project.name}-alpine:${project.gitBranch}", \
         "${registry}/${project.name}-alpine:${project.gitBranch}"
-        
-    if (!project.version.contains("SNAPSHOT")) {
-        commandLine 'podman', 'tag', \
-            "${registry}/${project.name}-alpine:${project.gitBranch}",\
-            "${registry}/${project.name}-alpine:${project.version}"
-    }
+}
+
+task tagWithVersionAlpine(type: Exec) {
+    dependsOn pushImageAlpine
+
+    enabled = !project.version.contains("SNAPSHOT")
+    
+    commandLine 'podman', 'push', \
+        "${project.name}-alpine:${project.gitBranch}",\
+        "${registry}/${project.name}-alpine:${project.version}"
 }
 
 task tagAsLatestAlpine(type: Exec) {
-    dependsOn pushAlpineImage
+    dependsOn tagWithVersionAlpine
 
     enabled = !project.version.contains("SNAPSHOT")
         && !project.version.contains("alpha") \
@@ -107,19 +113,16 @@ task tagAsLatestAlpine(type: Exec) {
             && project.rootProject.properties['docker.registry'] \
             == project.rootProject.properties['docker.testRegistry']
 
-    def registry = "${project.rootProject.properties['docker.registry']}"
-    commandLine 'podman', 'tag', \
-        "${registry}/${project.name}-alpine:${project.version}",\
+    commandLine 'podman', 'push', \
+        "${project.name}-alpine:${project.gitBranch}",\
         "${registry}/${project.name}-alpine:latest"
 }
 
-task pushImage {
-    dependsOn pushArchImage
-    dependsOn pushAlpineImage
-}
-
-task tagAsLatest {
+task publishImage {
+    dependsOn pushImageArch
+    dependsOn tagWithVersionArch
     dependsOn tagAsLatestArch
+    dependsOn pushImageAlpine
+    dependsOn tagWithVersionAlpine
     dependsOn tagAsLatestAlpine
 }
-

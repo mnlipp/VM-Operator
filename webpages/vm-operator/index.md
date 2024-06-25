@@ -11,15 +11,15 @@ based VMs in Kubernetes pods.
 
 The image used for the VM pods combines Qemu and a control program
 for starting and managing the Qemu process. This application is called
-"[the runner](runner.md)".
+"[the runner](runner.html)".
 
 While you can deploy a runner manually (or with the help of some 
-helm templates), the preferred way is to deploy "[the manager](manager.md)"
+helm templates), the preferred way is to deploy "[the manager](manager.html)"
 application which acts as a Kubernetes operator for runners 
 and thus the VMs.
 
 If you just want to try out things, you can skip the remainder of this
-page and proceed to "[the manager](manager.md)".
+page and proceed to "[the manager](manager.html)".
 
 ## Motivation
 The project was triggered by a remark in the discussion about RedHat

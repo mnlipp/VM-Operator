@@ -12,7 +12,7 @@ stages:
   extends: .any-job
   image: registry.mnl.de/org/jgrapes/jdk21-builder:v2
   cache:
-    - key: dependencies
+    - key: dependencies-${CI_COMMIT_BRANCH}
       policy: pull-push  
       paths:
         - .gradle
@@ -24,7 +24,7 @@ stages:
         - "*/build"
   before_script:
     - echo -n $CI_REGISTRY_PASSWORD | podman login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
-    - git switch $CI_COMMIT_REF_NAME
+    - git switch $(git branch -r --sort="authordate" --contains $CI_COMMIT_SHA | head -1 | sed -e 's#[^/]*/##')
     - git pull
     - git reset --hard $CI_COMMIT_SHA
   
@@ -37,8 +37,10 @@ build-jars:
 publish-images:
   stage: publish
   extends: .gradle-job  
+  dependencies:
+    - build-jars
   script:
-    - ./gradlew -Pdocker.registry=$CI_REGISTRY_IMAGE pushImage
+    - ./gradlew -Pdocker.registry=$CI_REGISTRY_IMAGE publishImage
 
 .pages-job:
   extends: .any-job
