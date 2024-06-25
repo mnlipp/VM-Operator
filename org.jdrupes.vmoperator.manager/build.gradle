@@ -46,6 +46,7 @@ application {
 }
 
 project.ext.gitBranch = grgit.branch.current.name.replace('/', '-')
+def registry = "${project.rootProject.properties['docker.registry']}"
 
 task buildImage(type: Exec) {
     dependsOn installDist
@@ -61,20 +62,23 @@ task pushImage(type: Exec) {
     // Don't push without testing first
     dependsOn test
 
-    def registry = "${project.rootProject.properties['docker.registry']}"
     commandLine 'podman', 'push', '--tls-verify=false', \
-        "localhost/${project.name}:${project.gitBranch}", \
+        "${project.name}:${project.gitBranch}", \
         "${registry}/${project.name}:${project.gitBranch}"
-        
-    if (!project.version.contains("SNAPSHOT")) {
-        commandLine 'podman', 'tag', \
-            "${registry}/${project.name}:${project.gitBranch}",\
-            "${registry}/${project.name}:${project.version}"
-    }
+}
+
+task tagWithVersion(type: Exec) {
+    dependsOn pushImage
+
+    enabled = !project.version.contains("SNAPSHOT")
+    
+    commandLine 'podman', 'push', \
+        "${project.name}:${project.gitBranch}",\
+        "${registry}/${project.name}:${project.version}"
 }
 
 task tagAsLatest(type: Exec) {
-    dependsOn pushImage
+    dependsOn tagWithVersion
 
     enabled = !project.version.contains("SNAPSHOT")
         && !project.version.contains("alpha") \
@@ -83,17 +87,22 @@ task tagAsLatest(type: Exec) {
             && project.rootProject.properties['docker.registry'] \
             == project.rootProject.properties['docker.testRegistry']
 
-    def registry = "${project.rootProject.properties['docker.registry']}"
-    commandLine 'podman', 'tag', \
-        "${registry}/${project.name}:${project.version}",\
+    commandLine 'podman', 'push', \
+        "${project.name}:${project.gitBranch}",\
         "${registry}/${project.name}:latest"
+}
+
+task publishImage {
+    dependsOn pushImage
+    dependsOn tagWithVersion
+    dependsOn tagAsLatest
 }
 
 task pushForTest(type: Exec) {
     dependsOn buildImage
 
     commandLine 'podman', 'push', '--tls-verify=false', \
-        "localhost/${project.name}:${project.gitBranch}", \
+        "${project.name}:${project.gitBranch}", \
         "${project.rootProject.properties['docker.testRegistry']}" \
             + "/${project.name}:test"
 }
