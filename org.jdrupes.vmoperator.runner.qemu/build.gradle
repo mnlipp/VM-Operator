@@ -33,6 +33,7 @@ application {
 
 project.ext.gitBranch = grgit.branch.current.name.replace('/', '-')
 def registry = "${project.rootProject.properties['docker.registry']}"
+def rootVersion = rootProject.version
 
 task buildImageArch(type: Exec) {
     dependsOn installDist
@@ -54,7 +55,7 @@ task pushImageArch(type: Exec) {
 task tagWithVersionArch(type: Exec) {
     dependsOn pushImageArch
 
-    enabled = !project.version.contains("SNAPSHOT")
+    enabled = !rootVersion.contains("SNAPSHOT")
     
     commandLine 'podman', 'push', \
         "${project.name}-arch:${project.gitBranch}",\
@@ -64,9 +65,9 @@ task tagWithVersionArch(type: Exec) {
 task tagAsLatestArch(type: Exec) {
     dependsOn tagWithVersionArch
 
-    enabled = !project.version.contains("SNAPSHOT")
-        && !project.version.contains("alpha") \
-        && !project.version.contains("beta") \
+    enabled = !rootVersion.contains("SNAPSHOT")
+        && !rootVersion.contains("alpha") \
+        && !rootVersion.contains("beta") \
         || project.rootProject.properties['docker.testRegistry'] \
             && project.rootProject.properties['docker.registry'] \
             == project.rootProject.properties['docker.testRegistry']
@@ -96,7 +97,7 @@ task pushImageAlpine(type: Exec) {
 task tagWithVersionAlpine(type: Exec) {
     dependsOn pushImageAlpine
 
-    enabled = !project.version.contains("SNAPSHOT")
+    enabled = !rootVersion.contains("SNAPSHOT")
     
     commandLine 'podman', 'push', \
         "${project.name}-alpine:${project.gitBranch}",\
@@ -106,9 +107,9 @@ task tagWithVersionAlpine(type: Exec) {
 task tagAsLatestAlpine(type: Exec) {
     dependsOn tagWithVersionAlpine
 
-    enabled = !project.version.contains("SNAPSHOT")
-        && !project.version.contains("alpha") \
-        && !project.version.contains("beta") \
+    enabled = !rootVersion.contains("SNAPSHOT")
+        && !rootVersion.contains("alpha") \
+        && !rootVersion.contains("beta") \
         || project.rootProject.properties['docker.testRegistry'] \
             && project.rootProject.properties['docker.registry'] \
             == project.rootProject.properties['docker.testRegistry']
