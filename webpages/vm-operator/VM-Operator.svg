@@ -7,7 +7,7 @@
    viewBox="0 0 331.50461 323.22329"
    id="svg2"
    version="1.1"
-   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   inkscape:version="1.3.2 (091e20ef0f, 2023-11-25)"
    sodipodi:docname="VM-Operator.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
@@ -25,9 +25,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.7"
-     inkscape:cx="245"
-     inkscape:cy="145.71429"
+     inkscape:zoom="1.4"
+     inkscape:cx="190.35714"
+     inkscape:cy="178.57143"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -171,12 +171,12 @@
        cy="-109.05605"
        r="9.2055216" />
     <g
-       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:180px;line-height:125%;font-family:Arial;-inkscape-font-specification:'Arial Bold';letter-spacing:0px;word-spacing:0px;fill:#238220;fill-opacity:1;stroke:#ffffff;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:180px;line-height:125%;font-family:Arial;-inkscape-font-specification:'Arial Bold';letter-spacing:0px;word-spacing:0px;fill:#238220;fill-opacity:1;stroke:#ffffff;stroke-width:5.28893486;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
        id="flowRoot4814"
-       transform="matrix(0.25165808,0,0,0.24991064,-709.96916,-218.52595)">
+       transform="matrix(0.32800241,0,0,0.32572486,-723.34527,-233.01684)">
       <path
          d="m 210.10352,57.161102 h 25.92773 V 138.7236 q 0,15.9961 -2.8125,24.60938 -3.7793,11.25 -13.71094,18.10547 -9.93164,6.76757 -26.1914,6.76757 -19.07227,0 -29.35547,-10.63476 -10.28321,-10.72266 -10.3711,-31.37696 l 24.52149,-2.8125 q 0.43945,11.07422 3.25195,15.64454 4.21875,6.94336 12.83203,6.94336 8.70117,0 12.30469,-4.92188 3.60352,-5.00977 3.60352,-20.6543 z"
-         style="fill:#238220;fill-opacity:1;stroke:#ffffff;stroke-opacity:1"
+         style="fill:#238220;fill-opacity:1;stroke:#ffffff;stroke-width:5.28893486;stroke-dasharray:none;stroke-opacity:1"
          id="path4823"
          inkscape:connector-curvature="0" />
     </g>
