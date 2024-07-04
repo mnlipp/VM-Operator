@@ -5,7 +5,7 @@ body {
   color:#595959;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1, h2, h3, h4, h5, h6, .index-title, .index-subtitle {
   color:#222;
   margin:0 0 20px;
 }
@@ -14,11 +14,11 @@ p, ul, ol, table, pre, dl {
   margin:0 0 20px;
 }
 
-h1, h2, h3 {
+h1, h2, h3, .index-title, .index-subtitle {
   line-height:1.1;
 }
 
-h1 {
+h1, .index-title {
   font-size:28px;
   font-weight: 500;
 }
@@ -28,11 +28,15 @@ h2 {
   font-weight: 500;
 }
 
-h3, h4, h5, h6 {
+h3, h4, h5, h6, .index-subtitle {
   color:#494949;
   font-weight: 500;
 }
 
+.index-subtitle {
+  font-size: 1.17em;
+}
+  
 a {
   color:#39c;
   text-decoration:none;
