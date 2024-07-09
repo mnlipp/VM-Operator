@@ -1,5 +1,5 @@
 ---
-title: VM-Operator Controller
+title: "VM-Operator Controller — Reconciles the VM CRs"
 layout: vm-operator
 ---
 

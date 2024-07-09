@@ -1,5 +1,5 @@
 ---
-title: VM-Operator: Administrator View — Provides an overview of running VMs
+title: "VM-Operator: Administrator View — Provides an overview of running VMs"
 layout: vm-operator
 ---
 
