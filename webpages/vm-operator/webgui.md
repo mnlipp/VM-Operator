@@ -1,5 +1,5 @@
 ---
-title: VM-Operator Web-GUI
+title: VM-Operator: Web-GUI — Provides easy access to VM management
 layout: vm-operator
 ---
 

@@ -1,5 +1,5 @@
 ---
-title: VM-Operator Web-GUI for Users
+title: VM-Operator: User View — Allows users to manage their own VMs
 layout: vm-operator
 ---
 

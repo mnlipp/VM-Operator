@@ -1,5 +1,5 @@
 ---
-title: VM-Operator Web-GUI for Admins
+title: VM-Operator: Administrator View — Provides an overview of running VMs
 layout: vm-operator
 ---
 

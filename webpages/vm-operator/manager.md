@@ -1,5 +1,5 @@
 ---
-title: VM-Operator Manager
+title: VM-Operator: The Manager — Reconciles CRDs and provides a Web-GUI
 layout: vm-operator
 ---
 
