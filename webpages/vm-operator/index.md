@@ -6,8 +6,10 @@ layout: vm-operator
 
 # Welcome to VM-Operator
 
-The goal of this project is to provide the means for running Qemu
-based VMs in Kubernetes pods. 
+![Overview picture](index-pic.svg)
+
+The goal of this project is to provide easy to use and flexible components
+for running Qemu based VMs in Kubernetes pods. 
 
 The image used for the VM pods combines Qemu and a control program
 for starting and managing the Qemu process. This application is called
