@@ -99,7 +99,7 @@ spec:
       spice:
         port: 5930
         server: 192.168.19.32
-        proxyUrl: http://lgpe-spice.some.host:1234
+        proxyUrl: http://vms-spice.some.host:1234
         generateSecret: true
 ```
 
