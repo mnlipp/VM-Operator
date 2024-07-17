@@ -3,7 +3,7 @@ title: "VM-Operator: Web user interface — Provides easy access to VM managemen
 layout: vm-operator
 ---
 
-# The Web-GUI
+# Web user interface
 
 The manager component provides a GUI via a web server. This web user interface is
 implemented using components from the
