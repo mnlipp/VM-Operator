@@ -1,5 +1,5 @@
 ---
-title: "VM-Operator: The Manager — Provides the controller and a Web-GUI"
+title: "VM-Operator: The Manager — Provides the controller and a web user interface"
 layout: vm-operator
 ---
 
@@ -7,7 +7,7 @@ layout: vm-operator
 
 The Manager is the program that provides the controller from the
 [operator pattern](https://github.com/cncf/tag-app-delivery/blob/eece8f7307f2970f46f100f51932db106db46968/operator-wg/whitepaper/Operator-WhitePaper_v1-0.md#operator-components-in-kubernetes)
-together with a Web-GUI. It should be run in a container in the cluster. 
+together with a web user interface. It should be run in a container in the cluster. 
 
 ## Installation
 
