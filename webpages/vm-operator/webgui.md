@@ -1,11 +1,11 @@
 ---
-title: "VM-Operator: Web-GUI — Provides easy access to VM management"
+title: "VM-Operator: Web user interface — Provides easy access to VM management"
 layout: vm-operator
 ---
 
 # The Web-GUI
 
-The manager component provides a GUI via a web server. The web GUI is
+The manager component provides a GUI via a web server. This web user interface is
 implemented using components from the
 [JGrapes WebConsole](https://jgrapes.org/WebConsole.html)
 project. Configuration of the GUI therefore follows the conventions
@@ -31,7 +31,7 @@ from the
 
 ## User Access
 
-Access to the web GUI is controlled by the login conlet. The framework
+Access to the web user interface is controlled by the login conlet. The framework
 does not include sophisticated components for user management. Rather,
 it assumes that an OIDC provider is responsible for user authentication
 and role management.
