@@ -245,6 +245,9 @@ public class Configuration implements Dto {
      */
     public static class Display implements Dto {
 
+        /** The number of outputs. */
+        public int outputs = 1;
+
         /** The spice. */
         public Spice spice;
     }

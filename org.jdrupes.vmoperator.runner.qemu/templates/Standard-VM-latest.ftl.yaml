@@ -137,7 +137,8 @@
     - [ "-device", "virtio-rng-pci,rng=objrng0,id=rng0" ]
     # * Graphics and Audio Card
     #   This is the only video "card" without a flickering cursor.
-    - [ "-device", "virtio-vga,id=video0,max_outputs=1" ]
+    - [ "-device", "virtio-vga,id=video0,max_outputs=${ vm.display.outputs },\
+        max_hostmem=${ (vm.display.outputs * 256 * 1024 * 1024)?c }" ]
     - [ "-device", "ich9-intel-hda,id=sound0" ]
     # Network
     <#assign nwCounter = 0/>

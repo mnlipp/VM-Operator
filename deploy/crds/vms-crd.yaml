@@ -1410,6 +1410,9 @@ spec:
                     display:
                       type: object
                       properties:
+                        outputs:
+                          type: integer
+                          default: 1
                         spice:
                           type: object
                           properties:
