@@ -7,6 +7,7 @@ dependencies {
 
 project.ext.gitBranch = grgit.branch.current.name.replace('/', '-')
 def registry = "${project.rootProject.properties['docker.registry']}"
+def rootVersion = rootProject.version
 
 task buildImage(type: Exec) {
     inputs.files 'Containerfile'
@@ -26,7 +27,7 @@ task pushImage(type: Exec) {
 task tagWithVersion(type: Exec) {
     dependsOn pushImage
 
-    enabled = !project.version.contains("SNAPSHOT")
+    enabled = !rootVersion.contains("SNAPSHOT")
     
     commandLine 'podman', 'push', \
         "${project.name}:${project.gitBranch}",\
@@ -36,9 +37,9 @@ task tagWithVersion(type: Exec) {
 task tagAsLatest(type: Exec) {
     dependsOn tagWithVersion
 
-    enabled = !project.version.contains("SNAPSHOT")
-        && !project.version.contains("alpha") \
-        && !project.version.contains("beta") \
+    enabled = !rootVersion.contains("SNAPSHOT")
+        && !rootVersion.contains("alpha") \
+        && !rootVersion.contains("beta") \
         || project.rootProject.properties['docker.testRegistry'] \
             && project.rootProject.properties['docker.registry'] \
             == project.rootProject.properties['docker.testRegistry']

@@ -1,13 +1,15 @@
 ---
-title: VM-Operator by mnlipp
-description: A Kubernetes operator for running virtual machines (notably Qemu VMs) in pods on Kubernetes
+title: Run Qemu based VMs on Kubernetes
+description: A Kubernetes operator for running virtual machines (notably Qemu VMs) in pods on Kubernetes with a web interface for admins and users.
 layout: vm-operator
 ---
 
 # Welcome to VM-Operator
 
-The goal of this project is to provide the means for running Qemu
-based VMs in Kubernetes pods. 
+![Overview picture](index-pic.svg)
+
+The goal of this project is to provide easy to use and flexible components
+for running Qemu based VMs in Kubernetes pods. 
 
 The image used for the VM pods combines Qemu and a control program
 for starting and managing the Qemu process. This application is called

@@ -1,5 +1,5 @@
 ---
-title: VM-Operator Web-GUI for Users
+title: "VM-Operator: User View — Allows users to manage their own VMs"
 layout: vm-operator
 ---
 
@@ -99,7 +99,7 @@ spec:
       spice:
         port: 5930
         server: 192.168.19.32
-        proxyUrl: http://lgpe-spice.some.host:1234
+        proxyUrl: http://vms-spice.some.host:1234
         generateSecret: true
 ```
 

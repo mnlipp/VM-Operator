@@ -9,10 +9,10 @@ plugins {
 }
 
 dependencies {
-    implementation 'org.jgrapes:org.jgrapes.core:[1.19.0,2)'
-    implementation 'org.jgrapes:org.jgrapes.io:[2.7.0,3)'
-    implementation 'org.jgrapes:org.jgrapes.http:[3.1.0,4)'
-    implementation 'org.jgrapes:org.jgrapes.util:[1.31.0,2)'
+    implementation 'org.jgrapes:org.jgrapes.core:[1.21.0,2)'
+    implementation 'org.jgrapes:org.jgrapes.util:[1.36.0,2)'
+    implementation 'org.jgrapes:org.jgrapes.io:[2.11.0,3)'
+    implementation 'org.jgrapes:org.jgrapes.http:[3.5.0,4)'
     implementation project(':org.jdrupes.vmoperator.common')
 
     implementation 'commons-cli:commons-cli:1.5.0'
@@ -33,6 +33,7 @@ application {
 
 project.ext.gitBranch = grgit.branch.current.name.replace('/', '-')
 def registry = "${project.rootProject.properties['docker.registry']}"
+def rootVersion = rootProject.version
 
 task buildImageArch(type: Exec) {
     dependsOn installDist
@@ -54,7 +55,7 @@ task pushImageArch(type: Exec) {
 task tagWithVersionArch(type: Exec) {
     dependsOn pushImageArch
 
-    enabled = !project.version.contains("SNAPSHOT")
+    enabled = !rootVersion.contains("SNAPSHOT")
     
     commandLine 'podman', 'push', \
         "${project.name}-arch:${project.gitBranch}",\
@@ -64,9 +65,9 @@ task tagWithVersionArch(type: Exec) {
 task tagAsLatestArch(type: Exec) {
     dependsOn tagWithVersionArch
 
-    enabled = !project.version.contains("SNAPSHOT")
-        && !project.version.contains("alpha") \
-        && !project.version.contains("beta") \
+    enabled = !rootVersion.contains("SNAPSHOT")
+        && !rootVersion.contains("alpha") \
+        && !rootVersion.contains("beta") \
         || project.rootProject.properties['docker.testRegistry'] \
             && project.rootProject.properties['docker.registry'] \
             == project.rootProject.properties['docker.testRegistry']
@@ -96,7 +97,7 @@ task pushImageAlpine(type: Exec) {
 task tagWithVersionAlpine(type: Exec) {
     dependsOn pushImageAlpine
 
-    enabled = !project.version.contains("SNAPSHOT")
+    enabled = !rootVersion.contains("SNAPSHOT")
     
     commandLine 'podman', 'push', \
         "${project.name}-alpine:${project.gitBranch}",\
@@ -106,9 +107,9 @@ task tagWithVersionAlpine(type: Exec) {
 task tagAsLatestAlpine(type: Exec) {
     dependsOn tagWithVersionAlpine
 
-    enabled = !project.version.contains("SNAPSHOT")
-        && !project.version.contains("alpha") \
-        && !project.version.contains("beta") \
+    enabled = !rootVersion.contains("SNAPSHOT")
+        && !rootVersion.contains("alpha") \
+        && !rootVersion.contains("beta") \
         || project.rootProject.properties['docker.testRegistry'] \
             && project.rootProject.properties['docker.registry'] \
             == project.rootProject.properties['docker.testRegistry']

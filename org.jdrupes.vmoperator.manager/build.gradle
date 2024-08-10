@@ -13,15 +13,14 @@ dependencies {
     
     implementation 'commons-cli:commons-cli:1.5.0'
     
-    implementation 'org.jgrapes:org.jgrapes.core:[1.19.0,2)'
-    implementation 'org.jgrapes:org.jgrapes.io:[2.7.0,3)'
-    implementation 'org.jgrapes:org.jgrapes.http:[3.1.0,4)'
-    implementation 'org.jgrapes:org.jgrapes.util:[1.34.0,2)'
+    implementation 'org.jgrapes:org.jgrapes.util:[1.36.0,2)'
+    implementation 'org.jgrapes:org.jgrapes.io:[2.11.0,3)'
+    implementation 'org.jgrapes:org.jgrapes.http:[3.5.0,4)'
     
-    implementation 'org.jgrapes:org.jgrapes.webconsole.base:[1.7.0,2)'
+    implementation 'org.jgrapes:org.jgrapes.webconsole.base:[1.8.0,2)'
     implementation 'org.jgrapes:org.jgrapes.webconsole.vuejs:[1.5.0,2)'
-    implementation 'org.jgrapes:org.jgrapes.webconsole.rbac:[1.3.0,2)'
-    implementation 'org.jgrapes:org.jgrapes.webconlet.oidclogin:[1.6.0,2)'
+    implementation 'org.jgrapes:org.jgrapes.webconsole.rbac:[1.4.0,2)'
+    implementation 'org.jgrapes:org.jgrapes.webconlet.oidclogin:[1.7.0,2)'
     implementation 'org.jgrapes:org.jgrapes.webconlet.markdowndisplay:[1.2.0,2)'
     
     runtimeOnly 'org.jgrapes:org.jgrapes.webconlet.sysinfo:[1.4.0,2)'
@@ -47,6 +46,7 @@ application {
 
 project.ext.gitBranch = grgit.branch.current.name.replace('/', '-')
 def registry = "${project.rootProject.properties['docker.registry']}"
+def rootVersion = rootProject.version
 
 task buildImage(type: Exec) {
     dependsOn installDist
@@ -70,7 +70,7 @@ task pushImage(type: Exec) {
 task tagWithVersion(type: Exec) {
     dependsOn pushImage
 
-    enabled = !project.version.contains("SNAPSHOT")
+    enabled = !rootVersion.contains("SNAPSHOT")
     
     commandLine 'podman', 'push', \
         "${project.name}:${project.gitBranch}",\
@@ -80,9 +80,9 @@ task tagWithVersion(type: Exec) {
 task tagAsLatest(type: Exec) {
     dependsOn tagWithVersion
 
-    enabled = !project.version.contains("SNAPSHOT")
-        && !project.version.contains("alpha") \
-        && !project.version.contains("beta") \
+    enabled = !rootVersion.contains("SNAPSHOT")
+        && !rootVersion.contains("alpha") \
+        && !rootVersion.contains("beta") \
         || project.rootProject.properties['docker.testRegistry'] \
             && project.rootProject.properties['docker.registry'] \
             == project.rootProject.properties['docker.testRegistry']

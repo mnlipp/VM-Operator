@@ -1,5 +1,5 @@
 ---
-title: Upgrading
+title: "VM-Operator: Upgrading — Issues to watch out for"
 layout: vm-operator
 ---
 

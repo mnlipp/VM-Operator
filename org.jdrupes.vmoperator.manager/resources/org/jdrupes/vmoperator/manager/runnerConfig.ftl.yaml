@@ -201,6 +201,9 @@ data:
         </#list>
         
         display:
+          <#if cr.spec.vm.display.outputs?? >
+          outputs: ${ cr.spec.vm.display.outputs.asInt?c }
+          </#if>
           <#if cr.spec.vm.display.spice??>
           spice:
             port: ${ cr.spec.vm.display.spice.port.asInt?c }
