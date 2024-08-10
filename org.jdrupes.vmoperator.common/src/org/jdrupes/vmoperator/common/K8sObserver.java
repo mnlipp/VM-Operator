@@ -85,7 +85,7 @@ public class K8sObserver<O extends KubernetesObject,
         api = new GenericKubernetesApi<>(objectClass, objectListClass,
             context.getGroup(), context.getPreferredVersion(),
             context.getResourcePlural(), client);
-        thread = new Thread(() -> {
+        thread = Thread.ofVirtual().unstarted(() -> {
             try {
                 logger.config(() -> "Watching " + context.getResourcePlural()
                     + " (" + context.getPreferredVersion() + ")"
@@ -100,7 +100,7 @@ public class K8sObserver<O extends KubernetesObject,
                         while (changed.hasNext()) {
                             handler.accept(client, changed.next());
                         }
-                    } catch (ApiException e) {
+                    } catch (ApiException | RuntimeException e) {
                         logger.log(Level.FINE, e, () -> "Problem watching"
                             + " (will retry): " + e.getMessage());
                         delayRestart(startedAt);
@@ -117,7 +117,6 @@ public class K8sObserver<O extends KubernetesObject,
                 }
             }
         });
-        thread.setDaemon(true);
     }
 
     @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")

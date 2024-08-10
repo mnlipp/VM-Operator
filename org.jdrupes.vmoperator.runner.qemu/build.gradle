@@ -9,10 +9,10 @@ plugins {
 }
 
 dependencies {
-    implementation 'org.jgrapes:org.jgrapes.core:[1.19.0,2)'
-    implementation 'org.jgrapes:org.jgrapes.io:[2.7.0,3)'
-    implementation 'org.jgrapes:org.jgrapes.http:[3.1.0,4)'
-    implementation 'org.jgrapes:org.jgrapes.util:[1.31.0,2)'
+    implementation 'org.jgrapes:org.jgrapes.core:[1.21.0,2)'
+    implementation 'org.jgrapes:org.jgrapes.util:[1.36.0,2)'
+    implementation 'org.jgrapes:org.jgrapes.io:[2.11.0,3)'
+    implementation 'org.jgrapes:org.jgrapes.http:[3.5.0,4)'
     implementation project(':org.jdrupes.vmoperator.common')
 
     implementation 'commons-cli:commons-cli:1.5.0'
