@@ -1,6 +1,6 @@
 ---
-title: Run Qemu based VMs on Kubernetes
-description: A Kubernetes operator for running virtual machines (notably Qemu VMs) in pods on Kubernetes with a web interface for admins and users.
+title: Run VMs on Kubernetes using Qemu/KVM and SPICE
+description: A solution for running VMs on Kubernetes with a web interface for admins and users. Focuses on running Qemu/KVM virtual machines and using SPICE as display protocol.
 layout: vm-operator
 ---
 
@@ -8,8 +8,8 @@ layout: vm-operator
 
 ![Overview picture](index-pic.svg)
 
-The goal of this project is to provide easy to use and flexible components
-for running Qemu based VMs in Kubernetes pods. 
+The goal of this project is to provide an easy to use and flexible solution
+for running Qemu/KVM based VMs in Kubernetes pods.
 
 The image used for the VM pods combines Qemu and a control program
 for starting and managing the Qemu process. This application is called
