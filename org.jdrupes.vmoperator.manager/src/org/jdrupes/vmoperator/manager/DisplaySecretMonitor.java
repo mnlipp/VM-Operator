@@ -55,7 +55,11 @@ import org.jgrapes.util.events.ConfigurationUpdate;
 import org.jose4j.base64url.Base64;
 
 /**
- * Watches for changes of display secrets.
+ * Watches for changes of display secrets. The component supports the
+ * following configuration properties:
+ * 
+ *   * `passwordValidity`: the validity of the random password in seconds.
+ *     Used to calculate the password expiry time in the generated secret.
  */
 @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.TooManyStaticImports" })
 public class DisplaySecretMonitor

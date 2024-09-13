@@ -20,17 +20,14 @@ package org.jdrupes.vmoperator.manager;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import freemarker.core.ParseException;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapperBuilder;
-import freemarker.template.MalformedTemplateNameException;
 import freemarker.template.SimpleNumber;
 import freemarker.template.TemplateException;
 import freemarker.template.TemplateExceptionHandler;
 import freemarker.template.TemplateHashModel;
 import freemarker.template.TemplateMethodModelEx;
 import freemarker.template.TemplateModelException;
-import freemarker.template.TemplateNotFoundException;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
