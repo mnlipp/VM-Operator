@@ -38,6 +38,7 @@ import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -92,7 +93,21 @@ import org.jgrapes.webconsole.base.events.UpdateConletType;
 import org.jgrapes.webconsole.base.freemarker.FreeMarkerConlet;
 
 /**
- * The Class VmViewer.
+ * The Class VmViewer. The component supports the following
+ * configuration properties:
+ * 
+ *   * `displayResource`: a map with the following entries:
+ *       - `preferredIpVersion`: `ipv4` or `ipv6` (default: `ipv4`).
+ *         Determines the IP addresses uses in the generated
+ *         connection file.
+ *   * `deleteConnectionFile`: `true` or `false` (default: `true`).
+ *     If `true`, the downloaded connection file will be deleted by
+ *     the remote viewer when opened.
+ *   * `syncPreviewsFor`: a list objects with either property `user` or
+ *     `role` and the associated name (default: `[]`).
+ *     The remote viewer will synchronize the previews for the specified
+ *     users and roles.
+ *
  */
 @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.ExcessiveImports",
     "PMD.CouplingBetweenObjects", "PMD.GodClass", "PMD.TooManyMethods" })
@@ -114,6 +129,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
     private Class<?> preferredIpVersion = Inet4Address.class;
     private final Set<String> syncUsers = new HashSet<>();
     private final Set<String> syncRoles = new HashSet<>();
+    private boolean deleteConnectionFile = true;
 
     /**
      * The periodically generated update event.
@@ -133,8 +149,8 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
     }
 
     /**
-     * Configure the component.
-     *
+     * Configure the component. 
+     * 
      * @param event the event
      */
     @SuppressWarnings("unchecked")
@@ -154,6 +170,12 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
                     preferredIpVersion = Inet4Address.class;
                     break;
                 }
+
+                // Delete connection file
+                deleteConnectionFile
+                    = Optional.ofNullable(c.get("deleteConnectionFile"))
+                        .filter(v -> v instanceof String).map(v -> (String) v)
+                        .map(Boolean::parseBoolean).orElse(true);
 
                 // Sync
                 for (var entry : (List<Map<String, String>>) c.getOrDefault(
@@ -317,7 +339,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
             ConsoleConnection channel, String conletId, ViewerModel model)
             throws Exception {
         ResourceBundle resourceBundle = resourceBundle(channel.locale());
-        Set<RenderMode> renderedAs = new HashSet<>();
+        Set<RenderMode> renderedAs = EnumSet.noneOf(RenderMode.class);
         if (event.renderAs().contains(RenderMode.Preview)) {
             channel.associated(PENDING, Event.class)
                 .ifPresent(e -> {
@@ -564,6 +586,9 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
                 data.append("proxy=").append(u).append('\n');
             }
         });
+        if (deleteConnectionFile) {
+            data.append("delete-this-file=1\n");
+        }
         connection.respond(new NotifyConletView(type(),
             model.getConletId(), "openConsole", "application/x-virt-viewer",
             Base64.getEncoder().encodeToString(data.toString().getBytes())));
