@@ -69,19 +69,24 @@ import org.jgrapes.util.events.ConfigurationUpdate;
  * 
  * * A [`ConfigMap`](https://kubernetes.io/docs/concepts/configuration/configmap/)
  *   that defines the configuration file for the runner.
- *    
- * * A [`StatefulSet`](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
- *   that creates 
- *   * the [`Pod`](https://kubernetes.io/docs/concepts/workloads/pods/) 
- *     with the Runner instance, 
- *   * a PVC for 1 MiB of persistent storage used by the Runner 
- *     (referred to as the "runnerDataPvc") and
- *   * the PVCs for the VM's disks.
- *    
+ *
+ * * A [`PVC`](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)
+ *   for 1 MiB of persistent storage used by the Runner (referred to as the
+ *   "runnerDataPvc")
+ *   
+ * * The PVCs for the VM's disks.
+ *
+ * * A [`Pod`](https://kubernetes.io/docs/concepts/workloads/pods/) with the
+ *   runner instance[^oldSts].
+ *
  * * (Optional) A load balancer
  *   [`Service`](https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/)
  *   that allows the user to access a VM's console without knowing which
  *   node it runs on.
+ * 
+ * [^oldSts]: Before version 3.4, the operator created a
+ *    [`StatefulSet`](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
+ *    that created the pod.
  * 
  * The reconciler is part of the {@link Controller} component. It's 
  * configuration properties are therefore defined in
@@ -135,6 +140,8 @@ public class Reconciler extends Component {
     private final ConfigMapReconciler cmReconciler;
     private final DisplaySecretReconciler dsReconciler;
     private final StatefulSetReconciler stsReconciler;
+    private final PvcReconciler pvcReconciler;
+    private final PodReconciler podReconciler;
     private final LoadBalancerReconciler lbReconciler;
     @SuppressWarnings("PMD.UseConcurrentHashMap")
     private final Map<String, Object> config = new HashMap<>();
@@ -160,6 +167,8 @@ public class Reconciler extends Component {
         cmReconciler = new ConfigMapReconciler(fmConfig);
         dsReconciler = new DisplaySecretReconciler();
         stsReconciler = new StatefulSetReconciler(fmConfig);
+        pvcReconciler = new PvcReconciler(fmConfig);
+        podReconciler = new PodReconciler(fmConfig);
         lbReconciler = new LoadBalancerReconciler(fmConfig);
     }
 
@@ -206,7 +215,10 @@ public class Reconciler extends Component {
         var configMap = cmReconciler.reconcile(model, channel);
         model.put("cm", configMap.getRaw());
         dsReconciler.reconcile(event, model, channel);
+        // Manage (eventual) removal of stateful set.
         stsReconciler.reconcile(event, model, channel);
+        pvcReconciler.reconcile(event, model, channel);
+        podReconciler.reconcile(event, model, channel);
         lbReconciler.reconcile(event, model, channel);
     }
 

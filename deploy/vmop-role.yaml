@@ -28,9 +28,11 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - persistentvolumeclaims
   - pods
   verbs:
   - list
   - get
+  - create
   - delete
   - patch

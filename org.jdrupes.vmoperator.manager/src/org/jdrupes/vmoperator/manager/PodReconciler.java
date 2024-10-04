@@ -28,36 +28,34 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
 import java.util.logging.Logger;
-import org.jdrupes.vmoperator.common.K8sV1StatefulSetStub;
+import org.jdrupes.vmoperator.common.K8sV1PodStub;
+import org.jdrupes.vmoperator.common.VmDefinitionModel.RequestedVmState;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
-import org.jdrupes.vmoperator.util.GsonPtr;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 /**
- * Before version 3.4, the pod running the VM was created by a stateful set.
- * Starting with version 3.4, this reconciler simply deletes the stateful
- * set, provided that the VM is not running.
+ * Delegee for reconciling the pod.
  */
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
-/* default */ class StatefulSetReconciler {
+/* default */ class PodReconciler {
 
     protected final Logger logger = Logger.getLogger(getClass().getName());
     private final Configuration fmConfig;
 
     /**
-     * Instantiates a new stateful set reconciler.
+     * Instantiates a new pod reconciler.
      *
      * @param fmConfig the fm config
      */
-    public StatefulSetReconciler(Configuration fmConfig) {
+    public PodReconciler(Configuration fmConfig) {
         this.fmConfig = fmConfig;
     }
 
     /**
-     * Reconcile stateful set.
+     * Reconcile the pod.
      *
      * @param event the event
      * @param model the model
@@ -66,56 +64,51 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
      * @throws TemplateException the template exception
      * @throws ApiException the api exception
      */
-    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
     public void reconcile(VmDefChanged event, Map<String, Object> model,
             VmChannel channel)
             throws IOException, TemplateException, ApiException {
+        // Don't do anything if stateful set is still in use (pre v3.4)
+        if ((Boolean) model.get("usingSts")) {
+            return;
+        }
+
+        // Get pod stub.
         var metadata = event.vmDefinition().getMetadata();
-        model.put("usingSts", false);
-
-        // If exists, delete when not running or supposed to be not running.
-        var stsStub = K8sV1StatefulSetStub.get(channel.client(),
+        var podStub = K8sV1PodStub.get(channel.client(),
             metadata.getNamespace(), metadata.getName());
-        if (stsStub.model().isEmpty()) {
+
+        // Nothing to do if exists and should be running
+        if (event.vmDefinition().vmState() == RequestedVmState.RUNNING
+            && podStub.model().isPresent()) {
             return;
         }
 
-        // Stateful set still exists, check if replicas is 0 so we can
-        // delete it.
-        var stsModel = stsStub.model().get();
-        if (stsModel.getSpec().getReplicas() == 0) {
-            stsStub.delete();
+        // Delete if running but should be stopped
+        if (event.vmDefinition().vmState() == RequestedVmState.STOPPED) {
+            if (podStub.model().isPresent()) {
+                podStub.delete();
+            }
             return;
         }
 
-        // Cannot yet delete the stateful set.
-        model.put("usingSts", true);
-
-        // Check if VM is supposed to be stopped. If so,
-        // set replicas to 0. This is the first step of the transition,
-        // the stateful set will be deleted when the VM is restarted.
-        var fmTemplate = fmConfig.getTemplate("runnerSts.ftl.yaml");
+        // Create pod. First combine template and data and parse result
+        var fmTemplate = fmConfig.getTemplate("runnerPod.ftl.yaml");
         StringWriter out = new StringWriter();
         fmTemplate.process(model, out);
         // Avoid Yaml.load due to
         // https://github.com/kubernetes-client/java/issues/2741
-        var stsDef = Dynamics.newFromYaml(
+        var podDef = Dynamics.newFromYaml(
             new Yaml(new SafeConstructor(new LoaderOptions())), out.toString());
-        var desired = GsonPtr.to(stsDef.getRaw())
-            .to("spec").getAsInt("replicas").orElse(1);
-        if (desired == 1) {
-            return;
-        }
 
-        // Do apply changes (set replicas to 0)
+        // Do apply changes
         PatchOptions opts = new PatchOptions();
         opts.setForce(true);
         opts.setFieldManager("kubernetes-java-kubectl-apply");
-        if (stsStub.patch(V1Patch.PATCH_FORMAT_APPLY_YAML,
-            new V1Patch(channel.client().getJSON().serialize(stsDef)), opts)
+        if (podStub.patch(V1Patch.PATCH_FORMAT_APPLY_YAML,
+            new V1Patch(channel.client().getJSON().serialize(podDef)), opts)
             .isEmpty()) {
             logger.warning(
-                () -> "Could not patch stateful set for " + stsStub.name());
+                () -> "Could not patch pod for " + podStub.name());
         }
     }
 
