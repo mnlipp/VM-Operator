@@ -62,7 +62,6 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
     private ListOptions options = new ListOptions();
     private final AtomicInteger observerCounter = new AtomicInteger(0);
     private ChannelManager<String, C, ?> channelManager;
-    private boolean channelManagerMaster;
 
     /**
      * Initializes the instance.
@@ -240,8 +239,7 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
             K8s.preferred(context, version), namespace, options)
                 .handler((c, r) -> {
                     handleChange(c, r);
-                    if (ResponseType.valueOf(r.type) == ResponseType.DELETED
-                        && channelManagerMaster) {
+                    if (ResponseType.valueOf(r.type) == ResponseType.DELETED) {
                         channelManager.remove(r.object.getMetadata().getName());
                     }
                 }).onTerminated((o, t) -> {

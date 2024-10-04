@@ -38,6 +38,13 @@ import org.jdrupes.vmoperator.util.GsonPtr;
 public class VmDefinitionModel extends K8sDynamicModel {
 
     /**
+     * The VM state from the VM definition.
+     */
+    public enum RequestedVmState {
+        STOPPED, RUNNING
+    }
+
+    /**
      * Permissions for accessing and manipulating the VM.
      */
     public enum Permission {
@@ -109,6 +116,18 @@ public class VmDefinitionModel extends K8sDynamicModel {
             .flatMap(Function.identity()).map(p -> p.getAsString())
             .map(Permission::parse).map(Set::stream)
             .flatMap(Function.identity()).collect(Collectors.toSet());
+    }
+
+    /**
+     * Return the requested VM state
+     *
+     * @return the string
+     */
+    public RequestedVmState vmState() {
+        return GsonPtr.to(data()).getAsString("spec", "vm", "state")
+            .map(s -> "Running".equals(s) ? RequestedVmState.RUNNING
+                : RequestedVmState.STOPPED)
+            .orElse(RequestedVmState.STOPPED);
     }
 
     /**

@@ -1,0 +1,134 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  namespace: ${ cr.metadata.namespace.asString }
+  name: ${ cr.metadata.name.asString }
+  labels:
+    app.kubernetes.io/name: ${ constants.APP_NAME }
+    app.kubernetes.io/instance: ${ cr.metadata.name.asString }
+    app.kubernetes.io/component: ${ constants.APP_NAME }
+    app.kubernetes.io/managed-by: ${ constants.VM_OP_NAME }
+  annotations:
+    # Triggers update of config map mounted in pod
+    # See https://ahmet.im/blog/kubernetes-secret-volumes-delay/
+    vmrunner.jdrupes.org/cmVersion: "${ cm.metadata.resourceVersion.asString }"
+    vmoperator.jdrupes.org/version: ${ managerVersion }
+  ownerReferences:
+  - apiVersion: ${ cr.apiVersion.asString }
+    kind: ${ constants.VM_OP_KIND_VM }
+    name: ${ cr.metadata.name.asString }
+    uid: ${ cr.metadata.uid.asString }
+    blockOwnerDeletion: true
+    controller: false
+spec:
+  containers:
+  - name: ${ cr.metadata.name.asString }
+    <#assign image = cr.spec.image>
+    <#if image.source??>
+    image: ${ image.source.asString }
+    <#else>
+    image: ${ image.repository.asString }/${ image.path.asString }<#if image.version??>:${ image.version.asString }</#if>
+    </#if>
+    <#if image.pullPolicy??>
+    imagePullPolicy: ${ image.pullPolicy.asString }
+    </#if>
+    <#if cr.spec.vm.display.spice??>
+    ports:
+      <#if cr.spec.vm.display.spice??>
+      - name: spice
+        containerPort: ${ cr.spec.vm.display.spice.port.asInt?c }
+        protocol: TCP
+      </#if>
+    </#if>
+    volumeMounts:
+    # Not needed because pod is priviledged:
+    # - mountPath: /dev/kvm
+    #   name: dev-kvm
+    # - mountPath: /dev/net/tun
+    #   name: dev-tun
+    # - mountPath: /sys/fs/cgroup
+    #   name: cgroup
+    - name: config
+      mountPath: /etc/opt/vmrunner
+    - name: runner-data
+      mountPath: /var/local/vm-data
+    - name: vmop-image-repository
+      mountPath: ${ constants.IMAGE_REPO_PATH }
+    volumeDevices:
+    <#list cr.spec.vm.disks.asList() as disk>
+    <#if disk.volumeClaimTemplate??>
+    - name: ${ disk.generatedDiskName.asString }
+      devicePath: /dev/${ disk.generatedDiskName.asString }
+    </#if>
+    </#list>
+    securityContext:
+      privileged: true
+    <#if cr.spec.resources??>
+    resources: ${ cr.spec.resources.toString() }
+    <#else>
+    <#if cr.spec.vm.currentCpus?? || cr.spec.vm.currentRam?? >
+    resources:
+      requests:
+        <#if cr.spec.vm.currentCpus?? >
+        <#assign factor = 2.0 />
+        <#if reconciler.cpuOvercommit??>
+        <#assign factor = reconciler.cpuOvercommit * 1.0 />
+        </#if>
+        cpu: ${ (parseQuantity(cr.spec.vm.currentCpus.asString) / factor)?c }
+        </#if>
+        <#if cr.spec.vm.currentRam?? >
+        <#assign factor = 1.25 />
+        <#if reconciler.ramOvercommit??>
+        <#assign factor = reconciler.ramOvercommit * 1.0 />
+        </#if>
+        memory: ${ (parseQuantity(cr.spec.vm.currentRam.asString) / factor)?floor?c }
+        </#if>
+    </#if>
+    </#if>
+  volumes:
+  # Not needed because pod is priviledged:
+  # - name: dev-kvm
+  #   hostPath:
+  #     path: /dev/kvm
+  #     type: CharDevice
+  # - hostPath:
+  #     path: /dev/net/tun
+  #     type: CharDevice
+  #   name: dev-tun
+  # - name: cgroup
+  #   hostPath:
+  #     path: /sys/fs/cgroup
+  - name: config
+    projected:
+      sources:
+      - configMap:
+          name: ${ cr.metadata.name.asString }
+      <#if displaySecret??>
+      - secret:
+          name: ${ displaySecret }
+      </#if>
+  - name: vmop-image-repository
+    persistentVolumeClaim:
+      claimName: vmop-image-repository
+  - name: runner-data
+    persistentVolumeClaim:
+      claimName: ${ runnerDataPvcName }
+  <#list cr.spec.vm.disks.asList() as disk>
+  <#if disk.volumeClaimTemplate??>
+  - name: ${ disk.generatedDiskName.asString }
+    persistentVolumeClaim:
+      claimName: ${ disk.generatedPvcName.asString }
+  </#if>
+  </#list>
+  hostNetwork: true
+  terminationGracePeriodSeconds: ${ (cr.spec.vm.powerdownTimeout.asInt + 5)?c }
+  <#if cr.spec.nodeName??>
+  nodeName: ${ cr.spec.nodeName.asString }
+  </#if>
+  <#if cr.spec.nodeSelector??>
+  nodeSelector: ${ cr.spec.nodeSelector.toString() }
+  </#if>
+  <#if cr.spec.affinity??>
+  affinity: ${ cr.spec.affinity.toString() }
+  </#if>
+  serviceAccountName: vm-runner
