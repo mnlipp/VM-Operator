@@ -51,7 +51,8 @@ public class TimeSeries {
      * @param numbers the numbers
      * @return the time series
      */
-    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
+    @SuppressWarnings({ "PMD.AvoidLiteralsInIfCondition",
+        "PMD.AvoidSynchronizedStatement" })
     public TimeSeries add(Instant time, Number... numbers) {
         var newEntry = new Entry(time, numbers);
         boolean nothingNew = false;
@@ -83,6 +84,7 @@ public class TimeSeries {
      *
      * @return the list
      */
+    @SuppressWarnings("PMD.AvoidSynchronizedStatement")
     public List<Entry> entries() {
         synchronized (data) {
             return new ArrayList<>(data);
