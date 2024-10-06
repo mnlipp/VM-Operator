@@ -44,6 +44,7 @@ import org.jdrupes.vmoperator.common.K8sV1SecretStub;
 import static org.jdrupes.vmoperator.manager.Constants.COMP_DISPLAY_SECRET;
 import static org.jdrupes.vmoperator.manager.Constants.DATA_DISPLAY_PASSWORD;
 import static org.jdrupes.vmoperator.manager.Constants.DATA_PASSWORD_EXPIRY;
+import org.jdrupes.vmoperator.manager.events.ChannelDictionary;
 import org.jdrupes.vmoperator.manager.events.GetDisplayPassword;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
@@ -68,14 +69,18 @@ public class DisplaySecretMonitor
     private int passwordValidity = 10;
     private final List<PendingGet> pendingGets
         = Collections.synchronizedList(new LinkedList<>());
+    private final ChannelDictionary<String, VmChannel, ?> channelDictionary;
 
     /**
      * Instantiates a new display secrets monitor.
      *
      * @param componentChannel the component channel
+     * @param channelDictionary the channel dictionary
      */
-    public DisplaySecretMonitor(Channel componentChannel) {
+    public DisplaySecretMonitor(Channel componentChannel,
+            ChannelDictionary<String, VmChannel, ?> channelDictionary) {
         super(componentChannel, V1Secret.class, V1SecretList.class);
+        this.channelDictionary = channelDictionary;
         context(K8sV1SecretStub.CONTEXT);
         ListOptions options = new ListOptions();
         options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
@@ -116,7 +121,7 @@ public class DisplaySecretMonitor
         if (vmName == null) {
             return;
         }
-        var channel = channel(vmName).orElse(null);
+        var channel = channelDictionary.channel(vmName).orElse(null);
         if (channel == null || channel.vmDefinition() == null) {
             return;
         }
@@ -248,6 +253,7 @@ public class DisplaySecretMonitor
      * @param channel the channel
      */
     @Handler
+    @SuppressWarnings("PMD.AvoidSynchronizedStatement")
     public void onVmDefChanged(VmDefChanged event, Channel channel) {
         synchronized (pendingGets) {
             String vmName = event.vmDefinition().metadata().getName();

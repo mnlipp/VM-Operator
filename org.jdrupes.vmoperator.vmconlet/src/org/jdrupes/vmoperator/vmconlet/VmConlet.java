@@ -30,14 +30,14 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashSet;
+import java.util.EnumSet;
 import java.util.Optional;
 import java.util.Set;
 import org.jdrupes.json.JsonBeanDecoder;
 import org.jdrupes.json.JsonDecodeException;
 import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jdrupes.vmoperator.common.VmDefinitionModel;
-import org.jdrupes.vmoperator.manager.events.ChannelCache;
+import org.jdrupes.vmoperator.manager.events.ChannelTracker;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
@@ -68,8 +68,8 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
 
     private static final Set<RenderMode> MODES = RenderMode.asSet(
         RenderMode.Preview, RenderMode.View);
-    private final ChannelCache<String, VmChannel,
-            VmDefinitionModel> channelManager = new ChannelCache<>();
+    private final ChannelTracker<String, VmChannel,
+            VmDefinitionModel> channelTracker = new ChannelTracker<>();
     private final TimeSeries summarySeries = new TimeSeries(Duration.ofDays(1));
     private Summary cachedSummary;
 
@@ -128,7 +128,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
     protected Set<RenderMode> doRenderConlet(RenderConletRequestBase<?> event,
             ConsoleConnection channel, String conletId, VmsModel conletState)
             throws Exception {
-        Set<RenderMode> renderedAs = new HashSet<>();
+        Set<RenderMode> renderedAs = EnumSet.noneOf(RenderMode.class);
         boolean sendVmInfos = false;
         if (event.renderAs().contains(RenderMode.Preview)) {
             Template tpl
@@ -160,7 +160,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
             sendVmInfos = true;
         }
         if (sendVmInfos) {
-            for (var vmDef : channelManager.associated()) {
+            for (var vmDef : channelTracker.associated()) {
                 var def
                     = JsonBeanDecoder.create(vmDef.data().toString())
                         .readObject();
@@ -188,7 +188,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
             throws JsonDecodeException, IOException {
         var vmName = event.vmDefinition().getMetadata().getName();
         if (event.type() == K8sObserver.ResponseType.DELETED) {
-            channelManager.remove(vmName);
+            channelTracker.remove(vmName);
             for (var entry : conletIdsByConsoleConnection().entrySet()) {
                 for (String conletId : entry.getValue()) {
                     entry.getKey().respond(new NotifyConletView(type(),
@@ -198,7 +198,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
         } else {
             var vmDef = new VmDefinitionModel(channel.client().getJSON()
                 .getGson(), cleanup(event.vmDefinition().data()));
-            channelManager.put(vmName, channel, vmDef);
+            channelTracker.put(vmName, channel, vmDef);
             var def = JsonBeanDecoder.create(vmDef.data().toString())
                 .readObject();
             for (var entry : conletIdsByConsoleConnection().entrySet()) {
@@ -321,7 +321,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
             return cachedSummary;
         }
         Summary summary = new Summary();
-        for (var vmDef : channelManager.associated()) {
+        for (var vmDef : channelTracker.associated()) {
             summary.totalVms += 1;
             var status = GsonPtr.to(vmDef.data()).to("status");
             summary.usedCpus += status.getAsInt("cpus").orElse(0);
@@ -347,7 +347,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
             throws Exception {
         event.stop();
         var vmName = event.params().asString(0);
-        var vmChannel = channelManager.channel(vmName).orElse(null);
+        var vmChannel = channelTracker.channel(vmName).orElse(null);
         if (vmChannel == null) {
             return;
         }
