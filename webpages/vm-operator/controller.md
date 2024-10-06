@@ -61,16 +61,20 @@ spec:
 ## Pod management 
 
 The central resource created by the controller is a 
-[stateful set](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
-with the same name as the VM (metadata.name). Its number of replicas is
-set to 1 if `spec.vm.state` is "Running" (default is "Stopped" which sets 
-replicas to 0).
+[`Pod`](https://kubernetes.io/docs/concepts/workloads/pods/)
+with the same name as the VM (`metadata.name`). The pod is created only
+if `spec.vm.state` is "Running" (default is "Stopped" which deletes the
+pod)[^oldSts].
 
 Property `spec.guestShutdownStops` (since 2.2.0) controls the effect of a
-shutdown initiated by the guest. If set to `false` (default) a new pod
-is automatically created by the stateful set controller and the VM thus
-restarted. If set to `true`, the runner sets `spec.vm.state` to "Stopped"
-before terminating and by this prevents the creation of a new pod.
+shutdown initiated by the guest. If set to `false` (default) the pod
+and thus the VM is automatically restarted. If set to `true`, the
+VM's state is set to "Stopped" when the VM terminates and the pod is
+deleted.
+
+[^oldSts]: Before version 3.4, the operator created a 
+    [stateful set](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
+    that in turn created the pod and the PVCs (see below).
 
 ## Defining the basics
 
@@ -84,7 +88,8 @@ running VMs.
 Maybe the most interesting part is the definition of the VM's disks.
 This is done by adding one or more `volumeClaimTemplate`s to the
 list of disks. As its name suggests, such a template is used by the
-controller to generate a PVC.
+controller to generate a
+[`PVC`](https://kubernetes.io/docs/concepts/storage/persistent-volumes/).
 
 The example template does not define any storage. Rather it references
 some PV that you must have created first. This may be your first approach
@@ -110,24 +115,28 @@ as shown in this example:
 The disk will be available as "/dev/*name*-disk" in the VM,
 using the string from `.volumeClaimTemplate.metadata.name` as *name*. 
 If no name is defined in the metadata, then "/dev/disk-*n*"
-is used instead, with *n* being the index of the disk 
-definition in the list of disks. 
+is used instead, with *n* being the index of the volume claim
+template in the list of disks.
 
-Apart from appending "-disk" to the name (or generating the name) the
-`volumeClaimTemplate` is simply copied into the stateful set definition 
-for the VM (with some additional labels, see below). The controller 
-for stateful sets appends the started pod's name to the name of the 
-volume claim templates when it creates the PVCs. Therefore you'll 
-eventually find the PVCs as "*name*-disk-*vmName*-0"
-(or "disk-*n*-*vmName*-0"). 
+The name of the generated PVC is the VM's name with "-*name*-disk"
+(or the generated name) appended: "*vmName*-*name*-disk"
+(or "*vmName*-disk-*n*"). The definition of the PVC is simply a copy
+of the information from the `volumeClaimTemplate` (with some additional
+labels, see below)[^oldStsDisks].
 
-PVCs generated from stateful set definitions are considered "precious"
-and never removed automatically. This behavior fits perfectly for VMs.
-Usually, you do not want the disks to be removed automatically when
-you (maybe accidentally) remove the CR for the VM. To simplify the lookup
-for an eventual (manual) removal, all PVCs are labeled with 
-"app.kubernetes.io/name: vm-runner", "app.kubernetes.io/instance: *vmName*",
-and "app.kubernetes.io/managed-by: vm-operator".
+[^oldStsDisks]: Before version 3.4 the `volumeClaimTemplate`s were
+    copied in the definition of the stateful set. As a stateful set
+    appends the started pod's name to the name of the volume claim
+    templates when it creates the PVCs, the PVCs' name were
+    "*name*-disk-*vmName*-0" (or "disk-*n*-*vmName*-0").
+
+PVCs are never removed automatically. Usually, you do not want your
+VMs disks to be removed when you (maybe accidentally) remove the CR
+for the VM. To simplify the lookup for an eventual (manual) removal,
+all PVCs are labeled with "app.kubernetes.io/name: vm-runner",
+"app.kubernetes.io/instance: *vmName*", and
+"app.kubernetes.io/managed-by: vm-operator", making it easy to select
+the PVCs by label in a delete command.
 
 ## Choosing an image for the runner
 

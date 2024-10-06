@@ -18,48 +18,54 @@
 
 package org.jdrupes.vmoperator.manager.events;
 
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 import org.jgrapes.core.Channel;
 
 /**
- * Provides an actively managed implementation of the {@link ChannelDictionary}.
+ * Used to track mapping from a key to a channel. Entries must
+ * be maintained by handlers for "add/remove" (or "open/close")
+ * events delivered on the channels that are to be
+ * made available by the tracker.
  * 
- * The {@link ChannelManager} can be used for housekeeping by any component
- * that creates channels. It can be shared between this component and
- * some other component, preferably passing it as {@link ChannelDictionary}
- * (the read-only view) to the second component. Alternatively, the other
- * component can use a {@link ChannelTracker} to track the mappings using
- * events.
+ * The channels are stored in the dictionary using {@link WeakReference}s.
+ * Removing entries is therefore best practice but not an absolute necessity
+ * as entries for cleared references are removed when one of the methods
+ * {@link #values()}, {@link #channels()} or {@link #associated()} is called.
  *
  * @param <K> the key type
  * @param <C> the channel type
  * @param <A> the type of the associated data
  */
-public class ChannelManager<K, C extends Channel, A>
+public class ChannelTracker<K, C extends Channel, A>
         implements ChannelDictionary<K, C, A> {
 
-    private final Map<K, Value<C, A>> entries = new ConcurrentHashMap<>();
-    private final Function<K, C> supplier;
+    private final Map<K, Data<C, A>> entries = new ConcurrentHashMap<>();
 
     /**
-     * Instantiates a new channel manager.
+     * Combines the channel and associated data.
      *
-     * @param supplier the supplier that creates new channels
+     * @param <C> the generic type
+     * @param <A> the generic type
      */
-    public ChannelManager(Function<K, C> supplier) {
-        this.supplier = supplier;
-    }
+    @SuppressWarnings("PMD.ShortClassName")
+    private static class Data<C extends Channel, A> {
+        public final WeakReference<C> channel;
+        public A associated;
 
-    /**
-     * Instantiates a new channel manager without a default supplier.
-     */
-    public ChannelManager() {
-        this(k -> null);
+        /**
+         * Instantiates a new value.
+         *
+         * @param channel the channel
+         */
+        public Data(C channel) {
+            this.channel = new WeakReference<>(channel);
+        }
     }
 
     @Override
@@ -67,14 +73,19 @@ public class ChannelManager<K, C extends Channel, A>
         return entries.keySet();
     }
 
-    /**
-     * Return all known values.
-     *
-     * @return the collection
-     */
     @Override
     public Collection<Value<C, A>> values() {
-        return entries.values();
+        var result = new ArrayList<Value<C, A>>();
+        for (var itr = entries.entrySet().iterator(); itr.hasNext();) {
+            var value = itr.next().getValue();
+            var channel = value.channel.get();
+            if (channel == null) {
+                itr.remove();
+                continue;
+            }
+            result.add(new Value<>(channel, value.associated));
+        }
+        return result;
     }
 
     /**
@@ -85,7 +96,17 @@ public class ChannelManager<K, C extends Channel, A>
      * @return the result
      */
     public Optional<Value<C, A>> value(K key) {
-        return Optional.ofNullable(entries.get(key));
+        var value = entries.get(key);
+        if (value == null) {
+            return Optional.empty();
+        }
+        var channel = value.channel.get();
+        if (channel == null) {
+            // Cleanup old reference
+            entries.remove(key);
+            return Optional.empty();
+        }
+        return Optional.of(new Value<>(channel, value.associated));
     }
 
     /**
@@ -96,8 +117,10 @@ public class ChannelManager<K, C extends Channel, A>
      * @param associated the associated
      * @return the channel manager
      */
-    public ChannelManager<K, C, A> put(K key, C channel, A associated) {
-        entries.put(key, new Value<>(channel, associated));
+    public ChannelTracker<K, C, A> put(K key, C channel, A associated) {
+        Data<C, A> data = new Data<>(channel);
+        data.associated = associated;
+        entries.put(key, data);
         return this;
     }
 
@@ -108,35 +131,9 @@ public class ChannelManager<K, C extends Channel, A>
      * @param channel the channel
      * @return the channel manager
      */
-    public ChannelManager<K, C, A> put(K key, C channel) {
+    public ChannelTracker<K, C, A> put(K key, C channel) {
         put(key, channel, null);
         return this;
-    }
-
-    /**
-     * Returns the {@link Channel} for the given name, creating it using 
-     * the supplier passed to the constructor if it doesn't exist yet.
-     *
-     * @param key the key
-     * @return the channel
-     */
-    public C channelGet(K key) {
-        return computeIfAbsent(key, supplier);
-    }
-
-    /**
-     * Returns the {@link Channel} for the given name, creating it using
-     * the given supplier if it doesn't exist yet. 
-     *
-     * @param key the key
-     * @param supplier the supplier
-     * @return the channel
-     */
-    @SuppressWarnings({ "PMD.AssignmentInOperand",
-        "PMD.DataflowAnomalyAnalysis" })
-    public C computeIfAbsent(K key, Function<K, C> supplier) {
-        return entries.computeIfAbsent(key,
-            k -> new Value<>(supplier.apply(k), null)).channel();
     }
 
     /**
@@ -147,9 +144,9 @@ public class ChannelManager<K, C extends Channel, A>
      * @param data the data
      * @return the channel manager
      */
-    public ChannelManager<K, C, A> associate(K key, A data) {
-        Optional.ofNullable(entries.computeIfPresent(key,
-            (k, existing) -> new Value<>(existing.channel(), data)));
+    public ChannelTracker<K, C, A> associate(K key, A data) {
+        Optional.ofNullable(entries.get(key))
+            .ifPresent(v -> v.associated = data);
         return this;
     }
 

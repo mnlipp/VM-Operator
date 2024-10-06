@@ -30,6 +30,7 @@ import java.time.Instant;
 import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.jgrapes.core.Components;
 
 /**
  * An observer that watches namespaced resources in a given context and
@@ -73,7 +74,7 @@ public class K8sObserver<O extends KubernetesObject,
      */
     @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
         "PMD.UseObjectForClearerAPI", "PMD.AvoidCatchingThrowable",
-        "PMD.CognitiveComplexity" })
+        "PMD.CognitiveComplexity", "PMD.AvoidCatchingGenericException" })
     public K8sObserver(Class<O> objectClass, Class<L> objectListClass,
             K8sClient client, APIResource context, String namespace,
             ListOptions options) {
@@ -85,38 +86,41 @@ public class K8sObserver<O extends KubernetesObject,
         api = new GenericKubernetesApi<>(objectClass, objectListClass,
             context.getGroup(), context.getPreferredVersion(),
             context.getResourcePlural(), client);
-        thread = Thread.ofVirtual().unstarted(() -> {
-            try {
-                logger.config(() -> "Watching " + context.getResourcePlural()
-                    + " (" + context.getPreferredVersion() + ")"
-                    + " in " + namespace);
+        thread = (Components.useVirtualThreads() ? Thread.ofVirtual()
+            : Thread.ofPlatform()).unstarted(() -> {
+                try {
+                    logger
+                        .config(() -> "Watching " + context.getResourcePlural()
+                            + " (" + context.getPreferredVersion() + ")"
+                            + " in " + namespace);
 
-                // Watch sometimes terminates without apparent reason.
-                while (!Thread.currentThread().isInterrupted()) {
-                    Instant startedAt = Instant.now();
-                    try {
-                        @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
-                        var changed = api.watch(namespace, options).iterator();
-                        while (changed.hasNext()) {
-                            handler.accept(client, changed.next());
+                    // Watch sometimes terminates without apparent reason.
+                    while (!Thread.currentThread().isInterrupted()) {
+                        Instant startedAt = Instant.now();
+                        try {
+                            @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+                            var changed
+                                = api.watch(namespace, options).iterator();
+                            while (changed.hasNext()) {
+                                handler.accept(client, changed.next());
+                            }
+                        } catch (ApiException | RuntimeException e) {
+                            logger.log(Level.FINE, e, () -> "Problem watching"
+                                + " (will retry): " + e.getMessage());
+                            delayRestart(startedAt);
                         }
-                    } catch (ApiException | RuntimeException e) {
-                        logger.log(Level.FINE, e, () -> "Problem watching"
-                            + " (will retry): " + e.getMessage());
-                        delayRestart(startedAt);
+                    }
+                    if (onTerminated != null) {
+                        onTerminated.accept(this, null);
+                    }
+                } catch (Throwable e) {
+                    logger.log(Level.SEVERE, e, () -> "Probem watching: "
+                        + e.getMessage());
+                    if (onTerminated != null) {
+                        onTerminated.accept(this, e);
                     }
                 }
-                if (onTerminated != null) {
-                    onTerminated.accept(this, null);
-                }
-            } catch (Throwable e) {
-                logger.log(Level.SEVERE, e, () -> "Probem watching: "
-                    + e.getMessage());
-                if (onTerminated != null) {
-                    onTerminated.accept(this, e);
-                }
-            }
-        });
+            });
     }
 
     @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")

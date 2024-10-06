@@ -53,7 +53,7 @@ import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jdrupes.vmoperator.common.VmDefinitionModel;
 import org.jdrupes.vmoperator.common.VmDefinitionModel.Permission;
-import org.jdrupes.vmoperator.manager.events.ChannelCache;
+import org.jdrupes.vmoperator.manager.events.ChannelTracker;
 import org.jdrupes.vmoperator.manager.events.GetDisplayPassword;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.ResetVm;
@@ -122,8 +122,8 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
         RenderMode.Preview, RenderMode.Edit);
     private static final Set<RenderMode> MODES_FOR_GENERATED = RenderMode.asSet(
         RenderMode.Preview, RenderMode.StickyPreview);
-    private final ChannelCache<String, VmChannel,
-            VmDefinitionModel> channelManager = new ChannelCache<>();
+    private final ChannelTracker<String, VmChannel,
+            VmDefinitionModel> channelTracker = new ChannelTracker<>();
     private static ObjectMapper objectMapper
         = new ObjectMapper().registerModule(new JavaTimeModule());
     private Class<?> preferredIpVersion = Inet4Address.class;
@@ -349,7 +349,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
 
             // Remove conlet if definition has been removed
             if (model.vmName() != null
-                && !channelManager.associated(model.vmName()).isPresent()) {
+                && !channelTracker.associated(model.vmName()).isPresent()) {
                 channel.respond(
                     new DeleteConlet(conletId, Collections.emptySet()));
                 return Collections.emptySet();
@@ -357,7 +357,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
 
             // Don't render if user has not at least one permission
             if (model.vmName() != null
-                && channelManager.associated(model.vmName())
+                && channelTracker.associated(model.vmName())
                     .map(d -> permissions(d, channel.session()).isEmpty())
                     .orElse(true)) {
                 return Collections.emptySet();
@@ -395,7 +395,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
     }
 
     private List<String> accessibleVms(ConsoleConnection channel) {
-        return channelManager.associated().stream()
+        return channelTracker.associated().stream()
             .filter(d -> !permissions(d, channel.session()).isEmpty())
             .map(d -> d.getMetadata().getName()).sorted().toList();
     }
@@ -419,7 +419,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
         if (Strings.isNullOrEmpty(model.vmName())) {
             return;
         }
-        channelManager.associated(model.vmName()).ifPresent(vmDef -> {
+        channelTracker.associated(model.vmName()).ifPresent(vmDef -> {
             try {
                 var def = JsonBeanDecoder.create(vmDef.data().toString())
                     .readObject();
@@ -465,9 +465,9 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
             .remove("managedFields");
         var vmName = vmDef.getMetadata().getName();
         if (event.type() == K8sObserver.ResponseType.DELETED) {
-            channelManager.remove(vmName);
+            channelTracker.remove(vmName);
         } else {
-            channelManager.put(vmName, channel, vmDef);
+            channelTracker.put(vmName, channel, vmDef);
         }
         for (var entry : conletIdsByConsoleConnection().entrySet()) {
             var connection = entry.getKey();
@@ -502,12 +502,12 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
 
         // Handle command for selected VM
         var both = Optional.ofNullable(model.vmName())
-            .flatMap(vm -> channelManager.both(vm));
+            .flatMap(vm -> channelTracker.value(vm));
         if (both.isEmpty()) {
             return;
         }
-        var vmChannel = both.get().channel;
-        var vmDef = both.get().associated;
+        var vmChannel = both.get().channel();
+        var vmDef = both.get().associated();
         var vmName = vmDef.metadata().getName();
         var perms = permissions(vmDef, channel.session());
         var resourceBundle = resourceBundle(channel.locale());
@@ -556,7 +556,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
 
     private void openConsole(String vmName, ConsoleConnection connection,
             ViewerModel model, String password) {
-        var vmDef = channelManager.associated(vmName).orElse(null);
+        var vmDef = channelTracker.associated(vmName).orElse(null);
         if (vmDef == null) {
             return;
         }

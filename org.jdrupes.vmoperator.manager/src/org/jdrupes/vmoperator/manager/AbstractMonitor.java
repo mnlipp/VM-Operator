@@ -27,14 +27,11 @@ import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sObserver;
-import org.jdrupes.vmoperator.common.K8sObserver.ResponseType;
-import org.jdrupes.vmoperator.manager.events.ChannelManager;
 import org.jdrupes.vmoperator.manager.events.Exit;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
@@ -45,7 +42,11 @@ import org.jgrapes.core.events.Stop;
 import org.jgrapes.util.events.ConfigurationUpdate;
 
 /**
- * A base class for monitoring VM related resources.
+ * A base class for monitoring VM related resources. When started,
+ * it creates observers for all versions of the the {@link APIResource}
+ * configured by {@link #context(APIResource)}. The APIResource is not
+ * passed to the constructor because in some cases it has to be
+ * evaluated lazily.
  * 
  * @param <O> the object type for the context
  * @param <L> the object list type for the context
@@ -61,16 +62,17 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
     private String namespace;
     private ListOptions options = new ListOptions();
     private final AtomicInteger observerCounter = new AtomicInteger(0);
-    private ChannelManager<String, C, ?> channelManager;
-    private boolean channelManagerMaster;
 
     /**
      * Initializes the instance.
      *
      * @param componentChannel the component channel
+     * @param objectClass the class of the Kubernetes object to watch
+     * @param objectListClass the class of the list of Kubernetes objects
+     * to watch
      */
-    protected AbstractMonitor(Channel componentChannel, Class<O> objectClass,
-            Class<L> objectListClass) {
+    protected AbstractMonitor(Channel componentChannel,
+            Class<O> objectClass, Class<L> objectListClass) {
         super(componentChannel);
         this.objectClass = objectClass;
         this.objectListClass = objectListClass;
@@ -157,27 +159,6 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
     }
 
     /**
-     * Returns the channel manager.
-     * 
-     * @return the context
-     */
-    public ChannelManager<String, C, ?> channelManager() {
-        return channelManager;
-    }
-
-    /**
-     * Sets the channel manager.
-     *
-     * @param channelManager the channel manager
-     * @return the abstract monitor
-     */
-    public AbstractMonitor<O, L, C>
-            channelManager(ChannelManager<String, C, ?> channelManager) {
-        this.channelManager = channelManager;
-        return this;
-    }
-
-    /**
      * Looks for a key "namespace" in the configuration and, if found,
      * sets the namespace to its value.
      *
@@ -194,7 +175,7 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
     }
 
     /**
-     * Handle the start event. Configures the namespace invokes
+     * Handle the start event. Configures the namespace, invokes
      * {@link #prepareMonitoring()} and starts the observers.
      *
      * @param event the event
@@ -240,10 +221,6 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
             K8s.preferred(context, version), namespace, options)
                 .handler((c, r) -> {
                     handleChange(c, r);
-                    if (ResponseType.valueOf(r.type) == ResponseType.DELETED
-                        && channelManagerMaster) {
-                        channelManager.remove(r.object.getMetadata().getName());
-                    }
                 }).onTerminated((o, t) -> {
                     if (observerCounter.decrementAndGet() == 0) {
                         unregisterAsGenerator();
@@ -257,7 +234,8 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
 
     /**
      * Invoked by {@link #onStart(Start)} after the namespace has
-     * been configured and before starting the observer.
+     * been configured and before starting the observer. This is
+     * the last opportunity to invoke {@link #context(APIResource)}.
      *
      * @throws IOException Signals that an I/O exception has occurred.
      * @throws ApiException the api exception
@@ -274,14 +252,4 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
      * @param change the change
      */
     protected abstract void handleChange(K8sClient client, Response<O> change);
-
-    /**
-     * Returns the {@link Channel} for the given name.
-     *
-     * @param name the name
-     * @return the channel used for events related to the specified object
-     */
-    protected Optional<C> channel(String name) {
-        return channelManager.getChannel(name);
-    }
 }

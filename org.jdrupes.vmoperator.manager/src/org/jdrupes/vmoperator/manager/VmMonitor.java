@@ -43,10 +43,12 @@ import org.jdrupes.vmoperator.common.VmDefinitionStub;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
+import org.jdrupes.vmoperator.manager.events.ChannelManager;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
+import org.jgrapes.core.Event;
 
 /**
  * Watches for changes of VM definitions.
@@ -55,14 +57,19 @@ import org.jgrapes.core.Channel;
 public class VmMonitor extends
         AbstractMonitor<VmDefinitionModel, VmDefinitionModels, VmChannel> {
 
+    private final ChannelManager<String, VmChannel, ?> channelManager;
+
     /**
      * Instantiates a new VM definition watcher.
      *
      * @param componentChannel the component channel
+     * @param channelManager the channel manager
      */
-    public VmMonitor(Channel componentChannel) {
+    public VmMonitor(Channel componentChannel,
+            ChannelManager<String, VmChannel, ?> channelManager) {
         super(componentChannel, VmDefinitionModel.class,
             VmDefinitionModels.class);
+        this.channelManager = channelManager;
     }
 
     @Override
@@ -107,10 +114,7 @@ public class VmMonitor extends
     protected void handleChange(K8sClient client,
             Watch.Response<VmDefinitionModel> response) {
         V1ObjectMeta metadata = response.object.getMetadata();
-        VmChannel channel = channel(metadata.getName()).orElse(null);
-        if (channel == null) {
-            return;
-        }
+        VmChannel channel = channelManager.channelGet(metadata.getName());
 
         // Get full definition and associate with channel as backup
         var vmDef = response.object;
@@ -132,13 +136,24 @@ public class VmMonitor extends
                 () -> "Cannot get model for " + response.object.getMetadata());
             return;
         }
+        if (ResponseType.valueOf(response.type) == ResponseType.DELETED) {
+            channelManager.remove(metadata.getName());
+        }
 
-        // Create and fire event
+        // Create and fire changed event. Remove channel from channel
+        // manager on completion.
         channel.pipeline()
-            .fire(new VmDefChanged(ResponseType.valueOf(response.type),
-                channel.setGeneration(
-                    response.object.getMetadata().getGeneration()),
-                vmDef), channel);
+            .fire(Event.onCompletion(
+                new VmDefChanged(ResponseType.valueOf(response.type),
+                    channel.setGeneration(
+                        response.object.getMetadata().getGeneration()),
+                    vmDef),
+                e -> {
+                    if (e.type() == ResponseType.DELETED) {
+                        channelManager
+                            .remove(e.vmDefinition().metadata().getName());
+                    }
+                }), channel);
     }
 
     private VmDefinitionModel getModel(K8sClient client,

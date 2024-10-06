@@ -100,9 +100,8 @@ public class Controller extends Component {
                     return null;
                 }
             });
-        attach(new VmMonitor(channel()).channelManager(chanMgr));
-        attach(new DisplaySecretMonitor(channel())
-            .channelManager(chanMgr.fixed()));
+        attach(new VmMonitor(channel(), chanMgr));
+        attach(new DisplaySecretMonitor(channel(), chanMgr));
         // Currently, we don't use the IP assigned by the load balancer
         // to access the VM's console. Might change in the future.
         // attach(new ServiceMonitor(channel()).channelManager(chanMgr));
