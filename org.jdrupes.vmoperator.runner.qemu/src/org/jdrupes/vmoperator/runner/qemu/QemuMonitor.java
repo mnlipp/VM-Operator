@@ -238,6 +238,8 @@ public class QemuMonitor extends Component {
      * @param event the event
      */
     @Handler
+    @SuppressWarnings({ "PMD.AvoidSynchronizedStatement",
+        "PMD.AvoidDuplicateLiterals" })
     public void onClosed(Closed<?> event, SocketIOChannel channel) {
         channel.associated(QemuMonitor.class).ifPresent(qm -> {
             monitorChannel = null;
@@ -259,7 +261,8 @@ public class QemuMonitor extends Component {
      * @param event the event
      */
     @Handler
-    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
+    @SuppressWarnings({ "PMD.AvoidLiteralsInIfCondition",
+        "PMD.AvoidSynchronizedStatement" })
     public void onExecQmpCommand(MonitorCommand event) {
         var command = event.command();
         logger.fine(() -> "monitor(out): " + command.toString());
@@ -290,6 +293,7 @@ public class QemuMonitor extends Component {
      * @param event the event
      */
     @Handler(priority = 100)
+    @SuppressWarnings("PMD.AvoidSynchronizedStatement")
     public void onStop(Stop event) {
         if (monitorChannel != null) {
             // We have a connection to Qemu, attempt ACPI shutdown.
@@ -321,6 +325,7 @@ public class QemuMonitor extends Component {
      * @param event the event
      */
     @Handler
+    @SuppressWarnings("PMD.AvoidSynchronizedStatement")
     public void onPowerdownEvent(PowerdownEvent event) {
         synchronized (this) {
             // Cancel confirmation timeout
@@ -349,6 +354,7 @@ public class QemuMonitor extends Component {
      * @param event the event
      */
     @Handler
+    @SuppressWarnings("PMD.AvoidSynchronizedStatement")
     public void onConfigureQemu(ConfigureQemu event) {
         int newTimeout = event.configuration().vm.powerdownTimeout;
         if (powerdownTimeout != newTimeout) {
