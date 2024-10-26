@@ -20,7 +20,7 @@ spec:
       containers:
         - name: vm-operator
           image: >-
-            ghcr.io/mnlipp/org.jdrupes.vmoperator.manager:3.4.0
+            ghcr.io/mnlipp/org.jdrupes.vmoperator.manager:3.4.1
           volumeMounts:
             - name: config
               mountPath: /etc/opt/vmoperator
