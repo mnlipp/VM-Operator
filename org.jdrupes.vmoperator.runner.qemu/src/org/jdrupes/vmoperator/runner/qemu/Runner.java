@@ -41,8 +41,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
@@ -227,7 +227,7 @@ public class Runner extends Component {
         CloudInit
     }
 
-    private final Set<QemuPreps> qemuLatch = new HashSet<>();
+    private final Set<QemuPreps> qemuLatch = EnumSet.noneOf(QemuPreps.class);
 
     /**
      * Instantiates a new runner.
@@ -483,6 +483,7 @@ public class Runner extends Component {
         mayBeStartQemu(QemuPreps.Config);
     }
 
+    @SuppressWarnings("PMD.AvoidSynchronizedStatement")
     private void mayBeStartQemu(QemuPreps done) {
         synchronized (qemuLatch) {
             if (qemuLatch.isEmpty()) {

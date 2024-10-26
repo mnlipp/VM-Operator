@@ -3,22 +3,18 @@ package org.jdrupes.vmoperator.manager;
 import io.kubernetes.client.Discovery.APIResource;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.generic.options.ListOptions;
-
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Map;
-
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_NAME;
-
 import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
 import org.jdrupes.vmoperator.common.K8sV1ConfigMapStub;
 import org.jdrupes.vmoperator.common.K8sV1DeploymentStub;
-import org.jdrupes.vmoperator.common.K8sV1PodStub;
 import org.jdrupes.vmoperator.common.K8sV1PvcStub;
 import org.junit.jupiter.api.AfterAll;
 import static org.junit.jupiter.api.Assertions.*;
