@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSyntaxException;
 import freemarker.core.ParseException;
 import freemarker.template.MalformedTemplateNameException;
 import freemarker.template.Template;
@@ -47,8 +48,6 @@ import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.logging.Level;
 import org.bouncycastle.util.Objects;
-import org.jdrupes.json.JsonBeanDecoder;
-import org.jdrupes.json.JsonDecodeException;
 import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jdrupes.vmoperator.common.VmDefinitionModel;
@@ -153,7 +152,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
      * 
      * @param event the event
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "PMD.AvoidDuplicateLiterals" })
     @Handler
     public void onConfigurationUpdate(ConfigurationUpdate event) {
         event.structured(componentPath()).ifPresent(c -> {
@@ -419,16 +418,19 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
         if (Strings.isNullOrEmpty(model.vmName())) {
             return;
         }
-        channelTracker.associated(model.vmName()).ifPresent(vmDef -> {
+        channelTracker.value(model.vmName()).ifPresent(item -> {
             try {
-                var def = JsonBeanDecoder.create(vmDef.data().toString())
-                    .readObject();
-                def.setField("userPermissions",
+                var vmDef = item.associated();
+                @SuppressWarnings("unchecked")
+                var def = (Map<String, Object>) item.channel().client()
+                    .getJSON().getGson()
+                    .fromJson(vmDef.data().toString(), Map.class);
+                def.put("userPermissions",
                     permissions(vmDef, channel.session()).stream()
                         .map(Permission::toString).toList());
                 channel.respond(new NotifyConletView(type(),
                     model.getConletId(), "updateVmDefinition", def));
-            } catch (JsonDecodeException e) {
+            } catch (JsonSyntaxException e) {
                 logger.log(Level.SEVERE, e,
                     () -> "Failed to serialize VM definition");
             }
@@ -458,7 +460,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
         "PMD.AvoidInstantiatingObjectsInLoops", "PMD.AvoidDuplicateLiterals",
         "PMD.ConfusingArgumentToVarargsMethod" })
     public void onVmDefChanged(VmDefChanged event, VmChannel channel)
-            throws JsonDecodeException, IOException {
+            throws IOException {
         var vmDef = new VmDefinitionModel(channel.client().getJSON()
             .getGson(), event.vmDefinition().data());
         GsonPtr.to(vmDef.data()).to("metadata").get(JsonObject.class)
@@ -547,7 +549,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
 
     private void selectVm(NotifyConletModel event, ConsoleConnection channel,
             ViewerModel model) throws JsonProcessingException {
-        model.setVmName(event.params().asString(0));
+        model.setVmName(event.param(0));
         String jsonState = objectMapper.writeValueAsString(model);
         channel.respond(new KeyValueStoreUpdate().update(storagePath(
             channel.session(), model.getConletId()), jsonState));
