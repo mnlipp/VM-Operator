@@ -18,6 +18,7 @@
 
 package org.jdrupes.vmoperator.vmconlet;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import freemarker.core.ParseException;
 import freemarker.template.MalformedTemplateNameException;
@@ -33,8 +34,6 @@ import java.time.Instant;
 import java.util.EnumSet;
 import java.util.Optional;
 import java.util.Set;
-import org.jdrupes.json.JsonBeanDecoder;
-import org.jdrupes.json.JsonDecodeException;
 import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jdrupes.vmoperator.common.VmDefinitionModel;
 import org.jdrupes.vmoperator.manager.events.ChannelTracker;
@@ -160,10 +159,9 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
             sendVmInfos = true;
         }
         if (sendVmInfos) {
-            for (var vmDef : channelTracker.associated()) {
-                var def
-                    = JsonBeanDecoder.create(vmDef.data().toString())
-                        .readObject();
+            for (var item : channelTracker.values()) {
+                Gson gson = item.channel().client().getJSON().getGson();
+                var def = gson.fromJson(item.associated().data(), Object.class);
                 channel.respond(new NotifyConletView(type(),
                     conletId, "updateVm", def));
             }
@@ -185,7 +183,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
         "PMD.AvoidInstantiatingObjectsInLoops", "PMD.AvoidDuplicateLiterals",
         "PMD.ConfusingArgumentToVarargsMethod" })
     public void onVmDefChanged(VmDefChanged event, VmChannel channel)
-            throws JsonDecodeException, IOException {
+            throws IOException {
         var vmName = event.vmDefinition().getMetadata().getName();
         if (event.type() == K8sObserver.ResponseType.DELETED) {
             channelTracker.remove(vmName);
@@ -196,11 +194,11 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
                 }
             }
         } else {
-            var vmDef = new VmDefinitionModel(channel.client().getJSON()
-                .getGson(), cleanup(event.vmDefinition().data()));
+            var gson = channel.client().getJSON().getGson();
+            var vmDef = new VmDefinitionModel(gson,
+                cleanup(event.vmDefinition().data()));
             channelTracker.put(vmName, channel, vmDef);
-            var def = JsonBeanDecoder.create(vmDef.data().toString())
-                .readObject();
+            var def = gson.fromJson(vmDef.data(), Object.class);
             for (var entry : conletIdsByConsoleConnection().entrySet()) {
                 for (String conletId : entry.getValue()) {
                     entry.getKey().respond(new NotifyConletView(type(),
@@ -346,7 +344,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
             ConsoleConnection channel, VmsModel conletState)
             throws Exception {
         event.stop();
-        var vmName = event.params().asString(0);
+        String vmName = event.param(0);
         var vmChannel = channelTracker.channel(vmName).orElse(null);
         if (vmChannel == null) {
             return;
@@ -360,12 +358,12 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
             break;
         case "cpus":
             fire(new ModifyVm(vmName, "currentCpus",
-                new BigDecimal(event.params().asDouble(1)).toBigInteger(),
+                new BigDecimal(event.param(1).toString()).toBigInteger(),
                 vmChannel));
             break;
         case "ram":
             fire(new ModifyVm(vmName, "currentRam",
-                new Quantity(new BigDecimal(event.params().asDouble(1)),
+                new Quantity(new BigDecimal(event.param(1).toString()),
                     Format.BINARY_SI).toSuffixedString(),
                 vmChannel));
             break;
