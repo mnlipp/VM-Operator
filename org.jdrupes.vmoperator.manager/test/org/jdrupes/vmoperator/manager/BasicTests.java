@@ -1,24 +1,28 @@
 package org.jdrupes.vmoperator.manager;
 
 import io.kubernetes.client.Discovery.APIResource;
+import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
+import static org.jdrupes.vmoperator.common.Constants.COMP_DISPLAY_SECRET;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_NAME;
-import org.jdrupes.vmoperator.common.DataPath;
 import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
 import org.jdrupes.vmoperator.common.K8sV1ConfigMapStub;
 import org.jdrupes.vmoperator.common.K8sV1DeploymentStub;
 import org.jdrupes.vmoperator.common.K8sV1PvcStub;
+import org.jdrupes.vmoperator.common.K8sV1SecretStub;
+import org.jdrupes.vmoperator.util.DataPath;
 import org.junit.jupiter.api.AfterAll;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.BeforeAll;
@@ -32,6 +36,7 @@ class BasicTests {
     private static K8sClient client;
     private static APIResource vmsContext;
     private static K8sV1DeploymentStub mgrDeployment;
+    private static final String VM_NAME = "unittest-vm";
     private static final Object EXISTS = new Object();
 
     @BeforeAll
@@ -48,8 +53,16 @@ class BasicTests {
         vmsContext = apiRes.get();
 
         // Cleanup existing VM
-        K8sDynamicStub.get(client, vmsContext, "vmop-dev", "unittest-vm")
+        K8sDynamicStub.get(client, vmsContext, "vmop-dev", VM_NAME)
             .delete();
+        ListOptions listOpts = new ListOptions();
+        listOpts.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
+            + "app.kubernetes.io/instance=" + VM_NAME + ","
+            + "app.kubernetes.io/component=" + COMP_DISPLAY_SECRET);
+        var secrets = K8sV1SecretStub.list(client, "vmop-dev", listOpts);
+        for (var secret : secrets) {
+            secret.delete();
+        }
 
         // Update manager pod by scaling deployment
         mgrDeployment
@@ -62,10 +75,6 @@ class BasicTests {
         var rdr = new FileReader("test-resources/basic-vm.yaml");
         var vmStub = K8sDynamicStub.createFromYaml(client, vmsContext, rdr);
         assertTrue(vmStub.model().isPresent());
-
-        // Wait for created resources
-        waitForConfigMap(client);
-        waitForRunnerPvc(client);
     }
 
     private static void waitForManager()
@@ -82,41 +91,16 @@ class BasicTests {
         fail("vm-operator not deployed.");
     }
 
-    private static void waitForConfigMap(K8sClient client)
-            throws InterruptedException, ApiException {
-        var stub = K8sV1ConfigMapStub.get(client, "vmop-dev", "unittest-vm");
-        for (int i = 0; i < 10; i++) {
-            if (stub.model().isPresent()) {
-                return;
-            }
-            Thread.sleep(1000);
-        }
-        fail("config map not deployed.");
-    }
-
-    private static void waitForRunnerPvc(K8sClient client)
-            throws InterruptedException, ApiException {
-        var stub
-            = K8sV1PvcStub.get(client, "vmop-dev", "unittest-vm-runner-data");
-        for (int i = 0; i < 10; i++) {
-            if (stub.model().isPresent()) {
-                return;
-            }
-            Thread.sleep(1000);
-        }
-        fail("runner data pvc not deployed.");
-    }
-
     @AfterAll
     static void tearDownAfterClass() throws Exception {
         // Cleanup
-        K8sDynamicStub.get(client, vmsContext, "vmop-dev", "unittest-vm")
+        K8sDynamicStub.get(client, vmsContext, "vmop-dev", VM_NAME)
             .delete();
         ListOptions listOpts = new ListOptions();
         listOpts.setLabelSelector(
             "app.kubernetes.io/managed-by=" + VM_OP_NAME + ","
                 + "app.kubernetes.io/name=" + APP_NAME + ","
-                + "app.kubernetes.io/instance=unittest-vm");
+                + "app.kubernetes.io/instance=" + VM_NAME);
         var knownPvcs = K8sV1PvcStub.list(client, "vmop-dev", listOpts);
         for (var pvc : knownPvcs) {
             pvc.delete();
@@ -129,21 +113,28 @@ class BasicTests {
     @Test
     void testConfigMap()
             throws IOException, InterruptedException, ApiException {
+        K8sV1ConfigMapStub stub
+            = K8sV1ConfigMapStub.get(client, "vmop-dev", VM_NAME);
+        for (int i = 0; i < 10; i++) {
+            if (stub.model().isPresent()) {
+                break;
+            }
+            Thread.sleep(1000);
+        }
         // Check config map
-        var config = K8sV1ConfigMapStub.get(client, "vmop-dev", "unittest-vm")
-            .model().get();
+        var config = stub.model().get();
         Map<List<? extends Object>, Object> toCheck = Map.of(
             List.of("namespace"), "vmop-dev",
-            List.of("name"), "unittest-vm",
+            List.of("name"), VM_NAME,
             List.of("labels", "app.kubernetes.io/name"), Constants.APP_NAME,
-            List.of("labels", "app.kubernetes.io/instance"), "unittest-vm",
+            List.of("labels", "app.kubernetes.io/instance"), VM_NAME,
             List.of("labels", "app.kubernetes.io/managed-by"),
             Constants.VM_OP_NAME,
             List.of("annotations", "vmoperator.jdrupes.org/version"), EXISTS,
             List.of("ownerReferences", 0, "apiVersion"),
             vmsContext.getGroup() + "/" + vmsContext.getVersions().get(0),
             List.of("ownerReferences", 0, "kind"), Constants.VM_OP_KIND_VM,
-            List.of("ownerReferences", 0, "name"), "unittest-vm",
+            List.of("ownerReferences", 0, "name"), VM_NAME,
             List.of("ownerReferences", 0, "uid"), EXISTS);
         checkProps(config.getMetadata(), toCheck);
 
@@ -153,7 +144,7 @@ class BasicTests {
             EXISTS);
         toCheck.put(
             List.of("/Runner", "cloudInit", "metaData", "local-hostname"),
-            "unittest-vm");
+            VM_NAME);
         toCheck.put(List.of("/Runner", "cloudInit", "userData"), Map.of());
         toCheck.put(List.of("/Runner", "vm", "maximumRam"), "4 GiB");
         toCheck.put(List.of("/Runner", "vm", "currentRam"), "2 GiB");
@@ -175,6 +166,91 @@ class BasicTests {
         var cm = new Yaml(new SafeConstructor(new LoaderOptions()))
             .load(config.getData().get("config.yaml"));
         checkProps(cm, toCheck);
+    }
+
+    @Test
+    void testDisplaySecret() throws ApiException, InterruptedException {
+        ListOptions listOpts = new ListOptions();
+        listOpts.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
+            + "app.kubernetes.io/instance=" + VM_NAME + ","
+            + "app.kubernetes.io/component=" + COMP_DISPLAY_SECRET);
+        Collection<K8sV1SecretStub> secrets = null;
+        for (int i = 0; i < 10; i++) {
+            secrets = K8sV1SecretStub.list(client, "vmop-dev", listOpts);
+            if (secrets.size() > 0) {
+                break;
+            }
+            Thread.sleep(1000);
+        }
+        assertEquals(1, secrets.size());
+        var secretData = secrets.iterator().next().model().get().getData();
+        checkProps(secretData, Map.of(
+            List.of("display-password"), EXISTS));
+        assertEquals("now", new String(secretData.get("password-expiry")));
+    }
+
+    @Test
+    void testRunnerPvc() throws ApiException, InterruptedException {
+        var stub
+            = K8sV1PvcStub.get(client, "vmop-dev", VM_NAME + "-runner-data");
+        for (int i = 0; i < 10; i++) {
+            if (stub.model().isPresent()) {
+                break;
+            }
+            Thread.sleep(1000);
+        }
+        var pvc = stub.model().get();
+        checkProps(pvc.getMetadata(), Map.of(
+            List.of("labels", "app.kubernetes.io/name"), Constants.APP_NAME,
+            List.of("labels", "app.kubernetes.io/instance"), VM_NAME,
+            List.of("labels", "app.kubernetes.io/managed-by"),
+            Constants.VM_OP_NAME));
+        checkProps(pvc.getSpec(), Map.of(
+            List.of("resources", "requests", "storage"),
+            Quantity.fromString("1Mi")));
+    }
+
+    @Test
+    void testSystemDiskPvc() throws ApiException, InterruptedException {
+        var stub
+            = K8sV1PvcStub.get(client, "vmop-dev", VM_NAME + "-system-disk");
+        for (int i = 0; i < 10; i++) {
+            if (stub.model().isPresent()) {
+                break;
+            }
+            Thread.sleep(1000);
+        }
+        var pvc = stub.model().get();
+        checkProps(pvc.getMetadata(), Map.of(
+            List.of("labels", "app.kubernetes.io/name"), Constants.APP_NAME,
+            List.of("labels", "app.kubernetes.io/instance"), VM_NAME,
+            List.of("labels", "app.kubernetes.io/managed-by"),
+            Constants.VM_OP_NAME,
+            List.of("annotations", "use_as"), "system-disk"));
+        checkProps(pvc.getSpec(), Map.of(
+            List.of("resources", "requests", "storage"),
+            Quantity.fromString("1Gi")));
+    }
+
+    @Test
+    void testDisk1Pvc() throws ApiException, InterruptedException {
+        var stub
+            = K8sV1PvcStub.get(client, "vmop-dev", VM_NAME + "-disk-1");
+        for (int i = 0; i < 10; i++) {
+            if (stub.model().isPresent()) {
+                break;
+            }
+            Thread.sleep(1000);
+        }
+        var pvc = stub.model().get();
+        checkProps(pvc.getMetadata(), Map.of(
+            List.of("labels", "app.kubernetes.io/name"), Constants.APP_NAME,
+            List.of("labels", "app.kubernetes.io/instance"), VM_NAME,
+            List.of("labels", "app.kubernetes.io/managed-by"),
+            Constants.VM_OP_NAME));
+        checkProps(pvc.getSpec(), Map.of(
+            List.of("resources", "requests", "storage"),
+            Quantity.fromString("1Gi")));
     }
 
     private void checkProps(Object obj,

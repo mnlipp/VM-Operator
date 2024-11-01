@@ -28,7 +28,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Map;
 import java.util.logging.Logger;
-import org.jdrupes.vmoperator.common.DataPath;
+
 import org.jdrupes.vmoperator.common.K8sV1SecretStub;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.manager.Constants.COMP_DISPLAY_SECRET;
@@ -36,6 +36,7 @@ import static org.jdrupes.vmoperator.manager.Constants.DATA_DISPLAY_PASSWORD;
 import static org.jdrupes.vmoperator.manager.Constants.DATA_PASSWORD_EXPIRY;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
+import org.jdrupes.vmoperator.util.DataPath;
 import org.jose4j.base64url.Base64;
 
 /**

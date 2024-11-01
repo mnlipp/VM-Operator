@@ -39,10 +39,11 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_NAME;
-import org.jdrupes.vmoperator.common.DataPath;
+
 import org.jdrupes.vmoperator.common.K8sV1PvcStub;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
+import org.jdrupes.vmoperator.util.DataPath;
 import org.jdrupes.vmoperator.util.GsonPtr;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;

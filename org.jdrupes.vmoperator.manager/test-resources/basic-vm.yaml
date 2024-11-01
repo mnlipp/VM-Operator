@@ -4,6 +4,11 @@ metadata:
   namespace: vmop-dev
   name: unittest-vm
 spec:
+  image:
+    repository: docker-registry.lan.mnl.de
+    path: vmoperator/this.will.never.start
+    version: 0.0.0
+    
   cloudInit:
     metaData: {}
   
@@ -23,6 +28,22 @@ spec:
       bootindex: 0
     - cdrom:
         image: "image.iso"
+    - volumeClaimTemplate:
+        metadata:
+          name: system
+          annotations:
+            use_as: system-disk
+        spec:
+          storageClassName: local-path
+          resources:
+            requests:
+              storage: 1Gi
+    - volumeClaimTemplate:
+        spec:
+          storageClassName: local-path
+          resources:
+            requests:
+              storage: 1Gi
 
     display:
       outputs: 2

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.jdrupes.vmoperator.common;
+package org.jdrupes.vmoperator.util;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -26,18 +26,41 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Logger;
 
-public class DataPath {
+/**
+ * Utility class that supports navigation through arbitrary data structures.
+ */
+public final class DataPath {
 
-    protected static final Logger logger
+    private static final Logger logger
         = Logger.getLogger(DataPath.class.getName());
 
     private DataPath() {
     }
 
+    /**
+     * Apply the given selectors on the given object and return the
+     * value reached.
+     * 
+     * Selectors can be if type {@link String} or {@link Number}. The
+     * former are used to access a property of an object, the latter to
+     * access an element in an array or a {@link List}.
+     * 
+     * Depending on the object currently visited, a {@link String} can
+     * be the key of a {@link Map}, the property part of a getter method
+     * or the name of a method that has an empty parameter list.
+     *
+     * @param <T> the generic type
+     * @param from the from
+     * @param selectors the selectors
+     * @return the result
+     */
     @SuppressWarnings("PMD.UseLocaleWithCaseConversions")
     public static <T> Optional<T> get(Object from, Object... selectors) {
         Object cur = from;
         for (var selector : selectors) {
+            if (cur == null) {
+                return Optional.empty();
+            }
             if (selector instanceof String && cur instanceof Map map) {
                 cur = map.get(selector);
                 continue;
@@ -54,9 +77,12 @@ public class DataPath {
                 cur = retrieved.get();
             }
         }
-        return Optional.ofNullable((T) cur);
+        @SuppressWarnings("unchecked")
+        var result = Optional.ofNullable((T) cur);
+        return result;
     }
 
+    @SuppressWarnings("PMD.UseLocaleWithCaseConversions")
     private static Optional<Object> tryAccess(Object obj, String property) {
         Method acc = null;
         try {
