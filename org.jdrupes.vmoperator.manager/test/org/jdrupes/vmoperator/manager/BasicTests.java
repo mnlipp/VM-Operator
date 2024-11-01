@@ -2,8 +2,10 @@ package org.jdrupes.vmoperator.manager;
 
 import io.kubernetes.client.Discovery.APIResource;
 import io.kubernetes.client.custom.Quantity;
+import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.generic.options.ListOptions;
+import io.kubernetes.client.util.generic.options.PatchOptions;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Collection;
@@ -20,6 +22,7 @@ import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
 import org.jdrupes.vmoperator.common.K8sV1ConfigMapStub;
 import org.jdrupes.vmoperator.common.K8sV1DeploymentStub;
+import org.jdrupes.vmoperator.common.K8sV1PodStub;
 import org.jdrupes.vmoperator.common.K8sV1PvcStub;
 import org.jdrupes.vmoperator.common.K8sV1SecretStub;
 import org.jdrupes.vmoperator.util.DataPath;
@@ -36,6 +39,7 @@ class BasicTests {
     private static K8sClient client;
     private static APIResource vmsContext;
     private static K8sV1DeploymentStub mgrDeployment;
+    private static K8sDynamicStub vmStub;
     private static final String VM_NAME = "unittest-vm";
     private static final Object EXISTS = new Object();
 
@@ -73,7 +77,7 @@ class BasicTests {
 
         // Load from Yaml
         var rdr = new FileReader("test-resources/basic-vm.yaml");
-        var vmStub = K8sDynamicStub.createFromYaml(client, vmsContext, rdr);
+        vmStub = K8sDynamicStub.createFromYaml(client, vmsContext, rdr);
         assertTrue(vmStub.model().isPresent());
     }
 
@@ -159,6 +163,12 @@ class BasicTests {
         toCheck.put(List.of("/Runner", "vm", "drives", 1, "type"), "ide-cd");
         toCheck.put(List.of("/Runner", "vm", "drives", 1, "file"),
             "/var/local/vmop-image-repository/image.iso");
+        toCheck.put(List.of("/Runner", "vm", "drives", 2, "type"), "raw");
+        toCheck.put(List.of("/Runner", "vm", "drives", 2, "resource"),
+            "/dev/system-disk");
+        toCheck.put(List.of("/Runner", "vm", "drives", 3, "type"), "raw");
+        toCheck.put(List.of("/Runner", "vm", "drives", 3, "resource"),
+            "/dev/disk-1");
         toCheck.put(List.of("/Runner", "vm", "display", "outputs"), 2);
         toCheck.put(List.of("/Runner", "vm", "display", "spice", "port"), 5812);
         toCheck.put(
@@ -251,6 +261,44 @@ class BasicTests {
         checkProps(pvc.getSpec(), Map.of(
             List.of("resources", "requests", "storage"),
             Quantity.fromString("1Gi")));
+    }
+
+    @Test
+    void testPod() throws ApiException, InterruptedException {
+        // Do apply changes (set replicas to 0)
+        PatchOptions opts = new PatchOptions();
+        opts.setForce(true);
+        opts.setFieldManager("kubernetes-java-kubectl-apply");
+        assertTrue(vmStub.patch(V1Patch.PATCH_FORMAT_JSON_PATCH,
+            new V1Patch("[{\"op\": \"replace\", \"path\": \"/spec/vm/state"
+                + "\", \"value\": \"Running\"}]"),
+            client.defaultPatchOptions()).isPresent());
+        var stub = K8sV1PodStub.get(client, "vmop-dev", VM_NAME);
+        for (int i = 0; i < 10; i++) {
+            if (stub.model().isPresent()) {
+                break;
+            }
+            Thread.sleep(1000);
+        }
+        var pod = stub.model().get();
+        checkProps(pod.getMetadata(), Map.of(
+            List.of("labels", "app.kubernetes.io/name"), APP_NAME,
+            List.of("labels", "app.kubernetes.io/instance"), VM_NAME,
+            List.of("labels", "app.kubernetes.io/component"), APP_NAME,
+            List.of("labels", "app.kubernetes.io/managed-by"),
+            Constants.VM_OP_NAME,
+            List.of("annotations", "vmrunner.jdrupes.org/cmVersion"), EXISTS,
+            List.of("annotations", "vmoperator.jdrupes.org/version"), EXISTS,
+            List.of("ownerReferences", 0, "apiVersion"),
+            vmsContext.getGroup() + "/" + vmsContext.getVersions().get(0),
+            List.of("ownerReferences", 0, "kind"), Constants.VM_OP_KIND_VM,
+            List.of("ownerReferences", 0, "name"), VM_NAME,
+            List.of("ownerReferences", 0, "uid"), EXISTS));
+        checkProps(pod.getSpec(), Map.of(
+            List.of("containers", 0, "image"), EXISTS,
+            List.of("containers", 0, "name"), VM_NAME,
+            List.of("containers", 0, "resources", "requests", "cpu"),
+            Quantity.fromString("1")));
     }
 
     private void checkProps(Object obj,
