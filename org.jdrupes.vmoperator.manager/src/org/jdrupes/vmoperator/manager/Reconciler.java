@@ -18,19 +18,22 @@
 
 package org.jdrupes.vmoperator.manager;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import freemarker.template.AdapterTemplateModel;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapperBuilder;
 import freemarker.template.SimpleNumber;
+import freemarker.template.SimpleScalar;
 import freemarker.template.TemplateException;
 import freemarker.template.TemplateExceptionHandler;
 import freemarker.template.TemplateHashModel;
 import freemarker.template.TemplateMethodModelEx;
 import freemarker.template.TemplateModelException;
+import freemarker.template.TemplateNumberModel;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
+import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -42,17 +45,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
+import org.jdrupes.vmoperator.common.DataPath;
 import org.jdrupes.vmoperator.common.Convertions;
 import org.jdrupes.vmoperator.common.K8sClient;
-import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jdrupes.vmoperator.common.K8sV1SecretStub;
+import org.jdrupes.vmoperator.common.VmDefinition;
 import static org.jdrupes.vmoperator.manager.Constants.COMP_DISPLAY_SECRET;
 import org.jdrupes.vmoperator.manager.events.ResetVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
-import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.annotation.Handler;
@@ -135,6 +138,10 @@ import org.jgrapes.util.events.ConfigurationUpdate;
     "PMD.AvoidDuplicateLiterals" })
 public class Reconciler extends Component {
 
+    /** The Constant mapper. */
+    @SuppressWarnings("PMD.FieldNamingConventions")
+    protected static final ObjectMapper mapper = new ObjectMapper();
+
     @SuppressWarnings("PMD.SingularField")
     private final Configuration fmConfig;
     private final ConfigMapReconciler cmReconciler;
@@ -203,17 +210,17 @@ public class Reconciler extends Component {
         }
 
         // Ownership relationships takes care of deletions
-        var defMeta = event.vmDefinition().getMetadata();
         if (event.type() == K8sObserver.ResponseType.DELETED) {
-            logger.fine(() -> "VM \"" + defMeta.getName() + "\" deleted");
+            logger.fine(
+                () -> "VM \"" + event.vmDefinition().name() + "\" deleted");
             return;
         }
 
-        // Reconcile, use "augmented" vm definition for model
+        // Create model for processing templates
         Map<String, Object> model
-            = prepareModel(channel.client(), patchCr(event.vmDefinition()));
+            = prepareModel(channel.client(), event.vmDefinition());
         var configMap = cmReconciler.reconcile(model, channel);
-        model.put("cm", configMap.getRaw());
+        model.put("cm", configMap);
         dsReconciler.reconcile(event, model, channel);
         // Manage (eventual) removal of stateful set.
         stsReconciler.reconcile(event, model, channel);
@@ -235,81 +242,22 @@ public class Reconciler extends Component {
     @Handler
     public void onResetVm(ResetVm event, VmChannel channel)
             throws ApiException, IOException, TemplateException {
-        var defRoot
-            = GsonPtr.to(channel.vmDefinition().data()).get(JsonObject.class);
-        defRoot.addProperty("resetCount",
-            defRoot.get("resetCount").getAsLong() + 1);
+        var vmDef = channel.vmDefinition();
+        vmDef.extra("resetCount", vmDef.<Long> extra("resetCount") + 1);
         Map<String, Object> model
-            = prepareModel(channel.client(), patchCr(channel.vmDefinition()));
+            = prepareModel(channel.client(), channel.vmDefinition());
         cmReconciler.reconcile(model, channel);
     }
 
-    private DynamicKubernetesObject patchCr(K8sDynamicModel vmDef) {
-        var json = vmDef.data().deepCopy();
-        // Adjust cdromImage path
-        adjustCdRomPaths(json);
-
-        // Adjust cloud-init data
-        adjustCloudInitData(json);
-
-        return new DynamicKubernetesObject(json);
-    }
-
-    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
-    private void adjustCdRomPaths(JsonObject json) {
-        var disks
-            = GsonPtr.to(json).to("spec", "vm", "disks").get(JsonArray.class);
-        for (var disk : disks) {
-            var cdrom = (JsonObject) ((JsonObject) disk).get("cdrom");
-            if (cdrom == null) {
-                continue;
-            }
-            String image = cdrom.get("image").getAsString();
-            if (image.isEmpty()) {
-                continue;
-            }
-            try {
-                @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
-                var imageUri = new URI("file://" + Constants.IMAGE_REPO_PATH
-                    + "/").resolve(image);
-                if ("file".equals(imageUri.getScheme())) {
-                    cdrom.addProperty("image", imageUri.getPath());
-                } else {
-                    cdrom.addProperty("image", imageUri.toString());
-                }
-            } catch (URISyntaxException e) {
-                logger.warning(() -> "Invalid CDROM image: " + image);
-            }
-        }
-    }
-
-    private void adjustCloudInitData(JsonObject json) {
-        var spec = GsonPtr.to(json).to("spec").get(JsonObject.class);
-        if (!spec.has("cloudInit")) {
-            return;
-        }
-        var metaData = GsonPtr.to(spec).to("cloudInit", "metaData");
-        if (metaData.getAsString("instance-id").isEmpty()) {
-            metaData.set("instance-id",
-                GsonPtr.to(json).getAsString("metadata", "resourceVersion")
-                    .map(s -> "v" + s).orElse("v1"));
-        }
-        if (metaData.getAsString("local-hostname").isEmpty()) {
-            metaData.set("local-hostname",
-                GsonPtr.to(json).getAsString("metadata", "name").get());
-        }
-    }
-
-    @SuppressWarnings("PMD.CognitiveComplexity")
+    @SuppressWarnings({ "PMD.CognitiveComplexity", "PMD.NPathComplexity" })
     private Map<String, Object> prepareModel(K8sClient client,
-            DynamicKubernetesObject vmDef)
-            throws TemplateModelException, ApiException {
+            VmDefinition vmDef) throws TemplateModelException, ApiException {
         @SuppressWarnings("PMD.UseConcurrentHashMap")
         Map<String, Object> model = new HashMap<>();
         model.put("managerVersion",
             Optional.ofNullable(Reconciler.class.getPackage()
                 .getImplementationVersion()).orElse("(Unknown)"));
-        model.put("cr", vmDef.getRaw());
+        model.put("cr", vmDef);
         model.put("constants",
             (TemplateHashModel) new DefaultObjectWrapperBuilder(
                 Configuration.VERSION_2_3_32)
@@ -321,9 +269,10 @@ public class Reconciler extends Component {
         ListOptions options = new ListOptions();
         options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
             + "app.kubernetes.io/component=" + COMP_DISPLAY_SECRET + ","
-            + "app.kubernetes.io/instance=" + vmDef.getMetadata().getName());
+            + "app.kubernetes.io/instance=" + vmDef.name());
         var dsStub = K8sV1SecretStub
-            .list(client, vmDef.getMetadata().getNamespace(), options).stream()
+            .list(client, vmDef.namespace(), options)
+            .stream()
             .findFirst();
         if (dsStub.isPresent()) {
             dsStub.get().model().ifPresent(m -> {
@@ -332,14 +281,23 @@ public class Reconciler extends Component {
         }
 
         // Methods
-        model.put("parseQuantity", new TemplateMethodModelEx() {
+        model.put("parseQuantity", parseQuantityModel);
+        model.put("formatMemory", formatMemoryModel);
+        model.put("imageLocation", imgageLocationModel);
+        model.put("adjustCloudInitMeta", adjustCloudInitMetaModel);
+        model.put("toJson", toJsonModel);
+        return model;
+    }
+
+    private final TemplateMethodModelEx parseQuantityModel
+        = new TemplateMethodModelEx() {
             @Override
             @SuppressWarnings("PMD.PreserveStackTrace")
             public Object exec(@SuppressWarnings("rawtypes") List arguments)
                     throws TemplateModelException {
                 var arg = arguments.get(0);
-                if (arg instanceof Number number) {
-                    return number;
+                if (arg instanceof SimpleNumber number) {
+                    return number.getAsNumber();
                 }
                 try {
                     return Quantity.fromString(arg.toString()).getNumber();
@@ -348,8 +306,10 @@ public class Reconciler extends Component {
                         + "specified as \"" + arg + "\": " + e.getMessage());
                 }
             }
-        });
-        model.put("formatMemory", new TemplateMethodModelEx() {
+        };
+
+    private final TemplateMethodModelEx formatMemoryModel
+        = new TemplateMethodModelEx() {
             @Override
             @SuppressWarnings("PMD.PreserveStackTrace")
             public Object exec(@SuppressWarnings("rawtypes") List arguments)
@@ -376,7 +336,71 @@ public class Reconciler extends Component {
                 }
                 return Convertions.formatMemory(bigInt);
             }
-        });
-        return model;
-    }
+        };
+
+    private final TemplateMethodModelEx imgageLocationModel
+        = new TemplateMethodModelEx() {
+            @Override
+            @SuppressWarnings({ "PMD.PreserveStackTrace",
+                "PMD.AvoidLiteralsInIfCondition" })
+            public Object exec(@SuppressWarnings("rawtypes") List arguments)
+                    throws TemplateModelException {
+                var image = ((SimpleScalar) arguments.get(0)).getAsString();
+                if (image.isEmpty()) {
+                    return "";
+                }
+                try {
+                    var imageUri = new URI("file://" + Constants.IMAGE_REPO_PATH
+                        + "/").resolve(image);
+                    if ("file".equals(imageUri.getScheme())) {
+                        return imageUri.getPath();
+                    }
+                    return imageUri.toString();
+                } catch (URISyntaxException e) {
+                    logger.warning(() -> "Invalid CDROM image: " + image);
+                }
+                return image;
+            }
+        };
+
+    private final TemplateMethodModelEx adjustCloudInitMetaModel
+        = new TemplateMethodModelEx() {
+            @Override
+            @SuppressWarnings("PMD.PreserveStackTrace")
+            public Object exec(@SuppressWarnings("rawtypes") List arguments)
+                    throws TemplateModelException {
+                @SuppressWarnings("unchecked")
+                var res = (Map<String, Object>) DataPath
+                    .deepCopy(((AdapterTemplateModel) arguments.get(0))
+                        .getAdaptedObject(Object.class));
+                var metadata
+                    = (V1ObjectMeta) ((AdapterTemplateModel) arguments.get(1))
+                        .getAdaptedObject(Object.class);
+                if (!res.containsKey("instance-id")) {
+                    res.put("instance-id",
+                        Optional.ofNullable(metadata.getResourceVersion())
+                            .map(s -> "v" + s).orElse("v1"));
+                }
+                if (!res.containsKey("local-hostname")) {
+                    res.put("local-hostname", metadata.getName());
+                }
+                return res;
+            }
+        };
+
+    private final TemplateMethodModelEx toJsonModel
+        = new TemplateMethodModelEx() {
+            @Override
+            @SuppressWarnings("PMD.PreserveStackTrace")
+            public Object exec(@SuppressWarnings("rawtypes") List arguments)
+                    throws TemplateModelException {
+                try {
+                    return mapper.writeValueAsString(
+                        ((AdapterTemplateModel) arguments.get(0))
+                            .getAdaptedObject(Object.class));
+                } catch (JsonProcessingException e) {
+                    return "{}";
+                }
+            }
+        };
 }

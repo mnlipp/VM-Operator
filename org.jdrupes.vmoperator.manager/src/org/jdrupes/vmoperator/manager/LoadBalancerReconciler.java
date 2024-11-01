@@ -107,7 +107,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         // https://github.com/kubernetes-client/java/issues/2741
         var svcDef = Dynamics.newFromYaml(
             new Yaml(new SafeConstructor(new LoaderOptions())), out.toString());
-        mergeMetadata(svcDef, cfgMeta, event.vmDefinition());
+        mergeMetadata(svcDef, cfgMeta, event.vmModel());
 
         // Apply
         DynamicKubernetesApi svcApi = new DynamicKubernetesApi("", "v1",

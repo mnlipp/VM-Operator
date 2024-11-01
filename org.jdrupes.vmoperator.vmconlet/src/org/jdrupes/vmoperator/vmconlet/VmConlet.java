@@ -184,7 +184,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
         "PMD.ConfusingArgumentToVarargsMethod" })
     public void onVmDefChanged(VmDefChanged event, VmChannel channel)
             throws IOException {
-        var vmName = event.vmDefinition().getMetadata().getName();
+        var vmName = event.vmModel().getMetadata().getName();
         if (event.type() == K8sObserver.ResponseType.DELETED) {
             channelTracker.remove(vmName);
             for (var entry : conletIdsByConsoleConnection().entrySet()) {
@@ -196,7 +196,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
         } else {
             var gson = channel.client().getJSON().getGson();
             var vmDef = new VmDefinitionModel(gson,
-                cleanup(event.vmDefinition().data()));
+                cleanup(event.vmModel().data()));
             channelTracker.put(vmName, channel, vmDef);
             var def = gson.fromJson(vmDef.data(), Object.class);
             for (var entry : conletIdsByConsoleConnection().entrySet()) {

@@ -37,6 +37,7 @@ import org.jdrupes.vmoperator.common.K8sObserver.ResponseType;
 import org.jdrupes.vmoperator.common.K8sV1ConfigMapStub;
 import org.jdrupes.vmoperator.common.K8sV1PodStub;
 import org.jdrupes.vmoperator.common.K8sV1StatefulSetStub;
+import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinitionModel;
 import org.jdrupes.vmoperator.common.VmDefinitionModels;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
@@ -116,28 +117,37 @@ public class VmMonitor extends
         V1ObjectMeta metadata = response.object.getMetadata();
         VmChannel channel = channelManager.channelGet(metadata.getName());
 
+        // Remove from channel manager if deleted
+        if (ResponseType.valueOf(response.type) == ResponseType.DELETED) {
+            channelManager.remove(metadata.getName());
+        }
+
         // Get full definition and associate with channel as backup
-        var vmDef = response.object;
-        if (vmDef.data() == null) {
+        var vmModel = response.object;
+        if (vmModel.data() == null) {
             // ADDED event does not provide data, see
             // https://github.com/kubernetes-client/java/issues/3215
-            vmDef = getModel(client, vmDef);
+            vmModel = getModel(client, vmModel);
         }
-        if (vmDef.data() != null) {
+        VmDefinition vmDef = null;
+        if (vmModel.data() != null) {
             // New data, augment and save
+            addDynamicData(channel.client(), vmModel, channel.vmModel());
+            channel.setVmModel(vmModel);
+            vmDef = client.getJSON().getGson().fromJson(vmModel.data(),
+                VmDefinition.class);
             addDynamicData(channel.client(), vmDef, channel.vmDefinition());
             channel.setVmDefinition(vmDef);
-        } else {
-            // Reuse cached
+        }
+        if (vmDef == null) {
+            // Reuse cached (e.g. if deleted)
+            vmModel = channel.vmModel();
             vmDef = channel.vmDefinition();
         }
         if (vmDef == null) {
-            logger.warning(
-                () -> "Cannot get model for " + response.object.getMetadata());
+            logger.warning(() -> "Cannot get defintion for "
+                + response.object.getMetadata());
             return;
-        }
-        if (ResponseType.valueOf(response.type) == ResponseType.DELETED) {
-            channelManager.remove(metadata.getName());
         }
 
         // Create and fire changed event. Remove channel from channel
@@ -147,11 +157,11 @@ public class VmMonitor extends
                 new VmDefChanged(ResponseType.valueOf(response.type),
                     channel.setGeneration(
                         response.object.getMetadata().getGeneration()),
-                    vmDef),
+                    vmModel, vmDef),
                 e -> {
                     if (e.type() == ResponseType.DELETED) {
                         channelManager
-                            .remove(e.vmDefinition().metadata().getName());
+                            .remove(e.vmModel().metadata().getName());
                     }
                 }), channel);
     }
@@ -166,14 +176,18 @@ public class VmMonitor extends
         }
     }
 
+    private void addDynamicData(K8sClient client, VmDefinition vmState,
+            VmDefinition prevState) {
+        // Maintain (or initialize) the resetCount
+        vmState.extra("resetCount",
+            Optional.ofNullable(prevState).map(d -> d.extra("resetCount"))
+                .orElse(0L));
+    }
+
+    @Deprecated
     private void addDynamicData(K8sClient client, VmDefinitionModel vmState,
             VmDefinitionModel prevState) {
         var rootNode = GsonPtr.to(vmState.data()).get(JsonObject.class);
-
-        // Maintain (or initialize) the resetCount
-        rootNode.addProperty("resetCount", Optional.ofNullable(prevState)
-            .map(ps -> GsonPtr.to(ps.data()))
-            .flatMap(d -> d.getAsLong("resetCount")).orElse(0L));
 
         // Add defaults in case the VM is not running
         rootNode.addProperty("nodeName", "");

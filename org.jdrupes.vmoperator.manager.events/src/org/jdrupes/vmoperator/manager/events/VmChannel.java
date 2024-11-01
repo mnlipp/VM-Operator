@@ -19,6 +19,7 @@
 package org.jdrupes.vmoperator.manager.events;
 
 import org.jdrupes.vmoperator.common.K8sClient;
+import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinitionModel;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.EventPipeline;
@@ -32,7 +33,8 @@ public class VmChannel extends DefaultSubchannel {
 
     private final EventPipeline pipeline;
     private final K8sClient client;
-    private VmDefinitionModel vmDefinition;
+    private VmDefinition definition;
+    private VmDefinitionModel vmModel;
     private long generation = -1;
 
     /**
@@ -56,8 +58,30 @@ public class VmChannel extends DefaultSubchannel {
      * @return the watch channel
      */
     @SuppressWarnings("PMD.LinguisticNaming")
-    public VmChannel setVmDefinition(VmDefinitionModel definition) {
-        this.vmDefinition = definition;
+    public VmChannel setVmDefinition(VmDefinition definition) {
+        this.definition = definition;
+        return this;
+    }
+
+    /**
+     * Returns the last known definition of the VM.
+     *
+     * @return the defintion
+     */
+    public VmDefinition vmDefinition() {
+        return definition;
+    }
+
+    /**
+     * Sets the last known definition of the resource.
+     *
+     * @param definition the definition
+     * @return the watch channel
+     */
+    @Deprecated
+    @SuppressWarnings("PMD.LinguisticNaming")
+    public VmChannel setVmModel(VmDefinitionModel definition) {
+        this.vmModel = definition;
         return this;
     }
 
@@ -66,8 +90,9 @@ public class VmChannel extends DefaultSubchannel {
      *
      * @return the json object
      */
-    public VmDefinitionModel vmDefinition() {
-        return vmDefinition;
+    @Deprecated
+    public VmDefinitionModel vmModel() {
+        return vmModel;
     }
 
     /**

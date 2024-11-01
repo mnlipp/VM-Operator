@@ -122,7 +122,7 @@ public class DisplaySecretMonitor
             return;
         }
         var channel = channelDictionary.channel(vmName).orElse(null);
-        if (channel == null || channel.vmDefinition() == null) {
+        if (channel == null || channel.vmModel() == null) {
             return;
         }
 
@@ -256,11 +256,11 @@ public class DisplaySecretMonitor
     @SuppressWarnings("PMD.AvoidSynchronizedStatement")
     public void onVmDefChanged(VmDefChanged event, Channel channel) {
         synchronized (pendingGets) {
-            String vmName = event.vmDefinition().metadata().getName();
+            String vmName = event.vmModel().metadata().getName();
             for (var pending : pendingGets) {
                 if (pending.event.vmDefinition().metadata().getName()
                     .equals(vmName)
-                    && event.vmDefinition().displayPasswordSerial()
+                    && event.vmModel().displayPasswordSerial()
                         .map(s -> s >= pending.expectedSerial).orElse(false)) {
                     pending.lock.remove();
                     // pending will be removed from pendingGest by

@@ -32,12 +32,14 @@ import io.kubernetes.client.util.generic.options.ListOptions;
 import io.kubernetes.client.util.generic.options.PatchOptions;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_NAME;
+import org.jdrupes.vmoperator.common.DataPath;
 import org.jdrupes.vmoperator.common.K8sV1PvcStub;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
@@ -78,16 +80,16 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
     public void reconcile(VmDefChanged event, Map<String, Object> model,
             VmChannel channel)
             throws IOException, TemplateException, ApiException {
-        var metadata = event.vmDefinition().getMetadata();
+        var vmDef = event.vmDefinition();
 
         // Existing disks
         ListOptions listOpts = new ListOptions();
         listOpts.setLabelSelector(
             "app.kubernetes.io/managed-by=" + VM_OP_NAME + ","
                 + "app.kubernetes.io/name=" + APP_NAME + ","
-                + "app.kubernetes.io/instance=" + metadata.getName());
+                + "app.kubernetes.io/instance=" + vmDef.name());
         var knownDisks = K8sV1PvcStub.list(channel.client(),
-            metadata.getNamespace(), listOpts);
+            vmDef.namespace(), listOpts);
         var knownPvcs = knownDisks.stream().map(K8sV1PvcStub::name)
             .collect(Collectors.toSet());
 
@@ -95,23 +97,23 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         reconcileRunnerDataPvc(event, model, channel, knownPvcs);
 
         // Reconcile pvcs for defined disks
-        var diskDefs = GsonPtr.to((JsonObject) model.get("cr"))
-            .getAsListOf(JsonObject.class, "spec", "vm", "disks");
+        var diskDefs = DataPath.<List<Map<String, Object>>> get(vmDef.spec(),
+            "vm", "disks").orElse(List.of());
         var diskCounter = 0;
         for (var diskDef : diskDefs) {
-            if (!diskDef.has("volumeClaimTemplate")) {
+            if (!diskDef.containsKey("volumeClaimTemplate")) {
                 continue;
             }
-            var diskName = GsonPtr.to(diskDef)
-                .getAsString("volumeClaimTemplate", "metadata", "name")
-                .map(name -> name + "-disk").orElse("disk-" + diskCounter);
+            var diskName = DataPath.get(diskDef, "volumeClaimTemplate",
+                "metadata", "name").map(name -> name + "-disk")
+                .orElse("disk-" + diskCounter);
             diskCounter += 1;
-            diskDef.addProperty("generatedDiskName", diskName);
+            diskDef.put("generatedDiskName", diskName);
 
             // Don't do anything if pvc with old (sts generated) name exists.
-            var stsDiskPvcName = diskName + "-" + metadata.getName() + "-0";
+            var stsDiskPvcName = diskName + "-" + vmDef.name() + "-0";
             if (knownPvcs.contains(stsDiskPvcName)) {
-                diskDef.addProperty("generatedPvcName", stsDiskPvcName);
+                diskDef.put("generatedPvcName", stsDiskPvcName);
                 continue;
             }
 
@@ -127,18 +129,18 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
             Set<String> knownPvcs)
             throws TemplateNotFoundException, MalformedTemplateNameException,
             ParseException, IOException, TemplateException, ApiException {
-        var metadata = event.vmDefinition().getMetadata();
+        var vmDef = event.vmDefinition();
 
         // Look for old (sts generated) name.
         var stsRunnerDataPvcName
-            = "runner-data" + "-" + metadata.getName() + "-0";
+            = "runner-data" + "-" + vmDef.name() + "-0";
         if (knownPvcs.contains(stsRunnerDataPvcName)) {
             model.put("runnerDataPvcName", stsRunnerDataPvcName);
             return;
         }
 
         // Generate PVC
-        model.put("runnerDataPvcName", metadata.getName() + "-runner-data");
+        model.put("runnerDataPvcName", vmDef.name() + "-runner-data");
         var fmTemplate = fmConfig.getTemplate("runnerDataPvc.ftl.yaml");
         StringWriter out = new StringWriter();
         fmTemplate.process(model, out);
@@ -149,7 +151,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 
         // Do apply changes
         var pvcStub = K8sV1PvcStub.get(channel.client(),
-            metadata.getNamespace(), (String) model.get("runnerDataPvcName"));
+            vmDef.namespace(), (String) model.get("runnerDataPvcName"));
         PatchOptions opts = new PatchOptions();
         opts.setForce(true);
         opts.setFieldManager("kubernetes-java-kubectl-apply");
@@ -165,13 +167,13 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
             Map<String, Object> model, VmChannel channel)
             throws TemplateNotFoundException, MalformedTemplateNameException,
             ParseException, IOException, TemplateException, ApiException {
-        var metadata = event.vmDefinition().getMetadata();
+        var vmDef = event.vmDefinition();
 
         // Generate PVC
-        var diskDef = GsonPtr.to((JsonElement) model.get("disk"));
-        var pvcName = metadata.getName() + "-"
-            + diskDef.getAsString("generatedDiskName").get();
-        diskDef.set("generatedPvcName", pvcName);
+        @SuppressWarnings("unchecked")
+        var diskDef = (Map<String, Object>) model.get("disk");
+        var pvcName = vmDef.name() + "-" + diskDef.get("generatedDiskName");
+        diskDef.put("generatedPvcName", pvcName);
         var fmTemplate = fmConfig.getTemplate("runnerDiskPvc.ftl.yaml");
         StringWriter out = new StringWriter();
         fmTemplate.process(model, out);
@@ -181,9 +183,8 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
             new Yaml(new SafeConstructor(new LoaderOptions())), out.toString());
 
         // Do apply changes
-        var pvcStub = K8sV1PvcStub.get(channel.client(),
-            metadata.getNamespace(), GsonPtr.to((JsonElement) model.get("disk"))
-                .getAsString("generatedPvcName").get());
+        var pvcStub
+            = K8sV1PvcStub.get(channel.client(), vmDef.namespace(), pvcName);
         PatchOptions opts = new PatchOptions();
         opts.setForce(true);
         opts.setFieldManager("kubernetes-java-kubectl-apply");

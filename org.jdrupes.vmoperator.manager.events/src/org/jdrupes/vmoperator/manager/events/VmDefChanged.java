@@ -19,6 +19,7 @@
 package org.jdrupes.vmoperator.manager.events;
 
 import org.jdrupes.vmoperator.common.K8sObserver;
+import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinitionModel;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Components;
@@ -36,7 +37,24 @@ public class VmDefChanged extends Event<Void> {
 
     private final K8sObserver.ResponseType type;
     private final boolean specChanged;
-    private final VmDefinitionModel vmDef;
+    private final VmDefinition vmDefinition;
+    private final VmDefinitionModel vmModel;
+
+    /**
+     * Instantiates a new VM changed event.
+     *
+     * @param type the type
+     * @param specChanged the spec part changed
+     * @param vmModel the VM definition
+     */
+    @Deprecated
+    public VmDefChanged(K8sObserver.ResponseType type, boolean specChanged,
+            VmDefinitionModel vmModel, VmDefinition vmDefinition) {
+        this.type = type;
+        this.specChanged = specChanged;
+        this.vmModel = vmModel;
+        this.vmDefinition = vmDefinition;
+    }
 
     /**
      * Instantiates a new VM changed event.
@@ -46,10 +64,11 @@ public class VmDefChanged extends Event<Void> {
      * @param vmDefinition the VM definition
      */
     public VmDefChanged(K8sObserver.ResponseType type, boolean specChanged,
-            VmDefinitionModel vmDefinition) {
+            VmDefinition vmDefinition) {
         this.type = type;
         this.specChanged = specChanged;
-        this.vmDef = vmDefinition;
+        this.vmModel = null;
+        this.vmDefinition = vmDefinition;
     }
 
     /**
@@ -73,15 +92,25 @@ public class VmDefChanged extends Event<Void> {
      *
      * @return the object.
      */
-    public VmDefinitionModel vmDefinition() {
-        return vmDef;
+    @Deprecated
+    public VmDefinitionModel vmModel() {
+        return vmModel;
+    }
+
+    /**
+     * Return the VM definition.
+     *
+     * @return the VM definition
+     */
+    public VmDefinition vmDefinition() {
+        return vmDefinition;
     }
 
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
         builder.append(Components.objectName(this)).append(" [")
-            .append(vmDef.getMetadata().getName()).append(' ').append(type);
+            .append(vmModel.getMetadata().getName()).append(' ').append(type);
         if (channels() != null) {
             builder.append(", channels=").append(Channel.toString(channels()));
         }

@@ -462,7 +462,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
     public void onVmDefChanged(VmDefChanged event, VmChannel channel)
             throws IOException {
         var vmDef = new VmDefinitionModel(channel.client().getJSON()
-            .getGson(), event.vmDefinition().data());
+            .getGson(), event.vmModel().data());
         GsonPtr.to(vmDef.data()).to("metadata").get(JsonObject.class)
             .remove("managedFields");
         var vmName = vmDef.getMetadata().getName();

@@ -18,7 +18,6 @@
 
 package org.jdrupes.vmoperator.manager;
 
-import com.google.gson.JsonPrimitive;
 import freemarker.template.TemplateException;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
@@ -29,6 +28,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Map;
 import java.util.logging.Logger;
+import org.jdrupes.vmoperator.common.DataPath;
 import org.jdrupes.vmoperator.common.K8sV1SecretStub;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.manager.Constants.COMP_DISPLAY_SECRET;
@@ -36,7 +36,6 @@ import static org.jdrupes.vmoperator.manager.Constants.DATA_DISPLAY_PASSWORD;
 import static org.jdrupes.vmoperator.manager.Constants.DATA_PASSWORD_EXPIRY;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
-import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jose4j.base64url.Base64;
 
 /**
@@ -61,32 +60,32 @@ import org.jose4j.base64url.Base64;
             Map<String, Object> model, VmChannel channel)
             throws IOException, TemplateException, ApiException {
         // Secret needed at all?
-        var display = GsonPtr.to(event.vmDefinition().data()).to("spec", "vm",
-            "display");
-        if (!display.get(JsonPrimitive.class, "spice", "generateSecret")
-            .map(JsonPrimitive::getAsBoolean).orElse(true)) {
+        var display = DataPath
+            .get(event.vmDefinition().spec(), "vm", "display").get();
+        if (!DataPath.<Boolean> get(display, "spice", "generateSecret")
+            .orElse(true)) {
             return;
         }
 
         // Check if exists
-        var metadata = event.vmDefinition().getMetadata();
+        var vmDef = event.vmDefinition();
         ListOptions options = new ListOptions();
         options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
             + "app.kubernetes.io/component=" + COMP_DISPLAY_SECRET + ","
-            + "app.kubernetes.io/instance=" + metadata.getName());
-        var stubs = K8sV1SecretStub.list(channel.client(),
-            metadata.getNamespace(), options);
+            + "app.kubernetes.io/instance=" + vmDef.name());
+        var stubs = K8sV1SecretStub.list(channel.client(), vmDef.namespace(),
+            options);
         if (!stubs.isEmpty()) {
             return;
         }
 
         // Create secret
         var secret = new V1Secret();
-        secret.setMetadata(new V1ObjectMeta().namespace(metadata.getNamespace())
-            .name(metadata.getName() + "-" + COMP_DISPLAY_SECRET)
+        secret.setMetadata(new V1ObjectMeta().namespace(vmDef.namespace())
+            .name(vmDef.name() + "-" + COMP_DISPLAY_SECRET)
             .putLabelsItem("app.kubernetes.io/name", APP_NAME)
             .putLabelsItem("app.kubernetes.io/component", COMP_DISPLAY_SECRET)
-            .putLabelsItem("app.kubernetes.io/instance", metadata.getName()));
+            .putLabelsItem("app.kubernetes.io/instance", vmDef.name()));
         secret.setType("Opaque");
         SecureRandom random = null;
         try {
