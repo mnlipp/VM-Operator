@@ -20,7 +20,6 @@ package org.jdrupes.vmoperator.manager;
 
 import freemarker.template.Configuration;
 import freemarker.template.TemplateException;
-import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.generic.dynamic.Dynamics;
 import io.kubernetes.client.util.generic.options.PatchOptions;
@@ -104,9 +103,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         PatchOptions opts = new PatchOptions();
         opts.setForce(true);
         opts.setFieldManager("kubernetes-java-kubectl-apply");
-        if (podStub.patch(V1Patch.PATCH_FORMAT_APPLY_YAML,
-            new V1Patch(channel.client().getJSON().serialize(podDef)), opts)
-            .isEmpty()) {
+        if (podStub.apply(podDef).isEmpty()) {
             logger.warning(
                 () -> "Could not patch pod for " + podStub.name());
         }
