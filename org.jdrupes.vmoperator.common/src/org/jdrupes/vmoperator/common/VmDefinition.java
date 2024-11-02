@@ -20,15 +20,16 @@ package org.jdrupes.vmoperator.common;
 
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import org.jdrupes.vmoperator.util.DataPath;
 
 /**
@@ -273,19 +274,17 @@ public class VmDefinition {
      */
     public Set<Permission> permissionsFor(String user,
             Collection<String> roles) {
-        // TODO
-        return null;
-//        return GsonPtr.to(data())
-//            .getAsListOf(JsonObject.class, "spec", "permissions")
-//            .stream().filter(p -> GsonPtr.to(p).getAsString("user")
-//                .map(u -> u.equals(user)).orElse(false)
-//                || GsonPtr.to(p).getAsString("role").map(roles::contains)
-//                    .orElse(false))
-//            .map(p -> GsonPtr.to(p).getAsListOf(JsonPrimitive.class, "may")
-//                .stream())
-//            .flatMap(Function.identity()).map(p -> p.getAsString())
-//            .map(Permission::parse).map(Set::stream)
-//            .flatMap(Function.identity()).collect(Collectors.toSet());
+        return DataPath
+            .<List<Map<String, Object>>> get(this, "spec", "permissions")
+            .orElse(Collections.emptyList()).stream()
+            .filter(p -> DataPath.get(p, "user").map(u -> u.equals(user))
+                .orElse(false)
+                || DataPath.get(p, "role").map(roles::contains).orElse(false))
+            .map(p -> DataPath.<List<String>> get(p, "may")
+                .orElse(Collections.emptyList()).stream())
+            .flatMap(Function.identity())
+            .map(Permission::parse).map(Set::stream)
+            .flatMap(Function.identity()).collect(Collectors.toSet());
     }
 
     /**
@@ -294,10 +293,7 @@ public class VmDefinition {
      * @return the optional
      */
     public Optional<Long> displayPasswordSerial() {
-        // TODO
-        return null;
-//        return GsonPtr.to(status())
-//            .get(JsonPrimitive.class, "displayPasswordSerial")
-//            .map(JsonPrimitive::getAsLong);
+        return DataPath.<Number> get(status(), "displayPasswordSerial")
+            .map(Number::longValue);
     }
 }

@@ -25,6 +25,10 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
@@ -47,6 +51,7 @@ import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
 import org.jdrupes.vmoperator.manager.events.ChannelManager;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
+import org.jdrupes.vmoperator.util.DataPath;
 import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Event;
@@ -176,12 +181,58 @@ public class VmMonitor extends
         }
     }
 
-    private void addDynamicData(K8sClient client, VmDefinition vmState,
+    @SuppressWarnings("PMD.AvoidDuplicateLiterals")
+    private void addDynamicData(K8sClient client, VmDefinition vmDef,
             VmDefinition prevState) {
         // Maintain (or initialize) the resetCount
-        vmState.extra("resetCount",
+        vmDef.extra("resetCount",
             Optional.ofNullable(prevState).map(d -> d.extra("resetCount"))
                 .orElse(0L));
+
+        // Node information
+        // Add defaults in case the VM is not running
+        vmDef.extra("nodeName", "");
+        vmDef.extra("nodeAddress", "");
+
+        // VM definition status changes before the pod terminates.
+        // This results in pod information being shown for a stopped
+        // VM which is irritating. So check condition first.
+        @SuppressWarnings("PMD.LambdaCanBeMethodReference")
+        var isRunning = DataPath
+            .<List<Map<String, Object>>> get(vmDef.status(), "conditions")
+            .orElse(Collections.emptyList()).stream()
+            .filter(cond -> DataPath.get(cond, "type")
+                .map(t -> "Running".equals(t)).orElse(false))
+            .findFirst().map(cond -> DataPath.get(cond, "status")
+                .map(s -> "True".equals(s)).orElse(false))
+            .orElse(false);
+        if (!isRunning) {
+            return;
+        }
+        var podSearch = new ListOptions();
+        podSearch.setLabelSelector("app.kubernetes.io/name=" + APP_NAME
+            + ",app.kubernetes.io/component=" + APP_NAME
+            + ",app.kubernetes.io/instance=" + vmDef.name());
+        try {
+            var podList
+                = K8sV1PodStub.list(client, namespace(), podSearch);
+            for (var podStub : podList) {
+                var nodeName = podStub.model().get().getSpec().getNodeName();
+                vmDef.extra("nodeName", nodeName);
+                logger.fine(() -> "Added node name " + nodeName
+                    + " to VM info for " + vmDef.name());
+                @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+                var addrs = new ArrayList<String>();
+                podStub.model().get().getStatus().getPodIPs().stream()
+                    .map(ip -> ip.getIp()).forEach(addrs::add);
+                vmDef.extra("nodeAddresses", addrs);
+                logger.fine(() -> "Added node addresses " + addrs
+                    + " to VM info for " + vmDef.name());
+            }
+        } catch (ApiException e) {
+            logger.log(Level.WARNING, e,
+                () -> "Cannot access node information: " + e.getMessage());
+        }
     }
 
     @Deprecated
