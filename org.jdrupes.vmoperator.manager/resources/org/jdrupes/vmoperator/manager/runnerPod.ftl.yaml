@@ -67,7 +67,7 @@ spec:
     <#if spec.resources??>
     resources: ${ toJson(spec.resources) }
     <#else>
-    <#if spec.vm.currentCpus?? || cr.spec.vm.currentRam?? >
+    <#if spec.vm.currentCpus?? || spec.vm.currentRam?? >
     resources:
       requests:
         <#if spec.vm.currentCpus?? >
@@ -75,7 +75,7 @@ spec:
         <#if reconciler.cpuOvercommit??>
         <#assign factor = reconciler.cpuOvercommit * 1.0 />
         </#if>
-        cpu: ${ (parseQuantity(cr.spec.vm.currentCpus.asString) / factor)?c }
+        cpu: ${ (parseQuantity(spec.vm.currentCpus.asString) / factor)?c }
         </#if>
         <#if spec.vm.currentRam?? >
         <#assign factor = 1.25 />
