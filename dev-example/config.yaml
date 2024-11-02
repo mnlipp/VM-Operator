@@ -9,6 +9,14 @@
     "/Reconciler":
       runnerData:
         storageClassName: null
+      loadBalancerService:
+        labels:
+          label1: label1
+          label2: toBeReplaced
+        annotations:
+          metallb.universe.tf/loadBalancerIPs: 192.168.168.1
+          metallb.universe.tf/ip-allocated-from-pool: single-common
+          metallb.universe.tf/allow-shared-ip: single-common
   "/GuiSocketServer":
     port: 8888
   "/GuiHttpServer":
@@ -17,12 +25,12 @@
       "/WebConsole":
         "/LoginConlet":
           users:
-            - name: admin
-              fullName: Administrator
-              password: "$2b$05$NiBd74ZGdplLC63ePZf1f.UtjMKkbQ23cQoO2OKOFalDBHWAOy21."
-            - name: test
-              fullName: Test Account
-              password: "$2b$05$hZaI/jToXf/d3BctZdT38Or7H7h6Pn2W3WiB49p5AyhDHFkkYCvo2"
+          - name: admin
+            fullName: Administrator
+            password: "$2b$05$NiBd74ZGdplLC63ePZf1f.UtjMKkbQ23cQoO2OKOFalDBHWAOy21."
+          - name: test
+            fullName: Test Account
+            password: "$2b$05$hZaI/jToXf/d3BctZdT38Or7H7h6Pn2W3WiB49p5AyhDHFkkYCvo2"
         "/RoleConfigurator":
           rolesByUser:
             # User admin has role admin

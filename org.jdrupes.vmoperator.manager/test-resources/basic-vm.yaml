@@ -1,0 +1,64 @@
+apiVersion: "vmoperator.jdrupes.org/v1"
+kind: VirtualMachine
+metadata:
+  namespace: vmop-dev
+  name: unittest-vm
+spec:
+  image:
+    repository: docker-registry.lan.mnl.de
+    path: vmoperator/this.will.never.start
+    version: 0.0.0
+    
+  cloudInit:
+    metaData: {}
+  
+  vm:
+    # state: Running
+    maximumRam: 4Gi
+    currentRam: 2Gi
+    maximumCpus: 4
+    currentCpus: 2
+    powerdownTimeout: 1
+  
+    networks:
+    - user: {}
+    disks:
+    - cdrom:
+        image: https://test.com/test.iso
+      bootindex: 0
+    - cdrom:
+        image: "image.iso"
+    - volumeClaimTemplate:
+        metadata:
+          name: system
+          annotations:
+            use_as: system-disk
+        spec:
+          storageClassName: local-path
+          resources:
+            requests:
+              storage: 1Gi
+    - volumeClaimTemplate:
+        spec:
+          storageClassName: local-path
+          resources:
+            requests:
+              storage: 1Gi
+
+    display:
+      outputs: 2
+      spice:
+        port: 5812
+        usbRedirects: 2
+
+  resources:
+    requests:
+      cpu: 1
+      memory: 2Gi
+    
+  loadBalancerService:
+    labels:
+      label2: replaced
+      label3: added
+    annotations:
+      anno1: added
