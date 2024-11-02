@@ -25,6 +25,7 @@ import org.jdrupes.vmoperator.common.K8sV1DeploymentStub;
 import org.jdrupes.vmoperator.common.K8sV1PodStub;
 import org.jdrupes.vmoperator.common.K8sV1PvcStub;
 import org.jdrupes.vmoperator.common.K8sV1SecretStub;
+import org.jdrupes.vmoperator.common.K8sV1ServiceStub;
 import org.jdrupes.vmoperator.util.DataPath;
 import org.junit.jupiter.api.AfterAll;
 import static org.junit.jupiter.api.Assertions.*;
@@ -51,6 +52,13 @@ class BasicTests {
         // Get client
         client = new K8sClient();
 
+        // Update manager pod by scaling deployment
+        mgrDeployment
+            = K8sV1DeploymentStub.get(client, "vmop-dev", "vm-operator");
+        mgrDeployment.scale(0);
+        mgrDeployment.scale(1);
+        waitForManager();
+
         // Context for working with our CR
         var apiRes = K8s.context(client, VM_OP_GROUP, null, VM_OP_KIND_VM);
         assertTrue(apiRes.isPresent());
@@ -67,13 +75,7 @@ class BasicTests {
         for (var secret : secrets) {
             secret.delete();
         }
-
-        // Update manager pod by scaling deployment
-        mgrDeployment
-            = K8sV1DeploymentStub.get(client, "vmop-dev", "vm-operator");
-        mgrDeployment.scale(0);
-        mgrDeployment.scale(1);
-        waitForManager();
+        deletePvcs();
 
         // Load from Yaml
         var rdr = new FileReader("test-resources/basic-vm.yaml");
@@ -95,11 +97,7 @@ class BasicTests {
         fail("vm-operator not deployed.");
     }
 
-    @AfterAll
-    static void tearDownAfterClass() throws Exception {
-        // Cleanup
-        K8sDynamicStub.get(client, vmsContext, "vmop-dev", VM_NAME)
-            .delete();
+    private static void deletePvcs() throws ApiException {
         ListOptions listOpts = new ListOptions();
         listOpts.setLabelSelector(
             "app.kubernetes.io/managed-by=" + VM_OP_NAME + ","
@@ -109,6 +107,14 @@ class BasicTests {
         for (var pvc : knownPvcs) {
             pvc.delete();
         }
+    }
+
+    @AfterAll
+    static void tearDownAfterClass() throws Exception {
+        // Cleanup
+        K8sDynamicStub.get(client, vmsContext, "vmop-dev", VM_NAME)
+            .delete();
+        deletePvcs();
 
         // Bring down manager
         mgrDeployment.scale(0);
@@ -265,7 +271,6 @@ class BasicTests {
 
     @Test
     void testPod() throws ApiException, InterruptedException {
-        // Do apply changes (set replicas to 0)
         PatchOptions opts = new PatchOptions();
         opts.setForce(true);
         opts.setFieldManager("kubernetes-java-kubectl-apply");
@@ -274,7 +279,7 @@ class BasicTests {
                 + "\", \"value\": \"Running\"}]"),
             client.defaultPatchOptions()).isPresent());
         var stub = K8sV1PodStub.get(client, "vmop-dev", VM_NAME);
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 20; i++) {
             if (stub.model().isPresent()) {
                 break;
             }
@@ -299,6 +304,28 @@ class BasicTests {
             List.of("containers", 0, "name"), VM_NAME,
             List.of("containers", 0, "resources", "requests", "cpu"),
             Quantity.fromString("1")));
+    }
+
+    @Test
+    public void testLoadBalancer() throws ApiException, InterruptedException {
+        var stub = K8sV1ServiceStub.get(client, "vmop-dev", VM_NAME);
+        for (int i = 0; i < 10; i++) {
+            if (stub.model().isPresent()) {
+                break;
+            }
+            Thread.sleep(1000);
+        }
+        var svc = stub.model().get();
+        checkProps(svc.getMetadata(), Map.of(
+            List.of("labels", "app.kubernetes.io/name"), APP_NAME,
+            List.of("labels", "app.kubernetes.io/instance"), VM_NAME,
+            List.of("labels", "app.kubernetes.io/managed-by"), VM_OP_NAME,
+            List.of("labels", "label1"), "label1",
+            List.of("labels", "label2"), "replaced",
+            List.of("labels", "label3"), "added",
+            List.of("annotations", "metallb.universe.tf/loadBalancerIPs"),
+            "192.168.168.1",
+            List.of("annotations", "anno1"), "added"));
     }
 
     private void checkProps(Object obj,

@@ -27,6 +27,7 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.Strings;
 import io.kubernetes.client.util.generic.GenericKubernetesApi;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
+import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import io.kubernetes.client.util.generic.options.GetOptions;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import io.kubernetes.client.util.generic.options.PatchOptions;
@@ -47,7 +48,7 @@ import java.util.function.Function;
  * @param <O> the generic type
  * @param <L> the generic type
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
+@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.TooManyMethods" })
 public class K8sGenericStub<O extends KubernetesObject,
         L extends KubernetesListObject> {
     protected final K8sClient client;
@@ -224,7 +225,7 @@ public class K8sGenericStub<O extends KubernetesObject,
      * @param patchType the patch type
      * @param patch the patch
      * @param options the options
-     * @return the kubernetes api response
+     * @return the kubernetes api response if successful
      * @throws ApiException the api exception
      */
     public Optional<O> patch(String patchType, V1Patch patch,
@@ -239,13 +240,28 @@ public class K8sGenericStub<O extends KubernetesObject,
      *
      * @param patchType the patch type
      * @param patch the patch
-     * @return the kubernetes api response
+     * @return the kubernetes api response if successful
      * @throws ApiException the api exception
      */
     public Optional<O>
             patch(String patchType, V1Patch patch) throws ApiException {
         PatchOptions opts = new PatchOptions();
         return patch(patchType, patch, opts);
+    }
+
+    /**
+     * Apply the given definition. 
+     *
+     * @param def the def
+     * @return the kubernetes api response if successful
+     * @throws ApiException the api exception
+     */
+    public Optional<O> apply(DynamicKubernetesObject def) throws ApiException {
+        PatchOptions opts = new PatchOptions();
+        opts.setForce(true);
+        opts.setFieldManager("kubernetes-java-kubectl-apply");
+        return patch(V1Patch.PATCH_FORMAT_APPLY_YAML,
+            new V1Patch(client.getJSON().serialize(def)), opts);
     }
 
     /**

@@ -58,5 +58,7 @@ spec:
     
   loadBalancerService:
     labels:
-      test2: null
-      test3: added
+      label2: replaced
+      label3: added
+    annotations:
+      anno1: added
