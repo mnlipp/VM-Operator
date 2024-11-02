@@ -28,7 +28,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Map;
 import java.util.logging.Logger;
-
 import org.jdrupes.vmoperator.common.K8sV1SecretStub;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.manager.Constants.COMP_DISPLAY_SECRET;

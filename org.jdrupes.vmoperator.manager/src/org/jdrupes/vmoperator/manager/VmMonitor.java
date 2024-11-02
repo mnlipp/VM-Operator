@@ -18,8 +18,6 @@
 
 package org.jdrupes.vmoperator.manager;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Watch;
@@ -52,7 +50,6 @@ import org.jdrupes.vmoperator.manager.events.ChannelManager;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.util.DataPath;
-import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Event;
 
@@ -137,8 +134,6 @@ public class VmMonitor extends
         VmDefinition vmDef = null;
         if (vmModel.data() != null) {
             // New data, augment and save
-            addDynamicData(channel.client(), vmModel, channel.vmModel());
-            channel.setVmModel(vmModel);
             vmDef = client.getJSON().getGson().fromJson(vmModel.data(),
                 VmDefinition.class);
             addDynamicData(channel.client(), vmDef, channel.vmDefinition());
@@ -146,7 +141,6 @@ public class VmMonitor extends
         }
         if (vmDef == null) {
             // Reuse cached (e.g. if deleted)
-            vmModel = channel.vmModel();
             vmDef = channel.vmDefinition();
         }
         if (vmDef == null) {
@@ -160,13 +154,12 @@ public class VmMonitor extends
         channel.pipeline()
             .fire(Event.onCompletion(
                 new VmDefChanged(ResponseType.valueOf(response.type),
-                    channel.setGeneration(
-                        response.object.getMetadata().getGeneration()),
-                    vmModel, vmDef),
+                    channel.setGeneration(response.object.getMetadata()
+                        .getGeneration()),
+                    vmDef),
                 e -> {
                     if (e.type() == ResponseType.DELETED) {
-                        channelManager
-                            .remove(e.vmModel().metadata().getName());
+                        channelManager.remove(e.vmDefinition().name());
                     }
                 }), channel);
     }
@@ -228,54 +221,6 @@ public class VmMonitor extends
                 vmDef.extra("nodeAddresses", addrs);
                 logger.fine(() -> "Added node addresses " + addrs
                     + " to VM info for " + vmDef.name());
-            }
-        } catch (ApiException e) {
-            logger.log(Level.WARNING, e,
-                () -> "Cannot access node information: " + e.getMessage());
-        }
-    }
-
-    @Deprecated
-    private void addDynamicData(K8sClient client, VmDefinitionModel vmState,
-            VmDefinitionModel prevState) {
-        var rootNode = GsonPtr.to(vmState.data()).get(JsonObject.class);
-
-        // Add defaults in case the VM is not running
-        rootNode.addProperty("nodeName", "");
-        rootNode.addProperty("nodeAddress", "");
-
-        // VM definition status changes before the pod terminates.
-        // This results in pod information being shown for a stopped
-        // VM which is irritating. So check condition first.
-        var isRunning = GsonPtr.to(rootNode).to("status", "conditions")
-            .get(JsonArray.class)
-            .asList().stream().filter(el -> "Running"
-                .equals(((JsonObject) el).get("type").getAsString()))
-            .findFirst().map(el -> "True"
-                .equals(((JsonObject) el).get("status").getAsString()))
-            .orElse(false);
-        if (!isRunning) {
-            return;
-        }
-        var podSearch = new ListOptions();
-        podSearch.setLabelSelector("app.kubernetes.io/name=" + APP_NAME
-            + ",app.kubernetes.io/component=" + APP_NAME
-            + ",app.kubernetes.io/instance=" + vmState.getMetadata().getName());
-        try {
-            var podList
-                = K8sV1PodStub.list(client, namespace(), podSearch);
-            for (var podStub : podList) {
-                var nodeName = podStub.model().get().getSpec().getNodeName();
-                rootNode.addProperty("nodeName", nodeName);
-                logger.fine(() -> "Added node name " + nodeName
-                    + " to VM info for " + vmState.getMetadata().getName());
-                @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
-                var addrs = new JsonArray();
-                podStub.model().get().getStatus().getPodIPs().stream()
-                    .map(ip -> ip.getIp()).forEach(addrs::add);
-                rootNode.add("nodeAddresses", addrs);
-                logger.fine(() -> "Added node addresses " + addrs
-                    + " to VM info for " + vmState.getMetadata().getName());
             }
         } catch (ApiException e) {
             logger.log(Level.WARNING, e,
