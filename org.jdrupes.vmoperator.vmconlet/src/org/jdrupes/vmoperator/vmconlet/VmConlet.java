@@ -201,7 +201,6 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
      *
      * @param event the event
      * @param channel the channel
-     * @throws JsonDecodeException the json decode exception
      * @throws IOException 
      */
     @Handler(namedChannels = "manager")

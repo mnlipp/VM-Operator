@@ -449,7 +449,6 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
      *
      * @param event the event
      * @param channel the channel
-     * @throws JsonDecodeException the json decode exception
      * @throws IOException 
      */
     @Handler(namedChannels = "manager")
