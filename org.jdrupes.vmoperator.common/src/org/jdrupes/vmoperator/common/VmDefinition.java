@@ -176,6 +176,29 @@ public class VmDefinition {
     }
 
     /**
+     * Get a value from the spec using {@link DataPath#get}.
+     *
+     * @param <T> the generic type
+     * @param selectors the selectors
+     * @return the value, if found
+     */
+    public <T> Optional<T> fromSpec(Object... selectors) {
+        return DataPath.get(spec, selectors);
+    }
+
+    /**
+     * Get a value from the `spec().get("vm")` using {@link DataPath#get}.
+     *
+     * @param <T> the generic type
+     * @param selectors the selectors
+     * @return the value, if found
+     */
+    public <T> Optional<T> fromVm(Object... selectors) {
+        return DataPath.get(spec, "vm")
+            .flatMap(vm -> DataPath.get(vm, selectors));
+    }
+
+    /**
      * Sets the spec.
      *
      * @param spec the spec to set
@@ -200,6 +223,17 @@ public class VmDefinition {
      */
     public Map<String, Object> status() {
         return status;
+    }
+
+    /**
+     * Get a value from the status using {@link DataPath#get}.
+     *
+     * @param <T> the generic type
+     * @param selectors the selectors
+     * @return the value, if found
+     */
+    public <T> Optional<T> fromStatus(Object... selectors) {
+        return DataPath.get(status, selectors);
     }
 
     /**
@@ -259,7 +293,7 @@ public class VmDefinition {
      */
     public RequestedVmState vmState() {
         // TODO
-        return DataPath.get(this, "spec", "vm", "state")
+        return fromVm("state")
             .map(s -> "Running".equals(s) ? RequestedVmState.RUNNING
                 : RequestedVmState.STOPPED)
             .orElse(RequestedVmState.STOPPED);
@@ -274,8 +308,7 @@ public class VmDefinition {
      */
     public Set<Permission> permissionsFor(String user,
             Collection<String> roles) {
-        return DataPath
-            .<List<Map<String, Object>>> get(this, "spec", "permissions")
+        return this.<List<Map<String, Object>>> fromSpec("permissions")
             .orElse(Collections.emptyList()).stream()
             .filter(p -> DataPath.get(p, "user").map(u -> u.equals(user))
                 .orElse(false)
@@ -293,7 +326,7 @@ public class VmDefinition {
      * @return the optional
      */
     public Optional<Long> displayPasswordSerial() {
-        return DataPath.<Number> get(status(), "displayPasswordSerial")
+        return this.<Number> fromStatus("displayPasswordSerial")
             .map(Number::longValue);
     }
 }

@@ -94,8 +94,8 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         reconcileRunnerDataPvc(event, model, channel, knownPvcs);
 
         // Reconcile pvcs for defined disks
-        var diskDefs = DataPath.<List<Map<String, Object>>> get(vmDef.spec(),
-            "vm", "disks").orElse(List.of());
+        var diskDefs = vmDef.<List<Map<String, Object>>> fromVm("disks")
+            .orElse(List.of());
         var diskCounter = 0;
         for (var diskDef : diskDefs) {
             if (!diskDef.containsKey("volumeClaimTemplate")) {

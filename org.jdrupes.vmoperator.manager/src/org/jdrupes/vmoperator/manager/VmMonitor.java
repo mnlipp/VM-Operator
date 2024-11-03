@@ -191,14 +191,14 @@ public class VmMonitor extends
         // This results in pod information being shown for a stopped
         // VM which is irritating. So check condition first.
         @SuppressWarnings("PMD.LambdaCanBeMethodReference")
-        var isRunning = DataPath
-            .<List<Map<String, Object>>> get(vmDef.status(), "conditions")
-            .orElse(Collections.emptyList()).stream()
-            .filter(cond -> DataPath.get(cond, "type")
-                .map(t -> "Running".equals(t)).orElse(false))
-            .findFirst().map(cond -> DataPath.get(cond, "status")
-                .map(s -> "True".equals(s)).orElse(false))
-            .orElse(false);
+        var isRunning
+            = vmDef.<List<Map<String, Object>>> fromStatus("conditions")
+                .orElse(Collections.emptyList()).stream()
+                .filter(cond -> DataPath.get(cond, "type")
+                    .map(t -> "Running".equals(t)).orElse(false))
+                .findFirst().map(cond -> DataPath.get(cond, "status")
+                    .map(s -> "True".equals(s)).orElse(false))
+                .orElse(false);
         if (!isRunning) {
             return;
         }

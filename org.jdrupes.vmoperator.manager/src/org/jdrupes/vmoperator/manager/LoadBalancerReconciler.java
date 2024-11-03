@@ -37,7 +37,6 @@ import org.jdrupes.vmoperator.common.K8sV1ServiceStub;
 import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
-import org.jdrupes.vmoperator.util.DataPath;
 import org.jdrupes.vmoperator.util.GsonPtr;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -97,8 +96,9 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 
         // Load balancer can also be turned off for VM
         var vmDef = event.vmDefinition();
-        if (DataPath.<Map<String, Map<String, String>>> get(vmDef, "spec",
-            LOAD_BALANCER_SERVICE).map(m -> m.isEmpty()).orElse(false)) {
+        if (vmDef
+            .<Map<String, Map<String, String>>> fromSpec(LOAD_BALANCER_SERVICE)
+            .map(m -> m.isEmpty()).orElse(false)) {
             return;
         }
 
@@ -130,9 +130,8 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
             Map<String, Map<String, String>> defaults,
             VmDefinition vmDefinition) {
         // Get specific load balancer metadata from VM definition
-        var vmLbMeta = DataPath
-            .<Map<String, Map<String, String>>> get(vmDefinition, "spec",
-                LOAD_BALANCER_SERVICE)
+        var vmLbMeta = vmDefinition
+            .<Map<String, Map<String, String>>> fromSpec(LOAD_BALANCER_SERVICE)
             .orElse(Collections.emptyMap());
 
         // Merge

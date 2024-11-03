@@ -560,8 +560,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
             logger.severe(() -> "Failed to find display IP for " + vmName);
             return;
         }
-        var port = DataPath
-            .<Number> get(vmDef.spec(), "vm", "display", "spice", "port")
+        var port = vmDef.<Number> fromVm("display", "spice", "port")
             .map(Number::longValue);
         if (port.isEmpty()) {
             logger.severe(() -> "No port defined for display of " + vmName);
@@ -575,8 +574,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
         if (password != null) {
             data.append("password=").append(password).append('\n');
         }
-        DataPath
-            .<String> get(vmDef.spec(), "vm", "display", "spice", "proxyUrl")
+        vmDef.<String> fromVm("display", "spice", "proxyUrl")
             .ifPresent(u -> {
                 if (!Strings.isNullOrEmpty(u)) {
                     data.append("proxy=").append(u).append('\n');
@@ -591,8 +589,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
     }
 
     private Optional<InetAddress> displayIp(VmDefinition vmDef) {
-        Optional<String> server = DataPath.get(vmDef.spec(),
-            "vm", "display", "spice", "server");
+        Optional<String> server = vmDef.fromVm("display", "spice", "server");
         if (server.isPresent()) {
             var srv = server.get();
             try {

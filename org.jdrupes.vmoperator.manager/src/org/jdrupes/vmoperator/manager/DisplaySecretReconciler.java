@@ -60,8 +60,7 @@ import org.jose4j.base64url.Base64;
             Map<String, Object> model, VmChannel channel)
             throws IOException, TemplateException, ApiException {
         // Secret needed at all?
-        var display = DataPath
-            .get(event.vmDefinition().spec(), "vm", "display").get();
+        var display = event.vmDefinition().fromVm("display").get();
         if (!DataPath.<Boolean> get(display, "spice", "generateSecret")
             .orElse(true)) {
             return;

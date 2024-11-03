@@ -322,21 +322,20 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
         Summary summary = new Summary();
         for (var vmDef : channelTracker.associated()) {
             summary.totalVms += 1;
-            var status = vmDef.status();
-            summary.usedCpus += DataPath.<Number> get(status, "cpus")
+            summary.usedCpus += vmDef.<Number> fromStatus("cpus")
                 .map(Number::intValue).orElse(0);
             summary.usedRam = summary.usedRam
-                .add(DataPath.<String> get(status, "ram")
+                .add(vmDef.<String> fromStatus("ram")
                     .map(r -> Quantity.fromString(r).getNumber().toBigInteger())
                     .orElse(BigInteger.ZERO));
-            summary.runningVms = DataPath
-                .<List<Map<String, Object>>> get(vmDef.status(), "conditions")
-                .orElse(Collections.emptyList()).stream()
-                .filter(cond -> DataPath.get(cond, "type")
-                    .map(t -> "Running".equals(t)).orElse(false)
-                    && DataPath.get(cond, "status")
-                        .map(s -> "True".equals(s)).orElse(false))
-                .count();
+            summary.runningVms
+                = vmDef.<List<Map<String, Object>>> fromStatus("conditions")
+                    .orElse(Collections.emptyList()).stream()
+                    .filter(cond -> DataPath.get(cond, "type")
+                        .map(t -> "Running".equals(t)).orElse(false)
+                        && DataPath.get(cond, "status")
+                            .map(s -> "True".equals(s)).orElse(false))
+                    .count();
         }
         cachedSummary = summary;
         return summary;
