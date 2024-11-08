@@ -1,16 +1,16 @@
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  namespace: ${ cr.metadata.namespace.asString }
+  namespace: ${ cr.namespace() }
   name: ${ disk.generatedPvcName }
   labels:
     app.kubernetes.io/name: ${ constants.APP_NAME }
-    app.kubernetes.io/instance: ${ cr.metadata.name.asString }
+    app.kubernetes.io/instance: ${ cr.name() }
     app.kubernetes.io/managed-by: ${ constants.VM_OP_NAME }
   <#if disk.volumeClaimTemplate.metadata??
     && disk.volumeClaimTemplate.metadata.annotations??>
   annotations:
-    ${ disk.volumeClaimTemplate.metadata.annotations.toString() }
+    ${ toJson(disk.volumeClaimTemplate.metadata.annotations) }
   </#if>
 spec:
-  ${ disk.volumeClaimTemplate.spec.toString() }
+  ${ toJson(disk.volumeClaimTemplate.spec) }

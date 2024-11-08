@@ -19,7 +19,7 @@
 package org.jdrupes.vmoperator.manager.events;
 
 import java.util.Optional;
-import org.jdrupes.vmoperator.common.VmDefinitionModel;
+import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jgrapes.core.Event;
 
 /**
@@ -28,14 +28,14 @@ import org.jgrapes.core.Event;
 @SuppressWarnings("PMD.DataClass")
 public class GetDisplayPassword extends Event<String> {
 
-    private final VmDefinitionModel vmDef;
+    private final VmDefinition vmDef;
 
     /**
      * Instantiates a new returns the display secret.
      *
      * @param vmDef the vm name
      */
-    public GetDisplayPassword(VmDefinitionModel vmDef) {
+    public GetDisplayPassword(VmDefinition vmDef) {
         this.vmDef = vmDef;
     }
 
@@ -44,7 +44,7 @@ public class GetDisplayPassword extends Event<String> {
      *
      * @return the vm definition
      */
-    public VmDefinitionModel vmDefinition() {
+    public VmDefinition vmDefinition() {
         return vmDef;
     }
 

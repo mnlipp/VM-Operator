@@ -20,7 +20,6 @@ package org.jdrupes.vmoperator.manager;
 
 import freemarker.template.Configuration;
 import freemarker.template.TemplateException;
-import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.generic.dynamic.Dynamics;
 import io.kubernetes.client.util.generic.options.PatchOptions;
@@ -29,7 +28,7 @@ import java.io.StringWriter;
 import java.util.Map;
 import java.util.logging.Logger;
 import org.jdrupes.vmoperator.common.K8sV1PodStub;
-import org.jdrupes.vmoperator.common.VmDefinitionModel.RequestedVmState;
+import org.jdrupes.vmoperator.common.VmDefinition.RequestedVmState;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.yaml.snakeyaml.LoaderOptions;
@@ -73,18 +72,18 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         }
 
         // Get pod stub.
-        var metadata = event.vmDefinition().getMetadata();
-        var podStub = K8sV1PodStub.get(channel.client(),
-            metadata.getNamespace(), metadata.getName());
+        var vmDef = event.vmDefinition();
+        var podStub = K8sV1PodStub.get(channel.client(), vmDef.namespace(),
+            vmDef.name());
 
         // Nothing to do if exists and should be running
-        if (event.vmDefinition().vmState() == RequestedVmState.RUNNING
+        if (vmDef.vmState() == RequestedVmState.RUNNING
             && podStub.model().isPresent()) {
             return;
         }
 
         // Delete if running but should be stopped
-        if (event.vmDefinition().vmState() == RequestedVmState.STOPPED) {
+        if (vmDef.vmState() == RequestedVmState.STOPPED) {
             if (podStub.model().isPresent()) {
                 podStub.delete();
             }
@@ -104,9 +103,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         PatchOptions opts = new PatchOptions();
         opts.setForce(true);
         opts.setFieldManager("kubernetes-java-kubectl-apply");
-        if (podStub.patch(V1Patch.PATCH_FORMAT_APPLY_YAML,
-            new V1Patch(channel.client().getJSON().serialize(podDef)), opts)
-            .isEmpty()) {
+        if (podStub.apply(podDef).isEmpty()) {
             logger.warning(
                 () -> "Could not patch pod for " + podStub.name());
         }

@@ -1,26 +1,26 @@
 apiVersion: v1
 kind: Service
 metadata:
-  namespace: ${ cr.metadata.namespace.asString }
-  name: ${ cr.metadata.name.asString }
+  namespace: ${ cr.namespace() }
+  name: ${ cr.name() }
   labels:
     app.kubernetes.io/name: ${ constants.APP_NAME }
-    app.kubernetes.io/instance: ${ cr.metadata.name.asString }
+    app.kubernetes.io/instance: ${ cr.name() }
     app.kubernetes.io/managed-by: ${ constants.VM_OP_NAME }
   annotations:
     vmoperator.jdrupes.org/version: ${ managerVersion }
   ownerReferences:
-  - apiVersion: ${ cr.apiVersion.asString }
+  - apiVersion: ${ cr.apiVersion }
     kind: ${ constants.VM_OP_KIND_VM }
-    name: ${ cr.metadata.name.asString }
-    uid: ${ cr.metadata.uid.asString }
+    name: ${ cr.name() }
+    uid: ${ cr.metadata().getUid() }
     controller: false
 
 spec:
   type: LoadBalancer
   ports:
   - name: spice
-    port: ${ cr.spec.vm.display.spice.port.asInt?c }
+    port: ${ cr.spec().vm.display.spice.port?c }
   selector:
     app.kubernetes.io/name: ${ constants.APP_NAME }
-    app.kubernetes.io/instance: ${ cr.metadata.name.asString }
+    app.kubernetes.io/instance: ${ cr.name() }

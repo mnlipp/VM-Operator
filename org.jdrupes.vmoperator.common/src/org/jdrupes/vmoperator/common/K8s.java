@@ -158,27 +158,6 @@ public class K8s {
     }
 
     /**
-     * Get an object from its metadata.
-     *
-     * @param <T> the generic type
-     * @param <LT> the generic type
-     * @param api the api
-     * @param meta the meta
-     * @return the object
-     */
-    @Deprecated
-    @SuppressWarnings("PMD.GenericsNaming")
-    public static <T extends KubernetesObject, LT extends KubernetesListObject>
-            Optional<T>
-            get(GenericKubernetesApi<T, LT> api, V1ObjectMeta meta) {
-        var response = api.get(meta.getNamespace(), meta.getName());
-        if (response.isSuccess()) {
-            return Optional.of(response.getObject());
-        }
-        return Optional.empty();
-    }
-
-    /**
      * Apply the given patch data.
      *
      * @param <T> the generic type

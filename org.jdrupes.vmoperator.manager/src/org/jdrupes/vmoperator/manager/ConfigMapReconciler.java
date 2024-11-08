@@ -68,7 +68,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
      * @throws TemplateException the template exception
      * @throws ApiException the api exception
      */
-    public DynamicKubernetesObject reconcile(Map<String, Object> model,
+    public Map<String, Object> reconcile(Map<String, Object> model,
             VmChannel channel)
             throws IOException, TemplateException, ApiException {
         // Get API
@@ -87,7 +87,10 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         // Apply and maybe force pod update
         var newState = K8s.apply(cmApi, mapDef, out.toString());
         maybeForceUpdate(channel.client(), newState);
-        return newState;
+        @SuppressWarnings("unchecked")
+        var res = (Map<String, Object>) channel.client().getJSON().getGson()
+            .fromJson(newState.getRaw(), Map.class);
+        return res;
     }
 
     /**
