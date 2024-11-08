@@ -18,8 +18,6 @@
 
 package org.jdrupes.vmoperator.vmconlet;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import freemarker.core.ParseException;
 import freemarker.template.MalformedTemplateNameException;
 import freemarker.template.Template;
@@ -31,16 +29,19 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.jdrupes.vmoperator.common.K8sObserver;
-import org.jdrupes.vmoperator.common.VmDefinitionModel;
+import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.manager.events.ChannelTracker;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
-import org.jdrupes.vmoperator.util.GsonPtr;
+import org.jdrupes.vmoperator.util.DataPath;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Event;
 import org.jgrapes.core.Manager;
@@ -62,13 +63,14 @@ import org.jgrapes.webconsole.base.freemarker.FreeMarkerConlet;
 /**
  * The Class VmConlet.
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
+@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",
+    "PMD.CouplingBetweenObjects" })
 public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
 
     private static final Set<RenderMode> MODES = RenderMode.asSet(
         RenderMode.Preview, RenderMode.View);
     private final ChannelTracker<String, VmChannel,
-            VmDefinitionModel> channelTracker = new ChannelTracker<>();
+            VmDefinition> channelTracker = new ChannelTracker<>();
     private final TimeSeries summarySeries = new TimeSeries(Duration.ofDays(1));
     private Summary cachedSummary;
 
@@ -160,14 +162,38 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
         }
         if (sendVmInfos) {
             for (var item : channelTracker.values()) {
-                Gson gson = item.channel().client().getJSON().getGson();
-                var def = gson.fromJson(item.associated().data(), Object.class);
                 channel.respond(new NotifyConletView(type(),
-                    conletId, "updateVm", def));
+                    conletId, "updateVm",
+                    simplifiedVmDefinition(item.associated())));
             }
         }
 
         return renderedAs;
+    }
+
+    @SuppressWarnings("PMD.AvoidDuplicateLiterals")
+    private Map<String, Object> simplifiedVmDefinition(VmDefinition vmDef) {
+        // Convert RAM sizes to unitless numbers
+        var spec = DataPath.deepCopy(vmDef.spec());
+        var vmSpec = DataPath.<Map<String, Object>> get(spec, "vm").get();
+        vmSpec.put("maximumRam", Quantity.fromString(
+            DataPath.<String> get(vmSpec, "maximumRam").orElse("0")).getNumber()
+            .toBigInteger());
+        vmSpec.put("currentRam", Quantity.fromString(
+            DataPath.<String> get(vmSpec, "currentRam").orElse("0")).getNumber()
+            .toBigInteger());
+        var status = DataPath.deepCopy(vmDef.status());
+        status.put("ram", Quantity.fromString(
+            DataPath.<String> get(status, "ram").orElse("0")).getNumber()
+            .toBigInteger());
+
+        // Build result
+        return Map.of("metadata",
+            Map.of("namespace", vmDef.namespace(),
+                "name", vmDef.name()),
+            "spec", spec,
+            "status", status,
+            "nodeName", vmDef.extra("nodeName"));
     }
 
     /**
@@ -175,7 +201,6 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
      *
      * @param event the event
      * @param channel the channel
-     * @throws JsonDecodeException the json decode exception
      * @throws IOException 
      */
     @Handler(namedChannels = "manager")
@@ -184,7 +209,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
         "PMD.ConfusingArgumentToVarargsMethod" })
     public void onVmDefChanged(VmDefChanged event, VmChannel channel)
             throws IOException {
-        var vmName = event.vmDefinition().getMetadata().getName();
+        var vmName = event.vmDefinition().name();
         if (event.type() == K8sObserver.ResponseType.DELETED) {
             channelTracker.remove(vmName);
             for (var entry : conletIdsByConsoleConnection().entrySet()) {
@@ -194,15 +219,12 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
                 }
             }
         } else {
-            var gson = channel.client().getJSON().getGson();
-            var vmDef = new VmDefinitionModel(gson,
-                cleanup(event.vmDefinition().data()));
+            var vmDef = event.vmDefinition();
             channelTracker.put(vmName, channel, vmDef);
-            var def = gson.fromJson(vmDef.data(), Object.class);
             for (var entry : conletIdsByConsoleConnection().entrySet()) {
                 for (String conletId : entry.getValue()) {
                     entry.getKey().respond(new NotifyConletView(type(),
-                        conletId, "updateVm", def));
+                        conletId, "updateVm", simplifiedVmDefinition(vmDef)));
                 }
             }
         }
@@ -215,28 +237,6 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
                     conletId, "updateSummary", summary));
             }
         }
-    }
-
-    @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-    private JsonObject cleanup(JsonObject vmDef) {
-        // Clone and remove managed fields
-        var json = vmDef.deepCopy();
-        GsonPtr.to(json).to("metadata").get(JsonObject.class)
-            .remove("managedFields");
-
-        // Convert RAM sizes to unitless numbers
-        var vmSpec = GsonPtr.to(json).to("spec", "vm");
-        vmSpec.set("maximumRam", Quantity.fromString(
-            vmSpec.getAsString("maximumRam").orElse("0")).getNumber()
-            .toBigInteger());
-        vmSpec.set("currentRam", Quantity.fromString(
-            vmSpec.getAsString("currentRam").orElse("0")).getNumber()
-            .toBigInteger());
-        var status = GsonPtr.to(json).to("status");
-        status.set("ram", Quantity.fromString(
-            status.getAsString("ram").orElse("0")).getNumber()
-            .toBigInteger());
-        return json;
     }
 
     /**
@@ -267,10 +267,10 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
         public int totalVms;
 
         /** The running vms. */
-        public int runningVms;
+        public long runningVms;
 
         /** The used cpus. */
-        public int usedCpus;
+        public long usedCpus;
 
         /** The used ram. */
         public BigInteger usedRam = BigInteger.ZERO;
@@ -289,7 +289,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
          *
          * @return the runningVms
          */
-        public int getRunningVms() {
+        public long getRunningVms() {
             return runningVms;
         }
 
@@ -298,7 +298,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
          *
          * @return the usedCpus
          */
-        public int getUsedCpus() {
+        public long getUsedCpus() {
             return usedCpus;
         }
 
@@ -313,7 +313,8 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
 
     }
 
-    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
+    @SuppressWarnings({ "PMD.AvoidLiteralsInIfCondition",
+        "PMD.LambdaCanBeMethodReference" })
     private Summary evaluateSummary(boolean force) {
         if (!force && cachedSummary != null) {
             return cachedSummary;
@@ -321,18 +322,20 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
         Summary summary = new Summary();
         for (var vmDef : channelTracker.associated()) {
             summary.totalVms += 1;
-            var status = GsonPtr.to(vmDef.data()).to("status");
-            summary.usedCpus += status.getAsInt("cpus").orElse(0);
-            summary.usedRam = summary.usedRam.add(status.getAsString("ram")
-                .map(BigInteger::new).orElse(BigInteger.ZERO));
-            for (var c : status.getAsListOf(JsonObject.class, "conditions")) {
-                if ("Running".equals(GsonPtr.to(c).getAsString("type")
-                    .orElse(null))
-                    && "True".equals(GsonPtr.to(c).getAsString("status")
-                        .orElse(null))) {
-                    summary.runningVms += 1;
-                }
-            }
+            summary.usedCpus += vmDef.<Number> fromStatus("cpus")
+                .map(Number::intValue).orElse(0);
+            summary.usedRam = summary.usedRam
+                .add(vmDef.<String> fromStatus("ram")
+                    .map(r -> Quantity.fromString(r).getNumber().toBigInteger())
+                    .orElse(BigInteger.ZERO));
+            summary.runningVms
+                = vmDef.<List<Map<String, Object>>> fromStatus("conditions")
+                    .orElse(Collections.emptyList()).stream()
+                    .filter(cond -> DataPath.get(cond, "type")
+                        .map(t -> "Running".equals(t)).orElse(false)
+                        && DataPath.get(cond, "status")
+                            .map(s -> "True".equals(s)).orElse(false))
+                    .count();
         }
         cachedSummary = summary;
         return summary;

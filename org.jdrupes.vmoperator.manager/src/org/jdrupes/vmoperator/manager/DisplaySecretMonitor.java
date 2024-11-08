@@ -256,10 +256,9 @@ public class DisplaySecretMonitor
     @SuppressWarnings("PMD.AvoidSynchronizedStatement")
     public void onVmDefChanged(VmDefChanged event, Channel channel) {
         synchronized (pendingGets) {
-            String vmName = event.vmDefinition().metadata().getName();
+            String vmName = event.vmDefinition().name();
             for (var pending : pendingGets) {
-                if (pending.event.vmDefinition().metadata().getName()
-                    .equals(vmName)
+                if (pending.event.vmDefinition().name().equals(vmName)
                     && event.vmDefinition().displayPasswordSerial()
                         .map(s -> s >= pending.expectedSerial).orElse(false)) {
                     pending.lock.remove();

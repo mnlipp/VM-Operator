@@ -18,13 +18,15 @@
 
 package org.jdrupes.vmoperator.manager;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
@@ -37,6 +39,7 @@ import org.jdrupes.vmoperator.common.K8sObserver.ResponseType;
 import org.jdrupes.vmoperator.common.K8sV1ConfigMapStub;
 import org.jdrupes.vmoperator.common.K8sV1PodStub;
 import org.jdrupes.vmoperator.common.K8sV1StatefulSetStub;
+import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinitionModel;
 import org.jdrupes.vmoperator.common.VmDefinitionModels;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
@@ -46,7 +49,7 @@ import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
 import org.jdrupes.vmoperator.manager.events.ChannelManager;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
-import org.jdrupes.vmoperator.util.GsonPtr;
+import org.jdrupes.vmoperator.util.DataPath;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Event;
 
@@ -116,28 +119,34 @@ public class VmMonitor extends
         V1ObjectMeta metadata = response.object.getMetadata();
         VmChannel channel = channelManager.channelGet(metadata.getName());
 
+        // Remove from channel manager if deleted
+        if (ResponseType.valueOf(response.type) == ResponseType.DELETED) {
+            channelManager.remove(metadata.getName());
+        }
+
         // Get full definition and associate with channel as backup
-        var vmDef = response.object;
-        if (vmDef.data() == null) {
+        var vmModel = response.object;
+        if (vmModel.data() == null) {
             // ADDED event does not provide data, see
             // https://github.com/kubernetes-client/java/issues/3215
-            vmDef = getModel(client, vmDef);
+            vmModel = getModel(client, vmModel);
         }
-        if (vmDef.data() != null) {
+        VmDefinition vmDef = null;
+        if (vmModel.data() != null) {
             // New data, augment and save
+            vmDef = client.getJSON().getGson().fromJson(vmModel.data(),
+                VmDefinition.class);
             addDynamicData(channel.client(), vmDef, channel.vmDefinition());
             channel.setVmDefinition(vmDef);
-        } else {
-            // Reuse cached
+        }
+        if (vmDef == null) {
+            // Reuse cached (e.g. if deleted)
             vmDef = channel.vmDefinition();
         }
         if (vmDef == null) {
-            logger.warning(
-                () -> "Cannot get model for " + response.object.getMetadata());
+            logger.warning(() -> "Cannot get defintion for "
+                + response.object.getMetadata());
             return;
-        }
-        if (ResponseType.valueOf(response.type) == ResponseType.DELETED) {
-            channelManager.remove(metadata.getName());
         }
 
         // Create and fire changed event. Remove channel from channel
@@ -145,13 +154,12 @@ public class VmMonitor extends
         channel.pipeline()
             .fire(Event.onCompletion(
                 new VmDefChanged(ResponseType.valueOf(response.type),
-                    channel.setGeneration(
-                        response.object.getMetadata().getGeneration()),
+                    channel.setGeneration(response.object.getMetadata()
+                        .getGeneration()),
                     vmDef),
                 e -> {
                     if (e.type() == ResponseType.DELETED) {
-                        channelManager
-                            .remove(e.vmDefinition().metadata().getName());
+                        channelManager.remove(e.vmDefinition().name());
                     }
                 }), channel);
     }
@@ -166,51 +174,53 @@ public class VmMonitor extends
         }
     }
 
-    private void addDynamicData(K8sClient client, VmDefinitionModel vmState,
-            VmDefinitionModel prevState) {
-        var rootNode = GsonPtr.to(vmState.data()).get(JsonObject.class);
-
+    @SuppressWarnings("PMD.AvoidDuplicateLiterals")
+    private void addDynamicData(K8sClient client, VmDefinition vmDef,
+            VmDefinition prevState) {
         // Maintain (or initialize) the resetCount
-        rootNode.addProperty("resetCount", Optional.ofNullable(prevState)
-            .map(ps -> GsonPtr.to(ps.data()))
-            .flatMap(d -> d.getAsLong("resetCount")).orElse(0L));
+        vmDef.extra("resetCount",
+            Optional.ofNullable(prevState).map(d -> d.extra("resetCount"))
+                .orElse(0L));
 
+        // Node information
         // Add defaults in case the VM is not running
-        rootNode.addProperty("nodeName", "");
-        rootNode.addProperty("nodeAddress", "");
+        vmDef.extra("nodeName", "");
+        vmDef.extra("nodeAddress", "");
 
         // VM definition status changes before the pod terminates.
         // This results in pod information being shown for a stopped
         // VM which is irritating. So check condition first.
-        var isRunning = GsonPtr.to(rootNode).to("status", "conditions")
-            .get(JsonArray.class)
-            .asList().stream().filter(el -> "Running"
-                .equals(((JsonObject) el).get("type").getAsString()))
-            .findFirst().map(el -> "True"
-                .equals(((JsonObject) el).get("status").getAsString()))
-            .orElse(false);
+        @SuppressWarnings("PMD.LambdaCanBeMethodReference")
+        var isRunning
+            = vmDef.<List<Map<String, Object>>> fromStatus("conditions")
+                .orElse(Collections.emptyList()).stream()
+                .filter(cond -> DataPath.get(cond, "type")
+                    .map(t -> "Running".equals(t)).orElse(false))
+                .findFirst().map(cond -> DataPath.get(cond, "status")
+                    .map(s -> "True".equals(s)).orElse(false))
+                .orElse(false);
         if (!isRunning) {
             return;
         }
         var podSearch = new ListOptions();
         podSearch.setLabelSelector("app.kubernetes.io/name=" + APP_NAME
             + ",app.kubernetes.io/component=" + APP_NAME
-            + ",app.kubernetes.io/instance=" + vmState.getMetadata().getName());
+            + ",app.kubernetes.io/instance=" + vmDef.name());
         try {
             var podList
                 = K8sV1PodStub.list(client, namespace(), podSearch);
             for (var podStub : podList) {
                 var nodeName = podStub.model().get().getSpec().getNodeName();
-                rootNode.addProperty("nodeName", nodeName);
+                vmDef.extra("nodeName", nodeName);
                 logger.fine(() -> "Added node name " + nodeName
-                    + " to VM info for " + vmState.getMetadata().getName());
+                    + " to VM info for " + vmDef.name());
                 @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
-                var addrs = new JsonArray();
+                var addrs = new ArrayList<String>();
                 podStub.model().get().getStatus().getPodIPs().stream()
                     .map(ip -> ip.getIp()).forEach(addrs::add);
-                rootNode.add("nodeAddresses", addrs);
+                vmDef.extra("nodeAddresses", addrs);
                 logger.fine(() -> "Added node addresses " + addrs
-                    + " to VM info for " + vmState.getMetadata().getName());
+                    + " to VM info for " + vmDef.name());
             }
         } catch (ApiException e) {
             logger.log(Level.WARNING, e,

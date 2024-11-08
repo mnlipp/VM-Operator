@@ -18,22 +18,23 @@
 
 package org.jdrupes.vmoperator.manager;
 
-import com.google.gson.JsonObject;
+import com.google.gson.Gson;
 import freemarker.template.Configuration;
 import freemarker.template.TemplateException;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1APIService;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
-import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import io.kubernetes.client.util.generic.dynamic.Dynamics;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Logger;
-import org.jdrupes.vmoperator.common.K8s;
-import org.jdrupes.vmoperator.common.K8sDynamicModel;
+import org.jdrupes.vmoperator.common.K8sV1ServiceStub;
+import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.util.GsonPtr;
@@ -92,11 +93,13 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         if (lbsDef instanceof Boolean isOn && !isOn) {
             return;
         }
-        JsonObject cfgMeta = new JsonObject();
-        if (lbsDef instanceof Map) {
-            var json = channel.client().getJSON();
-            cfgMeta
-                = json.deserialize(json.serialize(lbsDef), JsonObject.class);
+
+        // Load balancer can also be turned off for VM
+        var vmDef = event.vmDefinition();
+        if (vmDef
+            .<Map<String, Map<String, String>>> fromSpec(LOAD_BALANCER_SERVICE)
+            .map(m -> m.isEmpty()).orElse(false)) {
+            return;
         }
 
         // Combine template and data and parse result
@@ -107,53 +110,78 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         // https://github.com/kubernetes-client/java/issues/2741
         var svcDef = Dynamics.newFromYaml(
             new Yaml(new SafeConstructor(new LoaderOptions())), out.toString());
-        mergeMetadata(svcDef, cfgMeta, event.vmDefinition());
+        @SuppressWarnings("unchecked")
+        var defaults = lbsDef instanceof Map
+            ? (Map<String, Map<String, String>>) lbsDef
+            : null;
+        var client = channel.client();
+        mergeMetadata(client.getJSON().getGson(), svcDef, defaults, vmDef);
 
         // Apply
-        DynamicKubernetesApi svcApi = new DynamicKubernetesApi("", "v1",
-            "services", channel.client());
-        K8s.apply(svcApi, svcDef, svcDef.getRaw().toString());
+        var svcStub = K8sV1ServiceStub
+            .get(client, vmDef.namespace(), vmDef.name());
+        if (svcStub.apply(svcDef).isEmpty()) {
+            logger.warning(
+                () -> "Could not patch service for " + svcStub.name());
+        }
     }
 
-    private void mergeMetadata(DynamicKubernetesObject svcDef,
-            JsonObject cfgMeta, K8sDynamicModel vmDefinition) {
-        // Get metadata from VM definition
-        var vmMeta = GsonPtr.to(vmDefinition.data()).to("spec")
-            .get(JsonObject.class, LOAD_BALANCER_SERVICE)
-            .map(JsonObject::deepCopy).orElseGet(() -> new JsonObject());
+    private void mergeMetadata(Gson gson, DynamicKubernetesObject svcDef,
+            Map<String, Map<String, String>> defaults,
+            VmDefinition vmDefinition) {
+        // Get specific load balancer metadata from VM definition
+        var vmLbMeta = vmDefinition
+            .<Map<String, Map<String, String>>> fromSpec(LOAD_BALANCER_SERVICE)
+            .orElse(Collections.emptyMap());
 
-        // Merge Data from VM definition into config data
-        mergeReplace(GsonPtr.to(cfgMeta).to(LABELS).get(JsonObject.class),
-            GsonPtr.to(vmMeta).to(LABELS).get(JsonObject.class));
-        mergeReplace(
-            GsonPtr.to(cfgMeta).to(ANNOTATIONS).get(JsonObject.class),
-            GsonPtr.to(vmMeta).to(ANNOTATIONS).get(JsonObject.class));
-
-        // Merge additional data into service definition
-        var svcMeta = GsonPtr.to(svcDef.getRaw()).to(METADATA);
-        mergeIfAbsent(svcMeta.to(LABELS).get(JsonObject.class),
-            GsonPtr.to(cfgMeta).to(LABELS).get(JsonObject.class));
-        mergeIfAbsent(svcMeta.to(ANNOTATIONS).get(JsonObject.class),
-            GsonPtr.to(cfgMeta).to(ANNOTATIONS).get(JsonObject.class));
+        // Merge
+        var svcMeta = svcDef.getMetadata();
+        var svcJsonMeta = GsonPtr.to(svcDef.getRaw()).to(METADATA);
+        Optional.ofNullable(mergeIfAbsent(svcMeta.getLabels(),
+            mergeReplace(defaults.get(LABELS), vmLbMeta.get(LABELS))))
+            .ifPresent(lbls -> svcJsonMeta.set(LABELS, gson.toJsonTree(lbls)));
+        Optional.ofNullable(mergeIfAbsent(svcMeta.getAnnotations(),
+            mergeReplace(defaults.get(ANNOTATIONS), vmLbMeta.get(ANNOTATIONS))))
+            .ifPresent(as -> svcJsonMeta.set(ANNOTATIONS, gson.toJsonTree(as)));
     }
 
-    private void mergeReplace(JsonObject dest, JsonObject src) {
+    private Map<String, String> mergeReplace(Map<String, String> dest,
+            Map<String, String> src) {
+        if (src == null) {
+            return dest;
+        }
+        if (dest == null) {
+            dest = new LinkedHashMap<>();
+        } else {
+            dest = new LinkedHashMap<>(dest);
+        }
         for (var e : src.entrySet()) {
-            if (e.getValue().isJsonNull()) {
+            if (e.getValue() == null) {
                 dest.remove(e.getKey());
                 continue;
             }
-            dest.add(e.getKey(), e.getValue());
+            dest.put(e.getKey(), e.getValue());
         }
+        return dest;
     }
 
-    private void mergeIfAbsent(JsonObject dest, JsonObject src) {
+    private Map<String, String> mergeIfAbsent(Map<String, String> dest,
+            Map<String, String> src) {
+        if (src == null) {
+            return dest;
+        }
+        if (dest == null) {
+            dest = new LinkedHashMap<>();
+        } else {
+            dest = new LinkedHashMap<>(dest);
+        }
         for (var e : src.entrySet()) {
-            if (dest.has(e.getKey())) {
+            if (dest.containsKey(e.getKey())) {
                 continue;
             }
-            dest.add(e.getKey(), e.getValue());
+            dest.put(e.getKey(), e.getValue());
         }
+        return dest;
     }
 
 }
