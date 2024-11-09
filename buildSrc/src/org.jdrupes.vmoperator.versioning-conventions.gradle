@@ -19,6 +19,7 @@ if (shortened == "manager") {
 var tagName = shortened.replace('.', '-') + "-"
 if (grgit.branch.current.name != "main"
     && grgit.branch.current.name != "HEAD"
+    && !grgit.branch.current.name.startsWith("testing")
     && !grgit.branch.current.name.startsWith("release")
     && !grgit.branch.current.name.startsWith("develop")) {
     tagName = tagName + grgit.branch.current.name.replace('/', '-') + "-"
