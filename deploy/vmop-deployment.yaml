@@ -20,13 +20,13 @@ spec:
       containers:
         - name: vm-operator
           image: >-
-            ghcr.io/mnlipp/org.jdrupes.vmoperator.manager:latest
+            ghcr.io/mnlipp/org.jdrupes.vmoperator.manager:testing
+          imagePullPolicy: Always
           volumeMounts:
             - name: config
               mountPath: /etc/opt/vmoperator
             - name: vmop-image-repository
               mountPath: /var/local/vmop-image-repository
-          imagePullPolicy: Always
           securityContext:
             capabilities:
               drop:
