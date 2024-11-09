@@ -31,6 +31,7 @@ import java.util.logging.Logger;
  */
 public final class DataPath {
 
+    @SuppressWarnings("PMD.FieldNamingConventions")
     private static final Logger logger
         = Logger.getLogger(DataPath.class.getName());
 

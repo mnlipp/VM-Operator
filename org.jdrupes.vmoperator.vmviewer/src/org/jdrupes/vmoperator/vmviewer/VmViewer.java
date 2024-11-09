@@ -45,6 +45,7 @@ import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 import org.bouncycastle.util.Objects;
 import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jdrupes.vmoperator.common.VmDefinition;
@@ -55,7 +56,6 @@ import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.ResetVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
-import org.jdrupes.vmoperator.util.DataPath;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Components;
 import org.jgrapes.core.Event;
@@ -123,7 +123,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
     private static ObjectMapper objectMapper
         = new ObjectMapper().registerModule(new JavaTimeModule());
     private Class<?> preferredIpVersion = Inet4Address.class;
-    private final Set<String> syncUsers = new HashSet<>();
+    private Set<String> syncUsers = new HashSet<>();
     private final Set<String> syncRoles = new HashSet<>();
     private boolean deleteConnectionFile = true;
 
@@ -173,15 +173,12 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
                         .filter(v -> v instanceof String).map(v -> (String) v)
                         .map(Boolean::parseBoolean).orElse(true);
 
-                // Sync
-                for (var entry : (List<Map<String, String>>) c.getOrDefault(
-                    "syncPreviewsFor", Collections.emptyList())) {
-                    if (entry.containsKey("user")) {
-                        syncUsers.add(entry.get("user"));
-                    } else if (entry.containsKey("role")) {
-                        syncRoles.add(entry.get("role"));
-                    }
-                }
+                // Sync preview for users or roles
+                syncUsers = ((List<Map<String, String>>) c.getOrDefault(
+                    "syncPreviewsFor", Collections.emptyList())).stream()
+                        .map(m -> Optional.ofNullable(m.get("user"))
+                            .orElse(m.get("role")))
+                        .filter(s -> s != null).collect(Collectors.toSet());
             } catch (ClassCastException e) {
                 logger.config("Malformed configuration: " + e.getMessage());
             }
@@ -367,8 +364,9 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
                     fmModel(event, channel, conletId, model)))
                         .setRenderAs(
                             RenderMode.Preview.addModifiers(event.renderAs()))
-                        .setSupportedModes(
-                            model.isGenerated() ? MODES_FOR_GENERATED : MODES));
+                        .setSupportedModes(syncPreviews(channel.session())
+                            ? MODES_FOR_GENERATED
+                            : MODES));
             renderedAs.add(RenderMode.Preview);
             if (!Strings.isNullOrEmpty(model.vmName())) {
                 Optional.ofNullable(channel.session().get(RENDERED))
