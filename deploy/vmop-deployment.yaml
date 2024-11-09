@@ -20,7 +20,7 @@ spec:
       containers:
         - name: vm-operator
           image: >-
-            ghcr.io/mnlipp/org.jdrupes.vmoperator.manager:testing
+            registry.mnl.de/org/jdrupes/vm-operator/org.jdrupes.vmoperator.manager:testing
           imagePullPolicy: Always
           volumeMounts:
             - name: config
