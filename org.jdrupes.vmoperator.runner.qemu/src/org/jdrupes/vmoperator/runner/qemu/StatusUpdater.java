@@ -280,6 +280,7 @@ public class StatusUpdater extends Component {
 
     private void updateRunningCondition(RunnerStateChange event,
             K8sDynamicModel from, JsonObject cond) {
+        @SuppressWarnings("PMD.AvoidDuplicateLiterals")
         boolean reportedRunning
             = "True".equals(cond.get("status").getAsString());
         if (RUNNING_STATES.contains(event.runState())
