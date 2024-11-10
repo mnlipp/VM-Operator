@@ -30,10 +30,13 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
@@ -50,6 +53,8 @@ import org.jdrupes.vmoperator.runner.qemu.events.HotpluggableCpuStatus;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.RunState;
 import org.jdrupes.vmoperator.runner.qemu.events.ShutdownEvent;
+import org.jdrupes.vmoperator.runner.qemu.events.SpiceConnectedEvent;
+import org.jdrupes.vmoperator.runner.qemu.events.SpiceDisconnectedEvent;
 import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
@@ -275,6 +280,7 @@ public class StatusUpdater extends Component {
 
     private void updateRunningCondition(RunnerStateChange event,
             K8sDynamicModel from, JsonObject cond) {
+        @SuppressWarnings("PMD.AvoidDuplicateLiterals")
         boolean reportedRunning
             = "True".equals(cond.get("status").getAsString());
         if (RUNNING_STATES.contains(event.runState())
@@ -362,5 +368,92 @@ public class StatusUpdater extends Component {
     @Handler
     public void onShutdown(ShutdownEvent event) throws ApiException {
         shutdownByGuest = event.byGuest();
+    }
+
+    /**
+     * On spice connected.
+     *
+     * @param event the event
+     * @throws ApiException the api exception
+     */
+    @Handler
+    public void onSpiceConnected(SpiceConnectedEvent event)
+            throws ApiException {
+        if (vmStub == null) {
+            return;
+        }
+        vmStub.updateStatus(from -> {
+            JsonObject status = from.status();
+            status.addProperty("consoleClient", event.clientHost());
+            updateConsoleConnectedCondition(from, status, true);
+            return status;
+        });
+
+        // Log event
+        var evt = new EventsV1Event()
+            .reportingController(VM_OP_GROUP + "/" + APP_NAME)
+            .action("ConsoleConnectionUpdate")
+            .reason("Connection from " + event.clientHost());
+        K8s.createEvent(apiClient, vmStub.model().get(), evt);
+    }
+
+    /**
+     * On spice disconnected.
+     *
+     * @param event the event
+     * @throws ApiException the api exception
+     */
+    @Handler
+    public void onSpiceDisconnected(SpiceDisconnectedEvent event)
+            throws ApiException {
+        if (vmStub == null) {
+            return;
+        }
+        vmStub.updateStatus(from -> {
+            JsonObject status = from.status();
+            status.addProperty("consoleClient", "");
+            updateConsoleConnectedCondition(from, status, false);
+            return status;
+        });
+
+        // Log event
+        var evt = new EventsV1Event()
+            .reportingController(VM_OP_GROUP + "/" + APP_NAME)
+            .action("ConsoleConnectionUpdate")
+            .reason("Disconnected from " + event.clientHost());
+        K8s.createEvent(apiClient, vmStub.model().get(), evt);
+    }
+
+    private void updateConsoleConnectedCondition(VmDefinitionModel from,
+            JsonObject status, boolean connected) {
+        // Optimize, as we can get this several times
+        var current = status.getAsJsonArray("conditions").asList().stream()
+            .map(cond -> (JsonObject) cond)
+            .filter(cond -> "ConsoleConnected"
+                .equals(cond.get("type").getAsString()))
+            .findFirst()
+            .map(cond -> "True".equals(cond.get("status").getAsString()));
+        if (current.isPresent() && current.get() == connected) {
+            return;
+        }
+
+        // Do update
+        final var condition = Map.of("type", "ConsoleConnected",
+            "status", connected ? "True" : "False",
+            "observedGeneration", from.getMetadata().getGeneration(),
+            "reason", connected ? "Connected" : "Disconnected",
+            "lastTransitionTime", Instant.now().toString());
+        List<Object> toReplace = new ArrayList<>(List.of(condition));
+        List<Object> newConds
+            = status.getAsJsonArray("conditions").asList().stream()
+                .map(cond -> (JsonObject) cond)
+                .map(cond -> "ConsoleConnected"
+                    .equals(cond.get("type").getAsString())
+                        ? toReplace.remove(0)
+                        : cond)
+                .collect(Collectors.toCollection(() -> new ArrayList<>()));
+        newConds.addAll(toReplace);
+        status.add("conditions",
+            apiClient.getJSON().getGson().toJsonTree(newConds));
     }
 }
