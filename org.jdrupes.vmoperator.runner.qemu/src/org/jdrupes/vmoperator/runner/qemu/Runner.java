@@ -48,6 +48,8 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -367,6 +369,11 @@ public class Runner extends Component {
                 config.firmwareRom = path;
                 break;
             }
+        }
+        if (codePaths.iterator().hasNext() && config.firmwareRom == null) {
+            throw new IllegalArgumentException("No ROM found, candidates were: "
+                + StreamSupport.stream(codePaths.spliterator(), false)
+                    .map(JsonNode::asText).collect(Collectors.joining(", ")));
         }
 
         // Get file for firmware vars, if necessary
