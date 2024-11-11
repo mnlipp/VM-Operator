@@ -18,6 +18,7 @@
 
 package org.jdrupes.vmoperator.manager;
 
+import com.google.gson.JsonObject;
 import freemarker.template.Configuration;
 import freemarker.template.TemplateException;
 import io.kubernetes.client.custom.V1Patch;
@@ -36,6 +37,8 @@ import org.jdrupes.vmoperator.common.K8s;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
+import org.jdrupes.vmoperator.util.DataPath;
+import org.jdrupes.vmoperator.util.GsonPtr;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
@@ -84,8 +87,15 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         var mapDef = Dynamics.newFromYaml(
             new Yaml(new SafeConstructor(new LoaderOptions())), out.toString());
 
+        // Maybe override logging.properties
+        DataPath.<String> get(model, "cr", "spec", "logging.properties")
+            .ifPresent(props -> {
+                GsonPtr.to(mapDef.getRaw()).get(JsonObject.class, "data")
+                    .get().addProperty("logging.properties", props);
+            });
+
         // Apply and maybe force pod update
-        var newState = K8s.apply(cmApi, mapDef, out.toString());
+        var newState = K8s.apply(cmApi, mapDef, mapDef.getRaw().toString());
         maybeForceUpdate(channel.client(), newState);
         @SuppressWarnings("unchecked")
         var res = (Map<String, Object>) channel.client().getJSON().getGson()

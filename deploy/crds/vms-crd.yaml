@@ -1019,6 +1019,11 @@ spec:
                           - accessConsole
                           - "*"
                         default: []
+                logging.properties:
+                  type: string
+                  description: >-
+                    Override the default logging.properties for 
+                    the runner for this VM.
                 vm:
                   type: object
                   description: Defines the VM.
