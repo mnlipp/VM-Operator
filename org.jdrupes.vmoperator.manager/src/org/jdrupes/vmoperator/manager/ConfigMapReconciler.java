@@ -88,7 +88,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
             new Yaml(new SafeConstructor(new LoaderOptions())), out.toString());
 
         // Maybe override logging.properties
-        DataPath.<String> get(model, "cr", "spec", "logging.properties")
+        DataPath.<String> get(model, "cr", "spec", "loggingProperties")
             .ifPresent(props -> {
                 GsonPtr.to(mapDef.getRaw()).get(JsonObject.class, "data")
                     .get().addProperty("logging.properties", props);

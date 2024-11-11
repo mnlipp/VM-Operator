@@ -1019,10 +1019,10 @@ spec:
                           - accessConsole
                           - "*"
                         default: []
-                logging.properties:
+                loggingProperties:
                   type: string
                   description: >-
-                    Override the default logging.properties for 
+                    Override the default logging properties for 
                     the runner for this VM.
                 vm:
                   type: object
