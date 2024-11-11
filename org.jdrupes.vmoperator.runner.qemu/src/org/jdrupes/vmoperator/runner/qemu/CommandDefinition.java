@@ -69,4 +69,9 @@ class CommandDefinition {
     public String name() {
         return name;
     }
+
+    @Override
+    public String toString() {
+        return "Command " + name + ": " + command;
+    }
 }
