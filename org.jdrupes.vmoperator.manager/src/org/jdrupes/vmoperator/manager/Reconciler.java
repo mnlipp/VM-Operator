@@ -132,6 +132,11 @@ import org.jgrapes.util.events.ConfigurationUpdate;
  *   ```
  *   This makes all VM consoles available at IP address 192.168.168.1
  *   with the port numbers from the VM definitions.
+ *   
+ * * `loggingProperties`: If defined, specifies the default logging
+ *   properties to be used by the runners managed by the controller.
+ *   This property is a string that holds the content of
+ *   a logging.properties file.
  */
 @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",
     "PMD.AvoidDuplicateLiterals" })
