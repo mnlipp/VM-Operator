@@ -74,10 +74,6 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
     public Map<String, Object> reconcile(Map<String, Object> model,
             VmChannel channel)
             throws IOException, TemplateException, ApiException {
-        // Get API
-        DynamicKubernetesApi cmApi = new DynamicKubernetesApi("", "v1",
-            "configmaps", channel.client());
-
         // Combine template and data and parse result
         var fmTemplate = fmConfig.getTemplate("runnerConfig.ftl.yaml");
         StringWriter out = new StringWriter();
@@ -87,12 +83,23 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         var mapDef = Dynamics.newFromYaml(
             new Yaml(new SafeConstructor(new LoaderOptions())), out.toString());
 
-        // Maybe override logging.properties
+        // Maybe override logging.properties from reconciler configuration.
+        DataPath.<String> get(model, "reconciler", "loggingProperties")
+            .ifPresent(props -> {
+                GsonPtr.to(mapDef.getRaw()).get(JsonObject.class, "data")
+                    .get().addProperty("logging.properties", props);
+            });
+
+        // Maybe override logging.properties from VM definition.
         DataPath.<String> get(model, "cr", "spec", "loggingProperties")
             .ifPresent(props -> {
                 GsonPtr.to(mapDef.getRaw()).get(JsonObject.class, "data")
                     .get().addProperty("logging.properties", props);
             });
+
+        // Get API
+        DynamicKubernetesApi cmApi = new DynamicKubernetesApi("", "v1",
+            "configmaps", channel.client());
 
         // Apply and maybe force pod update
         var newState = K8s.apply(cmApi, mapDef, mapDef.getRaw().toString());
