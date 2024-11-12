@@ -204,7 +204,7 @@ public class Runner extends Component {
     private static final String FW_VARS = "fw-vars.fd";
     private static int exitStatus;
 
-    private EventPipeline rep;
+    private final EventPipeline rep = newEventPipeline();
     private final ObjectMapper yamlMapper = new ObjectMapper(YAMLFactory
         .builder().disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER)
         .build());
@@ -446,8 +446,7 @@ public class Runner extends Component {
         // https://github.com/kubernetes-client/java/issues/100
         io.kubernetes.client.openapi.Configuration.setDefaultApiClient(null);
 
-        // Prepare specific event pipeline to avoid concurrency.
-        rep = newEventPipeline();
+        // Provide specific event pipeline to avoid concurrency.
         event.setAssociated(EventPipeline.class, rep);
         try {
             // Store process id
