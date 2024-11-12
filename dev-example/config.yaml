@@ -17,6 +17,18 @@
           metallb.universe.tf/loadBalancerIPs: 192.168.168.1
           metallb.universe.tf/ip-allocated-from-pool: single-common
           metallb.universe.tf/allow-shared-ip: single-common
+      loggingProperties: |
+        # Defaults for namespace (VM domain)
+        handlers=java.util.logging.ConsoleHandler
+        
+        #org.jgrapes.level=FINE
+        #org.jgrapes.core.handlerTracking.level=FINER
+        
+        org.jdrupes.vmoperator.runner.qemu.level=FINEST
+        
+        java.util.logging.ConsoleHandler.level=ALL
+        java.util.logging.ConsoleHandler.formatter=java.util.logging.SimpleFormatter
+        java.util.logging.SimpleFormatter.format=%1$tb %1$td %1$tT %4$s %5$s%6$s%n
   "/GuiSocketServer":
     port: 8888
   "/GuiHttpServer":
