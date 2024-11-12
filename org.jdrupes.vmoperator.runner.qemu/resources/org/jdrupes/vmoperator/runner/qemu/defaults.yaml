@@ -8,6 +8,9 @@
       - "/usr/share/edk2/ovmf/OVMF_CODE.fd"
       - "/usr/share/edk2/x64/OVMF_CODE.fd"
       - "/usr/share/OVMF/OVMF_CODE.fd"
+      # Use 4M version as fallback (if smaller version not available)
+      - "/usr/share/edk2/ovmf-4m/OVMF_CODE.fd"
+      - "/usr/share/edk2/x64/OVMF_CODE.4m.fd"
     "vars":
       - "/usr/share/edk2/ovmf/OVMF_VARS.fd"
       - "/usr/share/edk2/x64/OVMF_VARS.fd"
