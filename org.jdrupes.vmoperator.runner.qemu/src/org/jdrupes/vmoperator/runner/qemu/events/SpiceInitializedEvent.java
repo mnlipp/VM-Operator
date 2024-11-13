@@ -23,33 +23,24 @@ import com.fasterxml.jackson.databind.JsonNode;
 /**
  * Signals a connection from a client.
  */
-public class SpiceEvent extends MonitorEvent {
+public class SpiceInitializedEvent extends SpiceEvent {
 
     /**
-     * Instantiates a new tray moved.
+     * Instantiates a new spice connected event.
      *
      * @param kind the kind
      * @param data the data
      */
-    public SpiceEvent(Kind kind, JsonNode data) {
+    public SpiceInitializedEvent(Kind kind, JsonNode data) {
         super(kind, data);
     }
 
     /**
-     * Returns the client's host.
+     * Returns the channel type.
      *
-     * @return the client's host address
+     * @return the channel type
      */
-    public String clientHost() {
-        return data().get("client").get("host").asText();
-    }
-
-    /**
-     * Returns the client's port.
-     *
-     * @return the client's port number
-     */
-    public long clientPort() {
-        return data().get("client").get("port").asLong();
+    public int channelType() {
+        return data().get("client").get("channel-type").asInt();
     }
 }
