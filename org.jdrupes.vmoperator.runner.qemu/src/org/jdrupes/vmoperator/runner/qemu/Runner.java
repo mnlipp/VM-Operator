@@ -48,6 +48,8 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -202,7 +204,7 @@ public class Runner extends Component {
     private static final String FW_VARS = "fw-vars.fd";
     private static int exitStatus;
 
-    private EventPipeline rep;
+    private final EventPipeline rep = newEventPipeline();
     private final ObjectMapper yamlMapper = new ObjectMapper(YAMLFactory
         .builder().disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER)
         .build());
@@ -318,6 +320,7 @@ public class Runner extends Component {
         });
     }
 
+    @SuppressWarnings("PMD.LambdaCanBeMethodReference")
     private void processInitialConfiguration(Configuration newConfig) {
         try {
             config = newConfig;
@@ -333,12 +336,15 @@ public class Runner extends Component {
             var tplData = dataFromTemplate();
             swtpmDefinition = Optional.ofNullable(tplData.get(SWTPM))
                 .map(d -> new CommandDefinition(SWTPM, d)).orElse(null);
+            logger.finest(() -> swtpmDefinition.toString());
             qemuDefinition = Optional.ofNullable(tplData.get(QEMU))
                 .map(d -> new CommandDefinition(QEMU, d)).orElse(null);
+            logger.finest(() -> qemuDefinition.toString());
             cloudInitImgDefinition
                 = Optional.ofNullable(tplData.get(CLOUD_INIT_IMG))
                     .map(d -> new CommandDefinition(CLOUD_INIT_IMG, d))
                     .orElse(null);
+            logger.finest(() -> cloudInitImgDefinition.toString());
 
             // Forward some values to child components
             qemuMonitor.configure(config.monitorSocket,
@@ -364,6 +370,12 @@ public class Runner extends Component {
                 break;
             }
         }
+        if (codePaths.iterator().hasNext() && config.firmwareRom == null) {
+            throw new IllegalArgumentException("No ROM found, candidates were: "
+                + StreamSupport.stream(codePaths.spliterator(), false)
+                    .map(JsonNode::asText).collect(Collectors.joining(", ")));
+        }
+
         // Get file for firmware vars, if necessary
         config.firmwareVars = config.dataDir.resolve(FW_VARS);
         if (!Files.exists(config.firmwareVars)) {
@@ -405,12 +417,14 @@ public class Runner extends Component {
         model.put("hasDisplayPassword", config.hasDisplayPassword);
         model.put("cloudInit", config.cloudInit);
         model.put("vm", config.vm);
+        logger.finest(() -> "Processing template with model: " + model);
 
         // Combine template and data and parse result
         // (tempting, but no need to use a pipe here)
         var fmTemplate = fmConfig.getTemplate(templatePath.toString());
         StringWriter out = new StringWriter();
         fmTemplate.process(model, out);
+        logger.finest(() -> "Result of processing template: " + out);
         return yamlMapper.readValue(out.toString(), JsonNode.class);
     }
 
@@ -432,8 +446,7 @@ public class Runner extends Component {
         // https://github.com/kubernetes-client/java/issues/100
         io.kubernetes.client.openapi.Configuration.setDefaultApiClient(null);
 
-        // Prepare specific event pipeline to avoid concurrency.
-        rep = newEventPipeline();
+        // Provide specific event pipeline to avoid concurrency.
         event.setAssociated(EventPipeline.class, rep);
         try {
             // Store process id
@@ -746,6 +759,10 @@ public class Runner extends Component {
                 props = Runner.class.getResourceAsStream("logging.properties");
             }
             LogManager.getLogManager().readConfiguration(props);
+            Logger.getLogger(Runner.class.getName()).log(Level.CONFIG,
+                () -> path.isPresent()
+                    ? "Using logging configuration from " + path.get()
+                    : "Using default logging configuration");
         } catch (IOException e) {
             e.printStackTrace();
         }
