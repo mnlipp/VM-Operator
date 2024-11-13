@@ -112,7 +112,7 @@ window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
                 ["currentCpus", "currentCpus"],
                 ["currentRam", "currentRam"],
                 ["nodeName", "nodeName"],
-                ["usedBy", "usedBy"]
+                ["usedFrom", "usedFrom"]
             ], {
                 sortKey: "name",
                 sortOrder: "up"
@@ -180,7 +180,7 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
         vmDefinition.name = vmDefinition.metadata.name;
         vmDefinition.currentCpus = vmDefinition.status.cpus;
         vmDefinition.currentRam = Number(vmDefinition.status.ram);
-        vmDefinition.usedBy = vmDefinition.status.consoleClient || "";
+        vmDefinition.usedFrom = vmDefinition.status.consoleClient || "";
         for (const condition of vmDefinition.status.conditions) {
             if (condition.type === "Running") {
                 vmDefinition.running = condition.status === "True";
