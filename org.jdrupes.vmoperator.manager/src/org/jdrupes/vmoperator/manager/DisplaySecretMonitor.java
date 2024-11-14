@@ -18,6 +18,8 @@
 
 package org.jdrupes.vmoperator.manager;
 
+import com.google.gson.JsonObject;
+import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Secret;
@@ -37,10 +39,13 @@ import java.util.Optional;
 import java.util.Scanner;
 import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
+import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
+import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_NAME;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sV1PodStub;
 import org.jdrupes.vmoperator.common.K8sV1SecretStub;
+import org.jdrupes.vmoperator.common.VmDefinitionStub;
 import static org.jdrupes.vmoperator.manager.Constants.COMP_DISPLAY_SECRET;
 import static org.jdrupes.vmoperator.manager.Constants.DATA_DISPLAY_PASSWORD;
 import static org.jdrupes.vmoperator.manager.Constants.DATA_PASSWORD_EXPIRY;
@@ -181,11 +186,21 @@ public class DisplaySecretMonitor
             + "app.kubernetes.io/instance="
             + event.vmDefinition().metadata().getName());
         var stubs = K8sV1SecretStub.list(client(),
-            event.vmDefinition().metadata().getNamespace(), options);
+            event.vmDefinition().namespace(), options);
         if (stubs.isEmpty()) {
             return;
         }
         var stub = stubs.iterator().next();
+
+        // Valid request, update console user in status
+        var vmStub = VmDefinitionStub.get(client(),
+            new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
+            event.vmDefinition().namespace(), event.vmDefinition().name());
+        vmStub.updateStatus(from -> {
+            JsonObject status = from.status();
+            status.addProperty("consoleUser", event.user());
+            return status;
+        });
 
         // Check validity
         var model = stub.model().get();

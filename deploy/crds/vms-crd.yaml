@@ -1467,6 +1467,12 @@ spec:
                     The hostname of the currently connected client.
                   type: string
                   default: ""
+                consoleUser:
+                  description: >-
+                    The id of the user who has last requested a console
+                    connection.
+                  type: string
+                  default: ""
                 displayPasswordSerial:
                   description: >-
                     Counts changes of the display password. Set to -1

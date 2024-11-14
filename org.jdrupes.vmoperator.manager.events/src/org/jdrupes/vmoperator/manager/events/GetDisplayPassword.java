@@ -29,14 +29,17 @@ import org.jgrapes.core.Event;
 public class GetDisplayPassword extends Event<String> {
 
     private final VmDefinition vmDef;
+    private final String user;
 
     /**
-     * Instantiates a new returns the display secret.
+     * Instantiates a new request for the display secret.
      *
      * @param vmDef the vm name
+     * @param user the requesting user
      */
-    public GetDisplayPassword(VmDefinition vmDef) {
+    public GetDisplayPassword(VmDefinition vmDef, String user) {
         this.vmDef = vmDef;
+        this.user = user;
     }
 
     /**
@@ -46,6 +49,15 @@ public class GetDisplayPassword extends Event<String> {
      */
     public VmDefinition vmDefinition() {
         return vmDef;
+    }
+
+    /**
+     * Return the id of the user who has requested the password.
+     *
+     * @return the string
+     */
+    public String user() {
+        return user;
     }
 
     /**
