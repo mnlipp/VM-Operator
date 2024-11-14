@@ -193,7 +193,33 @@ public class K8sGenericStub<O extends KubernetesObject,
     }
 
     /**
-     * Updates the object's status.
+     * Updates the object's status, retrying for the given number of times
+     * if the update fails due to a conflict.
+     *
+     * @param object the current state of the object (passed to `status`)
+     * @param status function that returns the new status
+     * @param retries the retries
+     * @return the updated model or empty if not successful
+     * @throws ApiException the api exception
+     */
+    @SuppressWarnings("PMD.AssignmentInOperand")
+    public Optional<O> updateStatus(O object,
+            Function<O, Object> status, int retries) throws ApiException {
+        while (true) {
+            try {
+                return K8s.optional(api.updateStatus(object, status));
+            } catch (ApiException e) {
+                if (HttpURLConnection.HTTP_CONFLICT != e.getCode()
+                    || retries-- <= 0) {
+                    throw e;
+                }
+            }
+        }
+    }
+
+    /**
+     * Updates the object's status, retrying up to 16 times if there
+     * is a conflict.
      *
      * @param object the current state of the object (passed to `status`)
      * @param status function that returns the new status
@@ -202,7 +228,7 @@ public class K8sGenericStub<O extends KubernetesObject,
      */
     public Optional<O> updateStatus(O object,
             Function<O, Object> status) throws ApiException {
-        return K8s.optional(api.updateStatus(object, status));
+        return updateStatus(object, status, 16);
     }
 
     /**

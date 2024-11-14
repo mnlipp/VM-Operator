@@ -35,7 +35,7 @@ public class MonitorEvent extends Event<Void> {
      */
     public enum Kind {
         READY, POWERDOWN, DEVICE_TRAY_MOVED, BALLOON_CHANGE, SHUTDOWN,
-        SPICE_CONNECTED, SPICE_DISCONNECTED
+        SPICE_CONNECTED, SPICE_INITIALIZED, SPICE_DISCONNECTED
     }
 
     private final Kind kind;
@@ -64,13 +64,14 @@ public class MonitorEvent extends Event<Void> {
                 return Optional
                     .of(new ShutdownEvent(kind, response.get(EVENT_DATA)));
             case SPICE_CONNECTED:
-                return Optional
-                    .of(new SpiceConnectedEvent(kind,
-                        response.get(EVENT_DATA)));
+                return Optional.of(new SpiceConnectedEvent(kind,
+                    response.get(EVENT_DATA)));
+            case SPICE_INITIALIZED:
+                return Optional.of(new SpiceInitializedEvent(kind,
+                    response.get(EVENT_DATA)));
             case SPICE_DISCONNECTED:
-                return Optional
-                    .of(new SpiceDisconnectedEvent(kind,
-                        response.get(EVENT_DATA)));
+                return Optional.of(new SpiceDisconnectedEvent(kind,
+                    response.get(EVENT_DATA)));
             default:
                 return Optional
                     .of(new MonitorEvent(kind, response.get(EVENT_DATA)));

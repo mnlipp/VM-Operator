@@ -527,9 +527,12 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
             break;
         case "openConsole":
             if (perms.contains(Permission.ACCESS_CONSOLE)) {
-                var pwQuery = Event.onCompletion(new GetDisplayPassword(vmDef),
-                    e -> openConsole(vmName, channel, model,
-                        e.password().orElse(null)));
+                var user = WebConsoleUtils.userFromSession(channel.session())
+                    .map(ConsoleUser::getName).orElse("");
+                var pwQuery
+                    = Event.onCompletion(new GetDisplayPassword(vmDef, user),
+                        e -> openConsole(vmName, channel, model,
+                            e.password().orElse(null)));
                 fire(pwQuery, vmChannel);
             }
             break;

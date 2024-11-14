@@ -27,22 +27,12 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.EventsV1Event;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
-import java.util.stream.Collectors;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.common.K8s;
-import org.jdrupes.vmoperator.common.K8sClient;
-import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jdrupes.vmoperator.common.VmDefinitionModel;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
 import org.jdrupes.vmoperator.runner.qemu.events.BalloonChangeEvent;
@@ -53,29 +43,21 @@ import org.jdrupes.vmoperator.runner.qemu.events.HotpluggableCpuStatus;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.RunState;
 import org.jdrupes.vmoperator.runner.qemu.events.ShutdownEvent;
-import org.jdrupes.vmoperator.runner.qemu.events.SpiceConnectedEvent;
-import org.jdrupes.vmoperator.runner.qemu.events.SpiceDisconnectedEvent;
 import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
-import org.jgrapes.core.Component;
 import org.jgrapes.core.annotation.Handler;
 import org.jgrapes.core.events.HandlingError;
 import org.jgrapes.core.events.Start;
-import org.jgrapes.util.events.ConfigurationUpdate;
-import org.jgrapes.util.events.InitialConfiguration;
 
 /**
  * Updates the CR status.
  */
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
-public class StatusUpdater extends Component {
+public class StatusUpdater extends VmDefUpdater {
 
     private static final Set<RunState> RUNNING_STATES
         = Set.of(RunState.RUNNING, RunState.TERMINATING);
 
-    private String namespace;
-    private String vmName;
-    private K8sClient apiClient;
     private long observedGeneration;
     private boolean guestShutdownStops;
     private boolean shutdownByGuest;
@@ -89,15 +71,7 @@ public class StatusUpdater extends Component {
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public StatusUpdater(Channel componentChannel) {
         super(componentChannel);
-        try {
-            apiClient = new K8sClient();
-            io.kubernetes.client.openapi.Configuration
-                .setDefaultApiClient(apiClient);
-        } catch (IOException e) {
-            logger.log(Level.SEVERE, e,
-                () -> "Cannot access events API, terminating.");
-            fire(new Exit(1));
-        }
+        attach(new ConsoleTracker(componentChannel));
     }
 
     /**
@@ -111,43 +85,6 @@ public class StatusUpdater extends Component {
             logger.log(Level.WARNING, exc,
                 () -> "Problem accessing kubernetes: " + exc.getResponseBody());
             event.stop();
-        }
-    }
-
-    /**
-     * On configuration update.
-     *
-     * @param event the event
-     */
-    @Handler
-    @SuppressWarnings("unchecked")
-    public void onConfigurationUpdate(ConfigurationUpdate event) {
-        event.structured("/Runner").ifPresent(c -> {
-            if (event instanceof InitialConfiguration) {
-                namespace = (String) c.get("namespace");
-                updateNamespace();
-                vmName = Optional.ofNullable((Map<String, String>) c.get("vm"))
-                    .map(vm -> vm.get("name")).orElse(null);
-            }
-        });
-    }
-
-    private void updateNamespace() {
-        if (namespace == null) {
-            var path = Path
-                .of("/var/run/secrets/kubernetes.io/serviceaccount/namespace");
-            if (Files.isReadable(path)) {
-                try {
-                    namespace = Files.lines(path).findFirst().orElse(null);
-                } catch (IOException e) {
-                    logger.log(Level.WARNING, e,
-                        () -> "Cannot read namespace.");
-                }
-            }
-        }
-        if (namespace == null) {
-            logger.warning(() -> "Namespace is unknown, some functions"
-                + " won't be available.");
         }
     }
 
@@ -238,13 +175,9 @@ public class StatusUpdater extends Component {
         }
         vmStub.updateStatus(vmDef, from -> {
             JsonObject status = from.status();
-            status.getAsJsonArray("conditions").asList().stream()
-                .map(cond -> (JsonObject) cond)
-                .forEach(cond -> {
-                    if ("Running".equals(cond.get("type").getAsString())) {
-                        updateRunningCondition(event, from, cond);
-                    }
-                });
+            boolean running = RUNNING_STATES.contains(event.runState());
+            updateCondition(vmDef, vmDef.status(), "Running", running,
+                event.reason(), event.message());
             if (event.runState() == RunState.STARTING) {
                 status.addProperty("ram", GsonPtr.to(from.data())
                     .getAsString("spec", "vm", "maximumRam").orElse("0"));
@@ -252,6 +185,13 @@ public class StatusUpdater extends Component {
             } else if (event.runState() == RunState.STOPPED) {
                 status.addProperty("ram", "0");
                 status.addProperty("cpus", 0);
+            }
+
+            // In case console connection was still present
+            if (!running) {
+                status.addProperty("consoleClient", "");
+                updateCondition(from, status, "ConsoleConnected", false,
+                    "VmStopped", "The VM has been shut down");
             }
             return status;
         });
@@ -276,29 +216,6 @@ public class StatusUpdater extends Component {
             .action("StatusUpdate").reason(event.reason())
             .note(event.message());
         K8s.createEvent(apiClient, vmDef, evt);
-    }
-
-    private void updateRunningCondition(RunnerStateChange event,
-            K8sDynamicModel from, JsonObject cond) {
-        @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-        boolean reportedRunning
-            = "True".equals(cond.get("status").getAsString());
-        if (RUNNING_STATES.contains(event.runState())
-            && !reportedRunning) {
-            cond.addProperty("status", "True");
-            cond.addProperty("lastTransitionTime",
-                Instant.now().toString());
-        }
-        if (!RUNNING_STATES.contains(event.runState())
-            && reportedRunning) {
-            cond.addProperty("status", "False");
-            cond.addProperty("lastTransitionTime",
-                Instant.now().toString());
-        }
-        cond.addProperty("reason", event.reason());
-        cond.addProperty("message", event.message());
-        cond.addProperty("observedGeneration",
-            from.getMetadata().getGeneration());
     }
 
     /**
@@ -368,92 +285,5 @@ public class StatusUpdater extends Component {
     @Handler
     public void onShutdown(ShutdownEvent event) throws ApiException {
         shutdownByGuest = event.byGuest();
-    }
-
-    /**
-     * On spice connected.
-     *
-     * @param event the event
-     * @throws ApiException the api exception
-     */
-    @Handler
-    public void onSpiceConnected(SpiceConnectedEvent event)
-            throws ApiException {
-        if (vmStub == null) {
-            return;
-        }
-        vmStub.updateStatus(from -> {
-            JsonObject status = from.status();
-            status.addProperty("consoleClient", event.clientHost());
-            updateConsoleConnectedCondition(from, status, true);
-            return status;
-        });
-
-        // Log event
-        var evt = new EventsV1Event()
-            .reportingController(VM_OP_GROUP + "/" + APP_NAME)
-            .action("ConsoleConnectionUpdate")
-            .reason("Connection from " + event.clientHost());
-        K8s.createEvent(apiClient, vmStub.model().get(), evt);
-    }
-
-    /**
-     * On spice disconnected.
-     *
-     * @param event the event
-     * @throws ApiException the api exception
-     */
-    @Handler
-    public void onSpiceDisconnected(SpiceDisconnectedEvent event)
-            throws ApiException {
-        if (vmStub == null) {
-            return;
-        }
-        vmStub.updateStatus(from -> {
-            JsonObject status = from.status();
-            status.addProperty("consoleClient", "");
-            updateConsoleConnectedCondition(from, status, false);
-            return status;
-        });
-
-        // Log event
-        var evt = new EventsV1Event()
-            .reportingController(VM_OP_GROUP + "/" + APP_NAME)
-            .action("ConsoleConnectionUpdate")
-            .reason("Disconnected from " + event.clientHost());
-        K8s.createEvent(apiClient, vmStub.model().get(), evt);
-    }
-
-    private void updateConsoleConnectedCondition(VmDefinitionModel from,
-            JsonObject status, boolean connected) {
-        // Optimize, as we can get this several times
-        var current = status.getAsJsonArray("conditions").asList().stream()
-            .map(cond -> (JsonObject) cond)
-            .filter(cond -> "ConsoleConnected"
-                .equals(cond.get("type").getAsString()))
-            .findFirst()
-            .map(cond -> "True".equals(cond.get("status").getAsString()));
-        if (current.isPresent() && current.get() == connected) {
-            return;
-        }
-
-        // Do update
-        final var condition = Map.of("type", "ConsoleConnected",
-            "status", connected ? "True" : "False",
-            "observedGeneration", from.getMetadata().getGeneration(),
-            "reason", connected ? "Connected" : "Disconnected",
-            "lastTransitionTime", Instant.now().toString());
-        List<Object> toReplace = new ArrayList<>(List.of(condition));
-        List<Object> newConds
-            = status.getAsJsonArray("conditions").asList().stream()
-                .map(cond -> (JsonObject) cond)
-                .map(cond -> "ConsoleConnected"
-                    .equals(cond.get("type").getAsString())
-                        ? toReplace.remove(0)
-                        : cond)
-                .collect(Collectors.toCollection(() -> new ArrayList<>()));
-        newConds.addAll(toReplace);
-        status.add("conditions",
-            apiClient.getJSON().getGson().toJsonTree(newConds));
     }
 }
