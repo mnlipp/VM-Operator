@@ -12,6 +12,12 @@ rules:
   verbs:
   - '*'
 - apiGroups:
+  - vmoperator.jdrupes.org
+  resources:
+  - vms/status
+  verbs:
+  - patch
+- apiGroups:
   - apps
   resources:
   - statefulsets
