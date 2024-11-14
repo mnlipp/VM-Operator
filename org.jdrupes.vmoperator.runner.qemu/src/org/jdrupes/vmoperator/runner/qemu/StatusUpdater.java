@@ -191,7 +191,7 @@ public class StatusUpdater extends VmDefUpdater {
             if (!running) {
                 status.addProperty("consoleClient", "");
                 updateCondition(from, status, "ConsoleConnected", false,
-                    "VM has stopped", null);
+                    "VmStopped", "The VM has been shut down");
             }
             return status;
         });

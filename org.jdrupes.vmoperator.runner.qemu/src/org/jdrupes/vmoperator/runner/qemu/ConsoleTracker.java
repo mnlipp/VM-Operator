@@ -108,8 +108,8 @@ public class ConsoleTracker extends VmDefUpdater {
         vmStub.updateStatus(from -> {
             JsonObject status = from.status();
             status.addProperty("consoleClient", event.clientHost());
-            updateCondition(from, status, "ConsoleConnected",
-                true, "Connection from " + event.clientHost(), null);
+            updateCondition(from, status, "ConsoleConnected", true, "Connected",
+                "Connection from " + event.clientHost());
             return status;
         });
 
@@ -143,8 +143,8 @@ public class ConsoleTracker extends VmDefUpdater {
         vmStub.updateStatus(from -> {
             JsonObject status = from.status();
             status.addProperty("consoleClient", "");
-            updateCondition(from, status, "ConsoleConnected",
-                false, event.clientHost() + " has disconnected", null);
+            updateCondition(from, status, "ConsoleConnected", false,
+                "Disconnected", event.clientHost() + " has disconnected");
             return status;
         });
 
