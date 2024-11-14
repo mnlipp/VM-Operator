@@ -19,7 +19,6 @@
 package org.jdrupes.vmoperator.runner.qemu;
 
 import com.google.gson.JsonObject;
-import io.kubernetes.client.openapi.ApiClient;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,7 +30,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
+import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.VmDefinitionModel;
+import org.jdrupes.vmoperator.runner.qemu.events.Exit;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.annotation.Handler;
@@ -46,15 +47,28 @@ public class VmDefUpdater extends Component {
 
     protected String namespace;
     protected String vmName;
+    protected K8sClient apiClient;
 
     /**
      * Instantiates a new status updater.
      *
      * @param componentChannel the component channel
+     * @throws IOException 
      */
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public VmDefUpdater(Channel componentChannel) {
         super(componentChannel);
+        if (apiClient == null) {
+            try {
+                apiClient = new K8sClient();
+                io.kubernetes.client.openapi.Configuration
+                    .setDefaultApiClient(apiClient);
+            } catch (IOException e) {
+                logger.log(Level.SEVERE, e,
+                    () -> "Cannot access events API, terminating.");
+                fire(new Exit(1));
+            }
+        }
     }
 
     /**
@@ -104,9 +118,8 @@ public class VmDefUpdater extends Component {
      * @param state the new state
      * @param reason the reason for the change
      */
-    protected void updateCondition(ApiClient apiClient, VmDefinitionModel from,
-            JsonObject status, String type, boolean state, String reason,
-            String message) {
+    protected void updateCondition(VmDefinitionModel from, JsonObject status,
+            String type, boolean state, String reason, String message) {
         // Optimize, as we can get this several times
         var current = status.getAsJsonArray("conditions").asList().stream()
             .map(cond -> (JsonObject) cond)

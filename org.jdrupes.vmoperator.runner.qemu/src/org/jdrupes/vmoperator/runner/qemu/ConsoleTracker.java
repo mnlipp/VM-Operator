@@ -44,7 +44,6 @@ import org.jgrapes.core.events.Start;
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class ConsoleTracker extends VmDefUpdater {
 
-    private final K8sClient apiClient;
     private VmDefinitionStub vmStub;
     private String mainChannelClientHost;
     private long mainChannelClientPort;
@@ -109,7 +108,7 @@ public class ConsoleTracker extends VmDefUpdater {
         vmStub.updateStatus(from -> {
             JsonObject status = from.status();
             status.addProperty("consoleClient", event.clientHost());
-            updateCondition(apiClient, from, status, "ConsoleConnected",
+            updateCondition(from, status, "ConsoleConnected",
                 true, "Connection from " + event.clientHost(), null);
             return status;
         });
@@ -144,7 +143,7 @@ public class ConsoleTracker extends VmDefUpdater {
         vmStub.updateStatus(from -> {
             JsonObject status = from.status();
             status.addProperty("consoleClient", "");
-            updateCondition(apiClient, from, status, "ConsoleConnected",
+            updateCondition(from, status, "ConsoleConnected",
                 false, event.clientHost() + " has disconnected", null);
             return status;
         });

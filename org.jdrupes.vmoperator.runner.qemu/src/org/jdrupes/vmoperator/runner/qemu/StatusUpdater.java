@@ -33,7 +33,6 @@ import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.common.K8s;
-import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.VmDefinitionModel;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
 import org.jdrupes.vmoperator.runner.qemu.events.BalloonChangeEvent;
@@ -59,7 +58,6 @@ public class StatusUpdater extends VmDefUpdater {
     private static final Set<RunState> RUNNING_STATES
         = Set.of(RunState.RUNNING, RunState.TERMINATING);
 
-    private K8sClient apiClient;
     private long observedGeneration;
     private boolean guestShutdownStops;
     private boolean shutdownByGuest;
@@ -73,15 +71,6 @@ public class StatusUpdater extends VmDefUpdater {
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public StatusUpdater(Channel componentChannel) {
         super(componentChannel);
-        try {
-            apiClient = new K8sClient();
-            io.kubernetes.client.openapi.Configuration
-                .setDefaultApiClient(apiClient);
-        } catch (IOException e) {
-            logger.log(Level.SEVERE, e,
-                () -> "Cannot access events API, terminating.");
-            fire(new Exit(1));
-        }
         attach(new ConsoleTracker(componentChannel));
     }
 
@@ -187,8 +176,8 @@ public class StatusUpdater extends VmDefUpdater {
         vmStub.updateStatus(vmDef, from -> {
             JsonObject status = from.status();
             boolean running = RUNNING_STATES.contains(event.runState());
-            updateCondition(apiClient, vmDef, vmDef.status(), "Running",
-                running, event.reason(), event.message());
+            updateCondition(vmDef, vmDef.status(), "Running", running,
+                event.reason(), event.message());
             if (event.runState() == RunState.STARTING) {
                 status.addProperty("ram", GsonPtr.to(from.data())
                     .getAsString("spec", "vm", "maximumRam").orElse("0"));
@@ -201,8 +190,8 @@ public class StatusUpdater extends VmDefUpdater {
             // In case console connection was still present
             if (!running) {
                 status.addProperty("consoleClient", "");
-                updateCondition(apiClient, from, status, "ConsoleConnected",
-                    false, "VM has stopped", null);
+                updateCondition(from, status, "ConsoleConnected", false,
+                    "VM has stopped", null);
             }
             return status;
         });
