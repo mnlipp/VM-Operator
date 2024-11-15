@@ -180,19 +180,7 @@ public class DisplaySecretMonitor
     @SuppressWarnings("PMD.StringInstantiation")
     public void onGetDisplaySecrets(GetDisplayPassword event, VmChannel channel)
             throws ApiException {
-        ListOptions options = new ListOptions();
-        options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
-            + "app.kubernetes.io/component=" + COMP_DISPLAY_SECRET + ","
-            + "app.kubernetes.io/instance="
-            + event.vmDefinition().metadata().getName());
-        var stubs = K8sV1SecretStub.list(client(),
-            event.vmDefinition().namespace(), options);
-        if (stubs.isEmpty()) {
-            return;
-        }
-        var stub = stubs.iterator().next();
-
-        // Valid request, update console user in status
+        // Update console user in status
         var vmStub = VmDefinitionStub.get(client(),
             new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
             event.vmDefinition().namespace(), event.vmDefinition().name());
@@ -202,6 +190,20 @@ public class DisplaySecretMonitor
             return status;
         });
 
+        // Look for secret
+        ListOptions options = new ListOptions();
+        options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
+            + "app.kubernetes.io/component=" + COMP_DISPLAY_SECRET + ","
+            + "app.kubernetes.io/instance="
+            + event.vmDefinition().metadata().getName());
+        var stubs = K8sV1SecretStub.list(client(),
+            event.vmDefinition().namespace(), options);
+        if (stubs.isEmpty()) {
+            // No secret means no password for this VM wanted
+            return;
+        }
+        var stub = stubs.iterator().next();
+
         // Check validity
         var model = stub.model().get();
         @SuppressWarnings("PMD.StringInstantiation")
@@ -209,6 +211,7 @@ public class DisplaySecretMonitor
             .get(DATA_PASSWORD_EXPIRY)).map(b -> new String(b)).orElse(null);
         if (model.getData().get(DATA_DISPLAY_PASSWORD) != null
             && stillValid(expiry)) {
+            // Fixed secret, don't touch
             event.setResult(
                 new String(model.getData().get(DATA_DISPLAY_PASSWORD)));
             return;
