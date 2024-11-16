@@ -123,8 +123,8 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
     private static ObjectMapper objectMapper
         = new ObjectMapper().registerModule(new JavaTimeModule());
     private Class<?> preferredIpVersion = Inet4Address.class;
-    private Set<String> syncUsers = new HashSet<>();
-    private final Set<String> syncRoles = new HashSet<>();
+    private Set<String> syncUsers = Collections.emptySet();
+    private Set<String> syncRoles = Collections.emptySet();
     private boolean deleteConnectionFile = true;
 
     /**
@@ -173,12 +173,19 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
                         .filter(v -> v instanceof String).map(v -> (String) v)
                         .map(Boolean::parseBoolean).orElse(true);
 
-                // Sync preview for users or roles
+                // Users or roles for which previews should be synchronized
                 syncUsers = ((List<Map<String, String>>) c.getOrDefault(
                     "syncPreviewsFor", Collections.emptyList())).stream()
-                        .map(m -> Optional.ofNullable(m.get("user"))
-                            .orElse(m.get("role")))
+                        .map(m -> m.get("user"))
                         .filter(s -> s != null).collect(Collectors.toSet());
+                logger.finest(() -> "Syncing previews for users: "
+                    + syncUsers.toString());
+                syncRoles = ((List<Map<String, String>>) c.getOrDefault(
+                    "syncPreviewsFor", Collections.emptyList())).stream()
+                        .map(m -> m.get("role"))
+                        .filter(s -> s != null).collect(Collectors.toSet());
+                logger.finest(() -> "Syncing previews for roles: "
+                    + syncRoles.toString());
             } catch (ClassCastException e) {
                 logger.config("Malformed configuration: " + e.getMessage());
             }
