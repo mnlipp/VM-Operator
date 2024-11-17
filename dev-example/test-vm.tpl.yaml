@@ -27,7 +27,8 @@ spec:
 
   guestShutdownStops: true
 
-  cloudInit: {}
+  cloudInit: 
+    metaData: {}
 
   vm:
     # state: Running
@@ -49,7 +50,7 @@ spec:
         spec:
           storageClassName: ceph-rbd3slow
           dataSource:
-            name: test-vm-snapshot-1
+            name: test-vm-system-disk-snapshot
             kind: VolumeSnapshot
             apiGroup: snapshot.storage.k8s.io
           accessModes:
@@ -64,4 +65,3 @@ spec:
     display:
       spice:
         port: <%= $((5910 + number)) %>
-        server: 192.168.179.20
