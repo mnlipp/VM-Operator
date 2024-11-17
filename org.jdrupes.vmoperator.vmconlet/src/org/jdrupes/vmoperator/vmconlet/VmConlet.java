@@ -329,7 +329,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
                     .map(r -> Quantity.fromString(r).getNumber().toBigInteger())
                     .orElse(BigInteger.ZERO));
             summary.runningVms
-                = vmDef.<List<Map<String, Object>>> fromStatus("conditions")
+                += vmDef.<List<Map<String, Object>>> fromStatus("conditions")
                     .orElse(Collections.emptyList()).stream()
                     .filter(cond -> DataPath.get(cond, "type")
                         .map(t -> "Running".equals(t)).orElse(false)
