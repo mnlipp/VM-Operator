@@ -7,8 +7,8 @@
   "/Controller":
     namespace: vmop-dev
     "/Reconciler":
-      runnerData:
-        storageClassName: null
+      runnerDataPvc:
+        storageClassName: rook-cephfs
       loadBalancerService:
         labels:
           label1: label1

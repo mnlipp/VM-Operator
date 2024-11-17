@@ -1,0 +1,67 @@
+apiVersion: "vmoperator.jdrupes.org/v1"
+kind: VirtualMachine
+metadata:
+  namespace: vmop-dev
+  name: test-vm<%= ${number} %>
+  annotations:
+    argocd.argoproj.io/sync-wave: "20"
+  
+spec:
+  image:
+#    repository: docker-registry.lan.mnl.de
+#    path: vmoperator/org.jdrupes.vmoperator.runner.qemu-arch
+#    pullPolicy: Always
+#    repository: ghcr.io
+#    path: mnlipp/org.jdrupes.vmoperator.runner.qemu-alpine
+#    version: "3.0.0"
+    source: registry.mnl.de/org/jdrupes/vm-operator/org.jdrupes.vmoperator.runner.qemu-arch:testing
+    pullPolicy: Always
+
+  permissions:
+  - role: admin
+    may: 
+    - "*"
+  - user: test
+    may:
+    - accessConsole
+
+  guestShutdownStops: true
+
+  cloudInit: {}
+
+  vm:
+    # state: Running
+    bootMenu: true
+    maximumCpus: 4
+    currentCpus: 2
+    maximumRam: 4Gi
+    currentRam: 3Gi
+  
+    networks:
+    # No bridge on TC1
+    # - tap: {}
+    - user: {}
+    
+    disks:
+    - volumeClaimTemplate:
+        metadata:
+          name: system
+        spec:
+          storageClassName: ceph-rbd3slow
+          dataSource:
+            name: test-vm-snapshot-1
+            kind: VolumeSnapshot
+            apiGroup: snapshot.storage.k8s.io
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 40Gi
+    - cdrom:
+        image: ""
+        # image: https://download.fedoraproject.org/pub/fedora/linux/releases/38/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-38-1.6.iso
+
+    display:
+      spice:
+        port: <%= $((5910 + number)) %>
+        server: 192.168.179.20
