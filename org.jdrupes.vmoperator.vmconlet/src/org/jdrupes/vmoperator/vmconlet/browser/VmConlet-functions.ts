@@ -204,8 +204,7 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
     "summarySeries", function(_conletId: string, series: any[]) {
         chartData.clear();
         for (const entry of series) {
-            chartData.push(new Date(entry.time.epochSecond * 1000
-                + entry.time.nano / 1000000),
+            chartData.push(new Date(entry.time * 1000),
                 entry.values[0], entry.values[1]);
         }
         chartDateUpdate.value = new Date();
