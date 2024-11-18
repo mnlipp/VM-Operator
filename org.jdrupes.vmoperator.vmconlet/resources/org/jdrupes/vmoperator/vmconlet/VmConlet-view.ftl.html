@@ -68,7 +68,7 @@
         </tr>
         <tr :id="scopedId(rowIndex)" v-if="$aash.isDisclosed(scopedId(rowIndex))"
           :class="[(rowIndex % 2) ? 'odd' : 'even']">
-          <td colspan="6" class="details">
+          <td colspan="8" class="details">
             <table class="table--basic table--basic--autoStriped">
               <tr>
                 <td>{{ localize("maximumCpus") }}</td>

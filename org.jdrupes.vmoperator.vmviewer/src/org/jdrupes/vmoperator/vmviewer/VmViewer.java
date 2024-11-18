@@ -23,8 +23,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
 import freemarker.core.ParseException;
 import freemarker.template.MalformedTemplateNameException;
@@ -47,18 +45,17 @@ import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 import org.bouncycastle.util.Objects;
-import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jdrupes.vmoperator.common.K8sObserver;
-import org.jdrupes.vmoperator.common.VmDefinitionModel;
-import org.jdrupes.vmoperator.common.VmDefinitionModel.Permission;
+import org.jdrupes.vmoperator.common.VmDefinition;
+import org.jdrupes.vmoperator.common.VmDefinition.Permission;
 import org.jdrupes.vmoperator.manager.events.ChannelTracker;
 import org.jdrupes.vmoperator.manager.events.GetDisplayPassword;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.ResetVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
-import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Components;
 import org.jgrapes.core.Event;
@@ -122,12 +119,12 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
     private static final Set<RenderMode> MODES_FOR_GENERATED = RenderMode.asSet(
         RenderMode.Preview, RenderMode.StickyPreview);
     private final ChannelTracker<String, VmChannel,
-            VmDefinitionModel> channelTracker = new ChannelTracker<>();
+            VmDefinition> channelTracker = new ChannelTracker<>();
     private static ObjectMapper objectMapper
         = new ObjectMapper().registerModule(new JavaTimeModule());
     private Class<?> preferredIpVersion = Inet4Address.class;
-    private final Set<String> syncUsers = new HashSet<>();
-    private final Set<String> syncRoles = new HashSet<>();
+    private Set<String> syncUsers = Collections.emptySet();
+    private Set<String> syncRoles = Collections.emptySet();
     private boolean deleteConnectionFile = true;
 
     /**
@@ -176,15 +173,19 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
                         .filter(v -> v instanceof String).map(v -> (String) v)
                         .map(Boolean::parseBoolean).orElse(true);
 
-                // Sync
-                for (var entry : (List<Map<String, String>>) c.getOrDefault(
-                    "syncPreviewsFor", Collections.emptyList())) {
-                    if (entry.containsKey("user")) {
-                        syncUsers.add(entry.get("user"));
-                    } else if (entry.containsKey("role")) {
-                        syncRoles.add(entry.get("role"));
-                    }
-                }
+                // Users or roles for which previews should be synchronized
+                syncUsers = ((List<Map<String, String>>) c.getOrDefault(
+                    "syncPreviewsFor", Collections.emptyList())).stream()
+                        .map(m -> m.get("user"))
+                        .filter(s -> s != null).collect(Collectors.toSet());
+                logger.finest(() -> "Syncing previews for users: "
+                    + syncUsers.toString());
+                syncRoles = ((List<Map<String, String>>) c.getOrDefault(
+                    "syncPreviewsFor", Collections.emptyList())).stream()
+                        .map(m -> m.get("role"))
+                        .filter(s -> s != null).collect(Collectors.toSet());
+                logger.finest(() -> "Syncing previews for roles: "
+                    + syncRoles.toString());
             } catch (ClassCastException e) {
                 logger.config("Malformed configuration: " + e.getMessage());
             }
@@ -370,8 +371,9 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
                     fmModel(event, channel, conletId, model)))
                         .setRenderAs(
                             RenderMode.Preview.addModifiers(event.renderAs()))
-                        .setSupportedModes(
-                            model.isGenerated() ? MODES_FOR_GENERATED : MODES));
+                        .setSupportedModes(syncPreviews(channel.session())
+                            ? MODES_FOR_GENERATED
+                            : MODES));
             renderedAs.add(RenderMode.Preview);
             if (!Strings.isNullOrEmpty(model.vmName())) {
                 Optional.ofNullable(channel.session().get(RENDERED))
@@ -399,8 +401,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
             .map(d -> d.getMetadata().getName()).sorted().toList();
     }
 
-    private Set<Permission> permissions(VmDefinitionModel vmDef,
-            Session session) {
+    private Set<Permission> permissions(VmDefinition vmDef, Session session) {
         var user = WebConsoleUtils.userFromSession(session)
             .map(ConsoleUser::getName).orElse(null);
         var roles = WebConsoleUtils.rolesFromSession(session)
@@ -421,15 +422,16 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
         channelTracker.value(model.vmName()).ifPresent(item -> {
             try {
                 var vmDef = item.associated();
-                @SuppressWarnings("unchecked")
-                var def = (Map<String, Object>) item.channel().client()
-                    .getJSON().getGson()
-                    .fromJson(vmDef.data().toString(), Map.class);
-                def.put("userPermissions",
+                var data = Map.of("metadata",
+                    Map.of("namespace", vmDef.namespace(),
+                        "name", vmDef.name()),
+                    "spec", vmDef.spec(),
+                    "status", vmDef.getStatus(),
+                    "userPermissions",
                     permissions(vmDef, channel.session()).stream()
                         .map(Permission::toString).toList());
                 channel.respond(new NotifyConletView(type(),
-                    model.getConletId(), "updateVmDefinition", def));
+                    model.getConletId(), "updateVmDefinition", data));
             } catch (JsonSyntaxException e) {
                 logger.log(Level.SEVERE, e,
                     () -> "Failed to serialize VM definition");
@@ -452,7 +454,6 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
      *
      * @param event the event
      * @param channel the channel
-     * @throws JsonDecodeException the json decode exception
      * @throws IOException 
      */
     @Handler(namedChannels = "manager")
@@ -461,11 +462,8 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
         "PMD.ConfusingArgumentToVarargsMethod" })
     public void onVmDefChanged(VmDefChanged event, VmChannel channel)
             throws IOException {
-        var vmDef = new VmDefinitionModel(channel.client().getJSON()
-            .getGson(), event.vmDefinition().data());
-        GsonPtr.to(vmDef.data()).to("metadata").get(JsonObject.class)
-            .remove("managedFields");
-        var vmName = vmDef.getMetadata().getName();
+        var vmDef = event.vmDefinition();
+        var vmName = vmDef.name();
         if (event.type() == K8sObserver.ResponseType.DELETED) {
             channelTracker.remove(vmName);
         } else {
@@ -536,9 +534,12 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
             break;
         case "openConsole":
             if (perms.contains(Permission.ACCESS_CONSOLE)) {
-                var pwQuery = Event.onCompletion(new GetDisplayPassword(vmDef),
-                    e -> openConsole(vmName, channel, model,
-                        e.password().orElse(null)));
+                var user = WebConsoleUtils.userFromSession(channel.session())
+                    .map(ConsoleUser::getName).orElse("");
+                var pwQuery
+                    = Event.onCompletion(new GetDisplayPassword(vmDef, user),
+                        e -> openConsole(vmName, channel, model,
+                            e.password().orElse(null)));
                 fire(pwQuery, vmChannel);
             }
             break;
@@ -567,27 +568,26 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
             logger.severe(() -> "Failed to find display IP for " + vmName);
             return;
         }
-        var port = GsonPtr.to(vmDef.data()).get(JsonPrimitive.class, "spec",
-            "vm", "display", "spice", "port");
+        var port = vmDef.<Number> fromVm("display", "spice", "port")
+            .map(Number::longValue);
         if (port.isEmpty()) {
             logger.severe(() -> "No port defined for display of " + vmName);
             return;
         }
-        var proxyUrl = GsonPtr.to(vmDef.data()).get(JsonPrimitive.class, "spec",
-            "vm", "display", "spice", "proxyUrl");
         StringBuffer data = new StringBuffer(100)
             .append("[virt-viewer]\ntype=spice\nhost=")
             .append(addr.get().getHostAddress()).append("\nport=")
-            .append(Integer.toString(port.get().getAsInt()))
+            .append(port.get().toString())
             .append('\n');
         if (password != null) {
             data.append("password=").append(password).append('\n');
         }
-        proxyUrl.map(JsonPrimitive::getAsString).ifPresent(u -> {
-            if (!Strings.isNullOrEmpty(u)) {
-                data.append("proxy=").append(u).append('\n');
-            }
-        });
+        vmDef.<String> fromVm("display", "spice", "proxyUrl")
+            .ifPresent(u -> {
+                if (!Strings.isNullOrEmpty(u)) {
+                    data.append("proxy=").append(u).append('\n');
+                }
+            });
         if (deleteConnectionFile) {
             data.append("delete-this-file=1\n");
         }
@@ -596,11 +596,10 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
             Base64.getEncoder().encodeToString(data.toString().getBytes())));
     }
 
-    private Optional<InetAddress> displayIp(K8sDynamicModel vmDef) {
-        var server = GsonPtr.to(vmDef.data()).get(JsonPrimitive.class, "spec",
-            "vm", "display", "spice", "server");
+    private Optional<InetAddress> displayIp(VmDefinition vmDef) {
+        Optional<String> server = vmDef.fromVm("display", "spice", "server");
         if (server.isPresent()) {
-            var srv = server.get().getAsString();
+            var srv = server.get();
             try {
                 var addr = InetAddress.getByName(srv);
                 logger.fine(() -> "Using IP address from CRD for "
@@ -612,8 +611,8 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
                 return Optional.empty();
             }
         }
-        var addrs = GsonPtr.to(vmDef.data()).getAsListOf(JsonPrimitive.class,
-            "nodeAddresses").stream().map(JsonPrimitive::getAsString)
+        var addrs = Optional.<List<String>> ofNullable(vmDef
+            .extra("nodeAddresses")).orElse(Collections.emptyList()).stream()
             .map(a -> {
                 try {
                     return InetAddress.getByName(a);
@@ -623,7 +622,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
                 }
             }).filter(a -> a != null).toList();
         logger.fine(() -> "Known IP addresses for "
-            + vmDef.getMetadata().getName() + ": " + addrs);
+            + vmDef.name() + ": " + addrs);
         return addrs.stream()
             .filter(a -> preferredIpVersion.isAssignableFrom(a.getClass()))
             .findFirst().or(() -> addrs.stream().findFirst());

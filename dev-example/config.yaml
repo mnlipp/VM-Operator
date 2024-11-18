@@ -9,6 +9,26 @@
     "/Reconciler":
       runnerData:
         storageClassName: null
+      loadBalancerService:
+        labels:
+          label1: label1
+          label2: toBeReplaced
+        annotations:
+          metallb.universe.tf/loadBalancerIPs: 192.168.168.1
+          metallb.universe.tf/ip-allocated-from-pool: single-common
+          metallb.universe.tf/allow-shared-ip: single-common
+      loggingProperties: |
+        # Defaults for namespace (VM domain)
+        handlers=java.util.logging.ConsoleHandler
+        
+        #org.jgrapes.level=FINE
+        #org.jgrapes.core.handlerTracking.level=FINER
+        
+        org.jdrupes.vmoperator.runner.qemu.level=FINEST
+        
+        java.util.logging.ConsoleHandler.level=ALL
+        java.util.logging.ConsoleHandler.formatter=java.util.logging.SimpleFormatter
+        java.util.logging.SimpleFormatter.format=%1$tb %1$td %1$tT %4$s %5$s%6$s%n
   "/GuiSocketServer":
     port: 8888
   "/GuiHttpServer":
@@ -17,12 +37,12 @@
       "/WebConsole":
         "/LoginConlet":
           users:
-            - name: admin
-              fullName: Administrator
-              password: "$2b$05$NiBd74ZGdplLC63ePZf1f.UtjMKkbQ23cQoO2OKOFalDBHWAOy21."
-            - name: test
-              fullName: Test Account
-              password: "$2b$05$hZaI/jToXf/d3BctZdT38Or7H7h6Pn2W3WiB49p5AyhDHFkkYCvo2"
+          - name: admin
+            fullName: Administrator
+            password: "$2b$05$NiBd74ZGdplLC63ePZf1f.UtjMKkbQ23cQoO2OKOFalDBHWAOy21."
+          - name: test
+            fullName: Test Account
+            password: "$2b$05$hZaI/jToXf/d3BctZdT38Or7H7h6Pn2W3WiB49p5AyhDHFkkYCvo2"
         "/RoleConfigurator":
           rolesByUser:
             # User admin has role admin

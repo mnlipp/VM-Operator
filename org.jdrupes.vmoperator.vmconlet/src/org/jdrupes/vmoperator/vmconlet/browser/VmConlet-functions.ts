@@ -111,7 +111,9 @@ window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
                 ["runningConditionSince", "since"],
                 ["currentCpus", "currentCpus"],
                 ["currentRam", "currentRam"],
-                ["nodeName", "nodeName"]
+                ["nodeName", "nodeName"],
+                ["usedFrom", "usedFrom"],
+                ["usedBy", "usedBy"]
             ], {
                 sortKey: "name",
                 sortOrder: "up"
@@ -179,6 +181,8 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
         vmDefinition.name = vmDefinition.metadata.name;
         vmDefinition.currentCpus = vmDefinition.status.cpus;
         vmDefinition.currentRam = Number(vmDefinition.status.ram);
+        vmDefinition.usedFrom = vmDefinition.status.consoleClient || "";
+        vmDefinition.usedBy = vmDefinition.status.consoleUser || "";
         for (const condition of vmDefinition.status.conditions) {
             if (condition.type === "Running") {
                 vmDefinition.running = condition.status === "True";
@@ -200,8 +204,7 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
     "summarySeries", function(_conletId: string, series: any[]) {
         chartData.clear();
         for (const entry of series) {
-            chartData.push(new Date(entry.time.epochSecond * 1000
-                + entry.time.nano / 1000000),
+            chartData.push(new Date(entry.time * 1000),
                 entry.values[0], entry.values[1]);
         }
         chartDateUpdate.value = new Date();

@@ -1,6 +1,6 @@
 /*
  * VM-Operator
- * Copyright (C) 2024 Michael N. Lipp
+ * Copyright (C) 2023 Michael N. Lipp
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,24 +16,31 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.jdrupes.vmoperator.common;
+package org.jdrupes.vmoperator.runner.qemu.events;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
+import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Represents a VM definition.
+ * Signals a connection from a client.
  */
-@SuppressWarnings("PMD.DataClass")
-public class VmDefinitionModel extends K8sDynamicModel {
+public class SpiceInitializedEvent extends SpiceEvent {
 
     /**
-     * Instantiates a new model from the JSON representation.
+     * Instantiates a new spice connected event.
      *
-     * @param delegate the gson instance to use for extracting structured data
-     * @param json the JSON
+     * @param kind the kind
+     * @param data the data
      */
-    public VmDefinitionModel(Gson delegate, JsonObject json) {
-        super(delegate, json);
+    public SpiceInitializedEvent(Kind kind, JsonNode data) {
+        super(kind, data);
+    }
+
+    /**
+     * Returns the channel type.
+     *
+     * @return the channel type
+     */
+    public int channelType() {
+        return data().get("client").get("channel-type").asInt();
     }
 }

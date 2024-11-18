@@ -18,6 +18,8 @@
 
 package org.jdrupes.vmoperator.manager;
 
+import com.google.gson.JsonObject;
+import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Secret;
@@ -37,10 +39,13 @@ import java.util.Optional;
 import java.util.Scanner;
 import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
+import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
+import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_NAME;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sV1PodStub;
 import org.jdrupes.vmoperator.common.K8sV1SecretStub;
+import org.jdrupes.vmoperator.common.VmDefinitionStub;
 import static org.jdrupes.vmoperator.manager.Constants.COMP_DISPLAY_SECRET;
 import static org.jdrupes.vmoperator.manager.Constants.DATA_DISPLAY_PASSWORD;
 import static org.jdrupes.vmoperator.manager.Constants.DATA_PASSWORD_EXPIRY;
@@ -175,14 +180,26 @@ public class DisplaySecretMonitor
     @SuppressWarnings("PMD.StringInstantiation")
     public void onGetDisplaySecrets(GetDisplayPassword event, VmChannel channel)
             throws ApiException {
+        // Update console user in status
+        var vmStub = VmDefinitionStub.get(client(),
+            new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
+            event.vmDefinition().namespace(), event.vmDefinition().name());
+        vmStub.updateStatus(from -> {
+            JsonObject status = from.status();
+            status.addProperty("consoleUser", event.user());
+            return status;
+        });
+
+        // Look for secret
         ListOptions options = new ListOptions();
         options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
             + "app.kubernetes.io/component=" + COMP_DISPLAY_SECRET + ","
             + "app.kubernetes.io/instance="
             + event.vmDefinition().metadata().getName());
         var stubs = K8sV1SecretStub.list(client(),
-            event.vmDefinition().metadata().getNamespace(), options);
+            event.vmDefinition().namespace(), options);
         if (stubs.isEmpty()) {
+            // No secret means no password for this VM wanted
             return;
         }
         var stub = stubs.iterator().next();
@@ -194,6 +211,7 @@ public class DisplaySecretMonitor
             .get(DATA_PASSWORD_EXPIRY)).map(b -> new String(b)).orElse(null);
         if (model.getData().get(DATA_DISPLAY_PASSWORD) != null
             && stillValid(expiry)) {
+            // Fixed secret, don't touch
             event.setResult(
                 new String(model.getData().get(DATA_DISPLAY_PASSWORD)));
             return;
@@ -256,10 +274,9 @@ public class DisplaySecretMonitor
     @SuppressWarnings("PMD.AvoidSynchronizedStatement")
     public void onVmDefChanged(VmDefChanged event, Channel channel) {
         synchronized (pendingGets) {
-            String vmName = event.vmDefinition().metadata().getName();
+            String vmName = event.vmDefinition().name();
             for (var pending : pendingGets) {
-                if (pending.event.vmDefinition().metadata().getName()
-                    .equals(vmName)
+                if (pending.event.vmDefinition().name().equals(vmName)
                     && event.vmDefinition().displayPasswordSerial()
                         .map(s -> s >= pending.expectedSerial).orElse(false)) {
                     pending.lock.remove();

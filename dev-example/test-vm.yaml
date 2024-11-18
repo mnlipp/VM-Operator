@@ -10,12 +10,12 @@ spec:
     version: 3.2.0
 
   permissions:
-    - user: admin
-      may: 
-      - "*"
-    - user: test
-      may:
-      - "accessConsole"
+  - user: admin
+    may: 
+    - "*"
+  - user: test
+    may:
+    - "accessConsole"
 
   resources:
     requests:
@@ -61,3 +61,5 @@ spec:
       spice:
         port: 5810
         generateSecret: true
+
+  loadBalancerService: {}

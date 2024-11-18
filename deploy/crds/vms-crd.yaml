@@ -1019,6 +1019,11 @@ spec:
                           - accessConsole
                           - "*"
                         default: []
+                loggingProperties:
+                  type: string
+                  description: >-
+                    Override the default logging properties for 
+                    the runner for this VM.
                 vm:
                   type: object
                   description: Defines the VM.
@@ -1457,6 +1462,17 @@ spec:
                     Amount of memory in use.
                   type: string
                   default: "0"
+                consoleClient:
+                  description: >-
+                    The hostname of the currently connected client.
+                  type: string
+                  default: ""
+                consoleUser:
+                  description: >-
+                    The id of the user who has last requested a console
+                    connection.
+                  type: string
+                  default: ""
                 displayPasswordSerial:
                   description: >-
                     Counts changes of the display password. Set to -1
@@ -1468,6 +1484,12 @@ spec:
                     List of component conditions observed
                   default:
                   - type: Running
+                    status: "False"
+                    observedGeneration: 1
+                    lastTransitionTime: "1970-01-01T00:00:00Z"
+                    reason: Creation
+                    message: "Creation of CR"
+                  - type: ConsoleConnected
                     status: "False"
                     observedGeneration: 1
                     lastTransitionTime: "1970-01-01T00:00:00Z"

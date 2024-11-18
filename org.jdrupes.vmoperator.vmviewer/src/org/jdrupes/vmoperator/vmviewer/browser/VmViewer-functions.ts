@@ -72,6 +72,7 @@ window.orgJDrupesVmOperatorVmViewer.initPreview = (previewDom: HTMLElement,
                 previewApi.vmDefinition.spec.vm.state !== 'Stopped' 
                 && previewApi.vmDefinition.running);
             const running = computed(() => previewApi.vmDefinition.running);
+            const inUse = computed(() => previewApi.vmDefinition.usedBy != '');
             const permissions = computed(() => previewApi.vmDefinition.spec
                 ? previewApi.vmDefinition.userPermissions : []);
 
@@ -88,7 +89,7 @@ window.orgJDrupesVmOperatorVmViewer.initPreview = (previewDom: HTMLElement,
             };
         
             return { localize, resourceBase, vmAction, configured,
-                        startable, stoppable, running, permissions };
+                        startable, stoppable, running, inUse, permissions };
         },
         template: `
           <table>
@@ -101,7 +102,8 @@ window.orgJDrupesVmOperatorVmViewer.initPreview = (previewDom: HTMLElement,
                       || !permissions.includes('accessConsole')" 
                   v-on:click="vmAction('openConsole')"
                   :src="resourceBase + (running
-                      ? 'computer.svg' : 'computer-off.svg')"
+                      ? (inUse ? 'computer-in-use.svg' : 'computer.svg') 
+                      : 'computer-off.svg')"
                   :title="localize('Open console')"></span><span
                   style="visibility: hidden;"><img
                   :src="resourceBase + 'computer.svg'"></span></td>
@@ -159,6 +161,7 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmviewer.VmViewer",
         vmDefinition.name = vmDefinition.metadata.name;
         vmDefinition.currentCpus = vmDefinition.status.cpus;
         vmDefinition.currentRam = Number(vmDefinition.status.ram);
+        vmDefinition.usedBy = vmDefinition.status.consoleClient || "";
         for (const condition of vmDefinition.status.conditions) {
             if (condition.type === "Running") {
                 vmDefinition.running = condition.status === "True";
