@@ -38,4 +38,7 @@ public class Constants {
 
     /** The Constant VM_OP_KIND_VM. */
     public static final String VM_OP_KIND_VM = "VirtualMachine";
+
+    /** The Constant VM_OP_KIND_VM_POOL. */
+    public static final String VM_OP_KIND_VM_POOL = "VmPool";
 }
