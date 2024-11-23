@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.jdrupes.vmoperator.vmconlet;
+package org.jdrupes.vmoperator.vmmgmt;
 
 import java.util.Map;
 import java.util.Optional;
@@ -25,9 +25,9 @@ import org.jgrapes.core.ComponentType;
 import org.jgrapes.webconsole.base.ConletComponentFactory;
 
 /**
- * The factory service for {@link VmConlet}s.
+ * The factory service for {@link VmMgmt}s.
  */
-public class VmConletFactory implements ConletComponentFactory {
+public class VmMgmtFactory implements ConletComponentFactory {
 
     /*
      * (non-Javadoc)
@@ -36,7 +36,7 @@ public class VmConletFactory implements ConletComponentFactory {
      */
     @Override
     public Class<? extends ComponentType> componentType() {
-        return VmConlet.class;
+        return VmMgmt.class;
     }
 
     /*
@@ -48,7 +48,7 @@ public class VmConletFactory implements ConletComponentFactory {
     @Override
     public Optional<ComponentType> create(Channel componentChannel,
             Map<?, ?> properties) {
-        return Optional.of(new VmConlet(componentChannel));
+        return Optional.of(new VmMgmt(componentChannel));
     }
 
 }

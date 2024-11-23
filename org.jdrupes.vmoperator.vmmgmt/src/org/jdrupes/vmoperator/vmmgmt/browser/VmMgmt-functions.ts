@@ -27,19 +27,19 @@ import { formatMemory, parseMemory } from "./MemorySize";
 import CpuRamChart from "./CpuRamChart";
 import ConditionlInputController from "./ConditionalInputController";
 
-import "./VmConlet-style.scss";
+import "./VmMgmt-style.scss";
 
 // For global access
 declare global {
     interface Window {
-        orgJDrupesVmOperatorVmConlet: { 
+        orgJDrupesVmOperatorVmMgmt: { 
             initPreview?: (previewDom: HTMLElement, isUpdate: boolean) => void,
             initView?: (viewDom: HTMLElement, isUpdate: boolean) => void
         }
     }
 }
 
-window.orgJDrupesVmOperatorVmConlet = {};
+window.orgJDrupesVmOperatorVmMgmt = {};
 
 const vmInfos = reactive(new Map());
 const vmSummary = reactive({
@@ -64,7 +64,7 @@ const shortDateTime = (time: Date) => {
 const chartData = new TimeSeries(2);
 const chartDateUpdate = ref<Date>(null);
 
-window.orgJDrupesVmOperatorVmConlet.initPreview = (previewDom: HTMLElement,
+window.orgJDrupesVmOperatorVmMgmt.initPreview = (previewDom: HTMLElement,
     _isUpdate: boolean) => {
     const app = createApp({
         setup(_props: object) {
@@ -98,7 +98,7 @@ window.orgJDrupesVmOperatorVmConlet.initPreview = (previewDom: HTMLElement,
     app.mount(previewDom);
 };
 
-window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
+window.orgJDrupesVmOperatorVmMgmt.initView = (viewDom: HTMLElement,
     _isUpdate: boolean) => {
     const app = createApp({
         setup(_props: object) {
@@ -174,7 +174,7 @@ window.orgJDrupesVmOperatorVmConlet.initView = (viewDom: HTMLElement,
     app.mount(viewDom);
 };
 
-JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
+JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmmgmt.VmMgmt",
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     "updateVm", function(_conletId: string, vmDefinition: any) {
         // Add some short-cuts for table controller
@@ -194,12 +194,12 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
         vmInfos.set(vmDefinition.name, vmDefinition);
     });
 
-JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
+JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmmgmt.VmMgmt",
     "removeVm", function(_conletId: string, vmName: string) {
         vmInfos.delete(vmName);
     });
 
-JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
+JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmmgmt.VmMgmt",
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     "summarySeries", function(_conletId: string, series: any[]) {
         chartData.clear();
@@ -210,7 +210,7 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
         chartDateUpdate.value = new Date();
 });
 
-JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmconlet.VmConlet",
+JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmmgmt.VmMgmt",
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     "updateSummary", function(_conletId: string, summary: any) {
         chartData.push(new Date(), summary.usedCpus, Number(summary.usedRam));

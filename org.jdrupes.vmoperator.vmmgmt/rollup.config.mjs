@@ -1,8 +1,8 @@
 import typescript from 'rollup-plugin-typescript2';
 import postcss from 'rollup-plugin-postcss';
 
-let packagePath = "org/jdrupes/vmoperator/vmconlet";
-let baseName = "VmConlet"
+let packagePath = "org/jdrupes/vmoperator/vmmgmt";
+let baseName = "VmMgmt"
 let module = "build/generated/resources/" + packagePath 
     +  "/" + baseName + "-functions.js";
 

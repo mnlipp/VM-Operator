@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.jdrupes.vmoperator.vmconlet;
+package org.jdrupes.vmoperator.vmmgmt;
 
 import freemarker.core.ParseException;
 import freemarker.template.MalformedTemplateNameException;
@@ -61,11 +61,11 @@ import org.jgrapes.webconsole.base.events.SetLocale;
 import org.jgrapes.webconsole.base.freemarker.FreeMarkerConlet;
 
 /**
- * The Class VmConlet.
+ * The Class {@link VmMgmt}.
  */
 @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",
     "PMD.CouplingBetweenObjects" })
-public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
+public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
 
     private static final Set<RenderMode> MODES = RenderMode.asSet(
         RenderMode.Preview, RenderMode.View);
@@ -88,7 +88,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
      * sends the event to
      */
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
-    public VmConlet(Channel componentChannel) {
+    public VmMgmt(Channel componentChannel) {
         super(componentChannel);
         setPeriodicRefresh(Duration.ofMinutes(1), () -> new Update());
     }
@@ -115,7 +115,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
             .addRenderMode(RenderMode.Preview)
             .addScript(new ScriptResource().setScriptType("module")
                 .setScriptUri(event.renderSupport().conletResource(
-                    type(), "VmConlet-functions.js"))));
+                    type(), "VmMgmt-functions.js"))));
     }
 
     @Override
@@ -133,7 +133,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
         boolean sendVmInfos = false;
         if (event.renderAs().contains(RenderMode.Preview)) {
             Template tpl
-                = freemarkerConfig().getTemplate("VmConlet-preview.ftl.html");
+                = freemarkerConfig().getTemplate("VmMgmt-preview.ftl.html");
             channel.respond(new RenderConlet(type(), conletId,
                 processTemplate(event, tpl,
                     fmModel(event, channel, conletId, conletState)))
@@ -150,7 +150,7 @@ public class VmConlet extends FreeMarkerConlet<VmConlet.VmsModel> {
         }
         if (event.renderAs().contains(RenderMode.View)) {
             Template tpl
-                = freemarkerConfig().getTemplate("VmConlet-view.ftl.html");
+                = freemarkerConfig().getTemplate("VmMgmt-view.ftl.html");
             channel.respond(new RenderConlet(type(), conletId,
                 processTemplate(event, tpl,
                     fmModel(event, channel, conletId, conletState)))
