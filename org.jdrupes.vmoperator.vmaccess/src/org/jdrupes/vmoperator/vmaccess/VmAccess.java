@@ -152,44 +152,57 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ViewerModel> {
     @SuppressWarnings({ "unchecked", "PMD.AvoidDuplicateLiterals" })
     @Handler
     public void onConfigurationUpdate(ConfigurationUpdate event) {
-        event.structured(componentPath()).ifPresent(c -> {
-            try {
-                var dispRes = (Map<String, Object>) c
-                    .getOrDefault("displayResource", Collections.emptyMap());
-                switch ((String) dispRes.getOrDefault("preferredIpVersion",
-                    "")) {
-                case "ipv6":
-                    preferredIpVersion = Inet6Address.class;
-                    break;
-                case "ipv4":
-                default:
-                    preferredIpVersion = Inet4Address.class;
-                    break;
+        event.structured(componentPath())
+            .or(() -> {
+                var oldConfig = event.structured("/Manager/GuiHttpServer"
+                    + "/ConsoleWeblet/WebConsole/ComponentCollector/VmViewer");
+                if (oldConfig.isPresent()) {
+                    logger.warning(() -> "Using configuration with old "
+                        + "component name \"VmViewer\", please update to "
+                        + "\"VmAccess\"");
                 }
+                return oldConfig;
+            })
+            .ifPresent(c -> {
+                try {
+                    var dispRes = (Map<String, Object>) c
+                        .getOrDefault("displayResource",
+                            Collections.emptyMap());
+                    switch ((String) dispRes.getOrDefault("preferredIpVersion",
+                        "")) {
+                    case "ipv6":
+                        preferredIpVersion = Inet6Address.class;
+                        break;
+                    case "ipv4":
+                    default:
+                        preferredIpVersion = Inet4Address.class;
+                        break;
+                    }
 
-                // Delete connection file
-                deleteConnectionFile
-                    = Optional.ofNullable(c.get("deleteConnectionFile"))
-                        .filter(v -> v instanceof String).map(v -> (String) v)
-                        .map(Boolean::parseBoolean).orElse(true);
+                    // Delete connection file
+                    deleteConnectionFile
+                        = Optional.ofNullable(c.get("deleteConnectionFile"))
+                            .filter(v -> v instanceof String)
+                            .map(v -> (String) v)
+                            .map(Boolean::parseBoolean).orElse(true);
 
-                // Users or roles for which previews should be synchronized
-                syncUsers = ((List<Map<String, String>>) c.getOrDefault(
-                    "syncPreviewsFor", Collections.emptyList())).stream()
-                        .map(m -> m.get("user"))
-                        .filter(s -> s != null).collect(Collectors.toSet());
-                logger.finest(() -> "Syncing previews for users: "
-                    + syncUsers.toString());
-                syncRoles = ((List<Map<String, String>>) c.getOrDefault(
-                    "syncPreviewsFor", Collections.emptyList())).stream()
-                        .map(m -> m.get("role"))
-                        .filter(s -> s != null).collect(Collectors.toSet());
-                logger.finest(() -> "Syncing previews for roles: "
-                    + syncRoles.toString());
-            } catch (ClassCastException e) {
-                logger.config("Malformed configuration: " + e.getMessage());
-            }
-        });
+                    // Users or roles for which previews should be synchronized
+                    syncUsers = ((List<Map<String, String>>) c.getOrDefault(
+                        "syncPreviewsFor", Collections.emptyList())).stream()
+                            .map(m -> m.get("user"))
+                            .filter(s -> s != null).collect(Collectors.toSet());
+                    logger.finest(() -> "Syncing previews for users: "
+                        + syncUsers.toString());
+                    syncRoles = ((List<Map<String, String>>) c.getOrDefault(
+                        "syncPreviewsFor", Collections.emptyList())).stream()
+                            .map(m -> m.get("role"))
+                            .filter(s -> s != null).collect(Collectors.toSet());
+                    logger.finest(() -> "Syncing previews for roles: "
+                        + syncRoles.toString());
+                } catch (ClassCastException e) {
+                    logger.config("Malformed configuration: " + e.getMessage());
+                }
+            });
     }
 
     private boolean syncPreviews(Session session) {
