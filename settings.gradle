@@ -12,6 +12,8 @@ rootProject.name = 'VM-Operator'
 
 include 'org.jdrupes.vmoperator.manager'
 include 'org.jdrupes.vmoperator.manager.events'
+include 'org.jdrupes.vmoperator.poolaccess'
+include 'org.jdrupes.vmoperator.vmaccess'
 include 'org.jdrupes.vmoperator.vmconlet'
 include 'org.jdrupes.vmoperator.vmviewer'
 include 'org.jdrupes.vmoperator.runner.qemu'

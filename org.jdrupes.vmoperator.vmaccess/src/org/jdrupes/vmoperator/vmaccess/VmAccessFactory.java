@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.jdrupes.vmoperator.vmviewer;
+package org.jdrupes.vmoperator.vmaccess;
 
 import java.util.Map;
 import java.util.Optional;
@@ -25,9 +25,9 @@ import org.jgrapes.core.ComponentType;
 import org.jgrapes.webconsole.base.ConletComponentFactory;
 
 /**
- * The factory service for {@link VmViewer}s.
+ * The factory service for {@link VmAccess}s.
  */
-public class VmViewerFactory implements ConletComponentFactory {
+public class VmAccessFactory implements ConletComponentFactory {
 
     /*
      * (non-Javadoc)
@@ -36,7 +36,7 @@ public class VmViewerFactory implements ConletComponentFactory {
      */
     @Override
     public Class<? extends ComponentType> componentType() {
-        return VmViewer.class;
+        return VmAccess.class;
     }
 
     /*
@@ -48,7 +48,7 @@ public class VmViewerFactory implements ConletComponentFactory {
     @Override
     public Optional<ComponentType> create(Channel componentChannel,
             Map<?, ?> properties) {
-        return Optional.of(new VmViewer(componentChannel));
+        return Optional.of(new VmAccess(componentChannel));
     }
 
 }

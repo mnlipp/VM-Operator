@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.jdrupes.vmoperator.vmviewer;
+package org.jdrupes.vmoperator.vmaccess;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -89,7 +89,7 @@ import org.jgrapes.webconsole.base.events.UpdateConletType;
 import org.jgrapes.webconsole.base.freemarker.FreeMarkerConlet;
 
 /**
- * The Class VmViewer. The component supports the following
+ * The Class {@link VmAccess}. The component supports the following
  * configuration properties:
  * 
  *   * `displayResource`: a map with the following entries:
@@ -107,13 +107,13 @@ import org.jgrapes.webconsole.base.freemarker.FreeMarkerConlet;
  */
 @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.ExcessiveImports",
     "PMD.CouplingBetweenObjects", "PMD.GodClass", "PMD.TooManyMethods" })
-public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
+public class VmAccess extends FreeMarkerConlet<VmAccess.ViewerModel> {
 
     private static final String VM_NAME_PROPERTY = "vmName";
     private static final String RENDERED
-        = VmViewer.class.getName() + ".rendered";
+        = VmAccess.class.getName() + ".rendered";
     private static final String PENDING
-        = VmViewer.class.getName() + ".pending";
+        = VmAccess.class.getName() + ".pending";
     private static final Set<RenderMode> MODES = RenderMode.asSet(
         RenderMode.Preview, RenderMode.Edit);
     private static final Set<RenderMode> MODES_FOR_GENERATED = RenderMode.asSet(
@@ -140,7 +140,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
      * on by default and that {@link Manager#fire(Event, Channel...)}
      * sends the event to
      */
-    public VmViewer(Channel componentChannel) {
+    public VmAccess(Channel componentChannel) {
         super(componentChannel);
     }
 
@@ -222,7 +222,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
             .addRenderMode(RenderMode.Preview)
             .addScript(new ScriptResource().setScriptType("module")
                 .setScriptUri(event.renderSupport().conletResource(
-                    type(), "VmViewer-functions.js"))));
+                    type(), "VmAccess-functions.js"))));
         channel.session().put(RENDERED, new HashSet<>());
     }
 
@@ -259,7 +259,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
                 foundMissing = true;
             }
             fire(new AddConletRequest(event.event().event().renderSupport(),
-                VmViewer.class.getName(),
+                VmAccess.class.getName(),
                 RenderMode.asSet(RenderMode.Preview))
                     .addProperty(VM_NAME_PROPERTY, vmName),
                 connection);
@@ -283,7 +283,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
     private String storagePath(Session session, String conletId) {
         return "/" + WebConsoleUtils.userFromSession(session)
             .map(ConsoleUser::getName).orElse("")
-            + "/" + VmViewer.class.getName() + "/" + conletId;
+            + "/" + VmAccess.class.getName() + "/" + conletId;
     }
 
     @Override
@@ -365,7 +365,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
 
             // Render
             Template tpl
-                = freemarkerConfig().getTemplate("VmViewer-preview.ftl.html");
+                = freemarkerConfig().getTemplate("VmAccess-preview.ftl.html");
             channel.respond(new RenderConlet(type(), conletId,
                 processTemplate(event, tpl,
                     fmModel(event, channel, conletId, model)))
@@ -383,7 +383,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
         }
         if (event.renderAs().contains(RenderMode.Edit)) {
             Template tpl = freemarkerConfig()
-                .getTemplate("VmViewer-edit.ftl.html");
+                .getTemplate("VmAccess-edit.ftl.html");
             var fmModel = fmModel(event, channel, conletId, model);
             fmModel.put("vmNames", accessibleVms(channel));
             channel.respond(new OpenModalDialog(type(), conletId,
@@ -633,7 +633,7 @@ public class VmViewer extends FreeMarkerConlet<VmViewer.ViewerModel> {
             ResourceBundle resourceBundle) throws TemplateNotFoundException,
             MalformedTemplateNameException, ParseException, IOException {
         Template tpl = freemarkerConfig()
-            .getTemplate("VmViewer-confirmReset.ftl.html");
+            .getTemplate("VmAccess-confirmReset.ftl.html");
         channel.respond(new OpenModalDialog(type(), model.getConletId(),
             processTemplate(event, tpl,
                 fmModel(event, channel, model.getConletId(), model)))

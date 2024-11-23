@@ -19,7 +19,7 @@
 /*
  * Conlet specific styles.
  */
-.jdrupes-vmoperator-vmviewer {
+.jdrupes-vmoperator-vmaccess {
   
   span[role="button"].svg-icon {
     display: inline-block;
@@ -47,7 +47,7 @@
   }
 }
 
-.jdrupes-vmoperator-vmviewer.jdrupes-vmoperator-vmviewer-preview {
+.jdrupes-vmoperator-vmaccess.jdrupes-vmoperator-vmaccess-preview {
   
   img {
     height: 3em;
@@ -58,7 +58,7 @@
     }
   }
   
-  .jdrupes-vmoperator-vmviewer-preview-action-list {
+  .jdrupes-vmoperator-vmaccess-preview-action-list {
     white-space: nowrap;
   }
   
@@ -76,13 +76,13 @@
   }  
 }
 
-.jdrupes-vmoperator-vmviewer.jdrupes-vmoperator-vmviewer-edit {
+.jdrupes-vmoperator-vmaccess.jdrupes-vmoperator-vmaccess-edit {
   select {
     width: 15em;
   }
 }
 
-.jdrupes-vmoperator-vmviewer.jdrupes-vmoperator-vmviewer-confirm-reset {
+.jdrupes-vmoperator-vmaccess.jdrupes-vmoperator-vmaccess-confirm-reset {
   p {
     text-align: center;
   }

@@ -1,8 +1,8 @@
 import typescript from 'rollup-plugin-typescript2';
 import postcss from 'rollup-plugin-postcss';
 
-let packagePath = "org/jdrupes/vmoperator/vmviewer";
-let baseName = "VmViewer"
+let packagePath = "org/jdrupes/vmoperator/vmaccess";
+let baseName = "VmAccess"
 let module = "build/generated/resources/" + packagePath 
     +  "/" + baseName + "-functions.js";
 

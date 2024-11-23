@@ -24,12 +24,12 @@ import JgwcPlugin, { JGWC } from "jgwc";
 import { provideApi, getApi } from "aash-plugin";
 import l10nBundles from "l10nBundles";
 
-import "./VmViewer-style.scss";
+import "./VmAccess-style.scss";
 
 // For global access
 declare global {
     interface Window {
-        orgJDrupesVmOperatorVmViewer: { 
+        orgJDrupesVmOperatorVmAccess: { 
             initPreview?: (previewDom: HTMLElement, isUpdate: boolean) => void,
             initEdit?: (viewDom: HTMLElement, isUpdate: boolean) => void,
             applyEdit?: (viewDom: HTMLElement, apply: boolean) => void,
@@ -38,7 +38,7 @@ declare global {
     }
 }
 
-window.orgJDrupesVmOperatorVmViewer = {};
+window.orgJDrupesVmOperatorVmAccess = {};
 
 interface Api {
     /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -51,7 +51,7 @@ const localize = (key: string) => {
         l10nBundles, JGWC.lang(), key);
 };
 
-window.orgJDrupesVmOperatorVmViewer.initPreview = (previewDom: HTMLElement,
+window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
     _isUpdate: boolean) => {
     const app = createApp({
         setup(_props: object) {
@@ -107,7 +107,7 @@ window.orgJDrupesVmOperatorVmViewer.initPreview = (previewDom: HTMLElement,
                   :title="localize('Open console')"></span><span
                   style="visibility: hidden;"><img
                   :src="resourceBase + 'computer.svg'"></span></td>
-                <td class="jdrupes-vmoperator-vmviewer-preview-action-list">
+                <td class="jdrupes-vmoperator-vmaccess-preview-action-list">
                   <span role="button" 
                     :aria-disabled="!startable || !permissions.includes('start')" 
                     tabindex="0" class="fa fa-play" :title="localize('Start VM')"
@@ -138,25 +138,25 @@ window.orgJDrupesVmOperatorVmViewer.initPreview = (previewDom: HTMLElement,
     app.mount(previewDom);
 };
 
-JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmviewer.VmViewer",
+JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmaccess.VmAccess",
     "updateConfig", function(conletId: string, vmName: string) {
         const conlet = JGConsole.findConletPreview(conletId);
         if (!conlet) {
             return;
         }
         const api = getApi<Api>(conlet.element().querySelector(
-            ":scope .jdrupes-vmoperator-vmviewer-preview"))!;
+            ":scope .jdrupes-vmoperator-vmaccess-preview"))!;
         api.vmName = vmName;
     });
 
-JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmviewer.VmViewer",
+JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmaccess.VmAccess",
     "updateVmDefinition", function(conletId: string, vmDefinition: any) {
         const conlet = JGConsole.findConletPreview(conletId);
         if (!conlet) {
             return;
         }
         const api = getApi<Api>(conlet.element().querySelector(
-            ":scope .jdrupes-vmoperator-vmviewer-preview"))!;
+            ":scope .jdrupes-vmoperator-vmaccess-preview"))!;
         // Add some short-cuts for rendering
         vmDefinition.name = vmDefinition.metadata.name;
         vmDefinition.currentCpus = vmDefinition.status.cpus;
@@ -173,13 +173,13 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmviewer.VmViewer",
         api.vmDefinition = vmDefinition;
     });
 
-JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmviewer.VmViewer",
+JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmaccess.VmAccess",
     "openConsole", function(_conletId: string, mimeType: string, data: string) {
         let target = document.getElementById(
-            "org.jdrupes.vmoperator.vmviewer.VmViewer.target");
+            "org.jdrupes.vmoperator.vmaccess.VmAccess.target");
         if (!target) {
             target = document.createElement("iframe");
-            target.id = "org.jdrupes.vmoperator.vmviewer.VmViewer.target";
+            target.id = "org.jdrupes.vmoperator.vmaccess.VmAccess.target";
             target.setAttribute("name", target.id);
             target.setAttribute("style", "display: none;");            
             document.querySelector("body")!.append(target);
@@ -188,7 +188,7 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmviewer.VmViewer",
         window.open(url, target.id);
     });
 
-window.orgJDrupesVmOperatorVmViewer.initEdit = (dialogDom: HTMLElement,
+window.orgJDrupesVmOperatorVmAccess.initEdit = (dialogDom: HTMLElement,
     isUpdate: boolean) => {
     if (isUpdate) {
         return;
@@ -209,7 +209,7 @@ window.orgJDrupesVmOperatorVmViewer.initEdit = (dialogDom: HTMLElement,
             const conlet = JGConsole.findConletPreview(conletId);
             if (conlet) {
                 const api = getApi<Api>(conlet.element().querySelector(
-                    ":scope .jdrupes-vmoperator-vmviewer-preview"))!;
+                    ":scope .jdrupes-vmoperator-vmaccess-preview"))!;
                 vmNameInput.value = api.vmName;
             }
 
@@ -222,7 +222,7 @@ window.orgJDrupesVmOperatorVmViewer.initEdit = (dialogDom: HTMLElement,
     app.mount(dialogDom);
 }
 
-window.orgJDrupesVmOperatorVmViewer.applyEdit =
+window.orgJDrupesVmOperatorVmAccess.applyEdit =
     (dialogDom: HTMLElement, apply: boolean) => {
     if (!apply) {
         return;
@@ -233,7 +233,7 @@ window.orgJDrupesVmOperatorVmViewer.applyEdit =
     JGConsole.notifyConletModel(conletId, "selectedVm", vmName);
 }
 
-window.orgJDrupesVmOperatorVmViewer.confirmReset = 
+window.orgJDrupesVmOperatorVmAccess.confirmReset = 
         (conletType: string, conletId: string) => {
     JGConsole.instance.closeModalDialog(conletType, conletId);
     JGConsole.notifyConletModel(conletId, "resetConfirmed");

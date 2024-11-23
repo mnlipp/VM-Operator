@@ -1,6 +1,6 @@
 /*
  * VM-Operator
- * Copyright (C) 2023 Michael N. Lipp
+ * Copyright (C) 2023, 2024 Michael N. Lipp
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,4 +16,4 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.jdrupes.vmoperator.vmviewer;
+package org.jdrupes.vmoperator.vmaccess;
