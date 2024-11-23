@@ -18,6 +18,7 @@
 
 package org.jdrupes.vmoperator.common;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -25,6 +26,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.jdrupes.vmoperator.util.DataPath;
 
 /**
  * Represents a VM pool.
@@ -95,6 +99,24 @@ public class VmPool {
         }
         builder.append(']');
         return builder.toString();
+    }
+
+    /**
+     * Collect all permissions for the given user with the given roles.
+     *
+     * @param user the user
+     * @param roles the roles
+     * @return the sets the
+     */
+    public Set<Permission> permissionsFor(String user,
+            Collection<String> roles) {
+        return permissions.stream()
+            .filter(g -> DataPath.get(g, "user").map(u -> u.equals(user))
+                .orElse(false)
+                || DataPath.get(g, "role").map(roles::contains).orElse(false))
+            .map(g -> DataPath.<Set<Permission>> get(g, "may")
+                .orElse(Collections.emptySet()).stream())
+            .flatMap(Function.identity()).collect(Collectors.toSet());
     }
 
     /**
