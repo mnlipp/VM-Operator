@@ -246,7 +246,9 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
     }
 
     /**
-     * Handle an observed change.
+     * Handle an observed change. The method is invoked by the observer
+     * thread(s). It is the responsibility of the implementing class to
+     * fire derived events on the appropriate event pipeline.
      *
      * @param client the client
      * @param change the change
