@@ -79,7 +79,7 @@ patches:
                     other:
                     - org.jgrapes.webconlet.locallogin.LoginConlet
                 "/ComponentCollector":
-                  "/VmViewer":
+                  "/VmAccess":
                     displayResource:
                       preferredIpVersion: ipv4
                     syncPreviewsFor:

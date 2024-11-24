@@ -7,8 +7,8 @@
   "/Controller":
     namespace: vmop-dev
     "/Reconciler":
-      runnerData:
-        storageClassName: null
+      runnerDataPvc:
+        storageClassName: rook-cephfs
       loadBalancerService:
         labels:
           label1: label1
@@ -65,7 +65,7 @@
             other:
             - org.jgrapes.webconlet.oidclogin.LoginConlet
         "/ComponentCollector":
-          "/VmViewer":
+          "/VmAccess":
             displayResource:
               preferredIpVersion: ipv4
             syncPreviewsFor:

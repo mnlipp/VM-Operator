@@ -1,0 +1,47 @@
+#!/bin/bash
+
+function usage() {
+  cat >&2 <<EOF
+Usage: $0 [OPTION]... [TEMPLATE]
+Generate VM CRDs using TEMPLATE.
+
+  -c, --count                 Count of VMs to generate
+  -d, --destination DIR       Generate into given directory (default: ".")
+  -h, --help                  Print this help
+  -p, --prefix PREFIX         Prefix for generated file (default: basename of template)
+EOF
+  exit 1  
+}
+
+count=0
+destination=.
+template=""
+prefix=""
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -c|--count) shift; count=$1;;
+    -d|--destination) shift; destination="$1";;
+    -h|--help) shift; usage;;
+    -p|--prefix) shift; prefix="$1";;
+    -*) echo >&2 "Unknown option: $1"; exit 1;;
+    *) template="$1";;
+  esac
+  shift
+done
+
+if [ -z "$template" ]; then
+  usage
+fi
+
+if [ "$count" = "0" ]; then
+  exit 0
+fi
+for number in $(seq 1 $count); do
+  if [ -z "$prefix" ]; then
+    prefix=$(basename $template .tpl.yaml)
+  fi
+  name="$prefix$number"
+  index=$(($number - 1))
+  esh -o $destination/$name.yaml $template number=$number index=$index
+done

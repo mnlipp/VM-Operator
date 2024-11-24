@@ -5,6 +5,19 @@ layout: vm-operator
 
 # Upgrading
 
+## To version 4.0.0
+
+The VmViewer conlet has been renamed to VmAccess. This affects the
+[configuration](https://jdrupes.org/vm-operator/user-gui.html). Configuration information using the old path
+"/Manager/GuiHttpServer/ConsoleWeblet/WebConsole/ComponentCollector/VmViewer"
+is still accepted for backward compatibility, but should be updated.
+
+The change of name also causes conlets added to the overview page by
+users to "disappear" from the GUI. They have to be re-added. 
+
+The latter behavior also applies to the VmConlet conlet which has been
+renamed to VmMgmt.
+
 ## To version 3.4.0
 
 Starting with this version, the VM-Operator no longer uses a stateful set

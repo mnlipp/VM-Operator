@@ -1019,6 +1019,13 @@ spec:
                           - accessConsole
                           - "*"
                         default: []
+                pools:
+                  type: array
+                  description: >-
+                    List of pools to which this VM belongs.
+                  items:
+                    type: string
+                  default: []
                 loggingProperties:
                   type: string
                   description: >-
