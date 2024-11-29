@@ -93,9 +93,8 @@ public class VmPool {
         if (vms.size() <= 3) {
             builder.append(vms);
         } else {
-            builder.append('[');
-            vms.stream().limit(3).map(s -> s + ",").forEach(builder::append);
-            builder.append("...]");
+            builder.append('[').append(vms.stream().limit(3).map(s -> s + ",")
+                .collect(Collectors.joining())).append("...]");
         }
         builder.append(']');
         return builder.toString();
