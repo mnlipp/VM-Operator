@@ -38,6 +38,7 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -49,13 +50,14 @@ import java.util.stream.Collectors;
 import org.bouncycastle.util.Objects;
 import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jdrupes.vmoperator.common.VmDefinition;
-import org.jdrupes.vmoperator.common.VmDefinition.Permission;
+import org.jdrupes.vmoperator.common.VmPool;
 import org.jdrupes.vmoperator.manager.events.ChannelTracker;
 import org.jdrupes.vmoperator.manager.events.GetDisplayPassword;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.ResetVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
+import org.jdrupes.vmoperator.manager.events.VmPoolChanged;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Components;
 import org.jgrapes.core.Event;
@@ -107,7 +109,7 @@ import org.jgrapes.webconsole.base.freemarker.FreeMarkerConlet;
  */
 @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.ExcessiveImports",
     "PMD.CouplingBetweenObjects", "PMD.GodClass", "PMD.TooManyMethods" })
-public class VmAccess extends FreeMarkerConlet<VmAccess.ViewerModel> {
+public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
 
     private static final String VM_NAME_PROPERTY = "vmName";
     private static final String RENDERED
@@ -126,6 +128,8 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ViewerModel> {
     private Set<String> syncUsers = Collections.emptySet();
     private Set<String> syncRoles = Collections.emptySet();
     private boolean deleteConnectionFile = true;
+    @SuppressWarnings("PMD.UseConcurrentHashMap")
+    private final Map<String, VmPool> vmPools = new HashMap<>();
 
     /**
      * The periodically generated update event.
@@ -247,20 +251,28 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ViewerModel> {
      * @throws InterruptedException the interrupted exception
      */
     @Handler
-    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     public void onConsoleConfigured(ConsoleConfigured event,
             ConsoleConnection connection) throws InterruptedException,
             IOException {
         @SuppressWarnings("unchecked")
-        final var rendered = (Set<String>) connection.session().get(RENDERED);
+        final var rendered
+            = (Set<ResourceModel>) connection.session().get(RENDERED);
         connection.session().remove(RENDERED);
         if (!syncPreviews(connection.session())) {
             return;
         }
 
+        addMissingVms(event, connection, rendered);
+    }
+
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+    private void addMissingVms(ConsoleConfigured event,
+            ConsoleConnection connection, final Set<ResourceModel> rendered) {
         boolean foundMissing = false;
         for (var vmName : accessibleVms(connection)) {
-            if (rendered.contains(vmName)) {
+            if (rendered.stream()
+                .anyMatch(r -> r.type() == ResourceModel.Type.VM
+                    && r.name().equals(vmName))) {
                 continue;
             }
             if (!foundMissing) {
@@ -300,13 +312,12 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ViewerModel> {
     }
 
     @Override
-    protected Optional<ViewerModel> createNewState(AddConletRequest event,
+    protected Optional<ResourceModel> createNewState(AddConletRequest event,
             ConsoleConnection connection, String conletId) throws Exception {
-        var model = new ViewerModel(conletId);
-        model.vmName = (String) event.properties().get(VM_NAME_PROPERTY);
-        if (model.vmName != null) {
-            model.setGenerated(true);
-        }
+        var model = new ResourceModel(conletId);
+        model.setType(ResourceModel.Type.VM);
+        model
+            .setName((String) event.properties().get(VM_NAME_PROPERTY));
         String jsonState = objectMapper.writeValueAsString(model);
         connection.respond(new KeyValueStoreUpdate().update(
             storagePath(connection.session(), model.getConletId()), jsonState));
@@ -314,9 +325,9 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ViewerModel> {
     }
 
     @Override
-    protected Optional<ViewerModel> createStateRepresentation(Event<?> event,
+    protected Optional<ResourceModel> createStateRepresentation(Event<?> event,
             ConsoleConnection connection, String conletId) throws Exception {
-        var model = new ViewerModel(conletId);
+        var model = new ResourceModel(conletId);
         String jsonState = objectMapper.writeValueAsString(model);
         connection.respond(new KeyValueStoreUpdate().update(
             storagePath(connection.session(), model.getConletId()), jsonState));
@@ -325,7 +336,7 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ViewerModel> {
 
     @Override
     @SuppressWarnings("PMD.EmptyCatchBlock")
-    protected Optional<ViewerModel> recreateState(Event<?> event,
+    protected Optional<ResourceModel> recreateState(Event<?> event,
             ConsoleConnection channel, String conletId) throws Exception {
         KeyValueStoreQuery query = new KeyValueStoreQuery(
             storagePath(channel.session(), conletId), channel);
@@ -334,8 +345,8 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ViewerModel> {
             if (!query.results().isEmpty()) {
                 var json = query.results().get(0).values().stream().findFirst()
                     .get();
-                ViewerModel model
-                    = objectMapper.readValue(json, ViewerModel.class);
+                ResourceModel model
+                    = objectMapper.readValue(json, ResourceModel.class);
                 return Optional.of(model);
             }
         } catch (InterruptedException e) {
@@ -347,58 +358,23 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ViewerModel> {
     }
 
     @Override
-    @SuppressWarnings({ "PMD.AvoidInstantiatingObjectsInLoops", "unchecked" })
+    @SuppressWarnings({ "PMD.AvoidInstantiatingObjectsInLoops" })
     protected Set<RenderMode> doRenderConlet(RenderConletRequestBase<?> event,
-            ConsoleConnection channel, String conletId, ViewerModel model)
+            ConsoleConnection channel, String conletId, ResourceModel model)
             throws Exception {
+        if (event.renderAs().contains(RenderMode.Preview)) {
+            return renderPreview(event, channel, conletId, model);
+        }
+
+        // Render edit
         ResourceBundle resourceBundle = resourceBundle(channel.locale());
         Set<RenderMode> renderedAs = EnumSet.noneOf(RenderMode.class);
-        if (event.renderAs().contains(RenderMode.Preview)) {
-            channel.associated(PENDING, Event.class)
-                .ifPresent(e -> {
-                    e.resumeHandling();
-                    channel.setAssociated(PENDING, null);
-                });
-
-            // Remove conlet if definition has been removed
-            if (model.vmName() != null
-                && !channelTracker.associated(model.vmName()).isPresent()) {
-                channel.respond(
-                    new DeleteConlet(conletId, Collections.emptySet()));
-                return Collections.emptySet();
-            }
-
-            // Don't render if user has not at least one permission
-            if (model.vmName() != null
-                && channelTracker.associated(model.vmName())
-                    .map(d -> permissions(d, channel.session()).isEmpty())
-                    .orElse(true)) {
-                return Collections.emptySet();
-            }
-
-            // Render
-            Template tpl
-                = freemarkerConfig().getTemplate("VmAccess-preview.ftl.html");
-            channel.respond(new RenderConlet(type(), conletId,
-                processTemplate(event, tpl,
-                    fmModel(event, channel, conletId, model)))
-                        .setRenderAs(
-                            RenderMode.Preview.addModifiers(event.renderAs()))
-                        .setSupportedModes(syncPreviews(channel.session())
-                            ? MODES_FOR_GENERATED
-                            : MODES));
-            renderedAs.add(RenderMode.Preview);
-            if (!Strings.isNullOrEmpty(model.vmName())) {
-                Optional.ofNullable(channel.session().get(RENDERED))
-                    .ifPresent(s -> ((Set<String>) s).add(model.vmName()));
-                updateConfig(channel, model);
-            }
-        }
         if (event.renderAs().contains(RenderMode.Edit)) {
             Template tpl = freemarkerConfig()
                 .getTemplate("VmAccess-edit.ftl.html");
             var fmModel = fmModel(event, channel, conletId, model);
             fmModel.put("vmNames", accessibleVms(channel));
+            fmModel.put("poolNames", accessiblePools(channel));
             channel.respond(new OpenModalDialog(type(), conletId,
                 processTemplate(event, tpl, fmModel))
                     .addOption("cancelable", true)
@@ -408,13 +384,69 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ViewerModel> {
         return renderedAs;
     }
 
+    @SuppressWarnings("unchecked")
+    private Set<RenderMode> renderPreview(RenderConletRequestBase<?> event,
+            ConsoleConnection channel, String conletId, ResourceModel model)
+            throws TemplateNotFoundException, MalformedTemplateNameException,
+            ParseException, IOException {
+        channel.associated(PENDING, Event.class)
+            .ifPresent(e -> {
+                e.resumeHandling();
+                channel.setAssociated(PENDING, null);
+            });
+
+        if (model.type() == ResourceModel.Type.VM && model.name() != null) {
+            // Remove conlet if VM definition has been removed
+            // or user has not at least one permission
+            Optional<VmDefinition> vmDef
+                = channelTracker.associated(model.name());
+            if (vmDef.isEmpty()
+                || vmPermissions(vmDef.get(), channel.session()).isEmpty()) {
+                channel.respond(
+                    new DeleteConlet(conletId, Collections.emptySet()));
+                return Collections.emptySet();
+            }
+        }
+
+        if (model.type() == ResourceModel.Type.POOL && model.name() != null) {
+            // Remove conlet if pool definition has been removed
+            // or user has not at least one permission
+            VmPool pool = vmPools.get(model.name());
+            if (pool == null
+                || poolPermissions(pool, channel.session()).isEmpty()) {
+                channel.respond(
+                    new DeleteConlet(conletId, Collections.emptySet()));
+                return Collections.emptySet();
+            }
+        }
+
+        // Render
+        Template tpl
+            = freemarkerConfig().getTemplate("VmAccess-preview.ftl.html");
+        channel.respond(new RenderConlet(type(), conletId,
+            processTemplate(event, tpl,
+                fmModel(event, channel, conletId, model)))
+                    .setRenderAs(
+                        RenderMode.Preview.addModifiers(event.renderAs()))
+                    .setSupportedModes(syncPreviews(channel.session())
+                        ? MODES_FOR_GENERATED
+                        : MODES));
+        if (!Strings.isNullOrEmpty(model.name())) {
+            Optional.ofNullable(channel.session().get(RENDERED))
+                .ifPresent(s -> ((Set<ResourceModel>) s).add(model));
+            updateConfig(channel, model);
+        }
+        return EnumSet.of(RenderMode.Preview);
+    }
+
     private List<String> accessibleVms(ConsoleConnection channel) {
         return channelTracker.associated().stream()
-            .filter(d -> !permissions(d, channel.session()).isEmpty())
+            .filter(d -> !vmPermissions(d, channel.session()).isEmpty())
             .map(d -> d.getMetadata().getName()).sorted().toList();
     }
 
-    private Set<Permission> permissions(VmDefinition vmDef, Session session) {
+    private Set<VmDefinition.Permission> vmPermissions(VmDefinition vmDef,
+            Session session) {
         var user = WebConsoleUtils.userFromSession(session)
             .map(ConsoleUser::getName).orElse(null);
         var roles = WebConsoleUtils.rolesFromSession(session)
@@ -422,17 +454,32 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ViewerModel> {
         return vmDef.permissionsFor(user, roles);
     }
 
-    private void updateConfig(ConsoleConnection channel, ViewerModel model) {
+    private List<String> accessiblePools(ConsoleConnection channel) {
+        return vmPools.values().stream()
+            .filter(d -> !poolPermissions(d, channel.session()).isEmpty())
+            .map(d -> d.name()).sorted().toList();
+    }
+
+    private Set<VmPool.Permission> poolPermissions(VmPool pool,
+            Session session) {
+        var user = WebConsoleUtils.userFromSession(session)
+            .map(ConsoleUser::getName).orElse(null);
+        var roles = WebConsoleUtils.rolesFromSession(session)
+            .stream().map(ConsoleRole::getName).toList();
+        return pool.permissionsFor(user, roles);
+    }
+
+    private void updateConfig(ConsoleConnection channel, ResourceModel model) {
         channel.respond(new NotifyConletView(type(),
-            model.getConletId(), "updateConfig", model.vmName()));
+            model.getConletId(), "updateConfig", model.type(), model.name()));
         updateVmDef(channel, model);
     }
 
-    private void updateVmDef(ConsoleConnection channel, ViewerModel model) {
-        if (Strings.isNullOrEmpty(model.vmName())) {
+    private void updateVmDef(ConsoleConnection channel, ResourceModel model) {
+        if (Strings.isNullOrEmpty(model.name())) {
             return;
         }
-        channelTracker.value(model.vmName()).ifPresent(item -> {
+        channelTracker.value(model.name()).ifPresent(item -> {
             try {
                 var vmDef = item.associated();
                 var data = Map.of("metadata",
@@ -441,8 +488,8 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ViewerModel> {
                     "spec", vmDef.spec(),
                     "status", vmDef.getStatus(),
                     "userPermissions",
-                    permissions(vmDef, channel.session()).stream()
-                        .map(Permission::toString).toList());
+                    vmPermissions(vmDef, channel.session()).stream()
+                        .map(VmDefinition.Permission::toString).toList());
                 channel.respond(new NotifyConletView(type(),
                     model.getConletId(), "updateVmDefinition", data));
             } catch (JsonSyntaxException e) {
@@ -454,7 +501,8 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ViewerModel> {
 
     @Override
     protected void doConletDeleted(ConletDeleted event,
-            ConsoleConnection channel, String conletId, ViewerModel conletState)
+            ConsoleConnection channel, String conletId,
+            ResourceModel conletState)
             throws Exception {
         if (event.renderModes().isEmpty()) {
             channel.respond(new KeyValueStoreUpdate().delete(
@@ -487,7 +535,7 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ViewerModel> {
             for (var conletId : entry.getValue()) {
                 var model = stateFromSession(connection.session(), conletId);
                 if (model.isEmpty()
-                    || !Objects.areEqual(model.get().vmName(), vmName)) {
+                    || !Objects.areEqual(model.get().name(), vmName)) {
                     continue;
                 }
                 if (event.type() == K8sObserver.ResponseType.DELETED) {
@@ -500,21 +548,36 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ViewerModel> {
         }
     }
 
+    /**
+     * On vm pool changed.
+     *
+     * @param event the event
+     * @param channel the channel
+     */
+    @Handler(namedChannels = "manager")
+    public void onVmPoolChanged(VmPoolChanged event) {
+        if (event.deleted()) {
+            vmPools.remove(event.vmPool().name());
+            return;
+        }
+        vmPools.put(event.vmPool().name(), event.vmPool());
+    }
+
     @Override
     @SuppressWarnings({ "PMD.AvoidDecimalLiteralsInBigDecimalConstructor",
         "PMD.ConfusingArgumentToVarargsMethod", "PMD.NcssCount",
         "PMD.AvoidLiteralsInIfCondition" })
     protected void doUpdateConletState(NotifyConletModel event,
-            ConsoleConnection channel, ViewerModel model)
+            ConsoleConnection channel, ResourceModel model)
             throws Exception {
         event.stop();
-        if ("selectedVm".equals(event.method())) {
-            selectVm(event, channel, model);
+        if ("selectedResource".equals(event.method())) {
+            selectResource(event, channel, model);
             return;
         }
 
         // Handle command for selected VM
-        var both = Optional.ofNullable(model.vmName())
+        var both = Optional.ofNullable(model.name())
             .flatMap(vm -> channelTracker.value(vm));
         if (both.isEmpty()) {
             return;
@@ -522,31 +585,31 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ViewerModel> {
         var vmChannel = both.get().channel();
         var vmDef = both.get().associated();
         var vmName = vmDef.metadata().getName();
-        var perms = permissions(vmDef, channel.session());
+        var perms = vmPermissions(vmDef, channel.session());
         var resourceBundle = resourceBundle(channel.locale());
         switch (event.method()) {
         case "start":
-            if (perms.contains(Permission.START)) {
+            if (perms.contains(VmDefinition.Permission.START)) {
                 fire(new ModifyVm(vmName, "state", "Running", vmChannel));
             }
             break;
         case "stop":
-            if (perms.contains(Permission.STOP)) {
+            if (perms.contains(VmDefinition.Permission.STOP)) {
                 fire(new ModifyVm(vmName, "state", "Stopped", vmChannel));
             }
             break;
         case "reset":
-            if (perms.contains(Permission.RESET)) {
+            if (perms.contains(VmDefinition.Permission.RESET)) {
                 confirmReset(event, channel, model, resourceBundle);
             }
             break;
         case "resetConfirmed":
-            if (perms.contains(Permission.RESET)) {
+            if (perms.contains(VmDefinition.Permission.RESET)) {
                 fire(new ResetVm(vmName), vmChannel);
             }
             break;
         case "openConsole":
-            if (perms.contains(Permission.ACCESS_CONSOLE)) {
+            if (perms.contains(VmDefinition.Permission.ACCESS_CONSOLE)) {
                 var user = WebConsoleUtils.userFromSession(channel.session())
                     .map(ConsoleUser::getName).orElse("");
                 var pwQuery
@@ -561,17 +624,26 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ViewerModel> {
         }
     }
 
-    private void selectVm(NotifyConletModel event, ConsoleConnection channel,
-            ViewerModel model) throws JsonProcessingException {
-        model.setVmName(event.param(0));
-        String jsonState = objectMapper.writeValueAsString(model);
-        channel.respond(new KeyValueStoreUpdate().update(storagePath(
-            channel.session(), model.getConletId()), jsonState));
-        updateConfig(channel, model);
+    @SuppressWarnings({ "PMD.AvoidLiteralsInIfCondition",
+        "PMD.UseLocaleWithCaseConversions" })
+    private void selectResource(NotifyConletModel event,
+            ConsoleConnection channel, ResourceModel model)
+            throws JsonProcessingException {
+        try {
+            model.setType(ResourceModel.Type
+                .valueOf(event.<String> param(0).toUpperCase()));
+            model.setName(event.param(1));
+            String jsonState = objectMapper.writeValueAsString(model);
+            channel.respond(new KeyValueStoreUpdate().update(storagePath(
+                channel.session(), model.getConletId()), jsonState));
+            updateConfig(channel, model);
+        } catch (IllegalArgumentException e) {
+            logger.warning(() -> "Invalid resource type: " + e.getMessage());
+        }
     }
 
     private void openConsole(String vmName, ConsoleConnection connection,
-            ViewerModel model, String password) {
+            ResourceModel model, String password) {
         var vmDef = channelTracker.associated(vmName).orElse(null);
         if (vmDef == null) {
             return;
@@ -642,7 +714,7 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ViewerModel> {
     }
 
     private void confirmReset(NotifyConletModel event,
-            ConsoleConnection channel, ViewerModel model,
+            ConsoleConnection channel, ResourceModel model,
             ResourceBundle resourceBundle) throws TemplateNotFoundException,
             MalformedTemplateNameException, ParseException, IOException {
         Template tpl = freemarkerConfig()
@@ -662,58 +734,97 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ViewerModel> {
     }
 
     /**
-     * The Class VmsModel.
+     * The Class AccessModel.
      */
     @SuppressWarnings("PMD.DataClass")
-    public static class ViewerModel extends ConletBaseModel {
-
-        private String vmName;
-        private boolean generated;
+    public static class ResourceModel extends ConletBaseModel {
 
         /**
-         * Instantiates a new vms model.
+         * The Enum ResourceType.
+         */
+        @SuppressWarnings("PMD.ShortVariable")
+        public enum Type {
+            VM, POOL
+        }
+
+        private Type type;
+        private String name;
+
+        /**
+         * Instantiates a new resource model.
          *
          * @param conletId the conlet id
          */
-        public ViewerModel(@JsonProperty("conletId") String conletId) {
+        public ResourceModel(@JsonProperty("conletId") String conletId) {
             super(conletId);
         }
 
         /**
-         * Gets the vm name.
+         * Gets the resource name.
          *
-         * @return the vmName
+         * @return the string
          */
-        @JsonGetter("vmName")
-        public String vmName() {
-            return vmName;
+        @JsonGetter("name")
+        public String name() {
+            return name;
         }
 
         /**
-         * Sets the vm name.
+         * Sets the name.
          *
-         * @param vmName the vmName to set
+         * @param name the resource name to set
          */
-        public void setVmName(String vmName) {
-            this.vmName = vmName;
+        public void setName(String name) {
+            this.name = name;
         }
 
         /**
-         * Checks if is generated.
-         *
-         * @return the generated
+         * @return the resourceType
          */
-        public boolean isGenerated() {
-            return generated;
+        @JsonGetter("type")
+        public Type type() {
+            return type;
         }
 
         /**
-         * Sets the generated.
+         * Sets the type.
          *
-         * @param generated the generated to set
+         * @param type the resource type to set
          */
-        public void setGenerated(boolean generated) {
-            this.generated = generated;
+        public void setType(Type type) {
+            this.type = type;
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = super.hashCode();
+            result = prime * result + java.util.Objects.hash(name, type);
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (!super.equals(obj)) {
+                return false;
+            }
+            if (getClass() != obj.getClass()) {
+                return false;
+            }
+            ResourceModel other = (ResourceModel) obj;
+            return java.util.Objects.equals(name, other.name)
+                && type == other.type;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder(50);
+            builder.append("AccessModel [resourceType=").append(type)
+                .append(", resourceName=").append(name).append(']');
+            return builder.toString();
         }
 
     }

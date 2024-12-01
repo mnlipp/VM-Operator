@@ -77,6 +77,11 @@
 }
 
 .jdrupes-vmoperator-vmaccess.jdrupes-vmoperator-vmaccess-edit {
+  
+  fieldset ul li {
+    margin-top: 0.5em;
+  }
+  
   select {
     width: 15em;
   }

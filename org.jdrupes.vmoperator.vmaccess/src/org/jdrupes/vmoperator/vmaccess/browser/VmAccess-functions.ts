@@ -44,6 +44,7 @@ interface Api {
     /* eslint-disable @typescript-eslint/no-explicit-any */
     vmName: string;
     vmDefinition: any;
+    poolName: string;
 }
 
 const localize = (key: string) => {
@@ -62,7 +63,8 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
 
             const previewApi: Api = reactive({
                 vmName: "",
-                vmDefinition: {}
+                vmDefinition: {},
+                poolName: ""
             });
             const configured = computed(() => previewApi.vmDefinition.spec);
             const startable = computed(() => previewApi.vmDefinition.spec &&
@@ -76,7 +78,8 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
             const permissions = computed(() => previewApi.vmDefinition.spec
                 ? previewApi.vmDefinition.userPermissions : []);
 
-            watch(() => previewApi.vmName, (name: string) => {
+            watch(previewApi, (api: Api) => {
+                const name = api.vmName || api.poolName;
                 if (name !== "") {
                     JGConsole.instance.updateConletTitle(conletId, name);
                 }
@@ -139,14 +142,21 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
 };
 
 JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmaccess.VmAccess",
-    "updateConfig", function(conletId: string, vmName: string) {
+    "updateConfig",
+    function(conletId: string, type: string, resource: string) {
         const conlet = JGConsole.findConletPreview(conletId);
         if (!conlet) {
             return;
         }
         const api = getApi<Api>(conlet.element().querySelector(
             ":scope .jdrupes-vmoperator-vmaccess-preview"))!;
-        api.vmName = vmName;
+        if (type === "VM") {
+            api.vmName = resource;
+            api.poolName = "";
+        } else {
+            api.poolName = resource;
+            api.vmName = "";
+        }
     });
 
 JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmaccess.VmAccess",
@@ -203,19 +213,36 @@ window.orgJDrupesVmOperatorVmAccess.initEdit = (dialogDom: HTMLElement,
                     l10nBundles, JGWC.lang()!, key);
             };
 
+            const resource = ref<string>("vm");
             const vmNameInput = ref<string>("");
+            const poolNameInput = ref<string>("");
+            
+            watch(resource, (resource: string) => {
+                if (resource === "vm") {
+                    poolNameInput.value = "";
+                }
+                if (resource === "pool")
+                    vmNameInput.value = "";
+            });
+            
             const conletId = (<HTMLElement>dialogDom.closest(
                 "[data-conlet-id]")!).dataset["conletId"]!;
             const conlet = JGConsole.findConletPreview(conletId);
             if (conlet) {
                 const api = getApi<Api>(conlet.element().querySelector(
                     ":scope .jdrupes-vmoperator-vmaccess-preview"))!;
+                if (api.poolName) {
+                    resource.value = "pool";
+                }
                 vmNameInput.value = api.vmName;
+                poolNameInput.value = api.poolName;
             }
 
-            provideApi(dialogDom, vmNameInput);
+            provideApi(dialogDom, { resource: () => resource.value,
+                name: () => resource.value === "vm"
+                    ? vmNameInput.value : poolNameInput.value });
                         
-            return { formId, localize, vmNameInput };
+            return { formId, localize, resource, vmNameInput, poolNameInput };
         }
     });
     app.use(JgwcPlugin);
@@ -229,8 +256,9 @@ window.orgJDrupesVmOperatorVmAccess.applyEdit =
     }
     const conletId = (<HTMLElement>dialogDom.closest("[data-conlet-id]")!)
         .dataset["conletId"]!;
-    const vmName = getApi<ref<string>>(dialogDom!)!.value;
-    JGConsole.notifyConletModel(conletId, "selectedVm", vmName);
+    const editApi = getApi<ref<string>>(dialogDom!)!;
+    JGConsole.notifyConletModel(conletId, "selectedResource", editApi.resource(),
+        editApi.name());
 }
 
 window.orgJDrupesVmOperatorVmAccess.confirmReset = 

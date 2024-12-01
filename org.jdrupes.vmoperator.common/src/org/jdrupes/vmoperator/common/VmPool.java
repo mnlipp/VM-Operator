@@ -60,6 +60,8 @@ public class VmPool {
     }
 
     /**
+     * All permissions.
+     *
      * @return the permissions
      */
     public List<Grant> permissions() {
