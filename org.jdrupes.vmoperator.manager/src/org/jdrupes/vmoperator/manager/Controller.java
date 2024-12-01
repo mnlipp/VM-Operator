@@ -106,7 +106,7 @@ public class Controller extends Component {
         // to access the VM's console. Might change in the future.
         // attach(new ServiceMonitor(channel()).channelManager(chanMgr));
         attach(new Reconciler(channel()));
-        attach(new PoolManager(channel()));
+        attach(new PoolMonitor(channel()));
     }
 
     /**

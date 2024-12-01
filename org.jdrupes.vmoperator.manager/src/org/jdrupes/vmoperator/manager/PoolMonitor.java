@@ -53,7 +53,7 @@ import org.jgrapes.core.events.Attached;
  * avoid concurrent change informations.
  */
 @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.ExcessiveImports" })
-public class PoolManager extends
+public class PoolMonitor extends
         AbstractMonitor<K8sDynamicModel, K8sDynamicModels, Channel> {
 
     private final ReentrantLock pendingLock = new ReentrantLock();
@@ -67,7 +67,7 @@ public class PoolManager extends
      * @param componentChannel the component channel
      * @param channelManager the channel manager
      */
-    public PoolManager(Channel componentChannel) {
+    public PoolMonitor(Channel componentChannel) {
         super(componentChannel, K8sDynamicModel.class,
             K8sDynamicModels.class);
     }
