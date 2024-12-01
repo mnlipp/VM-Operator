@@ -142,9 +142,10 @@ public class PoolManager extends
         V1ObjectMeta metadata = response.object.getMetadata();
         vmPool.setName(metadata.getName());
 
-        // If modified, merge changes
+        // If modified, merge changes and notify
         if (type == ResponseType.MODIFIED && pools.containsKey(poolName)) {
             pools.get(poolName).setPermissions(vmPool.permissions());
+            poolPipeline.fire(new VmPoolChanged(vmPool));
             return;
         }
 

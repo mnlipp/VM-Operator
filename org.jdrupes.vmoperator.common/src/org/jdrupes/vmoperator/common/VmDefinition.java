@@ -95,6 +95,28 @@ public class VmDefinition {
     }
 
     /**
+     * Permissions granted to a user or role.
+     *
+     * @param user the user
+     * @param role the role
+     * @param may the may
+     */
+    public record Grant(String user, String role, Set<Permission> may) {
+
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            if (user != null) {
+                builder.append("User ").append(user);
+            } else {
+                builder.append("Role ").append(role);
+            }
+            builder.append(" may=").append(may).append(']');
+            return builder.toString();
+        }
+    }
+
+    /**
      * Gets the kind.
      *
      * @return the kind
@@ -292,7 +314,6 @@ public class VmDefinition {
      * @return the string
      */
     public RequestedVmState vmState() {
-        // TODO
         return fromVm("state")
             .map(s -> "Running".equals(s) ? RequestedVmState.RUNNING
                 : RequestedVmState.STOPPED)

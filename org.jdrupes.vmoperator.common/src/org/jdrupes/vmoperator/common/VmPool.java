@@ -20,14 +20,13 @@ package org.jdrupes.vmoperator.common;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.jdrupes.vmoperator.common.VmDefinition.Grant;
+import org.jdrupes.vmoperator.common.VmDefinition.Permission;
 import org.jdrupes.vmoperator.util.DataPath;
 
 /**
@@ -60,7 +59,7 @@ public class VmPool {
     }
 
     /**
-     * All permissions.
+     * Permissions granted for a VM from the pool.
      *
      * @return the permissions
      */
@@ -118,70 +117,6 @@ public class VmPool {
             .map(g -> DataPath.<Set<Permission>> get(g, "may")
                 .orElse(Collections.emptySet()).stream())
             .flatMap(Function.identity()).collect(Collectors.toSet());
-    }
-
-    /**
-     * A permission grant to a user or role.
-     *
-     * @param user the user
-     * @param role the role
-     * @param may the may
-     */
-    public record Grant(String user, String role, Set<Permission> may) {
-
-        @Override
-        public String toString() {
-            StringBuilder builder = new StringBuilder();
-            if (user != null) {
-                builder.append("User ").append(user);
-            } else {
-                builder.append("Role ").append(role);
-            }
-            builder.append(" may=").append(may).append(']');
-            return builder.toString();
-        }
-    }
-
-    /**
-     * Permissions for accessing and manipulating the pool.
-     */
-    public enum Permission {
-        START("start"), STOP("stop"), RESET("reset"),
-        ACCESS_CONSOLE("accessConsole");
-
-        @SuppressWarnings("PMD.UseConcurrentHashMap")
-        private static Map<String, Permission> reprs = new HashMap<>();
-
-        static {
-            for (var value : EnumSet.allOf(Permission.class)) {
-                reprs.put(value.repr, value);
-            }
-        }
-
-        private final String repr;
-
-        Permission(String repr) {
-            this.repr = repr;
-        }
-
-        /**
-         * Create permission from representation in CRD.
-         *
-         * @param value the value
-         * @return the permission
-         */
-        @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
-        public static Set<Permission> parse(String value) {
-            if ("*".equals(value)) {
-                return EnumSet.allOf(Permission.class);
-            }
-            return Set.of(reprs.get(value));
-        }
-
-        @Override
-        public String toString() {
-            return repr;
-        }
     }
 
 }

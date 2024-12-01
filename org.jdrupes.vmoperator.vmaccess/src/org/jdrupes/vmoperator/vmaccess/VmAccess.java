@@ -50,6 +50,7 @@ import java.util.stream.Collectors;
 import org.bouncycastle.util.Objects;
 import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jdrupes.vmoperator.common.VmDefinition;
+import org.jdrupes.vmoperator.common.VmDefinition.Permission;
 import org.jdrupes.vmoperator.common.VmPool;
 import org.jdrupes.vmoperator.manager.events.ChannelTracker;
 import org.jdrupes.vmoperator.manager.events.GetDisplayPassword;
@@ -108,7 +109,8 @@ import org.jgrapes.webconsole.base.freemarker.FreeMarkerConlet;
  *
  */
 @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.ExcessiveImports",
-    "PMD.CouplingBetweenObjects", "PMD.GodClass", "PMD.TooManyMethods" })
+    "PMD.CouplingBetweenObjects", "PMD.GodClass", "PMD.TooManyMethods",
+    "PMD.CyclomaticComplexity" })
 public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
 
     private static final String VM_NAME_PROPERTY = "vmName";
@@ -265,7 +267,8 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
         addMissingVms(event, connection, rendered);
     }
 
-    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+    @SuppressWarnings({ "PMD.AvoidInstantiatingObjectsInLoops",
+        "PMD.AvoidDuplicateLiterals" })
     private void addMissingVms(ConsoleConfigured event,
             ConsoleConnection connection, final Set<ResourceModel> rendered) {
         boolean foundMissing = false;
@@ -445,7 +448,7 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
             .map(d -> d.getMetadata().getName()).sorted().toList();
     }
 
-    private Set<VmDefinition.Permission> vmPermissions(VmDefinition vmDef,
+    private Set<Permission> vmPermissions(VmDefinition vmDef,
             Session session) {
         var user = WebConsoleUtils.userFromSession(session)
             .map(ConsoleUser::getName).orElse(null);
@@ -460,7 +463,7 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
             .map(d -> d.name()).sorted().toList();
     }
 
-    private Set<VmPool.Permission> poolPermissions(VmPool pool,
+    private Set<Permission> poolPermissions(VmPool pool,
             Session session) {
         var user = WebConsoleUtils.userFromSession(session)
             .map(ConsoleUser::getName).orElse(null);
@@ -530,15 +533,19 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
         } else {
             channelTracker.put(vmName, channel, vmDef);
         }
+
+        // Update known conlets
         for (var entry : conletIdsByConsoleConnection().entrySet()) {
             var connection = entry.getKey();
             for (var conletId : entry.getValue()) {
                 var model = stateFromSession(connection.session(), conletId);
                 if (model.isEmpty()
+                    || model.get().type() != ResourceModel.Type.VM
                     || !Objects.areEqual(model.get().name(), vmName)) {
                     continue;
                 }
-                if (event.type() == K8sObserver.ResponseType.DELETED) {
+                if (event.type() == K8sObserver.ResponseType.DELETED
+                    || vmPermissions(vmDef, connection.session()).isEmpty()) {
                     connection.respond(
                         new DeleteConlet(conletId, Collections.emptySet()));
                 } else {
@@ -555,12 +562,33 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
      * @param channel the channel
      */
     @Handler(namedChannels = "manager")
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     public void onVmPoolChanged(VmPoolChanged event) {
+        var poolName = event.vmPool().name();
         if (event.deleted()) {
-            vmPools.remove(event.vmPool().name());
-            return;
+            vmPools.remove(poolName);
+        } else {
+            vmPools.put(poolName, event.vmPool());
         }
-        vmPools.put(event.vmPool().name(), event.vmPool());
+
+        // Update known conlets
+        for (var entry : conletIdsByConsoleConnection().entrySet()) {
+            var connection = entry.getKey();
+            for (var conletId : entry.getValue()) {
+                var model = stateFromSession(connection.session(), conletId);
+                if (model.isEmpty()
+                    || model.get().type() != ResourceModel.Type.POOL
+                    || !Objects.areEqual(model.get().name(), poolName)) {
+                    continue;
+                }
+                if (event.deleted()
+                    || poolPermissions(event.vmPool(), connection.session())
+                        .isEmpty()) {
+                    connection.respond(
+                        new DeleteConlet(conletId, Collections.emptySet()));
+                }
+            }
+        }
     }
 
     @Override
