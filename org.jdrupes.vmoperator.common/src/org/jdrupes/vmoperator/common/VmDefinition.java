@@ -25,6 +25,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -350,4 +351,27 @@ public class VmDefinition {
         return this.<Number> fromStatus("displayPasswordSerial")
             .map(Number::longValue);
     }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(metadata.getNamespace(), metadata.getName());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        VmDefinition other = (VmDefinition) obj;
+        return Objects.equals(metadata.getNamespace(),
+            other.metadata.getNamespace())
+            && Objects.equals(metadata.getName(), other.metadata.getName());
+    }
+
 }
