@@ -119,11 +119,6 @@ public class VmMonitor extends
         V1ObjectMeta metadata = response.object.getMetadata();
         VmChannel channel = channelManager.channelGet(metadata.getName());
 
-        // Remove from channel manager if deleted
-        if (ResponseType.valueOf(response.type) == ResponseType.DELETED) {
-            channelManager.remove(metadata.getName());
-        }
-
         // Get full definition and associate with channel as backup
         var vmModel = response.object;
         if (vmModel.data() == null) {
@@ -151,17 +146,16 @@ public class VmMonitor extends
 
         // Create and fire changed event. Remove channel from channel
         // manager on completion.
-        channel.pipeline()
-            .fire(Event.onCompletion(
-                new VmDefChanged(ResponseType.valueOf(response.type),
-                    channel.setGeneration(response.object.getMetadata()
-                        .getGeneration()),
-                    vmDef),
-                e -> {
-                    if (e.type() == ResponseType.DELETED) {
-                        channelManager.remove(e.vmDefinition().name());
-                    }
-                }), channel);
+        VmDefChanged chgEvt
+            = new VmDefChanged(ResponseType.valueOf(response.type),
+                channel.setGeneration(response.object.getMetadata()
+                    .getGeneration()),
+                vmDef);
+        if (ResponseType.valueOf(response.type) == ResponseType.DELETED) {
+            chgEvt = Event.onCompletion(chgEvt,
+                e -> channelManager.remove(e.vmDefinition().name()));
+        }
+        channel.pipeline().fire(chgEvt, channel);
     }
 
     private VmDefinitionModel getModel(K8sClient client,
