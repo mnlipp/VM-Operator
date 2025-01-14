@@ -24,9 +24,6 @@ import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
@@ -49,7 +46,6 @@ import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
 import org.jdrupes.vmoperator.manager.events.ChannelManager;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
-import org.jdrupes.vmoperator.util.DataPath;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Event;
 
@@ -184,16 +180,7 @@ public class VmMonitor extends
         // VM definition status changes before the pod terminates.
         // This results in pod information being shown for a stopped
         // VM which is irritating. So check condition first.
-        @SuppressWarnings("PMD.LambdaCanBeMethodReference")
-        var isRunning
-            = vmDef.<List<Map<String, Object>>> fromStatus("conditions")
-                .orElse(Collections.emptyList()).stream()
-                .filter(cond -> DataPath.get(cond, "type")
-                    .map(t -> "Running".equals(t)).orElse(false))
-                .findFirst().map(cond -> DataPath.get(cond, "status")
-                    .map(s -> "True".equals(s)).orElse(false))
-                .orElse(false);
-        if (!isRunning) {
+        if (!vmDef.conditionStatus("Running").orElse(false)) {
             return;
         }
         var podSearch = new ListOptions();

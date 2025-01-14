@@ -269,6 +269,21 @@ public class VmDefinition {
     }
 
     /**
+     * Return a condition's status.
+     *
+     * @param name the condition's name
+     * @return the status, if the condition is defined
+     */
+    public Optional<Boolean> conditionStatus(String name) {
+        return this.<List<Map<String, Object>>> fromStatus("conditions")
+            .orElse(Collections.emptyList()).stream()
+            .filter(cond -> DataPath.get(cond, "type")
+                .map(name::equals).orElse(false))
+            .findFirst().map(cond -> DataPath.get(cond, "status")
+                .map("True"::equals).orElse(false));
+    }
+
+    /**
      * Set extra data (locally used, unknown to kubernetes).
      *
      * @param property the property
