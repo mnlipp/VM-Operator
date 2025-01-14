@@ -1486,6 +1486,27 @@ spec:
                     by the runner if password protection is not enabled.
                   type: integer
                   default: 0
+                assignment:
+                  description: >-
+                    The assignment of this VM to a a particular user.
+                  type: object
+                  properties:
+                    pool:
+                      description: >-
+                        The pool this VM is taken from.
+                      type: string
+                      default: ""
+                    user:
+                      description: >-
+                        The user this VM is assigned to.
+                      type: string
+                      default: ""
+                    lastUsed:
+                      description: >-
+                        The last time this VM was used by the user.
+                      type: string
+                      default: "1970-01-01T00:00:00Z"
+                  default: {}
                 conditions:
                   description: >-
                     List of component conditions observed
