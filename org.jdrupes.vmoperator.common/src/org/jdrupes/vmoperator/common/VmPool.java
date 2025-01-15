@@ -36,9 +36,19 @@ import org.jdrupes.vmoperator.util.DataPath;
 public class VmPool {
 
     private String name;
+    private boolean defined;
     private List<Grant> permissions = Collections.emptyList();
     private final Set<String> vms
         = Collections.synchronizedSet(new HashSet<>());
+
+    /**
+     * Instantiates a new vm pool.
+     *
+     * @param name the name
+     */
+    public VmPool(String name) {
+        this.name = name;
+    }
 
     /**
      * Returns the name.
@@ -56,6 +66,24 @@ public class VmPool {
      */
     public void setName(String name) {
         this.name = name;
+    }
+
+    /**
+     * Checks if is defined.
+     *
+     * @return the result
+     */
+    public boolean isDefined() {
+        return defined;
+    }
+
+    /**
+     * Sets if is.
+     *
+     * @param defined the defined to set
+     */
+    public void setDefined(boolean defined) {
+        this.defined = defined;
     }
 
     /**
