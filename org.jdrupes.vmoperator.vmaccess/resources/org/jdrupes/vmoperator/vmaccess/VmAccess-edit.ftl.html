@@ -10,7 +10,7 @@
         <ul>
           <li>
             <label>
-              <input v-model="resource" type="radio" name="resource" value="vm">
+              <input v-model="resource" type="radio" value="vm">
               <span>{{ localize("VM") }}</span>
               <select v-model="vmNameInput" :disabled="resource !== 'vm'">
               <#list vmNames as name>
@@ -21,7 +21,7 @@
           </li>
           <li>
             <label>
-              <input v-model="resource" type="radio" name="resource" value="pool">
+              <input v-model="resource" type="radio" value="pool">
               <span>{{ localize("Pool") }}</span>
               <select v-model="poolNameInput" :disabled="resource !== 'pool'">
               <#list poolNames as name>
