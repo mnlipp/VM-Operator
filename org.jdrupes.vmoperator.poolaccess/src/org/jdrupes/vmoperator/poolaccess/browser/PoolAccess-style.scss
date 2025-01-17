@@ -1,0 +1,104 @@
+/*
+ * VM-Operator
+ * Copyright (C) 2023 Michael N. Lipp
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/*
+ * Conlet specific styles.
+ */
+.jdrupes-vmoperator-poolaccess {
+  
+  span[role="button"].svg-icon {
+    display: inline-block;
+    line-height: 1;
+    /* Align with forkawesome */
+    font-size: 14px;
+    fill: var(--primary);
+
+    &[aria-disabled="true"], &[aria-disabled=""] {
+      fill: var(--disabled);
+    }
+    
+    svg {
+      height: 2ex;
+      width: 1em;
+    }
+  }
+
+  [role=button] {
+    padding: 0.25rem;
+
+    &:not([aria-disabled]):hover, &[aria-disabled='false']:hover {
+      box-shadow: var(--darkening);
+    }
+  }
+}
+
+.jdrupes-vmoperator-poolaccess.jdrupes-vmoperator-poolaccess-preview {
+  
+  img {
+    height: 3em;
+    padding: 0.25rem;
+    
+    &[aria-disabled=''], &[aria-disabled='true'] {
+        opacity: 0.4;
+    }
+  }
+  
+  .jdrupes-vmoperator-poolaccess-preview-action-list {
+    white-space: nowrap;
+  }
+  
+  span.busy::before {
+    font: normal normal normal 14px/1 ForkAwesome;
+    font-size: 1.125em;
+    content: "\f1ce";
+    left: 1.45em;
+    top: 0.7em;
+    color: var(--info);
+    position: absolute;
+    animation: spin 2s linear infinite;
+    z-index: 100;
+    pointer-events: none;
+  }  
+}
+
+.jdrupes-vmoperator-poolaccess.jdrupes-vmoperator-poolaccess-edit {
+  
+  fieldset ul li {
+    margin-top: 0.5em;
+  }
+  
+  select {
+    width: 15em;
+  }
+}
+
+.jdrupes-vmoperator-poolaccess.jdrupes-vmoperator-poolaccess-confirm-reset {
+  p {
+    text-align: center;
+  }
+  
+  span[role="button"].svg-icon {
+    fill: var(--danger);
+
+    svg {
+      width: 2.5em;
+      height: 2.5em;
+    }
+  }
+  
+}

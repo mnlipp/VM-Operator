@@ -33,6 +33,7 @@ dependencies {
 
     runtimeOnly project(':org.jdrupes.vmoperator.vmmgmt')
     runtimeOnly project(':org.jdrupes.vmoperator.vmaccess')
+    runtimeOnly project(':org.jdrupes.vmoperator.poolaccess')
 }
 
 application {

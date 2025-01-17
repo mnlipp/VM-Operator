@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "es2015",
+    "module": "es2015",
+    "sourceMap": true,
+    "inlineSources": true,
+    "declaration": true,
+    "importHelpers": true,
+    "strict": true,
+    "moduleResolution": "node",
+    "experimentalDecorators": true,
+    "lib": ["DOM", "ES2020"],
+    "paths": {
+      "aash-plugin": ["./build/unpacked/org/jgrapes/webconsole/provider/jgwcvuecomponents/aash-vue-components/lib/AashPlugin"],
+      "jgconsole": ["./build/unpacked/org/jgrapes/webconsole/base/JGConsole"],
+      "jgwc": ["./build/unpacked/org/jgrapes/webconsole/provider/jgwcvuecomponents/jgwc-vue-components/jgwc-components"],
+      "l10nBundles": ["./src/org/jdrupes/vmoperator/poolaccess/browser/l10nBundles-stub"],
+      "vue": ["./build/unpacked/org/jgrapes/webconsole/provider/vue/vue/vue"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "l10nBundles-stub.ts"]
+}

@@ -1,0 +1,21 @@
+<div title="${_("conletName")}"
+  class="jdrupes-vmoperator-PoolAccess jdrupes-vmoperator-poolaccess-edit"
+  data-jgwc-on-load="orgJDrupesVmOperatorPoolAccess.initEdit"
+  data-jgwc-on-action="orgJDrupesVmOperatorPoolAccess.applyEdit"    
+  data-jgwc-on-unload="JGConsole.jgwc.unmountVueApps">
+  <form :id="formId" ref="formDom" onsubmit="return false;">
+    <section>
+      <span>{{ localize("Select pool") }}</span>
+      <p>
+        <label>
+          <span>{{ localize("Pool") }}</span>
+          <select v-model="poolNameInput">
+          <#list poolNames as name>
+            <option value="${name}">${name}</option>
+          </#list>
+          </select>
+        </label>
+      </p>
+    </section>
+  </form>  
+</div>
