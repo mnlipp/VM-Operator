@@ -170,7 +170,7 @@ public class PoolMonitor extends
      */
     @Handler
     public void onGetPools(GetPools event) {
-        event.setResult(pools.values().stream()
+        event.setResult(pools.values().stream().filter(VmPool::isDefined)
             .filter(p -> event.name().isEmpty()
                 || p.name().equals(event.name().get()))
             .filter(p -> event.forUser().isEmpty() && event.forRoles().isEmpty()
