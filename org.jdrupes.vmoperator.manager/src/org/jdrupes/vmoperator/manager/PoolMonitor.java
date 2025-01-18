@@ -35,6 +35,7 @@ import org.jdrupes.vmoperator.common.K8sDynamicStub;
 import org.jdrupes.vmoperator.common.K8sObserver.ResponseType;
 import org.jdrupes.vmoperator.common.VmPool;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM_POOL;
+import org.jdrupes.vmoperator.manager.events.GetPools;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.manager.events.VmPoolChanged;
 import org.jdrupes.vmoperator.util.GsonPtr;
@@ -160,5 +161,19 @@ public class PoolMonitor extends
         default:
             break;
         }
+    }
+
+    /**
+     * Return the requested pools.
+     *
+     * @param event the event
+     */
+    @Handler
+    public void onGetPools(GetPools event) {
+        event.setResult(pools.values().stream()
+            .filter(p -> event.forUser().isEmpty() && event.forRoles().isEmpty()
+                || !p.permissionsFor(event.forUser().orElse(null),
+                    event.forRoles()).isEmpty())
+            .toList());
     }
 }

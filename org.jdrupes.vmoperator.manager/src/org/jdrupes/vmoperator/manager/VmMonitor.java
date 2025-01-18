@@ -44,10 +44,13 @@ import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
 import org.jdrupes.vmoperator.manager.events.ChannelManager;
+import org.jdrupes.vmoperator.manager.events.GetVms;
+import org.jdrupes.vmoperator.manager.events.GetVms.VmData;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Event;
+import org.jgrapes.core.annotation.Handler;
 
 /**
  * Watches for changes of VM definitions.
@@ -207,5 +210,22 @@ public class VmMonitor extends
             logger.log(Level.WARNING, e,
                 () -> "Cannot access node information: " + e.getMessage());
         }
+    }
+
+    /**
+     * Returns the VM data.
+     *
+     * @param event the event
+     */
+    @Handler
+    public void onGetVms(GetVms event) {
+        event.setResult(channelManager.channels().stream()
+            .filter(c -> event.name().isEmpty()
+                || c.vmDefinition().name().equals(event.name().get()))
+            .filter(c -> event.user().isEmpty() && event.roles().isEmpty()
+                || !c.vmDefinition().permissionsFor(event.user().orElse(null),
+                    event.roles()).isEmpty())
+            .map(c -> new VmData(c.vmDefinition(), c))
+            .toList());
     }
 }
