@@ -38,7 +38,6 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -133,8 +132,6 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
     private Set<String> syncUsers = Collections.emptySet();
     private Set<String> syncRoles = Collections.emptySet();
     private boolean deleteConnectionFile = true;
-    @SuppressWarnings("PMD.UseConcurrentHashMap")
-    private final Map<String, VmPool> vmPools = new HashMap<>();
 
     /**
      * The periodically generated update event.
@@ -452,7 +449,9 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
         if (model.mode() == ResourceModel.Mode.POOL && model.name() != null) {
             // Remove conlet if pool definition has been removed
             // or user has not at least one permission
-            VmPool pool = vmPools.get(model.name());
+            VmPool pool = appPipeline
+                .fire(new GetPools().withName(model.name())).get()
+                .stream().findFirst().orElse(null);
             if (pool == null
                 || poolPermissions(pool, channel.session()).isEmpty()) {
                 channel.respond(
@@ -588,12 +587,6 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
     @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     public void onVmPoolChanged(VmPoolChanged event) {
         var poolName = event.vmPool().name();
-        if (event.deleted()) {
-            vmPools.remove(poolName);
-        } else {
-            vmPools.put(poolName, event.vmPool());
-        }
-
         // Update known conlets
         for (var entry : conletIdsByConsoleConnection().entrySet()) {
             var connection = entry.getKey();

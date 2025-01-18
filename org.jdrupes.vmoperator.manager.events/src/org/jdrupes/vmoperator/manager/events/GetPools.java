@@ -30,8 +30,20 @@ import org.jgrapes.core.Event;
 @SuppressWarnings("PMD.DataClass")
 public class GetPools extends Event<List<VmPool>> {
 
+    private String name;
     private String user;
     private List<String> roles = Collections.emptyList();
+
+    /**
+     * Return only the pool with the given name.
+     *
+     * @param name the name
+     * @return the returns the vms
+     */
+    public GetPools withName(String name) {
+        this.name = name;
+        return this;
+    }
 
     /**
      * Return only {@link VmPool}s that are accessible by
@@ -45,6 +57,15 @@ public class GetPools extends Event<List<VmPool>> {
         this.user = user;
         this.roles = roles;
         return this;
+    }
+
+    /**
+     * Returns the name filter criterion, if set.
+     *
+     * @return the optional
+     */
+    public Optional<String> name() {
+        return Optional.ofNullable(name);
     }
 
     /**
