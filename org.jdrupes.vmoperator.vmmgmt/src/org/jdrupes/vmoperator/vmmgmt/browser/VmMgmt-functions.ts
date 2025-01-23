@@ -113,7 +113,6 @@ window.orgJDrupesVmOperatorVmMgmt.initView = (viewDom: HTMLElement,
                 ["currentRam", "currentRam"],
                 ["nodeName", "nodeName"],
                 ["assignedTo", "assignedTo"],
-                ["usedFrom", "usedFrom"],
                 ["usedBy", "usedBy"]
             ], {
                 sortKey: "name",
