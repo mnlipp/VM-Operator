@@ -33,6 +33,8 @@ public class GetVms extends Event<List<GetVms.VmData>> {
     private String name;
     private String user;
     private List<String> roles = Collections.emptyList();
+    private String fromPool;
+    private String toUser;
 
     /**
      * Return only the VMs with the given name.
@@ -56,6 +58,28 @@ public class GetVms extends Event<List<GetVms.VmData>> {
     public GetVms accessibleFor(String user, List<String> roles) {
         this.user = user;
         this.roles = roles;
+        return this;
+    }
+
+    /**
+     * Return only {@link VmDefinition}s that are assigned from the given pool.
+     *
+     * @param pool the pool
+     * @return the returns the vms
+     */
+    public GetVms assignedFrom(String pool) {
+        this.fromPool = pool;
+        return this;
+    }
+
+    /**
+     * Return only {@link VmDefinition}s that are assigned to the given user.
+     *
+     * @param user the user
+     * @return the returns the vms
+     */
+    public GetVms assignedTo(String user) {
+        this.toUser = user;
         return this;
     }
 
@@ -84,6 +108,24 @@ public class GetVms extends Event<List<GetVms.VmData>> {
      */
     public List<String> roles() {
         return roles;
+    }
+
+    /**
+     * Returns the pool filter criterion, if set.
+     *
+     * @return the optional
+     */
+    public Optional<String> fromPool() {
+        return Optional.ofNullable(fromPool);
+    }
+
+    /**
+     * Returns the user filter criterion, if set.
+     *
+     * @return the optional
+     */
+    public Optional<String> toUser() {
+        return Optional.ofNullable(toUser);
     }
 
     /**

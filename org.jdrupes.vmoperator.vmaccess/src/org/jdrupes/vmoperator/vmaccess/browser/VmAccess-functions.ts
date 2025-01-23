@@ -44,7 +44,7 @@ interface Api {
     /* eslint-disable @typescript-eslint/no-explicit-any */
     vmName: string;
     vmDefinition: any;
-    poolName: string;
+    poolName: string | null;
 }
 
 const localize = (key: string) => {
@@ -64,12 +64,21 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
             const previewApi: Api = reactive({
                 vmName: "",
                 vmDefinition: {},
-                poolName: ""
+                poolName: null
             });
+            const poolName = computed(() => previewApi.poolName);
+            const vmName = computed(() => previewApi.vmDefinition.name);
             const configured = computed(() => previewApi.vmDefinition.spec);
-            const startable = computed(() => previewApi.vmDefinition.spec &&
-                previewApi.vmDefinition.spec.vm.state !== 'Running' 
-                && !previewApi.vmDefinition.running);
+            const busy = computed(() => previewApi.vmDefinition.spec
+                && (previewApi.vmDefinition.spec.vm.state === 'Running'
+                        && !previewApi.vmDefinition.running
+                    || previewApi.vmDefinition.spec.vm.state === 'Stopped' 
+                        && previewApi.vmDefinition.running));
+            const startable = computed(() => previewApi.vmDefinition.spec
+                && previewApi.vmDefinition.spec.vm.state !== 'Running' 
+                && !previewApi.vmDefinition.running
+                && previewApi.vmDefinition.userPermissions.includes('start')
+                || previewApi.poolName !== null && !previewApi.vmDefinition.name);
             const stoppable = computed(() => previewApi.vmDefinition.spec &&
                 previewApi.vmDefinition.spec.vm.state !== 'Stopped' 
                 && previewApi.vmDefinition.running);
@@ -79,10 +88,8 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
                 ? previewApi.vmDefinition.userPermissions : []);
 
             watch(previewApi, (api: Api) => {
-                const name = api.vmName || api.poolName;
-                if (name !== "") {
-                    JGConsole.instance.updateConletTitle(conletId, name);
-                }
+                JGConsole.instance.updateConletTitle(conletId, 
+                    api.poolName || api.vmDefinition.name || "");
             });
         
             provideApi(previewDom, previewApi);
@@ -91,16 +98,16 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
                 JGConsole.notifyConletModel(conletId, action);
             };
         
-            return { localize, resourceBase, vmAction, configured,
-                        startable, stoppable, running, inUse, permissions };
+            return { localize, resourceBase, vmAction, poolName, vmName, 
+                configured, busy, startable, stoppable, running, inUse,
+                permissions };
         },
         template: `
           <table>
             <tbody>
               <tr>
                 <td rowspan="2" style="position: relative"><span
-                  style="position: absolute;" 
-                  :class="{ busy: configured && !startable && !stoppable }"
+                  style="position: absolute;" :class="{ busy: busy }"
                   ><img role=button :aria-disabled="!running
                       || !permissions.includes('accessConsole')" 
                   v-on:click="vmAction('openConsole')"
@@ -110,9 +117,12 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
                   :title="localize('Open console')"></span><span
                   style="visibility: hidden;"><img
                   :src="resourceBase + 'computer.svg'"></span></td>
+                <td v-if="!poolName" style="padding: 0;"></td>
+                <td v-else>{{ vmName }}</td>
+              </tr>
+              <tr>
                 <td class="jdrupes-vmoperator-vmaccess-preview-action-list">
-                  <span role="button" 
-                    :aria-disabled="!startable || !permissions.includes('start')" 
+                  <span role="button" :aria-disabled="!startable" 
                     tabindex="0" class="fa fa-play" :title="localize('Start VM')"
                     v-on:click="vmAction('start')"></span>
                   <span role="button"
@@ -129,9 +139,6 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
                     </svg>
                   </span>
                 </td>
-              </tr>
-              <tr>
-                <td></td>
               </tr>
             </tbody>
           </table>`
@@ -160,25 +167,29 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmaccess.VmAccess",
     });
 
 JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmaccess.VmAccess",
-    "updateVmDefinition", function(conletId: string, vmDefinition: any) {
+    "updateVmDefinition", function(conletId: string, vmDefinition: any | null) {
         const conlet = JGConsole.findConletPreview(conletId);
         if (!conlet) {
             return;
         }
         const api = getApi<Api>(conlet.element().querySelector(
             ":scope .jdrupes-vmoperator-vmaccess-preview"))!;
-        // Add some short-cuts for rendering
-        vmDefinition.name = vmDefinition.metadata.name;
-        vmDefinition.currentCpus = vmDefinition.status.cpus;
-        vmDefinition.currentRam = Number(vmDefinition.status.ram);
-        vmDefinition.usedBy = vmDefinition.status.consoleClient || "";
-        for (const condition of vmDefinition.status.conditions) {
-            if (condition.type === "Running") {
-                vmDefinition.running = condition.status === "True";
-                vmDefinition.runningConditionSince 
-                    = new Date(condition.lastTransitionTime);
-                break;
+        if (vmDefinition) {
+            // Add some short-cuts for rendering
+            vmDefinition.name = vmDefinition.metadata.name;
+            vmDefinition.currentCpus = vmDefinition.status.cpus;
+            vmDefinition.currentRam = Number(vmDefinition.status.ram);
+            vmDefinition.usedBy = vmDefinition.status.consoleClient || "";
+            for (const condition of vmDefinition.status.conditions) {
+                if (condition.type === "Running") {
+                    vmDefinition.running = condition.status === "True";
+                    vmDefinition.runningConditionSince 
+                        = new Date(condition.lastTransitionTime);
+                    break;
+                }
             }
+        } else {
+            vmDefinition = {};
         }
         api.vmDefinition = vmDefinition;
     });

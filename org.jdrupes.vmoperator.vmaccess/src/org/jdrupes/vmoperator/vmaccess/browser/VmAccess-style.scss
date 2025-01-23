@@ -49,7 +49,12 @@
 
 .jdrupes-vmoperator-vmaccess.jdrupes-vmoperator-vmaccess-preview {
   
+  table {
+    border-spacing: 0;
+  }
+    
   img {
+    display: block;
     height: 3em;
     padding: 0.25rem;
     

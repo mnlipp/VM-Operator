@@ -8,3 +8,8 @@ spec:
   - user: admin
     may:
     - accessConsole
+  - user: test
+    may:
+    - accessConsole
+    - start
+    - stop

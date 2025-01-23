@@ -1022,7 +1022,7 @@ spec:
                 pools:
                   type: array
                   description: >-
-                    List of pools to which this VM belongs.
+                    List of pools this VM belongs to.
                   items:
                     type: string
                   default: []
@@ -1495,17 +1495,14 @@ spec:
                       description: >-
                         The pool this VM is taken from.
                       type: string
-                      default: ""
                     user:
                       description: >-
                         The user this VM is assigned to.
                       type: string
-                      default: ""
                     lastUsed:
                       description: >-
                         The last time this VM was used by the user.
                       type: string
-                      default: "1970-01-01T00:00:00Z"
                   default: {}
                 conditions:
                   description: >-

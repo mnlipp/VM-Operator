@@ -18,6 +18,8 @@
 
 package org.jdrupes.vmoperator.manager;
 
+import com.google.gson.JsonObject;
+import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Watch;
@@ -29,6 +31,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
+import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
@@ -41,13 +44,15 @@ import org.jdrupes.vmoperator.common.VmDefinitionModel;
 import org.jdrupes.vmoperator.common.VmDefinitionModels;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
-import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
+import org.jdrupes.vmoperator.manager.events.AssignVm;
 import org.jdrupes.vmoperator.manager.events.ChannelManager;
 import org.jdrupes.vmoperator.manager.events.GetVms;
 import org.jdrupes.vmoperator.manager.events.GetVms.VmData;
+import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
+import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Event;
 import org.jgrapes.core.annotation.Handler;
@@ -225,7 +230,60 @@ public class VmMonitor extends
             .filter(c -> event.user().isEmpty() && event.roles().isEmpty()
                 || !c.vmDefinition().permissionsFor(event.user().orElse(null),
                     event.roles()).isEmpty())
+            .filter(c -> event.fromPool().isEmpty()
+                || c.vmDefinition().assignedFrom()
+                    .map(p -> p.equals(event.fromPool().get())).orElse(false))
+            .filter(c -> event.toUser().isEmpty()
+                || c.vmDefinition().assignedTo()
+                    .map(u -> u.equals(event.toUser().get())).orElse(false))
             .map(c -> new VmData(c.vmDefinition(), c))
             .toList());
     }
+
+    /**
+     * Assign a VM if not already assigned.
+     *
+     * @param event the event
+     * @throws ApiException the api exception
+     */
+    @Handler
+    public void onAssignVm(AssignVm event) throws ApiException {
+        // Search for existing assignment.
+        var assignedVm = channelManager.channels().stream()
+            .filter(c -> c.vmDefinition().assignedFrom()
+                .map(p -> p.equals(event.fromPool())).orElse(false))
+            .filter(c -> c.vmDefinition().assignedTo()
+                .map(u -> u.equals(event.toUser())).orElse(false))
+            .findFirst();
+        if (assignedVm.isPresent()) {
+            event.setResult(new VmData(assignedVm.get().vmDefinition(),
+                assignedVm.get()));
+            return;
+        }
+
+        // Find available VM.
+        assignedVm = channelManager.channels().stream()
+            .filter(c -> c.vmDefinition().pools().contains(event.fromPool()))
+            .filter(c -> c.vmDefinition().assignedTo().isEmpty())
+            .findFirst();
+        if (assignedVm.isPresent()) {
+            var vmDef = assignedVm.get().vmDefinition();
+            var vmStub = VmDefinitionStub.get(client(),
+                new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
+                vmDef.namespace(), vmDef.name());
+            vmStub.updateStatus(from -> {
+                JsonObject status = from.status();
+                var assignment = GsonPtr.to(status).to("assignment");
+                assignment.set("pool", event.fromPool());
+                assignment.set("user", event.toUser());
+                return status;
+            });
+
+            // Always start a newly assigned VM.
+            fire(new ModifyVm(vmDef.name(), "state", "Running",
+                assignedVm.get()));
+            event.setResult(new VmData(vmDef, assignedVm.get()));
+        }
+    }
+
 }

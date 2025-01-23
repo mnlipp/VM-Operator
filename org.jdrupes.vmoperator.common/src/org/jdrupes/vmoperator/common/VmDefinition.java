@@ -89,6 +89,11 @@ public class VmDefinition {
             return Set.of(reprs.get(value));
         }
 
+        /**
+         * To string.
+         *
+         * @return the string
+         */
         @Override
         public String toString() {
             return repr;
@@ -104,6 +109,11 @@ public class VmDefinition {
      */
     public record Grant(String user, String role, Set<Permission> may) {
 
+        /**
+         * To string.
+         *
+         * @return the string
+         */
         @Override
         public String toString() {
             StringBuilder builder = new StringBuilder();
@@ -178,6 +188,16 @@ public class VmDefinition {
      */
     public void setMetadata(V1ObjectMeta metadata) {
         this.metadata = metadata;
+    }
+
+    /**
+     * The pools that this VM belongs to.
+     *
+     * @return the list
+     */
+    public List<String> pools() {
+        return this.<List<String>> fromSpec("pools")
+            .orElse(Collections.emptyList());
     }
 
     /**
@@ -269,6 +289,24 @@ public class VmDefinition {
     }
 
     /**
+     * The pool that the VM was taken from.
+     *
+     * @return the optional
+     */
+    public Optional<String> assignedFrom() {
+        return fromStatus("assignment", "pool");
+    }
+
+    /**
+     * The user that the VM was assigned to.
+     *
+     * @return the optional
+     */
+    public Optional<String> assignedTo() {
+        return fromStatus("assignment", "user");
+    }
+
+    /**
      * Return a condition's status.
      *
      * @param name the condition's name
@@ -298,6 +336,7 @@ public class VmDefinition {
     /**
      * Return extra data.
      *
+     * @param <T> the generic type
      * @param property the property
      * @return the object
      */
@@ -325,7 +364,7 @@ public class VmDefinition {
     }
 
     /**
-     * Return the requested VM state
+     * Return the requested VM state.
      *
      * @return the string
      */
@@ -367,11 +406,22 @@ public class VmDefinition {
             .map(Number::longValue);
     }
 
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
     @Override
     public int hashCode() {
         return Objects.hash(metadata.getNamespace(), metadata.getName());
     }
 
+    /**
+     * Equals.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {

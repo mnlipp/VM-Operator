@@ -21,9 +21,6 @@ spec:
   - role: admin
     may: 
     - "*"
-  - user: test
-    may:
-    - accessConsole
 
   guestShutdownStops: true
 

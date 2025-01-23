@@ -44,7 +44,7 @@ spec:
                           - reset
                           - accessConsole
                           - "*"
-                        default: []
+                        default: ["accessConsole"]
               required:
               - permissions
   # either Namespaced or Cluster
