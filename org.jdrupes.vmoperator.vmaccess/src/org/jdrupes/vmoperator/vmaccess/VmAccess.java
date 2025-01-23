@@ -676,7 +676,9 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
                         continue;
                     }
                 }
-                updateVmDef(connection, model.get(), vmDef);
+
+                // Full update because permissions may have changed
+                updatePreview(connection, model.get(), vmDef);
             }
         }
     }

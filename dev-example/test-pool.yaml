@@ -11,5 +11,3 @@ spec:
   - user: test
     may:
     - accessConsole
-    - start
-    - stop
