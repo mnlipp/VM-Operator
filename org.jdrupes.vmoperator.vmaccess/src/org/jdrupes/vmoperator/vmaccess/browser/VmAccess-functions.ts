@@ -45,6 +45,7 @@ interface Api {
     vmName: string;
     vmDefinition: any;
     poolName: string | null;
+    permissions: string[];
 }
 
 const localize = (key: string) => {
@@ -64,7 +65,8 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
             const previewApi: Api = reactive({
                 vmName: "",
                 vmDefinition: {},
-                poolName: null
+                poolName: null,
+                permissions: []
             });
             const poolName = computed(() => previewApi.poolName);
             const vmName = computed(() => previewApi.vmDefinition.name);
@@ -77,15 +79,14 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
             const startable = computed(() => previewApi.vmDefinition.spec
                 && previewApi.vmDefinition.spec.vm.state !== 'Running' 
                 && !previewApi.vmDefinition.running
-                && previewApi.vmDefinition.userPermissions.includes('start')
+                && previewApi.permissions.includes('start')
                 || previewApi.poolName !== null && !previewApi.vmDefinition.name);
             const stoppable = computed(() => previewApi.vmDefinition.spec &&
                 previewApi.vmDefinition.spec.vm.state !== 'Stopped' 
                 && previewApi.vmDefinition.running);
             const running = computed(() => previewApi.vmDefinition.running);
             const inUse = computed(() => previewApi.vmDefinition.usedBy != '');
-            const permissions = computed(() => previewApi.vmDefinition.spec
-                ? previewApi.vmDefinition.userPermissions : []);
+            const permissions = computed(() => previewApi.permissions);
 
             watch(previewApi, (api: Api) => {
                 JGConsole.instance.updateConletTitle(conletId, 
@@ -150,7 +151,8 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
 
 JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmaccess.VmAccess",
     "updateConfig",
-    function(conletId: string, type: string, resource: string) {
+    function(conletId: string, type: string, resource: string,
+        permissions: []) {
         const conlet = JGConsole.findConletPreview(conletId);
         if (!conlet) {
             return;
@@ -164,6 +166,7 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmaccess.VmAccess",
             api.poolName = resource;
             api.vmName = "";
         }
+        api.permissions = permissions;
     });
 
 JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmaccess.VmAccess",

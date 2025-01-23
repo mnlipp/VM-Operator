@@ -559,6 +559,11 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
                 result.addAll(pool.permissionsFor(user, roles));
             }
         }
+        if (vmDef == null) {
+            vmDef = appPipeline.fire(new GetVms().assignedFrom(model.name())
+                .assignedTo(user)).get().stream().map(VmData::definition)
+                .findFirst().orElse(null);
+        }
         if (vmDef != null) {
             result.addAll(vmDef.permissionsFor(user, roles));
         }
@@ -567,32 +572,36 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
 
     private void updatePreview(ConsoleConnection channel, ResourceModel model,
             VmDefinition vmDef) throws InterruptedException {
-        channel.respond(new NotifyConletView(type(),
-            model.getConletId(), "updateConfig", model.mode(), model.name()));
+        updateConfig(channel, model, vmDef);
         updateVmDef(channel, model, vmDef);
+    }
+
+    private void updateConfig(ConsoleConnection channel, ResourceModel model,
+            VmDefinition vmDef) throws InterruptedException {
+        channel.respond(new NotifyConletView(type(),
+            model.getConletId(), "updateConfig", model.mode(), model.name(),
+            permissions(model, channel.session(), null, vmDef).stream()
+                .map(VmDefinition.Permission::toString).toList()));
     }
 
     private void updateVmDef(ConsoleConnection channel, ResourceModel model,
             VmDefinition vmDef) throws InterruptedException {
         Map<String, Object> data = null;
-        if (vmDef != null) {
+        if (vmDef == null) {
+            model.setAssignedVm(null);
+        } else {
             model.setAssignedVm(vmDef.name());
             try {
                 data = Map.of("metadata",
                     Map.of("namespace", vmDef.namespace(),
                         "name", vmDef.name()),
                     "spec", vmDef.spec(),
-                    "status", vmDef.getStatus(),
-                    "userPermissions",
-                    permissions(model, channel.session(), null, vmDef).stream()
-                        .map(VmDefinition.Permission::toString).toList());
+                    "status", vmDef.getStatus());
             } catch (JsonSyntaxException e) {
                 logger.log(Level.SEVERE, e,
                     () -> "Failed to serialize VM definition");
                 return;
             }
-        } else {
-            model.setAssignedVm(null);
         }
         channel.respond(new NotifyConletView(type(),
             model.getConletId(), "updateVmDefinition", data));
@@ -677,10 +686,12 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
      *
      * @param event the event
      * @param channel the channel
+     * @throws InterruptedException 
      */
     @Handler(namedChannels = "manager")
     @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
-    public void onVmPoolChanged(VmPoolChanged event) {
+    public void onVmPoolChanged(VmPoolChanged event)
+            throws InterruptedException {
         var poolName = event.vmPool().name();
         // Update known conlets
         for (var entry : conletIdsByConsoleConnection().entrySet()) {
@@ -697,7 +708,9 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
                         .isEmpty()) {
                     connection.respond(
                         new DeleteConlet(conletId, Collections.emptySet()));
+                    continue;
                 }
+                updateConfig(connection, model.get(), null);
             }
         }
     }
