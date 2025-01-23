@@ -112,6 +112,7 @@ window.orgJDrupesVmOperatorVmMgmt.initView = (viewDom: HTMLElement,
                 ["currentCpus", "currentCpus"],
                 ["currentRam", "currentRam"],
                 ["nodeName", "nodeName"],
+                ["assignedTo", "assignedTo"],
                 ["usedFrom", "usedFrom"],
                 ["usedBy", "usedBy"]
             ], {
@@ -183,6 +184,7 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmmgmt.VmMgmt",
         vmDefinition.currentRam = Number(vmDefinition.status.ram);
         vmDefinition.usedFrom = vmDefinition.status.consoleClient || "";
         vmDefinition.usedBy = vmDefinition.status.consoleUser || "";
+        vmDefinition.assignedTo = vmDefinition.status.assignment?.user || "";
         for (const condition of vmDefinition.status.conditions) {
             if (condition.type === "Running") {
                 vmDefinition.running = condition.status === "True";
