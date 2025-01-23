@@ -13,4 +13,5 @@ dependencies {
     api 'org.jgrapes:org.jgrapes.core:[1.22.1,2)'
     api 'io.kubernetes:client-java:[19.0.0,20.0.0)'
     api 'org.yaml:snakeyaml'
+    api 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:[2.16.1,3]'
 }
