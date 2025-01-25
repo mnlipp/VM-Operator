@@ -103,7 +103,7 @@ public class GsonPtr {
      * @return the Gson pointer
      */
     @SuppressWarnings({ "PMD.ShortMethodName", "PMD.PreserveStackTrace" })
-    public Optional<GsonPtr> access(Object... selectors) {
+    public Optional<GsonPtr> get(Object... selectors) {
         JsonElement element = position;
         for (Object sel : selectors) {
             if (element instanceof JsonObject obj
@@ -147,7 +147,7 @@ public class GsonPtr {
      * @return the result
      */
     @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop" })
-    public <T extends JsonElement> T get(Class<T> cls) {
+    public <T extends JsonElement> T getAs(Class<T> cls) {
         if (cls.isAssignableFrom(position.getClass())) {
             return cls.cast(position);
         }
@@ -166,7 +166,7 @@ public class GsonPtr {
      */
     @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop" })
     public <T extends JsonElement> Optional<T>
-            get(Class<T> cls, Object... selectors) {
+            getAs(Class<T> cls, Object... selectors) {
         JsonElement element = position;
         for (Object sel : selectors) {
             if (element instanceof JsonObject obj
@@ -201,7 +201,7 @@ public class GsonPtr {
      * @return the as string
      */
     public Optional<String> getAsString(Object... selectors) {
-        return get(JsonPrimitive.class, selectors)
+        return getAs(JsonPrimitive.class, selectors)
             .map(JsonPrimitive::getAsString);
     }
 
@@ -212,7 +212,7 @@ public class GsonPtr {
      * @return the as string
      */
     public Optional<Integer> getAsInt(Object... selectors) {
-        return get(JsonPrimitive.class, selectors)
+        return getAs(JsonPrimitive.class, selectors)
             .map(JsonPrimitive::getAsInt);
     }
 
@@ -223,7 +223,7 @@ public class GsonPtr {
      * @return the as string
      */
     public Optional<BigInteger> getAsBigInteger(Object... selectors) {
-        return get(JsonPrimitive.class, selectors)
+        return getAs(JsonPrimitive.class, selectors)
             .map(JsonPrimitive::getAsBigInteger);
     }
 
@@ -234,7 +234,7 @@ public class GsonPtr {
      * @return the as string
      */
     public Optional<Long> getAsLong(Object... selectors) {
-        return get(JsonPrimitive.class, selectors)
+        return getAs(JsonPrimitive.class, selectors)
             .map(JsonPrimitive::getAsLong);
     }
 
@@ -245,7 +245,7 @@ public class GsonPtr {
      * @return the boolean
      */
     public Optional<Boolean> getAsBoolean(Object... selectors) {
-        return get(JsonPrimitive.class, selectors)
+        return getAs(JsonPrimitive.class, selectors)
             .map(JsonPrimitive::getAsBoolean);
     }
 
@@ -260,7 +260,7 @@ public class GsonPtr {
     @SuppressWarnings("unchecked")
     public <T extends JsonElement> List<T> getAsListOf(Class<T> cls,
             Object... selectors) {
-        return get(JsonArray.class, selectors).map(a -> (List<T>) a.asList())
+        return getAs(JsonArray.class, selectors).map(a -> (List<T>) a.asList())
             .orElse(Collections.emptyList());
     }
 

@@ -204,7 +204,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         // If bound, use json merge, omitting immutable fields
         var spec = GsonPtr.to(pvcDef.getRaw()).to("spec");
         spec.removeExcept("volumeAttributesClassName", "resources");
-        spec.access("resources").ifPresent(p -> p.removeExcept("requests"));
+        spec.get("resources").ifPresent(p -> p.removeExcept("requests"));
         PatchOptions opts = new PatchOptions();
         opts.setFieldManager("kubernetes-java-kubectl-apply");
         if (pvcStub.patch(V1Patch.PATCH_FORMAT_JSON_MERGE_PATCH,
