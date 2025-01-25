@@ -45,7 +45,8 @@ import java.util.function.Function;
  * @param <O> the generic type
  * @param <L> the generic type
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
+@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",
+    "PMD.CouplingBetweenObjects" })
 public class K8sClusterGenericStub<O extends KubernetesObject,
         L extends KubernetesListObject> {
     protected final K8sClient client;
@@ -373,7 +374,7 @@ public class K8sClusterGenericStub<O extends KubernetesObject,
     public static <O extends KubernetesObject, L extends KubernetesListObject,
             R extends K8sClusterGenericStub<O, L>>
             Collection<R> list(Class<O> objectClass, Class<L> objectListClass,
-                    K8sClient client, APIResource context, 
+                    K8sClient client, APIResource context,
                     ListOptions options, GenericSupplier<O, L, R> provider)
                     throws ApiException {
         var result = new ArrayList<R>();
