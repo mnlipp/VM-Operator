@@ -18,6 +18,8 @@
 
 package org.jdrupes.vmoperator.common;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -36,6 +38,7 @@ import org.jdrupes.vmoperator.util.DataPath;
 public class VmPool {
 
     private String name;
+    private String retention;
     private boolean defined;
     private List<Grant> permissions = Collections.emptyList();
     private final Set<String> vms
@@ -87,6 +90,24 @@ public class VmPool {
     }
 
     /**
+     * Gets the retention.
+     *
+     * @return the retention
+     */
+    public String retention() {
+        return retention;
+    }
+
+    /**
+     * Sets the retention.
+     *
+     * @param retention the retention to set
+     */
+    public void setRetention(String retention) {
+        this.retention = retention;
+    }
+
+    /**
      * Permissions granted for a VM from the pool.
      *
      * @return the permissions
@@ -113,6 +134,11 @@ public class VmPool {
         return vms;
     }
 
+    /**
+     * To string.
+     *
+     * @return the string
+     */
     @Override
     @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
     public String toString() {
@@ -147,4 +173,16 @@ public class VmPool {
             .flatMap(Function.identity()).collect(Collectors.toSet());
     }
 
+    /**
+     * Return the instant until which an assignment should be retained.
+     *
+     * @param lastUsed the last used
+     * @return the instant
+     */
+    public Instant retainUntil(Instant lastUsed) {
+        if (retention.startsWith("P")) {
+            return lastUsed.plus(Duration.parse(retention));
+        }
+        return Instant.parse(retention);
+    }
 }

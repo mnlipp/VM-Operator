@@ -4,6 +4,7 @@ metadata:
   namespace: vmop-dev
   name: test-vms
 spec:
+  retention: "PT1m"
   permissions:
   - user: admin
     may:

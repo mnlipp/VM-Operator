@@ -18,21 +18,26 @@
 
 package org.jdrupes.vmoperator.manager;
 
+import com.google.gson.JsonObject;
+import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.Watch;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
+import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jdrupes.vmoperator.common.K8sDynamicModels;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
 import org.jdrupes.vmoperator.common.K8sObserver.ResponseType;
+import org.jdrupes.vmoperator.common.VmDefinitionStub;
 import org.jdrupes.vmoperator.common.VmPool;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM_POOL;
 import org.jdrupes.vmoperator.manager.events.GetPools;
@@ -129,6 +134,7 @@ public class PoolMonitor extends
         var vmPool = pools.computeIfAbsent(poolName, k -> new VmPool(poolName));
         var newData = client().getJSON().getGson().fromJson(
             GsonPtr.to(poolModel.data()).to("spec").get(), VmPool.class);
+        vmPool.setRetention(newData.retention());
         vmPool.setPermissions(newData.permissions());
         vmPool.setDefined(true);
         poolPipeline.fire(new VmPoolChanged(vmPool));
@@ -138,13 +144,15 @@ public class PoolMonitor extends
      * Track VM definition changes.
      *
      * @param event the event
+     * @throws ApiException 
      */
     @Handler
-    public void onVmDefChanged(VmDefChanged event) {
-        String vmName = event.vmDefinition().name();
+    public void onVmDefChanged(VmDefChanged event) throws ApiException {
+        final var vmDef = event.vmDefinition();
+        final String vmName = vmDef.name();
         switch (event.type()) {
         case ADDED:
-            event.vmDefinition().<List<String>> fromSpec("pools")
+            vmDef.<List<String>> fromSpec("pools")
                 .orElse(Collections.emptyList()).stream().forEach(p -> {
                     pools.computeIfAbsent(p, k -> new VmPool(p))
                         .vms().add(vmName);
@@ -157,10 +165,34 @@ public class PoolMonitor extends
                     poolPipeline.fire(new VmPoolChanged(p));
                 }
             });
-            break;
+            return;
         default:
             break;
         }
+
+        // Sync last usage to console state change if user matches
+        var assignedTo = vmDef.assignedTo().orElse(null);
+        if (assignedTo == null || !assignedTo
+            .equals(vmDef.<String> fromStatus("consoleUser").orElse(null))) {
+            return;
+        }
+        var lastUsed
+            = vmDef.assignmentLastUsed().orElse(Instant.ofEpochSecond(0));
+        var conChange = vmDef.condition("ConsoleConnected")
+            .map(c -> c.getLastTransitionTime().toInstant())
+            .orElse(Instant.ofEpochSecond(0));
+        if (!conChange.isAfter(lastUsed)) {
+            return;
+        }
+        var vmStub = VmDefinitionStub.get(client(),
+            new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
+            vmDef.namespace(), vmDef.name());
+        vmStub.updateStatus(from -> {
+            JsonObject status = from.status();
+            var assignment = GsonPtr.to(status).to("assignment");
+            assignment.set("lastUsed", conChange.toString());
+            return status;
+        });
     }
 
     /**

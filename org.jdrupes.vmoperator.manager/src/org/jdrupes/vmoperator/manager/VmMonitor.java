@@ -1,6 +1,6 @@
 /*
  * VM-Operator
- * Copyright (C) 2023,2024 Michael N. Lipp
+ * Copyright (C) 2023,2025 Michael N. Lipp
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -25,7 +25,9 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
@@ -43,10 +45,12 @@ import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinitionModel;
 import org.jdrupes.vmoperator.common.VmDefinitionModels;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
+import org.jdrupes.vmoperator.common.VmPool;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
 import org.jdrupes.vmoperator.manager.events.AssignVm;
 import org.jdrupes.vmoperator.manager.events.ChannelManager;
+import org.jdrupes.vmoperator.manager.events.GetPools;
 import org.jdrupes.vmoperator.manager.events.GetVms;
 import org.jdrupes.vmoperator.manager.events.GetVms.VmData;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
@@ -245,28 +249,59 @@ public class VmMonitor extends
      *
      * @param event the event
      * @throws ApiException the api exception
+     * @throws InterruptedException 
      */
     @Handler
-    public void onAssignVm(AssignVm event) throws ApiException {
-        // Search for existing assignment.
-        var assignedVm = channelManager.channels().stream()
-            .filter(c -> c.vmDefinition().assignedFrom()
-                .map(p -> p.equals(event.fromPool())).orElse(false))
-            .filter(c -> c.vmDefinition().assignedTo()
-                .map(u -> u.equals(event.toUser())).orElse(false))
-            .findFirst();
-        if (assignedVm.isPresent()) {
-            event.setResult(new VmData(assignedVm.get().vmDefinition(),
-                assignedVm.get()));
-            return;
-        }
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+    public void onAssignVm(AssignVm event)
+            throws ApiException, InterruptedException {
+        VmPool vmPool = null;
+        while (true) {
+            // Search for existing assignment.
+            var assignedVm = channelManager.channels().stream()
+                .filter(c -> c.vmDefinition().assignedFrom()
+                    .map(p -> p.equals(event.fromPool())).orElse(false))
+                .filter(c -> c.vmDefinition().assignedTo()
+                    .map(u -> u.equals(event.toUser())).orElse(false))
+                .findFirst();
+            if (assignedVm.isPresent()) {
+                var vmDef = assignedVm.get().vmDefinition();
+                event.setResult(new VmData(vmDef, assignedVm.get()));
+                return;
+            }
 
-        // Find available VM.
-        assignedVm = channelManager.channels().stream()
-            .filter(c -> c.vmDefinition().pools().contains(event.fromPool()))
-            .filter(c -> c.vmDefinition().assignedTo().isEmpty())
-            .findFirst();
-        if (assignedVm.isPresent()) {
+            // Get the pool definition for retention time calculations
+            if (vmPool == null) {
+                vmPool = newEventPipeline().fire(new GetPools()
+                    .withName(event.fromPool())).get().stream().findFirst()
+                    .orElse(null);
+                if (vmPool == null) {
+                    return;
+                }
+            }
+
+            // Find available VM.
+            var pool = vmPool;
+            assignedVm = channelManager.channels().stream()
+                .filter(c -> c.vmDefinition().pools()
+                    .contains(event.fromPool()))
+                .filter(c -> !c.vmDefinition()
+                    .conditionStatus("ConsoleConnected").orElse(false))
+                .filter(c -> c.vmDefinition().assignedTo().isEmpty()
+                    || pool.retainUntil(c.vmDefinition()
+                        .<String> fromStatus("assignment", "lastUsed")
+                        .map(Instant::parse).orElse(Instant.ofEpochSecond(0)))
+                        .isBefore(Instant.now()))
+                .sorted(Comparator.comparing(c -> c.vmDefinition()
+                    .assignmentLastUsed().orElse(Instant.ofEpochSecond(0))))
+                .findFirst();
+
+            // None found
+            if (assignedVm.isEmpty()) {
+                return;
+            }
+
+            // Assign to user
             var vmDef = assignedVm.get().vmDefinition();
             var vmStub = VmDefinitionStub.get(client(),
                 new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
@@ -276,14 +311,13 @@ public class VmMonitor extends
                 var assignment = GsonPtr.to(status).to("assignment");
                 assignment.set("pool", event.fromPool());
                 assignment.set("user", event.toUser());
+                assignment.set("lastUsed", Instant.now().toString());
                 return status;
             });
 
-            // Always start a newly assigned VM.
+            // Make sure that a newly assigned VM is running.
             fire(new ModifyVm(vmDef.name(), "state", "Running",
                 assignedVm.get()));
-            event.setResult(new VmData(vmDef, assignedVm.get()));
         }
     }
-
 }

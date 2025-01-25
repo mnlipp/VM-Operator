@@ -18,7 +18,11 @@
 
 package org.jdrupes.vmoperator.common;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.kubernetes.client.openapi.models.V1Condition;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -36,8 +40,11 @@ import org.jdrupes.vmoperator.util.DataPath;
 /**
  * Represents a VM definition.
  */
-@SuppressWarnings({ "PMD.DataClass" })
+@SuppressWarnings({ "PMD.DataClass", "PMD.TooManyMethods" })
 public class VmDefinition {
+
+    private static ObjectMapper objectMapper
+        = new ObjectMapper().registerModule(new JavaTimeModule());
 
     private String kind;
     private String apiVersion;
@@ -304,6 +311,31 @@ public class VmDefinition {
      */
     public Optional<String> assignedTo() {
         return fromStatus("assignment", "user");
+    }
+
+    /**
+     * Last usage of assigned VM.
+     *
+     * @return the optional
+     */
+    public Optional<Instant> assignmentLastUsed() {
+        return this.<String> fromStatus("assignment", "lastUsed")
+            .map(Instant::parse);
+    }
+
+    /**
+     * Return a condition from the status.
+     *
+     * @param name the condition's name
+     * @return the status, if the condition is defined
+     */
+    public Optional<V1Condition> condition(String name) {
+        return this.<List<Map<String, Object>>> fromStatus("conditions")
+            .orElse(Collections.emptyList()).stream()
+            .filter(cond -> DataPath.get(cond, "type")
+                .map(name::equals).orElse(false))
+            .findFirst()
+            .map(cond -> objectMapper.convertValue(cond, V1Condition.class));
     }
 
     /**

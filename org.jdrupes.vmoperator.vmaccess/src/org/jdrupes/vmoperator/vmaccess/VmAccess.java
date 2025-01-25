@@ -86,6 +86,7 @@ import org.jgrapes.webconsole.base.events.ConsoleConfigured;
 import org.jgrapes.webconsole.base.events.ConsolePrepared;
 import org.jgrapes.webconsole.base.events.ConsoleReady;
 import org.jgrapes.webconsole.base.events.DeleteConlet;
+import org.jgrapes.webconsole.base.events.DisplayNotification;
 import org.jgrapes.webconsole.base.events.NotifyConletModel;
 import org.jgrapes.webconsole.base.events.NotifyConletView;
 import org.jgrapes.webconsole.base.events.OpenModalDialog;
@@ -717,10 +718,9 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
         }
     }
 
-    @Override
-    @SuppressWarnings({ "PMD.AvoidDecimalLiteralsInBigDecimalConstructor",
-        "PMD.ConfusingArgumentToVarargsMethod", "PMD.NcssCount",
+    @SuppressWarnings({ "PMD.NcssCount", "PMD.CognitiveComplexity",
         "PMD.AvoidLiteralsInIfCondition" })
+    @Override
     protected void doUpdateConletState(NotifyConletModel event,
             ConsoleConnection channel, ResourceModel model) throws Exception {
         event.stop();
@@ -741,7 +741,11 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
                 vmData = Optional.ofNullable(appPipeline
                     .fire(new AssignVm(model.name(), user)).get());
                 if (vmData.isEmpty()) {
-                    // TODO message
+                    ResourceBundle resourceBundle
+                        = resourceBundle(channel.locale());
+                    channel.respond(new DisplayNotification(
+                        resourceBundle.getString("poolEmptyNotification"),
+                        Map.of("autoClose", 15_000, "type", "Error")));
                     return;
                 }
             }
