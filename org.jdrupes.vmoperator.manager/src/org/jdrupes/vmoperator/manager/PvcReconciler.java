@@ -214,19 +214,4 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
                 () -> "Could not patch pvc for " + pvcStub.name());
         }
     }
-
-    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
-    private void removeImmutable(DynamicKubernetesObject pvcDef) {
-        var spec = GsonPtr.to(pvcDef.getRaw()).to("spec").get(JsonObject.class);
-        for (var itr = spec.entrySet().iterator(); itr.hasNext();) {
-            var entry = itr.next();
-            if ("volumeAttributesClassName".equals(entry.getKey())) {
-                continue;
-            }
-            if ("resources".equals(entry.getKey())) {
-                continue;
-            }
-            itr.remove();
-        }
-    }
 }
