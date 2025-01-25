@@ -75,17 +75,17 @@ window.orgJDrupesVmOperatorVmMgmt.initPreview = (previewDom: HTMLElement,
                 chart = new CpuRamChart(canvas, chartData);
             })
 
-            watch(chartDateUpdate, (_) => {
+            watch(chartDateUpdate, (_: never) => {
                 chart?.update();
             })
 
-            watch(JGWC.langRef(), (_) => {
+            watch(JGWC.langRef(), (_: never) => {
                 chart?.localizeChart();
             })
 
             const period: Ref<string> = ref<string>("day");
             
-            watch(period, (_) => { 
+            watch(period, (_: never) => { 
                 const hours = (period.value === "day") ? 24 : 1;
                 chart?.setPeriod(hours * 3600 * 1000);
             });
