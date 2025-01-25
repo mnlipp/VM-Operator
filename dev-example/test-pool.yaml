@@ -9,6 +9,6 @@ spec:
   - user: admin
     may:
     - accessConsole
-  - user: test
+  - role: user
     may:
     - accessConsole
