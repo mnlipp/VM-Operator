@@ -40,6 +40,9 @@
           - name: admin
             fullName: Administrator
             password: "$2b$05$NiBd74ZGdplLC63ePZf1f.UtjMKkbQ23cQoO2OKOFalDBHWAOy21."
+          - name: operator
+            fullName: Operator
+            password: "$2b$05$hZaI/jToXf/d3BctZdT38Or7H7h6Pn2W3WiB49p5AyhDHFkkYCvo2"
           - name: test1
             fullName: Test Account 1
             password: "$2b$05$hZaI/jToXf/d3BctZdT38Or7H7h6Pn2W3WiB49p5AyhDHFkkYCvo2"
@@ -54,6 +57,8 @@
             # User admin has role admin
             admin:
             - admin
+            operator:
+            - operator
             test1:
             - user
             test2:
@@ -69,6 +74,8 @@
             # Admins can use all conlets
             admin:
             - "*"
+            operator:
+            - org.jdrupes.vmoperator.vmaccess.VmAccess
             user:
             - org.jdrupes.vmoperator.vmaccess.VmAccess
             # Others cannot use any conlet (except login conlet to log out)
