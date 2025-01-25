@@ -23,6 +23,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -62,7 +63,8 @@ public class GsonPtr {
      * @param selectors the selectors
      * @return the Gson pointer
      */
-    @SuppressWarnings({ "PMD.ShortMethodName", "PMD.PreserveStackTrace" })
+    @SuppressWarnings({ "PMD.ShortMethodName", "PMD.PreserveStackTrace",
+        "PMD.AvoidDuplicateLiterals" })
     public GsonPtr to(Object... selectors) {
         JsonElement element = position;
         for (Object sel : selectors) {
@@ -89,6 +91,42 @@ public class GsonPtr {
             throw new IllegalStateException("Invalid selection");
         }
         return new GsonPtr(element);
+    }
+
+    /**
+     * Create a new instance pointing to the {@link JsonElement} 
+     * selected by the given selectors. If a selector of type 
+     * {@link String} denotes a non-existant member of a
+     * {@link JsonObject} the result is empty.
+     *
+     * @param selectors the selectors
+     * @return the Gson pointer
+     */
+    @SuppressWarnings({ "PMD.ShortMethodName", "PMD.PreserveStackTrace" })
+    public Optional<GsonPtr> access(Object... selectors) {
+        JsonElement element = position;
+        for (Object sel : selectors) {
+            if (element instanceof JsonObject obj
+                && sel instanceof String member) {
+                element = obj.get(member);
+                if (element == null) {
+                    return Optional.empty();
+                }
+                continue;
+            }
+            if (element instanceof JsonArray arr
+                && sel instanceof Integer index) {
+                try {
+                    element = arr.get(index);
+                } catch (IndexOutOfBoundsException e) {
+                    throw new IllegalStateException("Selected array index"
+                        + " may not be empty.");
+                }
+                continue;
+            }
+            throw new IllegalStateException("Invalid selection");
+        }
+        return Optional.of(new GsonPtr(element));
     }
 
     /**
@@ -336,4 +374,22 @@ public class GsonPtr {
         return this;
     }
 
+    /**
+     * Removes all properties except the specified ones.
+     *
+     * @param properties the properties
+     */
+    public void removeExcept(String... properties) {
+        if (!position.isJsonObject()) {
+            return;
+        }
+        for (var itr = ((JsonObject) position).entrySet().iterator();
+                itr.hasNext();) {
+            var entry = itr.next();
+            if (Arrays.asList(properties).contains(entry.getKey())) {
+                continue;
+            }
+            itr.remove();
+        }
+    }
 }

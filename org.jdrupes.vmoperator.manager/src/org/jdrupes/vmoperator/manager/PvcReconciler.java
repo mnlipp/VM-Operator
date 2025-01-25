@@ -18,6 +18,7 @@
 
 package org.jdrupes.vmoperator.manager;
 
+import com.google.gson.JsonObject;
 import freemarker.core.ParseException;
 import freemarker.template.Configuration;
 import freemarker.template.MalformedTemplateNameException;
@@ -25,6 +26,7 @@ import freemarker.template.TemplateException;
 import freemarker.template.TemplateNotFoundException;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import io.kubernetes.client.util.generic.dynamic.Dynamics;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import io.kubernetes.client.util.generic.options.PatchOptions;
@@ -41,6 +43,7 @@ import org.jdrupes.vmoperator.common.K8sV1PvcStub;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.util.DataPath;
+import org.jdrupes.vmoperator.util.GsonPtr;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
@@ -179,17 +182,51 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         var pvcDef = Dynamics.newFromYaml(
             new Yaml(new SafeConstructor(new LoaderOptions())), out.toString());
 
-        // Do apply changes
+        // Apply changes
         var pvcStub
             = K8sV1PvcStub.get(channel.client(), vmDef.namespace(), pvcName);
+        var pvc = pvcStub.model();
+        if (pvc.isEmpty()
+            || !"Bound".equals(pvc.get().getStatus().getPhase())) {
+            // Does not exist or isn't bound, use apply
+            PatchOptions opts = new PatchOptions();
+            opts.setForce(true);
+            opts.setFieldManager("kubernetes-java-kubectl-apply");
+            if (pvcStub.patch(V1Patch.PATCH_FORMAT_APPLY_YAML,
+                new V1Patch(channel.client().getJSON().serialize(pvcDef)), opts)
+                .isEmpty()) {
+                logger.warning(
+                    () -> "Could not patch pvc for " + pvcStub.name());
+            }
+            return;
+        }
+
+        // If bound, use json merge, omitting immutable fields
+        var spec = GsonPtr.to(pvcDef.getRaw()).to("spec");
+        spec.removeExcept("volumeAttributesClassName", "resources");
+        spec.access("resources").ifPresent(p -> p.removeExcept("requests"));
         PatchOptions opts = new PatchOptions();
-        opts.setForce(true);
         opts.setFieldManager("kubernetes-java-kubectl-apply");
-        if (pvcStub.patch(V1Patch.PATCH_FORMAT_APPLY_YAML,
+        if (pvcStub.patch(V1Patch.PATCH_FORMAT_JSON_MERGE_PATCH,
             new V1Patch(channel.client().getJSON().serialize(pvcDef)), opts)
             .isEmpty()) {
             logger.warning(
                 () -> "Could not patch pvc for " + pvcStub.name());
+        }
+    }
+
+    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
+    private void removeImmutable(DynamicKubernetesObject pvcDef) {
+        var spec = GsonPtr.to(pvcDef.getRaw()).to("spec").get(JsonObject.class);
+        for (var itr = spec.entrySet().iterator(); itr.hasNext();) {
+            var entry = itr.next();
+            if ("volumeAttributesClassName".equals(entry.getKey())) {
+                continue;
+            }
+            if ("resources".equals(entry.getKey())) {
+                continue;
+            }
+            itr.remove();
         }
     }
 }
