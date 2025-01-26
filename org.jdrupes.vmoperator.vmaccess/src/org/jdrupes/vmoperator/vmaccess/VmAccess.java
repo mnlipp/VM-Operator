@@ -779,9 +779,19 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
             }
             break;
         case "openConsole":
-            if (perms.contains(VmDefinition.Permission.ACCESS_CONSOLE)) {
-                var user = WebConsoleUtils.userFromSession(channel.session())
-                    .map(ConsoleUser::getName).orElse("");
+            var user = WebConsoleUtils.userFromSession(channel.session())
+                .map(ConsoleUser::getName).orElse("");
+            if (vmDef.conditionStatus("ConsoleConnected").orElse(false)
+                && vmDef.consoleUser().map(cu -> !cu.equals(user)
+                    && !perms.contains(VmDefinition.Permission.TAKE_CONSOLE))
+                    .orElse(false)) {
+                channel.respond(new DisplayNotification(
+                    resourceBundle.getString("consoleTakenNotification"),
+                    Map.of("autoClose", 5_000, "type", "Warning")));
+                return;
+            }
+            if (perms.contains(VmDefinition.Permission.ACCESS_CONSOLE)
+                || perms.contains(VmDefinition.Permission.TAKE_CONSOLE)) {
                 var pwQuery
                     = Event.onCompletion(new GetDisplayPassword(vmDef, user),
                         e -> openConsole(vmDef, channel, model,

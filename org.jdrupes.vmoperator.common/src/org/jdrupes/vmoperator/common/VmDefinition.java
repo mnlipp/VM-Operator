@@ -65,7 +65,7 @@ public class VmDefinition {
      */
     public enum Permission {
         START("start"), STOP("stop"), RESET("reset"),
-        ACCESS_CONSOLE("accessConsole");
+        ACCESS_CONSOLE("accessConsole"), TAKE_CONSOLE("takeConsole");
 
         @SuppressWarnings("PMD.UseConcurrentHashMap")
         private static Map<String, Permission> reprs = new HashMap<>();

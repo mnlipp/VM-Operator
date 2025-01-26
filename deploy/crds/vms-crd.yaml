@@ -994,6 +994,10 @@ spec:
                   type: array
                   description: >-
                     Defines permissions for accessing and manipulating the VM.
+                    The meaning of most permissions should be obvious. The
+                    difference between "accessConsole" and "takeConsole" is
+                    that "takeConsole" allows the user to take control of
+                    the console even if it is already in use by another user.
                   items:
                     type: object
                     description: >-
@@ -1017,6 +1021,7 @@ spec:
                           - stop
                           - reset
                           - accessConsole
+                          - takeConsole
                           - "*"
                         default: []
                 pools:
