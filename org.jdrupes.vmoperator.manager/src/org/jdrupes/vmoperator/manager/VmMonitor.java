@@ -283,15 +283,7 @@ public class VmMonitor extends
             // Find available VM.
             var pool = vmPool;
             assignedVm = channelManager.channels().stream()
-                .filter(c -> c.vmDefinition().pools()
-                    .contains(event.fromPool()))
-                .filter(c -> !c.vmDefinition()
-                    .conditionStatus("ConsoleConnected").orElse(false))
-                .filter(c -> c.vmDefinition().assignedTo().isEmpty()
-                    || pool.retainUntil(c.vmDefinition()
-                        .<String> fromStatus("assignment", "lastUsed")
-                        .map(Instant::parse).orElse(Instant.ofEpochSecond(0)))
-                        .isBefore(Instant.now()))
+                .filter(c -> isAssignable(pool, c.vmDefinition()))
                 .sorted(Comparator.comparing(c -> c.vmDefinition()
                     .assignmentLastUsed().orElse(Instant.ofEpochSecond(0))))
                 .findFirst();
@@ -319,5 +311,40 @@ public class VmMonitor extends
             fire(new ModifyVm(vmDef.name(), "state", "Running",
                 assignedVm.get()));
         }
+    }
+
+    @SuppressWarnings("PMD.SimplifyBooleanReturns")
+    private boolean isAssignable(VmPool pool, VmDefinition vmDef) {
+        // Check if the VM is in the pool
+        if (!vmDef.pools().contains(pool.name())) {
+            return false;
+        }
+
+        // Check if the VM is not in use
+        if (vmDef.consoleConnected()) {
+            return false;
+        }
+
+        // If not assigned, it's usable
+        if (vmDef.assignedTo().isEmpty()) {
+            return true;
+        }
+
+        // Check if it is to be retained
+        if (vmDef.assignmentLastUsed()
+            .map(lu -> pool.retainUntil(lu))
+            .map(ru -> Instant.now().isBefore(ru)).orElse(false)) {
+            return false;
+        }
+
+        // Additional check in case lastUsed has not been updated
+        // by PoolMonitor#onVmDefChanged() yet ("race condition")
+        if (vmDef.condition("ConsoleConnected")
+            .map(cc -> cc.getLastTransitionTime().toInstant())
+            .map(t -> pool.retainUntil(t))
+            .map(ru -> Instant.now().isBefore(ru)).orElse(false)) {
+            return false;
+        }
+        return true;
     }
 }

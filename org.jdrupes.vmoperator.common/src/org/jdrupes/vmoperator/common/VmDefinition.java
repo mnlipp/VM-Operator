@@ -354,6 +354,24 @@ public class VmDefinition {
     }
 
     /**
+     * Return true if the console is in use.
+     *
+     * @return true, if successful
+     */
+    public boolean consoleConnected() {
+        return conditionStatus("ConsoleConnected").orElse(false);
+    }
+
+    /**
+     * Return the last known console user.
+     *
+     * @return the optional
+     */
+    public Optional<String> consoleUser() {
+        return this.<String> fromStatus("consoleUser");
+    }
+
+    /**
      * Set extra data (locally used, unknown to kubernetes).
      *
      * @param property the property

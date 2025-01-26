@@ -23,7 +23,6 @@ import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.Watch;
 import java.io.IOException;
-import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -171,17 +170,18 @@ public class PoolMonitor extends
         }
 
         // Sync last usage to console state change if user matches
-        var assignedTo = vmDef.assignedTo().orElse(null);
-        if (assignedTo == null || !assignedTo
-            .equals(vmDef.<String> fromStatus("consoleUser").orElse(null))) {
+        if (vmDef.assignedTo()
+            .map(at -> at.equals(vmDef.consoleUser().orElse(null)))
+            .orElse(true)) {
             return;
         }
-        var lastUsed
-            = vmDef.assignmentLastUsed().orElse(Instant.ofEpochSecond(0));
-        var conChange = vmDef.condition("ConsoleConnected")
-            .map(c -> c.getLastTransitionTime().toInstant())
-            .orElse(Instant.ofEpochSecond(0));
-        if (!conChange.isAfter(lastUsed)) {
+
+        var ccChange = vmDef.condition("ConsoleConnected")
+            .map(cc -> cc.getLastTransitionTime().toInstant());
+        if (ccChange
+            .map(tt -> vmDef.assignmentLastUsed().map(alu -> alu.isAfter(tt))
+                .orElse(true))
+            .orElse(true)) {
             return;
         }
         var vmStub = VmDefinitionStub.get(client(),
@@ -190,7 +190,7 @@ public class PoolMonitor extends
         vmStub.updateStatus(from -> {
             JsonObject status = from.status();
             var assignment = GsonPtr.to(status).to("assignment");
-            assignment.set("lastUsed", conChange.toString());
+            assignment.set("lastUsed", ccChange.get().toString());
             return status;
         });
     }
