@@ -164,7 +164,7 @@ window.orgJDrupesVmOperatorVmMgmt.initView = (viewDom: HTMLElement,
             return {
                 controller, vmInfos, filteredData, detailsByName, localize, 
                 shortDateTime, formatMemory, vmAction, cic, parseMemory,
-                maximumCpus,
+                maximumCpus, 
                 scopedId: (id: string) => { return idScope.scopedId(id); }
             };
         }

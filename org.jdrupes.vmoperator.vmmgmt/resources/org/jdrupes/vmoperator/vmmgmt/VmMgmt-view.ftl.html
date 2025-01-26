@@ -34,7 +34,7 @@
           :aria-expanded="(entry.name in detailsByName) ? 'true' : 'false'">
           <td v-for="key in controller.keys" 
             v-bind:class="'column-' + key"
-            v-bind:title="key == 'name' ? entry['name']: false"
+            v-bind:title="key == 'name' ? entry['name'] : null"
             v-bind:rowspan="(key == 'name') && $aash.isDisclosed(scopedId(rowIndex)) ? 2 : false">
             <aash-disclosure-button v-if="key === 'name'" :type="'div'"
               :id-ref="scopedId(rowIndex)">
@@ -48,6 +48,11 @@
               >{{ shortDateTime(entry[key].toString()) }}</span>
             <span v-else-if="key === 'currentRam'"
               >{{ formatMemory(entry[key]) }}</span>
+            <span v-else-if="key === 'usedBy'"
+              :class="{ 'console-conection-closed' : !entry.usedFrom }"
+              :title="entry.usedFrom ? localize('usedFrom') 
+                + ' ' + entry.usedFrom : localize('notInUse')"
+              v-html="controller.breakBeforeDots(entry[key])"></span>
             <span v-else
               v-html="controller.breakBeforeDots(entry[key])"></span>
           </td>
