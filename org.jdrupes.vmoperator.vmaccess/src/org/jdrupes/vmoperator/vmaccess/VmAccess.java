@@ -745,7 +745,7 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
                         = resourceBundle(channel.locale());
                     channel.respond(new DisplayNotification(
                         resourceBundle.getString("poolEmptyNotification"),
-                        Map.of("autoClose", 15_000, "type", "Error")));
+                        Map.of("autoClose", 10_000, "type", "Error")));
                     return;
                 }
             }
