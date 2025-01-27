@@ -75,17 +75,17 @@ window.orgJDrupesVmOperatorVmMgmt.initPreview = (previewDom: HTMLElement,
                 chart = new CpuRamChart(canvas, chartData);
             })
 
-            watch(chartDateUpdate, (_) => {
+            watch(chartDateUpdate, (_: never) => {
                 chart?.update();
             })
 
-            watch(JGWC.langRef(), (_) => {
+            watch(JGWC.langRef(), (_: never) => {
                 chart?.localizeChart();
             })
 
             const period: Ref<string> = ref<string>("day");
             
-            watch(period, (_) => { 
+            watch(period, (_: never) => { 
                 const hours = (period.value === "day") ? 24 : 1;
                 chart?.setPeriod(hours * 3600 * 1000);
             });
@@ -112,8 +112,8 @@ window.orgJDrupesVmOperatorVmMgmt.initView = (viewDom: HTMLElement,
                 ["currentCpus", "currentCpus"],
                 ["currentRam", "currentRam"],
                 ["nodeName", "nodeName"],
-                ["usedFrom", "usedFrom"],
-                ["usedBy", "usedBy"]
+                ["usedBy", "usedBy"],
+                ["assignedTo", "assignedTo"]
             ], {
                 sortKey: "name",
                 sortOrder: "up"
@@ -164,7 +164,7 @@ window.orgJDrupesVmOperatorVmMgmt.initView = (viewDom: HTMLElement,
             return {
                 controller, vmInfos, filteredData, detailsByName, localize, 
                 shortDateTime, formatMemory, vmAction, cic, parseMemory,
-                maximumCpus,
+                maximumCpus, 
                 scopedId: (id: string) => { return idScope.scopedId(id); }
             };
         }
@@ -183,6 +183,7 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmmgmt.VmMgmt",
         vmDefinition.currentRam = Number(vmDefinition.status.ram);
         vmDefinition.usedFrom = vmDefinition.status.consoleClient || "";
         vmDefinition.usedBy = vmDefinition.status.consoleUser || "";
+        vmDefinition.assignedTo = vmDefinition.status.assignment?.user || "";
         for (const condition of vmDefinition.status.conditions) {
             if (condition.type === "Running") {
                 vmDefinition.running = condition.status === "True";

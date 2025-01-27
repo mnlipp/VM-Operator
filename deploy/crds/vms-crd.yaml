@@ -994,6 +994,10 @@ spec:
                   type: array
                   description: >-
                     Defines permissions for accessing and manipulating the VM.
+                    The meaning of most permissions should be obvious. The
+                    difference between "accessConsole" and "takeConsole" is
+                    that "takeConsole" allows the user to take control of
+                    the console even if it is already in use by another user.
                   items:
                     type: object
                     description: >-
@@ -1017,12 +1021,13 @@ spec:
                           - stop
                           - reset
                           - accessConsole
+                          - takeConsole
                           - "*"
                         default: []
                 pools:
                   type: array
                   description: >-
-                    List of pools to which this VM belongs.
+                    List of pools this VM belongs to.
                   items:
                     type: string
                   default: []
@@ -1486,6 +1491,24 @@ spec:
                     by the runner if password protection is not enabled.
                   type: integer
                   default: 0
+                assignment:
+                  description: >-
+                    The assignment of this VM to a a particular user.
+                  type: object
+                  properties:
+                    pool:
+                      description: >-
+                        The pool this VM is taken from.
+                      type: string
+                    user:
+                      description: >-
+                        The user this VM is assigned to.
+                      type: string
+                    lastUsed:
+                      description: >-
+                        The last time this VM was used by the user.
+                      type: string
+                  default: {}
                 conditions:
                   description: >-
                     List of component conditions observed

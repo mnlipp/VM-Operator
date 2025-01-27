@@ -86,14 +86,14 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         // Maybe override logging.properties from reconciler configuration.
         DataPath.<String> get(model, "reconciler", "loggingProperties")
             .ifPresent(props -> {
-                GsonPtr.to(mapDef.getRaw()).get(JsonObject.class, "data")
+                GsonPtr.to(mapDef.getRaw()).getAs(JsonObject.class, "data")
                     .get().addProperty("logging.properties", props);
             });
 
         // Maybe override logging.properties from VM definition.
         DataPath.<String> get(model, "cr", "spec", "loggingProperties")
             .ifPresent(props -> {
-                GsonPtr.to(mapDef.getRaw()).get(JsonObject.class, "data")
+                GsonPtr.to(mapDef.getRaw()).getAs(JsonObject.class, "data")
                     .get().addProperty("logging.properties", props);
             });
 

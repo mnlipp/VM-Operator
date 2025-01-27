@@ -14,9 +14,6 @@ spec:
   - user: admin
     may: 
     - "*"
-  - user: test
-    may:
-    - "accessConsole"
 
   resources:
     requests:

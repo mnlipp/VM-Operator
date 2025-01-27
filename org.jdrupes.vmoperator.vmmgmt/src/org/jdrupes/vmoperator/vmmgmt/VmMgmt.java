@@ -29,9 +29,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -328,14 +326,9 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
                 .add(vmDef.<String> fromStatus("ram")
                     .map(r -> Quantity.fromString(r).getNumber().toBigInteger())
                     .orElse(BigInteger.ZERO));
-            summary.runningVms
-                += vmDef.<List<Map<String, Object>>> fromStatus("conditions")
-                    .orElse(Collections.emptyList()).stream()
-                    .filter(cond -> DataPath.get(cond, "type")
-                        .map(t -> "Running".equals(t)).orElse(false)
-                        && DataPath.get(cond, "status")
-                            .map(s -> "True".equals(s)).orElse(false))
-                    .count();
+            if (vmDef.conditionStatus("Running").orElse(false)) {
+                summary.runningVms += 1;
+            }
         }
         cachedSummary = summary;
         return summary;

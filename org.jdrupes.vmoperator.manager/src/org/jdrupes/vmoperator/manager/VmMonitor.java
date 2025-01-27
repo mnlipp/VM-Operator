@@ -1,6 +1,6 @@
 /*
  * VM-Operator
- * Copyright (C) 2023,2024 Michael N. Lipp
+ * Copyright (C) 2023,2025 Michael N. Lipp
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,20 +18,22 @@
 
 package org.jdrupes.vmoperator.manager;
 
+import com.google.gson.JsonObject;
+import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.Comparator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
+import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
@@ -43,15 +45,21 @@ import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinitionModel;
 import org.jdrupes.vmoperator.common.VmDefinitionModels;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
+import org.jdrupes.vmoperator.common.VmPool;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
-import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
+import org.jdrupes.vmoperator.manager.events.AssignVm;
 import org.jdrupes.vmoperator.manager.events.ChannelManager;
+import org.jdrupes.vmoperator.manager.events.GetPools;
+import org.jdrupes.vmoperator.manager.events.GetVms;
+import org.jdrupes.vmoperator.manager.events.GetVms.VmData;
+import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
-import org.jdrupes.vmoperator.util.DataPath;
+import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Event;
+import org.jgrapes.core.annotation.Handler;
 
 /**
  * Watches for changes of VM definitions.
@@ -119,11 +127,6 @@ public class VmMonitor extends
         V1ObjectMeta metadata = response.object.getMetadata();
         VmChannel channel = channelManager.channelGet(metadata.getName());
 
-        // Remove from channel manager if deleted
-        if (ResponseType.valueOf(response.type) == ResponseType.DELETED) {
-            channelManager.remove(metadata.getName());
-        }
-
         // Get full definition and associate with channel as backup
         var vmModel = response.object;
         if (vmModel.data() == null) {
@@ -151,17 +154,16 @@ public class VmMonitor extends
 
         // Create and fire changed event. Remove channel from channel
         // manager on completion.
-        channel.pipeline()
-            .fire(Event.onCompletion(
-                new VmDefChanged(ResponseType.valueOf(response.type),
-                    channel.setGeneration(response.object.getMetadata()
-                        .getGeneration()),
-                    vmDef),
-                e -> {
-                    if (e.type() == ResponseType.DELETED) {
-                        channelManager.remove(e.vmDefinition().name());
-                    }
-                }), channel);
+        VmDefChanged chgEvt
+            = new VmDefChanged(ResponseType.valueOf(response.type),
+                channel.setGeneration(response.object.getMetadata()
+                    .getGeneration()),
+                vmDef);
+        if (ResponseType.valueOf(response.type) == ResponseType.DELETED) {
+            chgEvt = Event.onCompletion(chgEvt,
+                e -> channelManager.remove(e.vmDefinition().name()));
+        }
+        channel.pipeline().fire(chgEvt, channel);
     }
 
     private VmDefinitionModel getModel(K8sClient client,
@@ -190,16 +192,7 @@ public class VmMonitor extends
         // VM definition status changes before the pod terminates.
         // This results in pod information being shown for a stopped
         // VM which is irritating. So check condition first.
-        @SuppressWarnings("PMD.LambdaCanBeMethodReference")
-        var isRunning
-            = vmDef.<List<Map<String, Object>>> fromStatus("conditions")
-                .orElse(Collections.emptyList()).stream()
-                .filter(cond -> DataPath.get(cond, "type")
-                    .map(t -> "Running".equals(t)).orElse(false))
-                .findFirst().map(cond -> DataPath.get(cond, "status")
-                    .map(s -> "True".equals(s)).orElse(false))
-                .orElse(false);
-        if (!isRunning) {
+        if (!vmDef.conditionStatus("Running").orElse(false)) {
             return;
         }
         var podSearch = new ListOptions();
@@ -226,5 +219,132 @@ public class VmMonitor extends
             logger.log(Level.WARNING, e,
                 () -> "Cannot access node information: " + e.getMessage());
         }
+    }
+
+    /**
+     * Returns the VM data.
+     *
+     * @param event the event
+     */
+    @Handler
+    public void onGetVms(GetVms event) {
+        event.setResult(channelManager.channels().stream()
+            .filter(c -> event.name().isEmpty()
+                || c.vmDefinition().name().equals(event.name().get()))
+            .filter(c -> event.user().isEmpty() && event.roles().isEmpty()
+                || !c.vmDefinition().permissionsFor(event.user().orElse(null),
+                    event.roles()).isEmpty())
+            .filter(c -> event.fromPool().isEmpty()
+                || c.vmDefinition().assignedFrom()
+                    .map(p -> p.equals(event.fromPool().get())).orElse(false))
+            .filter(c -> event.toUser().isEmpty()
+                || c.vmDefinition().assignedTo()
+                    .map(u -> u.equals(event.toUser().get())).orElse(false))
+            .map(c -> new VmData(c.vmDefinition(), c))
+            .toList());
+    }
+
+    /**
+     * Assign a VM if not already assigned.
+     *
+     * @param event the event
+     * @throws ApiException the api exception
+     * @throws InterruptedException 
+     */
+    @Handler
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+    public void onAssignVm(AssignVm event)
+            throws ApiException, InterruptedException {
+        VmPool vmPool = null;
+        while (true) {
+            // Search for existing assignment.
+            var assignedVm = channelManager.channels().stream()
+                .filter(c -> c.vmDefinition().assignedFrom()
+                    .map(p -> p.equals(event.fromPool())).orElse(false))
+                .filter(c -> c.vmDefinition().assignedTo()
+                    .map(u -> u.equals(event.toUser())).orElse(false))
+                .findFirst();
+            if (assignedVm.isPresent()) {
+                var vmDef = assignedVm.get().vmDefinition();
+                event.setResult(new VmData(vmDef, assignedVm.get()));
+                return;
+            }
+
+            // Get the pool definition for retention time calculations
+            if (vmPool == null) {
+                vmPool = newEventPipeline().fire(new GetPools()
+                    .withName(event.fromPool())).get().stream().findFirst()
+                    .orElse(null);
+                if (vmPool == null) {
+                    return;
+                }
+            }
+
+            // Find available VM.
+            var pool = vmPool;
+            assignedVm = channelManager.channels().stream()
+                .filter(c -> isAssignable(pool, c.vmDefinition()))
+                .sorted(Comparator.comparing(c -> c.vmDefinition()
+                    .assignmentLastUsed().orElse(Instant.ofEpochSecond(0))))
+                .findFirst();
+
+            // None found
+            if (assignedVm.isEmpty()) {
+                return;
+            }
+
+            // Assign to user
+            var vmDef = assignedVm.get().vmDefinition();
+            var vmStub = VmDefinitionStub.get(client(),
+                new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
+                vmDef.namespace(), vmDef.name());
+            vmStub.updateStatus(from -> {
+                JsonObject status = from.status();
+                var assignment = GsonPtr.to(status).to("assignment");
+                assignment.set("pool", event.fromPool());
+                assignment.set("user", event.toUser());
+                assignment.set("lastUsed", Instant.now().toString());
+                return status;
+            });
+
+            // Make sure that a newly assigned VM is running.
+            fire(new ModifyVm(vmDef.name(), "state", "Running",
+                assignedVm.get()));
+        }
+    }
+
+    @SuppressWarnings("PMD.SimplifyBooleanReturns")
+    private boolean isAssignable(VmPool pool, VmDefinition vmDef) {
+        // Check if the VM is in the pool
+        if (!vmDef.pools().contains(pool.name())) {
+            return false;
+        }
+
+        // Check if the VM is not in use
+        if (vmDef.consoleConnected()) {
+            return false;
+        }
+
+        // If not assigned, it's usable
+        if (vmDef.assignedTo().isEmpty()) {
+            return true;
+        }
+
+        // Check if it is to be retained
+        if (vmDef.assignmentLastUsed()
+            .map(lu -> pool.retainUntil(lu))
+            .map(ru -> Instant.now().isBefore(ru)).orElse(false)) {
+            return false;
+        }
+
+        // Additional check in case lastUsed has not been updated
+        // by PoolMonitor#onVmDefChanged() yet ("race condition")
+        if (vmDef.condition("ConsoleConnected")
+            .map(cc -> cc.getLastTransitionTime().toInstant())
+            .map(t -> pool.retainUntil(t))
+            .map(ru -> Instant.now().isBefore(ru)).orElse(false)) {
+            return false;
+        }
+        return true;
     }
 }

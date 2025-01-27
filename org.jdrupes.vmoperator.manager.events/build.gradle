@@ -10,5 +10,4 @@ plugins {
 
 dependencies {
     api project(':org.jdrupes.vmoperator.common')
-    api 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:[2.16.1,3]'
 }

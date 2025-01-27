@@ -18,16 +18,17 @@
 
 package org.jdrupes.vmoperator.common;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.jdrupes.vmoperator.common.VmDefinition.Grant;
+import org.jdrupes.vmoperator.common.VmDefinition.Permission;
 import org.jdrupes.vmoperator.util.DataPath;
 
 /**
@@ -37,9 +38,20 @@ import org.jdrupes.vmoperator.util.DataPath;
 public class VmPool {
 
     private String name;
+    private String retention;
+    private boolean defined;
     private List<Grant> permissions = Collections.emptyList();
     private final Set<String> vms
         = Collections.synchronizedSet(new HashSet<>());
+
+    /**
+     * Instantiates a new vm pool.
+     *
+     * @param name the name
+     */
+    public VmPool(String name) {
+        this.name = name;
+    }
 
     /**
      * Returns the name.
@@ -60,6 +72,44 @@ public class VmPool {
     }
 
     /**
+     * Checks if is defined.
+     *
+     * @return the result
+     */
+    public boolean isDefined() {
+        return defined;
+    }
+
+    /**
+     * Sets if is.
+     *
+     * @param defined the defined to set
+     */
+    public void setDefined(boolean defined) {
+        this.defined = defined;
+    }
+
+    /**
+     * Gets the retention.
+     *
+     * @return the retention
+     */
+    public String retention() {
+        return retention;
+    }
+
+    /**
+     * Sets the retention.
+     *
+     * @param retention the retention to set
+     */
+    public void setRetention(String retention) {
+        this.retention = retention;
+    }
+
+    /**
+     * Permissions granted for a VM from the pool.
+     *
      * @return the permissions
      */
     public List<Grant> permissions() {
@@ -84,6 +134,11 @@ public class VmPool {
         return vms;
     }
 
+    /**
+     * To string.
+     *
+     * @return the string
+     */
     @Override
     @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
     public String toString() {
@@ -93,9 +148,8 @@ public class VmPool {
         if (vms.size() <= 3) {
             builder.append(vms);
         } else {
-            builder.append('[');
-            vms.stream().limit(3).map(s -> s + ",").forEach(builder::append);
-            builder.append("...]");
+            builder.append('[').append(vms.stream().limit(3).map(s -> s + ",")
+                .collect(Collectors.joining())).append("...]");
         }
         builder.append(']');
         return builder.toString();
@@ -120,67 +174,15 @@ public class VmPool {
     }
 
     /**
-     * A permission grant to a user or role.
+     * Return the instant until which an assignment should be retained.
      *
-     * @param user the user
-     * @param role the role
-     * @param may the may
+     * @param lastUsed the last used
+     * @return the instant
      */
-    public record Grant(String user, String role, Set<Permission> may) {
-
-        @Override
-        public String toString() {
-            StringBuilder builder = new StringBuilder();
-            if (user != null) {
-                builder.append("User ").append(user);
-            } else {
-                builder.append("Role ").append(role);
-            }
-            builder.append(" may=").append(may).append(']');
-            return builder.toString();
+    public Instant retainUntil(Instant lastUsed) {
+        if (retention.startsWith("P")) {
+            return lastUsed.plus(Duration.parse(retention));
         }
+        return Instant.parse(retention);
     }
-
-    /**
-     * Permissions for accessing and manipulating the pool.
-     */
-    public enum Permission {
-        START("start"), STOP("stop"), RESET("reset"),
-        ACCESS_CONSOLE("accessConsole");
-
-        @SuppressWarnings("PMD.UseConcurrentHashMap")
-        private static Map<String, Permission> reprs = new HashMap<>();
-
-        static {
-            for (var value : EnumSet.allOf(Permission.class)) {
-                reprs.put(value.repr, value);
-            }
-        }
-
-        private final String repr;
-
-        Permission(String repr) {
-            this.repr = repr;
-        }
-
-        /**
-         * Create permission from representation in CRD.
-         *
-         * @param value the value
-         * @return the permission
-         */
-        @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
-        public static Set<Permission> parse(String value) {
-            if ("*".equals(value)) {
-                return EnumSet.allOf(Permission.class);
-            }
-            return Set.of(reprs.get(value));
-        }
-
-        @Override
-        public String toString() {
-            return repr;
-        }
-    }
-
 }
