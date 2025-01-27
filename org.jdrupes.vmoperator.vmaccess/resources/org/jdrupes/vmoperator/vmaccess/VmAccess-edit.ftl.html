@@ -5,17 +5,35 @@
   data-jgwc-on-unload="JGConsole.jgwc.unmountVueApps">
   <form :id="formId" ref="formDom" onsubmit="return false;">
     <section>
-      <span>{{ localize("Select VM") }}</span>
-      <p>
-        <label>
-          <span>{{ localize("VM") }}</span>
-          <select v-model="vmNameInput">
-          <#list vmNames as name>
-            <option value="${name}">${name}</option>
-          </#list>
-          </select>
-        </label>
-      </p>
+      <fieldset>
+        <legend>{{ localize("Select VM or pool") }}</legend>
+        <ul>
+          <li>
+            <label>
+              <input v-model="resource" type="radio" value="vm"
+                <#if vmNames?size == 0>:disabled="true"</#if>label>
+              <span>{{ localize("VM") }}</span>
+              <select v-model="vmNameInput" :disabled="resource !== 'vm'">
+              <#list vmNames as name>
+                <option value="${name}">${name}</option>
+              </#list>
+              </select>
+            </label>
+          </li>
+          <li>
+            <label>
+              <input v-model="resource" type="radio" value="pool"
+                <#if poolNames?size == 0>:disabled="true"</#if>>
+              <span>{{ localize("Pool") }}</span>
+              <select v-model="poolNameInput" :disabled="resource !== 'pool'">
+              <#list poolNames as name>
+                <option value="${name}">${name}</option>
+              </#list>
+              </select>
+            </label>
+          </li>
+        </ul>
+      </fieldset>
     </section>
   </form>  
 </div>

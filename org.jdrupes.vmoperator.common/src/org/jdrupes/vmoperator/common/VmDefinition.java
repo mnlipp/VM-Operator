@@ -18,13 +18,18 @@
 
 package org.jdrupes.vmoperator.common;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.kubernetes.client.openapi.models.V1Condition;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,8 +40,11 @@ import org.jdrupes.vmoperator.util.DataPath;
 /**
  * Represents a VM definition.
  */
-@SuppressWarnings({ "PMD.DataClass" })
+@SuppressWarnings({ "PMD.DataClass", "PMD.TooManyMethods" })
 public class VmDefinition {
+
+    private static ObjectMapper objectMapper
+        = new ObjectMapper().registerModule(new JavaTimeModule());
 
     private String kind;
     private String apiVersion;
@@ -57,7 +65,7 @@ public class VmDefinition {
      */
     public enum Permission {
         START("start"), STOP("stop"), RESET("reset"),
-        ACCESS_CONSOLE("accessConsole");
+        ACCESS_CONSOLE("accessConsole"), TAKE_CONSOLE("takeConsole");
 
         @SuppressWarnings("PMD.UseConcurrentHashMap")
         private static Map<String, Permission> reprs = new HashMap<>();
@@ -88,9 +96,41 @@ public class VmDefinition {
             return Set.of(reprs.get(value));
         }
 
+        /**
+         * To string.
+         *
+         * @return the string
+         */
         @Override
         public String toString() {
             return repr;
+        }
+    }
+
+    /**
+     * Permissions granted to a user or role.
+     *
+     * @param user the user
+     * @param role the role
+     * @param may the may
+     */
+    public record Grant(String user, String role, Set<Permission> may) {
+
+        /**
+         * To string.
+         *
+         * @return the string
+         */
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            if (user != null) {
+                builder.append("User ").append(user);
+            } else {
+                builder.append("Role ").append(role);
+            }
+            builder.append(" may=").append(may).append(']');
+            return builder.toString();
         }
     }
 
@@ -155,6 +195,16 @@ public class VmDefinition {
      */
     public void setMetadata(V1ObjectMeta metadata) {
         this.metadata = metadata;
+    }
+
+    /**
+     * The pools that this VM belongs to.
+     *
+     * @return the list
+     */
+    public List<String> pools() {
+        return this.<List<String>> fromSpec("pools")
+            .orElse(Collections.emptyList());
     }
 
     /**
@@ -246,6 +296,82 @@ public class VmDefinition {
     }
 
     /**
+     * The pool that the VM was taken from.
+     *
+     * @return the optional
+     */
+    public Optional<String> assignedFrom() {
+        return fromStatus("assignment", "pool");
+    }
+
+    /**
+     * The user that the VM was assigned to.
+     *
+     * @return the optional
+     */
+    public Optional<String> assignedTo() {
+        return fromStatus("assignment", "user");
+    }
+
+    /**
+     * Last usage of assigned VM.
+     *
+     * @return the optional
+     */
+    public Optional<Instant> assignmentLastUsed() {
+        return this.<String> fromStatus("assignment", "lastUsed")
+            .map(Instant::parse);
+    }
+
+    /**
+     * Return a condition from the status.
+     *
+     * @param name the condition's name
+     * @return the status, if the condition is defined
+     */
+    public Optional<V1Condition> condition(String name) {
+        return this.<List<Map<String, Object>>> fromStatus("conditions")
+            .orElse(Collections.emptyList()).stream()
+            .filter(cond -> DataPath.get(cond, "type")
+                .map(name::equals).orElse(false))
+            .findFirst()
+            .map(cond -> objectMapper.convertValue(cond, V1Condition.class));
+    }
+
+    /**
+     * Return a condition's status.
+     *
+     * @param name the condition's name
+     * @return the status, if the condition is defined
+     */
+    public Optional<Boolean> conditionStatus(String name) {
+        return this.<List<Map<String, Object>>> fromStatus("conditions")
+            .orElse(Collections.emptyList()).stream()
+            .filter(cond -> DataPath.get(cond, "type")
+                .map(name::equals).orElse(false))
+            .findFirst().map(cond -> DataPath.get(cond, "status")
+                .map("True"::equals).orElse(false));
+    }
+
+    /**
+     * Return true if the console is in use.
+     *
+     * @return true, if successful
+     */
+    public boolean consoleConnected() {
+        return conditionStatus("ConsoleConnected").orElse(false);
+    }
+
+    /**
+     * Return the last known console user.
+     *
+     * @return the optional
+     */
+    public Optional<String> consoleUser() {
+        return this.<String> fromStatus("consoleUser");
+    }
+
+    /**
      * Set extra data (locally used, unknown to kubernetes).
      *
      * @param property the property
@@ -260,6 +386,7 @@ public class VmDefinition {
     /**
      * Return extra data.
      *
+     * @param <T> the generic type
      * @param property the property
      * @return the object
      */
@@ -287,12 +414,11 @@ public class VmDefinition {
     }
 
     /**
-     * Return the requested VM state
+     * Return the requested VM state.
      *
      * @return the string
      */
     public RequestedVmState vmState() {
-        // TODO
         return fromVm("state")
             .map(s -> "Running".equals(s) ? RequestedVmState.RUNNING
                 : RequestedVmState.STOPPED)
@@ -329,4 +455,38 @@ public class VmDefinition {
         return this.<Number> fromStatus("displayPasswordSerial")
             .map(Number::longValue);
     }
+
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(metadata.getNamespace(), metadata.getName());
+    }
+
+    /**
+     * Equals.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        VmDefinition other = (VmDefinition) obj;
+        return Objects.equals(metadata.getNamespace(),
+            other.metadata.getNamespace())
+            && Objects.equals(metadata.getName(), other.metadata.getName());
+    }
+
 }

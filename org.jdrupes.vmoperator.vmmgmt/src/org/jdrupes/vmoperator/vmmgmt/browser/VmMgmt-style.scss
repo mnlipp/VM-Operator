@@ -72,12 +72,18 @@
         }
       }
     }
+    
+    .console-conection-closed {
+      color: var(--disabled);
+    }
   }
   
   td.details {
-    padding-left: 1em;
+    padding-left: 0;
 
     table {
+      display: inline;
+      
       td:nth-child(2) {
         min-width: 7em;
 

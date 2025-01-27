@@ -40,15 +40,30 @@
           - name: admin
             fullName: Administrator
             password: "$2b$05$NiBd74ZGdplLC63ePZf1f.UtjMKkbQ23cQoO2OKOFalDBHWAOy21."
-          - name: test
-            fullName: Test Account
+          - name: operator
+            fullName: Operator
+            password: "$2b$05$hZaI/jToXf/d3BctZdT38Or7H7h6Pn2W3WiB49p5AyhDHFkkYCvo2"
+          - name: test1
+            fullName: Test Account 1
+            password: "$2b$05$hZaI/jToXf/d3BctZdT38Or7H7h6Pn2W3WiB49p5AyhDHFkkYCvo2"
+          - name: test2
+            fullName: Test Account 2
+            password: "$2b$05$hZaI/jToXf/d3BctZdT38Or7H7h6Pn2W3WiB49p5AyhDHFkkYCvo2"
+          - name: test3
+            fullName: Test Account 3
             password: "$2b$05$hZaI/jToXf/d3BctZdT38Or7H7h6Pn2W3WiB49p5AyhDHFkkYCvo2"
         "/RoleConfigurator":
           rolesByUser:
             # User admin has role admin
             admin:
             - admin
-            test:
+            operator:
+            - operator
+            test1:
+            - user
+            test2:
+            - user
+            test3:
             - user
             # All users have role other
             "*":
@@ -59,8 +74,10 @@
             # Admins can use all conlets
             admin:
             - "*"
+            operator:
+            - org.jdrupes.vmoperator.vmaccess.VmAccess
             user:
-            - org.jdrupes.vmoperator.vmviewer.VmViewer
+            - org.jdrupes.vmoperator.vmaccess.VmAccess
             # Others cannot use any conlet (except login conlet to log out)
             other:
             - org.jgrapes.webconlet.oidclogin.LoginConlet
