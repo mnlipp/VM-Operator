@@ -352,6 +352,8 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
         case "stop":
             fire(new ModifyVm(vmName, "state", "Stopped", vmChannel));
             break;
+        case "openConsole":
+            break;
         case "cpus":
             fire(new ModifyVm(vmName, "currentCpus",
                 new BigDecimal(event.param(1).toString()).toBigInteger(),

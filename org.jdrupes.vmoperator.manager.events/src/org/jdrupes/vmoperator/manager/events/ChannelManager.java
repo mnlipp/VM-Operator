@@ -62,6 +62,11 @@ public class ChannelManager<K, C extends Channel, A>
         this(k -> null);
     }
 
+    /**
+     * Return all keys.
+     *
+     * @return the keys.
+     */
     @Override
     public Set<K> keys() {
         return entries.keySet();
@@ -111,6 +116,18 @@ public class ChannelManager<K, C extends Channel, A>
     public ChannelManager<K, C, A> put(K key, C channel) {
         put(key, channel, null);
         return this;
+    }
+
+    /**
+     * Creates a new channel without adding it to the channel manager.
+     * After fully initializing the channel, it should be added to the 
+     * manager using {@link #put(K, C)}.
+     *
+     * @param key the key
+     * @return the c
+     */
+    public C createChannel(K key) {
+        return supplier.apply(key);
     }
 
     /**
