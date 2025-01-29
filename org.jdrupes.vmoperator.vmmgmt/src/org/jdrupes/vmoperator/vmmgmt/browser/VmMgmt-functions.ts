@@ -34,7 +34,9 @@ declare global {
     interface Window {
         orgJDrupesVmOperatorVmMgmt: { 
             initPreview?: (previewDom: HTMLElement, isUpdate: boolean) => void,
-            initView?: (viewDom: HTMLElement, isUpdate: boolean) => void
+            initView?: (viewDom: HTMLElement, isUpdate: boolean) => void,
+            confirmReset?: (conletType: string, conletId: string, 
+                vmName: string) => void
         }
     }
 }
@@ -236,4 +238,8 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmmgmt.VmMgmt",
         window.open(url, target.id);
     });
 
-
+window.orgJDrupesVmOperatorVmMgmt.confirmReset = 
+        (conletType: string, conletId: string, vmName: string) => {
+    JGConsole.instance.closeModalDialog(conletType, conletId);
+    JGConsole.notifyConletModel(conletId, "resetConfirmed", vmName);
+}

@@ -44,6 +44,7 @@ import org.jdrupes.vmoperator.common.VmDefinition.Permission;
 import org.jdrupes.vmoperator.manager.events.ChannelTracker;
 import org.jdrupes.vmoperator.manager.events.GetDisplayPassword;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
+import org.jdrupes.vmoperator.manager.events.ResetVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.util.DataPath;
@@ -64,6 +65,7 @@ import org.jgrapes.webconsole.base.events.ConsoleReady;
 import org.jgrapes.webconsole.base.events.DisplayNotification;
 import org.jgrapes.webconsole.base.events.NotifyConletModel;
 import org.jgrapes.webconsole.base.events.NotifyConletView;
+import org.jgrapes.webconsole.base.events.OpenModalDialog;
 import org.jgrapes.webconsole.base.events.RenderConlet;
 import org.jgrapes.webconsole.base.events.RenderConletRequestBase;
 import org.jgrapes.webconsole.base.events.SetLocale;
@@ -395,7 +397,8 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
     }
 
     @Override
-    @SuppressWarnings("PMD.AvoidDecimalLiteralsInBigDecimalConstructor")
+    @SuppressWarnings({ "PMD.AvoidDecimalLiteralsInBigDecimalConstructor",
+        "PMD.NcssCount" })
     protected void doUpdateConletState(NotifyConletModel event,
             ConsoleConnection channel, VmsModel model) throws Exception {
         event.stop();
@@ -422,6 +425,16 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
                 fire(new ModifyVm(vmName, "state", "Stopped", vmChannel));
             }
             break;
+        case "reset":
+            if (perms.contains(VmDefinition.Permission.RESET)) {
+                confirmReset(event, channel, model, vmName);
+            }
+            break;
+        case "resetConfirmed":
+            if (perms.contains(VmDefinition.Permission.RESET)) {
+                fire(new ResetVm(vmName), vmChannel);
+            }
+            break;
         case "openConsole":
             if (perms.contains(VmDefinition.Permission.ACCESS_CONSOLE)) {
                 openConsole(channel, model, vmChannel, vmDef, user, perms);
@@ -441,6 +454,22 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
         default:// ignore
             break;
         }
+    }
+
+    private void confirmReset(NotifyConletModel event,
+            ConsoleConnection channel, VmsModel model, String vmName)
+            throws TemplateNotFoundException,
+            MalformedTemplateNameException, ParseException, IOException {
+        Template tpl = freemarkerConfig()
+            .getTemplate("VmMgmt-confirmReset.ftl.html");
+        ResourceBundle resourceBundle = resourceBundle(channel.locale());
+        var fmModel = fmModel(event, channel, model.getConletId(), model);
+        fmModel.put("vmName", vmName);
+        channel.respond(new OpenModalDialog(type(), model.getConletId(),
+            processTemplate(event, tpl, fmModel))
+                .addOption("cancelable", true).addOption("closeLabel", "")
+                .addOption("title",
+                    resourceBundle.getString("confirmResetTitle")));
     }
 
     private void openConsole(ConsoleConnection channel, VmsModel model,

@@ -785,6 +785,20 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
         }
     }
 
+    private void confirmReset(NotifyConletModel event,
+            ConsoleConnection channel, ResourceModel model,
+            ResourceBundle resourceBundle) throws TemplateNotFoundException,
+            MalformedTemplateNameException, ParseException, IOException {
+        Template tpl = freemarkerConfig()
+            .getTemplate("VmAccess-confirmReset.ftl.html");
+        channel.respond(new OpenModalDialog(type(), model.getConletId(),
+            processTemplate(event, tpl,
+                fmModel(event, channel, model.getConletId(), model)))
+                    .addOption("cancelable", true).addOption("closeLabel", "")
+                    .addOption("title",
+                        resourceBundle.getString("confirmResetTitle")));
+    }
+
     private void openConsole(ConsoleConnection channel, ResourceModel model,
             VmChannel vmChannel, VmDefinition vmDef, Set<Permission> perms) {
         var resourceBundle = resourceBundle(channel.locale());
@@ -826,20 +840,6 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
         } catch (IllegalArgumentException e) {
             logger.warning(() -> "Invalid resource type: " + e.getMessage());
         }
-    }
-
-    private void confirmReset(NotifyConletModel event,
-            ConsoleConnection channel, ResourceModel model,
-            ResourceBundle resourceBundle) throws TemplateNotFoundException,
-            MalformedTemplateNameException, ParseException, IOException {
-        Template tpl = freemarkerConfig()
-            .getTemplate("VmAccess-confirmReset.ftl.html");
-        channel.respond(new OpenModalDialog(type(), model.getConletId(),
-            processTemplate(event, tpl,
-                fmModel(event, channel, model.getConletId(), model)))
-                    .addOption("cancelable", true).addOption("closeLabel", "")
-                    .addOption("title",
-                        resourceBundle.getString("confirmResetTitle")));
     }
 
     @Override
