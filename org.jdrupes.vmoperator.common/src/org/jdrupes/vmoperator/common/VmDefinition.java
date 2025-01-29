@@ -1,6 +1,6 @@
 /*
  * VM-Operator
- * Copyright (C) 2024 Michael N. Lipp
+ * Copyright (C) 2025 Michael N. Lipp
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,11 +22,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.kubernetes.client.openapi.models.V1Condition;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import io.kubernetes.client.util.Strings;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -34,6 +38,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.jdrupes.vmoperator.util.DataPath;
 
@@ -43,7 +49,11 @@ import org.jdrupes.vmoperator.util.DataPath;
 @SuppressWarnings({ "PMD.DataClass", "PMD.TooManyMethods" })
 public class VmDefinition {
 
-    private static ObjectMapper objectMapper
+    @SuppressWarnings("PMD.FieldNamingConventions")
+    private static final Logger logger
+        = Logger.getLogger(VmDefinition.class.getName());
+    @SuppressWarnings("PMD.FieldNamingConventions")
+    private static final ObjectMapper objectMapper
         = new ObjectMapper().registerModule(new JavaTimeModule());
 
     private String kind;
@@ -427,6 +437,8 @@ public class VmDefinition {
 
     /**
      * Collect all permissions for the given user with the given roles.
+     * If permission "takeConsole" is granted, the result will also
+     * contain "accessConsole" to simplify checks.
      *
      * @param user the user
      * @param roles the roles
@@ -434,7 +446,7 @@ public class VmDefinition {
      */
     public Set<Permission> permissionsFor(String user,
             Collection<String> roles) {
-        return this.<List<Map<String, Object>>> fromSpec("permissions")
+        var result = this.<List<Map<String, Object>>> fromSpec("permissions")
             .orElse(Collections.emptyList()).stream()
             .filter(p -> DataPath.get(p, "user").map(u -> u.equals(user))
                 .orElse(false)
@@ -443,7 +455,29 @@ public class VmDefinition {
                 .orElse(Collections.emptyList()).stream())
             .flatMap(Function.identity())
             .map(Permission::parse).map(Set::stream)
-            .flatMap(Function.identity()).collect(Collectors.toSet());
+            .flatMap(Function.identity())
+            .collect(Collectors.toCollection(HashSet::new));
+
+        // Take console implies access console, simplify checks
+        if (result.contains(Permission.TAKE_CONSOLE)) {
+            result.add(Permission.ACCESS_CONSOLE);
+        }
+        return result;
+    }
+
+    /**
+     * Check if the console is accessible. Returns true if the console is
+     * currently unused, used by the given user or if the permissions
+     * allow taking over the console. 
+     *
+     * @param user the user
+     * @param permissions the permissions
+     * @return true, if successful
+     */
+    public boolean consoleAccessible(String user, Set<Permission> permissions) {
+        return !conditionStatus("ConsoleConnected").orElse(true)
+            || consoleUser().map(cu -> cu.equals(user)).orElse(true)
+            || permissions.contains(VmDefinition.Permission.TAKE_CONSOLE);
     }
 
     /**
@@ -454,6 +488,78 @@ public class VmDefinition {
     public Optional<Long> displayPasswordSerial() {
         return this.<Number> fromStatus("displayPasswordSerial")
             .map(Number::longValue);
+    }
+
+    /**
+     * Create a connection file.
+     *
+     * @param password the password
+     * @param preferredIpVersion the preferred IP version
+     * @param deleteConnectionFile the delete connection file
+     * @return the string
+     */
+    public String connectionFile(String password,
+            Class<?> preferredIpVersion, boolean deleteConnectionFile) {
+        var addr = displayIp(preferredIpVersion);
+        if (addr.isEmpty()) {
+            logger.severe(() -> "Failed to find display IP for " + name());
+            return null;
+        }
+        var port = this.<Number> fromVm("display", "spice", "port")
+            .map(Number::longValue);
+        if (port.isEmpty()) {
+            logger.severe(() -> "No port defined for display of " + name());
+            return null;
+        }
+        StringBuffer data = new StringBuffer(100)
+            .append("[virt-viewer]\ntype=spice\nhost=")
+            .append(addr.get().getHostAddress()).append("\nport=")
+            .append(port.get().toString())
+            .append('\n');
+        if (password != null) {
+            data.append("password=").append(password).append('\n');
+        }
+        this.<String> fromVm("display", "spice", "proxyUrl")
+            .ifPresent(u -> {
+                if (!Strings.isNullOrEmpty(u)) {
+                    data.append("proxy=").append(u).append('\n');
+                }
+            });
+        if (deleteConnectionFile) {
+            data.append("delete-this-file=1\n");
+        }
+        return data.toString();
+    }
+
+    private Optional<InetAddress> displayIp(Class<?> preferredIpVersion) {
+        Optional<String> server = fromVm("display", "spice", "server");
+        if (server.isPresent()) {
+            var srv = server.get();
+            try {
+                var addr = InetAddress.getByName(srv);
+                logger.fine(() -> "Using IP address from CRD for "
+                    + getMetadata().getName() + ": " + addr);
+                return Optional.of(addr);
+            } catch (UnknownHostException e) {
+                logger.log(Level.SEVERE, e, () -> "Invalid server address "
+                    + srv + ": " + e.getMessage());
+                return Optional.empty();
+            }
+        }
+        var addrs = Optional.<List<String>> ofNullable(
+            extra("nodeAddresses")).orElse(Collections.emptyList()).stream()
+            .map(a -> {
+                try {
+                    return InetAddress.getByName(a);
+                } catch (UnknownHostException e) {
+                    logger.warning(() -> "Invalid IP address: " + a);
+                    return null;
+                }
+            }).filter(a -> a != null).toList();
+        logger.fine(() -> "Known IP addresses for " + name() + ": " + addrs);
+        return addrs.stream()
+            .filter(a -> preferredIpVersion.isAssignableFrom(a.getClass()))
+            .findFirst().or(() -> addrs.stream().findFirst());
     }
 
     /**

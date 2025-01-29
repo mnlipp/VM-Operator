@@ -1,6 +1,7 @@
 <div class="jdrupes-vmoperator-vmmgmt jdrupes-vmoperator-vmmgmt-view"
   data-jgwc-on-load="orgJDrupesVmOperatorVmMgmt.initView"
-  data-jgwc-on-unload="JGConsole.jgwc.unmountVueApps">
+  data-jgwc-on-unload="JGConsole.jgwc.unmountVueApps"
+  data-conlet-resource-base="${conletResource('')}">
   <div class="jdrupes-vmoperator-vmmgmt-view-search">
     <form>
       <label class="form__label--horizontal">
@@ -58,17 +59,26 @@
           </td>
           <td class="jdrupes-vmoperator-vmmgmt-view-action-list">
             <span role="button" 
-              v-if="entry.spec.vm.state != 'Running' && !entry['running']" 
+              v-if="entry.spec.vm.state != 'Running' && !entry['running']
+                && entry.permissions.includes('start')" 
               tabindex="0" class="fa fa-play" :title="localize('Start VM')"
               v-on:click="vmAction(entry.name, 'start')"></span>
             <span role="button" v-else class="fa fa-play"
               aria-disabled="true" :title="localize('Start VM')"></span>
             <span role="button"
-              v-if="entry.spec.vm.state != 'Stopped' && entry['running']"
+              v-if="entry.spec.vm.state != 'Stopped' && entry['running']
+                && entry.permissions.includes('stop')" 
               tabindex="0" class="fa fa-stop" :title="localize('Stop VM')"
               v-on:click="vmAction(entry.name, 'stop')"></span>
             <span role="button" v-else class="fa fa-stop"
               aria-disabled="true" :title="localize('Stop VM')"></span>
+            <img role="button" :src="resourceBase + (!entry['running'] 
+              ? 'computer-off.svg' : (entry.usedFrom 
+                ? 'computer-in-use.svg' : 'computer.svg'))"
+              :title="localize('Open console')" 
+              :aria-disabled="!entry['running']
+                || !(entry.permissions.includes('accessConsole'))"
+              v-on:click="vmAction(entry.name, 'openConsole')">
           </td>
         </tr>
         <tr :id="scopedId(rowIndex)" v-if="$aash.isDisclosed(scopedId(rowIndex))"

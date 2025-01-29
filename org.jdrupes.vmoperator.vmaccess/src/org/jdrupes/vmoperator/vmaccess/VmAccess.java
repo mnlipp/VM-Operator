@@ -32,10 +32,7 @@ import io.kubernetes.client.util.Strings;
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.time.Duration;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -779,29 +776,37 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
             }
             break;
         case "openConsole":
-            var user = WebConsoleUtils.userFromSession(channel.session())
-                .map(ConsoleUser::getName).orElse("");
-            if (vmDef.conditionStatus("ConsoleConnected").orElse(false)
-                && vmDef.consoleUser().map(cu -> !cu.equals(user)
-                    && !perms.contains(VmDefinition.Permission.TAKE_CONSOLE))
-                    .orElse(false)) {
-                channel.respond(new DisplayNotification(
-                    resourceBundle.getString("consoleTakenNotification"),
-                    Map.of("autoClose", 5_000, "type", "Warning")));
-                return;
-            }
-            if (perms.contains(VmDefinition.Permission.ACCESS_CONSOLE)
-                || perms.contains(VmDefinition.Permission.TAKE_CONSOLE)) {
-                var pwQuery
-                    = Event.onCompletion(new GetDisplayPassword(vmDef, user),
-                        e -> openConsole(vmDef, channel, model,
-                            e.password().orElse(null)));
-                fire(pwQuery, vmChannel);
+            if (perms.contains(VmDefinition.Permission.ACCESS_CONSOLE)) {
+                openConsole(channel, model, vmChannel, vmDef, perms);
             }
             break;
         default:// ignore
             break;
         }
+    }
+
+    private void openConsole(ConsoleConnection channel, ResourceModel model,
+            VmChannel vmChannel, VmDefinition vmDef, Set<Permission> perms) {
+        var resourceBundle = resourceBundle(channel.locale());
+        var user = WebConsoleUtils.userFromSession(channel.session())
+            .map(ConsoleUser::getName).orElse("");
+        if (!vmDef.consoleAccessible(user, perms)) {
+            channel.respond(new DisplayNotification(
+                resourceBundle.getString("consoleTakenNotification"),
+                Map.of("autoClose", 5_000, "type", "Warning")));
+            return;
+        }
+        var pwQuery = Event.onCompletion(new GetDisplayPassword(vmDef, user),
+            e -> {
+                var data = vmDef.connectionFile(e.password().orElse(null),
+                    preferredIpVersion, deleteConnectionFile);
+                if (data == null) {
+                    return;
+                }
+                channel.respond(new NotifyConletView(type(),
+                    model.getConletId(), "openConsole", data));
+            });
+        fire(pwQuery, vmChannel);
     }
 
     @SuppressWarnings({ "PMD.AvoidLiteralsInIfCondition",
@@ -821,78 +826,6 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
         } catch (IllegalArgumentException e) {
             logger.warning(() -> "Invalid resource type: " + e.getMessage());
         }
-    }
-
-    private void openConsole(VmDefinition vmDef, ConsoleConnection connection,
-            ResourceModel model, String password) {
-        if (vmDef == null) {
-            return;
-        }
-        var addr = displayIp(vmDef);
-        if (addr.isEmpty()) {
-            logger
-                .severe(() -> "Failed to find display IP for " + vmDef.name());
-            return;
-        }
-        var port = vmDef.<Number> fromVm("display", "spice", "port")
-            .map(Number::longValue);
-        if (port.isEmpty()) {
-            logger
-                .severe(() -> "No port defined for display of " + vmDef.name());
-            return;
-        }
-        StringBuffer data = new StringBuffer(100)
-            .append("[virt-viewer]\ntype=spice\nhost=")
-            .append(addr.get().getHostAddress()).append("\nport=")
-            .append(port.get().toString())
-            .append('\n');
-        if (password != null) {
-            data.append("password=").append(password).append('\n');
-        }
-        vmDef.<String> fromVm("display", "spice", "proxyUrl")
-            .ifPresent(u -> {
-                if (!Strings.isNullOrEmpty(u)) {
-                    data.append("proxy=").append(u).append('\n');
-                }
-            });
-        if (deleteConnectionFile) {
-            data.append("delete-this-file=1\n");
-        }
-        connection.respond(new NotifyConletView(type(),
-            model.getConletId(), "openConsole", "application/x-virt-viewer",
-            Base64.getEncoder().encodeToString(data.toString().getBytes())));
-    }
-
-    private Optional<InetAddress> displayIp(VmDefinition vmDef) {
-        Optional<String> server = vmDef.fromVm("display", "spice", "server");
-        if (server.isPresent()) {
-            var srv = server.get();
-            try {
-                var addr = InetAddress.getByName(srv);
-                logger.fine(() -> "Using IP address from CRD for "
-                    + vmDef.getMetadata().getName() + ": " + addr);
-                return Optional.of(addr);
-            } catch (UnknownHostException e) {
-                logger.log(Level.SEVERE, e, () -> "Invalid server address "
-                    + srv + ": " + e.getMessage());
-                return Optional.empty();
-            }
-        }
-        var addrs = Optional.<List<String>> ofNullable(vmDef
-            .extra("nodeAddresses")).orElse(Collections.emptyList()).stream()
-            .map(a -> {
-                try {
-                    return InetAddress.getByName(a);
-                } catch (UnknownHostException e) {
-                    logger.warning(() -> "Invalid IP address: " + a);
-                    return null;
-                }
-            }).filter(a -> a != null).toList();
-        logger.fine(() -> "Known IP addresses for "
-            + vmDef.name() + ": " + addrs);
-        return addrs.stream()
-            .filter(a -> preferredIpVersion.isAssignableFrom(a.getClass()))
-            .findFirst().or(() -> addrs.stream().findFirst());
     }
 
     private void confirmReset(NotifyConletModel event,

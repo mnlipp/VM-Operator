@@ -27,15 +27,22 @@ import io.kubernetes.client.custom.Quantity.Format;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.ResourceBundle;
 import java.util.Set;
 import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jdrupes.vmoperator.common.VmDefinition;
+import org.jdrupes.vmoperator.common.VmDefinition.Permission;
 import org.jdrupes.vmoperator.manager.events.ChannelTracker;
+import org.jdrupes.vmoperator.manager.events.GetDisplayPassword;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
@@ -44,13 +51,17 @@ import org.jgrapes.core.Channel;
 import org.jgrapes.core.Event;
 import org.jgrapes.core.Manager;
 import org.jgrapes.core.annotation.Handler;
+import org.jgrapes.util.events.ConfigurationUpdate;
 import org.jgrapes.webconsole.base.Conlet.RenderMode;
 import org.jgrapes.webconsole.base.ConletBaseModel;
 import org.jgrapes.webconsole.base.ConsoleConnection;
-import org.jgrapes.webconsole.base.events.AddConletRequest;
+import org.jgrapes.webconsole.base.ConsoleRole;
+import org.jgrapes.webconsole.base.ConsoleUser;
+import org.jgrapes.webconsole.base.WebConsoleUtils;
 import org.jgrapes.webconsole.base.events.AddConletType;
 import org.jgrapes.webconsole.base.events.AddPageResources.ScriptResource;
 import org.jgrapes.webconsole.base.events.ConsoleReady;
+import org.jgrapes.webconsole.base.events.DisplayNotification;
 import org.jgrapes.webconsole.base.events.NotifyConletModel;
 import org.jgrapes.webconsole.base.events.NotifyConletView;
 import org.jgrapes.webconsole.base.events.RenderConlet;
@@ -61,10 +72,12 @@ import org.jgrapes.webconsole.base.freemarker.FreeMarkerConlet;
 /**
  * The Class {@link VmMgmt}.
  */
-@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",
-    "PMD.CouplingBetweenObjects" })
+@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.CouplingBetweenObjects",
+    "PMD.ExcessiveImports" })
 public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
 
+    private Class<?> preferredIpVersion = Inet4Address.class;
+    private boolean deleteConnectionFile = true;
     private static final Set<RenderMode> MODES = RenderMode.asSet(
         RenderMode.Preview, RenderMode.View);
     private final ChannelTracker<String, VmChannel,
@@ -89,6 +102,44 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
     public VmMgmt(Channel componentChannel) {
         super(componentChannel);
         setPeriodicRefresh(Duration.ofMinutes(1), () -> new Update());
+    }
+
+    /**
+     * Configure the component. 
+     * 
+     * @param event the event
+     */
+    @SuppressWarnings({ "unchecked", "PMD.AvoidDuplicateLiterals" })
+    @Handler
+    public void onConfigurationUpdate(ConfigurationUpdate event) {
+        event.structured("/Manager/GuiHttpServer"
+            + "/ConsoleWeblet/WebConsole/ComponentCollector/VmAccess")
+            .ifPresent(c -> {
+                try {
+                    var dispRes = (Map<String, Object>) c
+                        .getOrDefault("displayResource",
+                            Collections.emptyMap());
+                    switch ((String) dispRes.getOrDefault("preferredIpVersion",
+                        "")) {
+                    case "ipv6":
+                        preferredIpVersion = Inet6Address.class;
+                        break;
+                    case "ipv4":
+                    default:
+                        preferredIpVersion = Inet4Address.class;
+                        break;
+                    }
+
+                    // Delete connection file
+                    deleteConnectionFile
+                        = Optional.ofNullable(c.get("deleteConnectionFile"))
+                            .filter(v -> v instanceof String)
+                            .map(v -> (String) v)
+                            .map(Boolean::parseBoolean).orElse(true);
+                } catch (ClassCastException e) {
+                    logger.config("Malformed configuration: " + e.getMessage());
+                }
+            });
     }
 
     /**
@@ -117,7 +168,7 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
     }
 
     @Override
-    protected Optional<VmsModel> createNewState(AddConletRequest event,
+    protected Optional<VmsModel> createStateRepresentation(Event<?> event,
             ConsoleConnection connection, String conletId) throws Exception {
         return Optional.of(new VmsModel(conletId));
     }
@@ -160,17 +211,25 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
         }
         if (sendVmInfos) {
             for (var item : channelTracker.values()) {
-                channel.respond(new NotifyConletView(type(),
-                    conletId, "updateVm",
-                    simplifiedVmDefinition(item.associated())));
+                updateVm(channel, conletId, item.associated());
             }
         }
-
         return renderedAs;
     }
 
+    private void updateVm(ConsoleConnection channel, String conletId,
+            VmDefinition vmDef) {
+        var user = WebConsoleUtils.userFromSession(channel.session())
+            .map(ConsoleUser::getName).orElse(null);
+        var roles = WebConsoleUtils.rolesFromSession(channel.session())
+            .stream().map(ConsoleRole::getName).toList();
+        channel.respond(new NotifyConletView(type(), conletId, "updateVm",
+            simplifiedVmDefinition(vmDef, user, roles)));
+    }
+
     @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-    private Map<String, Object> simplifiedVmDefinition(VmDefinition vmDef) {
+    private Map<String, Object> simplifiedVmDefinition(VmDefinition vmDef,
+            String user, List<String> roles) {
         // Convert RAM sizes to unitless numbers
         var spec = DataPath.deepCopy(vmDef.spec());
         var vmSpec = DataPath.<Map<String, Object>> get(spec, "vm").get();
@@ -191,7 +250,9 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
                 "name", vmDef.name()),
             "spec", spec,
             "status", status,
-            "nodeName", vmDef.extra("nodeName"));
+            "nodeName", vmDef.extra("nodeName"),
+            "permissions", vmDef.permissionsFor(user, roles).stream()
+                .map(VmDefinition.Permission::toString).toList());
     }
 
     /**
@@ -221,8 +282,7 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
             channelTracker.put(vmName, channel, vmDef);
             for (var entry : conletIdsByConsoleConnection().entrySet()) {
                 for (String conletId : entry.getValue()) {
-                    entry.getKey().respond(new NotifyConletView(type(),
-                        conletId, "updateVm", simplifiedVmDefinition(vmDef)));
+                    updateVm(entry.getKey(), conletId, vmDef);
                 }
             }
         }
@@ -337,22 +397,35 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
     @Override
     @SuppressWarnings("PMD.AvoidDecimalLiteralsInBigDecimalConstructor")
     protected void doUpdateConletState(NotifyConletModel event,
-            ConsoleConnection channel, VmsModel conletState)
-            throws Exception {
+            ConsoleConnection channel, VmsModel model) throws Exception {
         event.stop();
         String vmName = event.param(0);
-        var vmChannel = channelTracker.channel(vmName).orElse(null);
-        if (vmChannel == null) {
+        var value = channelTracker.value(vmName);
+        var vmChannel = value.map(v -> v.channel()).orElse(null);
+        var vmDef = value.map(v -> v.associated()).orElse(null);
+        if (vmDef == null) {
             return;
         }
+        var user = WebConsoleUtils.userFromSession(channel.session())
+            .map(ConsoleUser::getName).orElse("");
+        var roles = WebConsoleUtils.rolesFromSession(channel.session())
+            .stream().map(ConsoleRole::getName).toList();
+        var perms = vmDef.permissionsFor(user, roles);
         switch (event.method()) {
         case "start":
-            fire(new ModifyVm(vmName, "state", "Running", vmChannel));
+            if (perms.contains(VmDefinition.Permission.START)) {
+                fire(new ModifyVm(vmName, "state", "Running", vmChannel));
+            }
             break;
         case "stop":
-            fire(new ModifyVm(vmName, "state", "Stopped", vmChannel));
+            if (perms.contains(VmDefinition.Permission.STOP)) {
+                fire(new ModifyVm(vmName, "state", "Stopped", vmChannel));
+            }
             break;
         case "openConsole":
+            if (perms.contains(VmDefinition.Permission.ACCESS_CONSOLE)) {
+                openConsole(channel, model, vmChannel, vmDef, user, perms);
+            }
             break;
         case "cpus":
             fire(new ModifyVm(vmName, "currentCpus",
@@ -368,6 +441,29 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
         default:// ignore
             break;
         }
+    }
+
+    private void openConsole(ConsoleConnection channel, VmsModel model,
+            VmChannel vmChannel, VmDefinition vmDef, String user,
+            Set<Permission> perms) {
+        ResourceBundle resourceBundle = resourceBundle(channel.locale());
+        if (!vmDef.consoleAccessible(user, perms)) {
+            channel.respond(new DisplayNotification(
+                resourceBundle.getString("consoleTakenNotification"),
+                Map.of("autoClose", 5_000, "type", "Warning")));
+            return;
+        }
+        var pwQuery = Event.onCompletion(new GetDisplayPassword(vmDef, user),
+            e -> {
+                var data = vmDef.connectionFile(e.password().orElse(null),
+                    preferredIpVersion, deleteConnectionFile);
+                if (data == null) {
+                    return;
+                }
+                channel.respond(new NotifyConletView(type(),
+                    model.getConletId(), "openConsole", data));
+            });
+        fire(pwQuery, vmChannel);
     }
 
     @Override

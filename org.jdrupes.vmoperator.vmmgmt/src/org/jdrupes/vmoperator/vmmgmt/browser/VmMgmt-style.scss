@@ -103,11 +103,25 @@
 .jdrupes-vmoperator-vmmgmt-view-action-list {
   white-space: nowrap;
 
+  & > * + * {
+      margin-left: 0.5em;
+  }
+  
   [role=button] {
     padding: 0.25rem;
 
     &:not([aria-disabled]):hover, &[aria-disabled='false']:hover {
       box-shadow: var(--darkening);
+    }
+  }
+  
+  img {
+    display: inline;
+    height: 1.5em;
+    vertical-align: top;
+    
+    &[aria-disabled=''], &[aria-disabled='true'] {
+        opacity: 0.4;
     }
   }
 }
