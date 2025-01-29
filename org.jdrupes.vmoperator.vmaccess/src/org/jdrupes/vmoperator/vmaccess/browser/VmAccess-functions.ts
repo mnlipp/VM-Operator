@@ -198,7 +198,7 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmaccess.VmAccess",
     });
 
 JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmaccess.VmAccess",
-    "openConsole", function(_conletId: string, mimeType: string, data: string) {
+    "openConsole", function(_conletId: string, data: string) {
         let target = document.getElementById(
             "org.jdrupes.vmoperator.vmaccess.VmAccess.target");
         if (!target) {
@@ -208,7 +208,8 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmaccess.VmAccess",
             target.setAttribute("style", "display: none;");            
             document.querySelector("body")!.append(target);
         }
-        const url = "data:" + mimeType + ";base64," + data;
+        const url = "data:application/x-virt-viewer;base64," 
+            + window.btoa(data);
         window.open(url, target.id);
     });
 

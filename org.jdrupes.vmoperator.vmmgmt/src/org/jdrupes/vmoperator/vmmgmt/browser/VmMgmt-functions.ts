@@ -34,7 +34,9 @@ declare global {
     interface Window {
         orgJDrupesVmOperatorVmMgmt: { 
             initPreview?: (previewDom: HTMLElement, isUpdate: boolean) => void,
-            initView?: (viewDom: HTMLElement, isUpdate: boolean) => void
+            initView?: (viewDom: HTMLElement, isUpdate: boolean) => void,
+            confirmReset?: (conletType: string, conletId: string, 
+                vmName: string) => void
         }
     }
 }
@@ -104,6 +106,7 @@ window.orgJDrupesVmOperatorVmMgmt.initView = (viewDom: HTMLElement,
         setup(_props: object) {
             const conletId: string
                 = (<HTMLElement>viewDom.parentNode!).dataset["conletId"]!;
+            const resourceBase = (<HTMLElement>viewDom).dataset.conletResourceBase;
 
             const controller = reactive(new JGConsole.TableController([
                 ["name", "vmname"],
@@ -162,9 +165,9 @@ window.orgJDrupesVmOperatorVmMgmt.initView = (viewDom: HTMLElement,
             }
 
             return {
-                controller, vmInfos, filteredData, detailsByName, localize, 
-                shortDateTime, formatMemory, vmAction, cic, parseMemory,
-                maximumCpus, 
+                controller, vmInfos, filteredData, detailsByName, 
+                resourceBase, localize, shortDateTime, formatMemory,
+                vmAction, cic, parseMemory, maximumCpus, 
                 scopedId: (id: string) => { return idScope.scopedId(id); }
             };
         }
@@ -219,3 +222,24 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmmgmt.VmMgmt",
         Object.assign(vmSummary, summary);
 });
 
+JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmmgmt.VmMgmt",
+    "openConsole", function(_conletId: string, data: string) {
+        let target = document.getElementById(
+            "org.jdrupes.vmoperator.vmmgt.VmMgmt.target");
+        if (!target) {
+            target = document.createElement("iframe");
+            target.id = "org.jdrupes.vmoperator.vmmgt.VmMgmt.target";
+            target.setAttribute("name", target.id);
+            target.setAttribute("style", "display: none;");            
+            document.querySelector("body")!.append(target);
+        }
+        const url = "data:application/x-virt-viewer;base64," 
+            + window.btoa(data);
+        window.open(url, target.id);
+    });
+
+window.orgJDrupesVmOperatorVmMgmt.confirmReset = 
+        (conletType: string, conletId: string, vmName: string) => {
+    JGConsole.instance.closeModalDialog(conletType, conletId);
+    JGConsole.notifyConletModel(conletId, "resetConfirmed", vmName);
+}
