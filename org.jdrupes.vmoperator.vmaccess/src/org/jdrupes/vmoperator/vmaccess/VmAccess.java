@@ -546,26 +546,26 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
             .map(ConsoleUser::getName).orElse(null);
         var roles = WebConsoleUtils.rolesFromSession(session)
             .stream().map(ConsoleRole::getName).toList();
-        Set<Permission> result = new HashSet<>();
         if (model.mode() == ResourceModel.Mode.POOL) {
             if (pool == null) {
                 pool = appPipeline.fire(new GetPools()
                     .withName(model.name())).get().stream().findFirst()
                     .orElse(null);
             }
-            if (pool != null) {
-                result.addAll(pool.permissionsFor(user, roles));
+            if (pool == null) {
+                return Collections.emptySet();
             }
+            return pool.permissionsFor(user, roles);
         }
         if (vmDef == null) {
             vmDef = appPipeline.fire(new GetVms().assignedFrom(model.name())
                 .assignedTo(user)).get().stream().map(VmData::definition)
                 .findFirst().orElse(null);
         }
-        if (vmDef != null) {
-            result.addAll(vmDef.permissionsFor(user, roles));
+        if (vmDef == null) {
+            return Collections.emptySet();
         }
-        return result;
+        return vmDef.permissionsFor(user, roles);
     }
 
     private void updatePreview(ConsoleConnection channel, ResourceModel model,
