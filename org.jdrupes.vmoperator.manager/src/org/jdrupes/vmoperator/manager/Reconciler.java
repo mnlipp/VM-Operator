@@ -29,7 +29,9 @@ import freemarker.template.TemplateException;
 import freemarker.template.TemplateExceptionHandler;
 import freemarker.template.TemplateHashModel;
 import freemarker.template.TemplateMethodModelEx;
+import freemarker.template.TemplateModel;
 import freemarker.template.TemplateModelException;
+import freemarker.template.utility.DeepUnwrap;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
@@ -53,7 +55,6 @@ import static org.jdrupes.vmoperator.manager.Constants.COMP_DISPLAY_SECRET;
 import org.jdrupes.vmoperator.manager.events.ResetVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
-import org.jdrupes.vmoperator.util.DataPath;
 import org.jdrupes.vmoperator.util.ExtendedObjectWrapper;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
@@ -354,8 +355,9 @@ public class Reconciler extends Component {
                     return "";
                 }
                 try {
-                    var imageUri = new URI("file://" + Constants.IMAGE_REPO_PATH
-                        + "/").resolve(image);
+                    var imageUri
+                        = new URI("file://" + Constants.IMAGE_REPO_PATH + "/")
+                            .resolve(image);
                     if ("file".equals(imageUri.getScheme())) {
                         return imageUri.getPath();
                     }
@@ -374,9 +376,8 @@ public class Reconciler extends Component {
             public Object exec(@SuppressWarnings("rawtypes") List arguments)
                     throws TemplateModelException {
                 @SuppressWarnings("unchecked")
-                var res = (Map<String, Object>) DataPath
-                    .deepCopy(((AdapterTemplateModel) arguments.get(0))
-                        .getAdaptedObject(Object.class));
+                var res = new HashMap<>((Map<String, Object>) DeepUnwrap
+                    .unwrap((TemplateModel) arguments.get(0)));
                 var metadata
                     = (V1ObjectMeta) ((AdapterTemplateModel) arguments.get(1))
                         .getAdaptedObject(Object.class);

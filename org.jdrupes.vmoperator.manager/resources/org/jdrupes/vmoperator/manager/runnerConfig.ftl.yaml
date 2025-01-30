@@ -58,11 +58,7 @@ data:
       # Forward the cloud-init data if provided
       <#if spec.cloudInit??>    
       cloudInit:
-        <#if spec.cloudInit.metaData??>
-        metaData: ${ toJson(adjustCloudInitMeta(spec.cloudInit.metaData, cr.metadata())) }
-        <#else>
-        metaData: {}
-        </#if>
+        metaData: ${ toJson(adjustCloudInitMeta(spec.cloudInit.metaData!{}, cr.metadata())) }
         <#if spec.cloudInit.userData??>
         userData: ${ toJson(spec.cloudInit.userData) }
         <#else>
