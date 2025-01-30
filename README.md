@@ -6,7 +6,7 @@
 # Run Qemu in Kubernetes Pods
 
 The goal of this project is to provide easy to use and flexible components
-for running Qemu based VMs in Kubernetes pods. 
+for running Qemu based VMs in Kubernetes pods.
 
 See the [project's home page](https://jdrupes.org/vm-operator/)
 for details.

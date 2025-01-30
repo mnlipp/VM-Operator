@@ -1,7 +1,7 @@
 # Example setup for development
 
 The CRD must be deployed independently. Apart from that, the
-`kustomize.yaml` 
+`kustomize.yaml`
 
 * creates a small cdrom image repository and
 
