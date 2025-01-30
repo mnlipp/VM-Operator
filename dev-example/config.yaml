@@ -75,6 +75,7 @@
             admin:
             - "*"
             operator:
+            - org.jdrupes.vmoperator.vmmgmt.VmMgmt
             - org.jdrupes.vmoperator.vmaccess.VmAccess
             user:
             - org.jdrupes.vmoperator.vmaccess.VmAccess

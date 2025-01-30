@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
@@ -125,7 +126,12 @@ public class VmMonitor extends
     protected void handleChange(K8sClient client,
             Watch.Response<VmDefinitionModel> response) {
         V1ObjectMeta metadata = response.object.getMetadata();
-        VmChannel channel = channelManager.channelGet(metadata.getName());
+        AtomicBoolean toBeAdded = new AtomicBoolean(false);
+        VmChannel channel = channelManager.channel(metadata.getName())
+            .orElseGet(() -> {
+                toBeAdded.set(true);
+                return channelManager.createChannel(metadata.getName());
+            });
 
         // Get full definition and associate with channel as backup
         var vmModel = response.object;
@@ -150,6 +156,9 @@ public class VmMonitor extends
             logger.warning(() -> "Cannot get defintion for "
                 + response.object.getMetadata());
             return;
+        }
+        if (toBeAdded.get()) {
+            channelManager.put(vmDef.name(), channel);
         }
 
         // Create and fire changed event. Remove channel from channel
