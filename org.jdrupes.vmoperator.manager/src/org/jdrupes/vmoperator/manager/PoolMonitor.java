@@ -64,7 +64,6 @@ public class PoolMonitor extends
      * Instantiates a new VM pool manager.
      *
      * @param componentChannel the component channel
-     * @param channelManager the channel manager
      */
     public PoolMonitor(Channel componentChannel) {
         super(componentChannel, K8sDynamicModel.class,
