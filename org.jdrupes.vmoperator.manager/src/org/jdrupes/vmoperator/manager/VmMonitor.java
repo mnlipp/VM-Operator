@@ -264,63 +264,59 @@ public class VmMonitor extends
     @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     public void onAssignVm(AssignVm event)
             throws ApiException, InterruptedException {
-        VmPool vmPool = null;
-        while (true) {
-            // Search for existing assignment.
-            var assignedVm = channelManager.channels().stream()
-                .filter(c -> c.vmDefinition().assignedFrom()
-                    .map(p -> p.equals(event.fromPool())).orElse(false))
-                .filter(c -> c.vmDefinition().assignedTo()
-                    .map(u -> u.equals(event.toUser())).orElse(false))
-                .findFirst();
-            if (assignedVm.isPresent()) {
-                var vmDef = assignedVm.get().vmDefinition();
-                event.setResult(new VmData(vmDef, assignedVm.get()));
-                return;
-            }
-
-            // Get the pool definition for retention time calculations
-            if (vmPool == null) {
-                vmPool = newEventPipeline().fire(new GetPools()
-                    .withName(event.fromPool())).get().stream().findFirst()
-                    .orElse(null);
-                if (vmPool == null) {
-                    return;
-                }
-            }
-
-            // Find available VM.
-            var pool = vmPool;
-            assignedVm = channelManager.channels().stream()
-                .filter(c -> isAssignable(pool, c.vmDefinition()))
-                .sorted(Comparator.comparing((VmChannel c) -> c.vmDefinition()
-                    .assignmentLastUsed().orElse(Instant.ofEpochSecond(0)))
-                    .thenComparing(preferRunning))
-                .findFirst();
-
-            // None found
-            if (assignedVm.isEmpty()) {
-                return;
-            }
-
-            // Assign to user
+        // Search for existing assignment.
+        var assignedVm = channelManager.channels().stream()
+            .filter(c -> c.vmDefinition().assignedFrom()
+                .map(p -> p.equals(event.fromPool())).orElse(false))
+            .filter(c -> c.vmDefinition().assignedTo()
+                .map(u -> u.equals(event.toUser())).orElse(false))
+            .findFirst();
+        if (assignedVm.isPresent()) {
             var vmDef = assignedVm.get().vmDefinition();
-            var vmStub = VmDefinitionStub.get(client(),
-                new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
-                vmDef.namespace(), vmDef.name());
-            vmStub.updateStatus(from -> {
-                JsonObject status = from.status();
-                var assignment = GsonPtr.to(status).to("assignment");
-                assignment.set("pool", event.fromPool());
-                assignment.set("user", event.toUser());
-                assignment.set("lastUsed", Instant.now().toString());
-                return status;
-            });
-
-            // Make sure that a newly assigned VM is running.
-            fire(new ModifyVm(vmDef.name(), "state", "Running",
-                assignedVm.get()));
+            event.setResult(new VmData(vmDef, assignedVm.get()));
+            return;
         }
+
+        // Get the pool definition for retention time calculations
+        VmPool vmPool = newEventPipeline().fire(new GetPools()
+            .withName(event.fromPool())).get().stream().findFirst()
+            .orElse(null);
+        if (vmPool == null) {
+            return;
+        }
+
+        // Find available VM.
+        var pool = vmPool;
+        assignedVm = channelManager.channels().stream()
+            .filter(c -> isAssignable(pool, c.vmDefinition()))
+            .sorted(Comparator.comparing((VmChannel c) -> c.vmDefinition()
+                .assignmentLastUsed().orElse(Instant.ofEpochSecond(0)))
+                .thenComparing(preferRunning))
+            .findFirst();
+
+        // None found
+        if (assignedVm.isEmpty()) {
+            return;
+        }
+
+        // Assign to user
+        var vmDef = assignedVm.get().vmDefinition();
+        var vmStub = VmDefinitionStub.get(client(),
+            new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
+            vmDef.namespace(), vmDef.name());
+        vmStub.updateStatus(from -> {
+            JsonObject status = from.status();
+            var assignment = GsonPtr.to(status).to("assignment");
+            assignment.set("pool", event.fromPool());
+            assignment.set("user", event.toUser());
+            assignment.set("lastUsed", Instant.now().toString());
+            return status;
+        });
+        event.setResult(new VmData(vmDef, assignedVm.get()));
+
+        // Make sure that a newly assigned VM is running.
+        fire(new ModifyVm(vmDef.name(), "state", "Running",
+            assignedVm.get()));
     }
 
     private static Comparator<VmChannel> preferRunning
