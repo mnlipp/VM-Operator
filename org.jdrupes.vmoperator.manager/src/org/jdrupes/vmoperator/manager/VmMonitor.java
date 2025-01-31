@@ -293,8 +293,9 @@ public class VmMonitor extends
             var pool = vmPool;
             assignedVm = channelManager.channels().stream()
                 .filter(c -> isAssignable(pool, c.vmDefinition()))
-                .sorted(Comparator.comparing(c -> c.vmDefinition()
-                    .assignmentLastUsed().orElse(Instant.ofEpochSecond(0))))
+                .sorted(Comparator.comparing((VmChannel c) -> c.vmDefinition()
+                    .assignmentLastUsed().orElse(Instant.ofEpochSecond(0)))
+                    .thenComparing(preferRunning))
                 .findFirst();
 
             // None found
@@ -321,6 +322,19 @@ public class VmMonitor extends
                 assignedVm.get()));
         }
     }
+
+    private static Comparator<VmChannel> preferRunning
+        = new Comparator<>() {
+            @Override
+            public int compare(VmChannel ch1, VmChannel ch2) {
+                if (ch1.vmDefinition().conditionStatus("Running").orElse(false)
+                    && !ch2.vmDefinition().conditionStatus("Running")
+                        .orElse(false)) {
+                    return -1;
+                }
+                return 0;
+            }
+        };
 
     @SuppressWarnings("PMD.SimplifyBooleanReturns")
     private boolean isAssignable(VmPool pool, VmDefinition vmDef) {
