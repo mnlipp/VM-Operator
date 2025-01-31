@@ -140,7 +140,8 @@ public class VmPool {
      * @return the string
      */
     @Override
-    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
+    @SuppressWarnings({ "PMD.AvoidLiteralsInIfCondition",
+        "PMD.AvoidSynchronizedStatement" })
     public String toString() {
         StringBuilder builder = new StringBuilder(50);
         builder.append("VmPool [name=").append(name).append(", permissions=")
@@ -148,8 +149,11 @@ public class VmPool {
         if (vms.size() <= 3) {
             builder.append(vms);
         } else {
-            builder.append('[').append(vms.stream().limit(3).map(s -> s + ",")
-                .collect(Collectors.joining())).append("...]");
+            synchronized (vms) {
+                builder.append('[').append(vms.stream().limit(3)
+                    .map(s -> s + ",").collect(Collectors.joining()))
+                    .append("...]");
+            }
         }
         builder.append(']');
         return builder.toString();
