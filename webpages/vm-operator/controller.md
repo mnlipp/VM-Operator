@@ -5,12 +5,12 @@ layout: vm-operator
 
 # The Controller
 
-The controller component (which is part of the manager) monitors 
-custom resources of kind `VirtualMachine`. It creates or modifies 
+The controller component (which is part of the manager) monitors
+custom resources of kind `VirtualMachine`. It creates or modifies
 other resources in the cluster as required to get the VM defined
-by the CR up and running. 
+by the CR up and running.
 
-Here is the sample definition of a VM from the 
+Here is the sample definition of a VM from the
 ["local-path" example](https://github.com/mnlipp/VM-Operator/tree/main/example/local-path):
 
 ```yaml
@@ -28,10 +28,10 @@ spec:
     currentCpus: 2
     maximumRam: 8Gi
     currentRam: 4Gi
-  
+
     networks:
     - user: {}
-    
+
     disks:
     - volumeClaimTemplate:
         metadata:
@@ -58,9 +58,9 @@ spec:
         # generateSecret: false
 ```
 
-## Pod management 
+## Pod management
 
-The central resource created by the controller is a 
+The central resource created by the controller is a
 [`Pod`](https://kubernetes.io/docs/concepts/workloads/pods/)
 with the same name as the VM (`metadata.name`). The pod is created only
 if `spec.vm.state` is "Running" (default is "Stopped" which deletes the
@@ -72,7 +72,7 @@ and thus the VM is automatically restarted. If set to `true`, the
 VM's state is set to "Stopped" when the VM terminates and the pod is
 deleted.
 
-[^oldSts]: Before version 3.4, the operator created a 
+[^oldSts]: Before version 3.4, the operator created a
     [stateful set](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
     that in turn created the pod and the PVCs (see below).
 
@@ -113,7 +113,7 @@ as shown in this example:
 ```
 
 The disk will be available as "/dev/*name*-disk" in the VM,
-using the string from `.volumeClaimTemplate.metadata.name` as *name*. 
+using the string from `.volumeClaimTemplate.metadata.name` as *name*.
 If no name is defined in the metadata, then "/dev/disk-*n*"
 is used instead, with *n* being the index of the volume claim
 template in the list of disks.
@@ -140,28 +140,28 @@ the PVCs by label in a delete command.
 
 ## Choosing an image for the runner
 
-The image used for the runner can be configured with 
+The image used for the runner can be configured with
 [`spec.image`](https://github.com/mnlipp/VM-Operator/blob/7e094e720b7b59a5e50f4a9a4ad29a6000ec76e6/deploy/crds/vms-crd.yaml#L19).
 This is a mapping with either a single key `source` or a detailed
 configuration using the keys `repository`, `path` etc.
 
-Currently two runner images are maintained. One that is based on 
-Arch Linux (`ghcr.io/mnlipp/org.jdrupes.vmoperator.runner.qemu-arch`) and a 
+Currently two runner images are maintained. One that is based on
+Arch Linux (`ghcr.io/mnlipp/org.jdrupes.vmoperator.runner.qemu-arch`) and a
 second one based on Alpine (`ghcr.io/mnlipp/org.jdrupes.vmoperator.runner.qemu-alpine`).
 
-Starting with release 1.0, all versions of runner images and managers 
+Starting with release 1.0, all versions of runner images and managers
 that have the same major release number are guaranteed to be compatible.
 
 ## Generating cloud-init data
 
-*Since: 2.2.0* 
+*Since: 2.2.0*
 
 The optional object `.spec.cloudInit` with sub-objects `.cloudInit.metaData`,
-`.cloudInit.userData` and `.cloudInit.networkConfig` can be used to provide 
+`.cloudInit.userData` and `.cloudInit.networkConfig` can be used to provide
 data for
 [cloud-init](https://cloudinit.readthedocs.io/en/latest/index.html).
 The data from the CRD will be made available to the VM by the runner
-as a vfat formatted disk (see the description of 
+as a vfat formatted disk (see the description of
 [NoCloud](https://cloudinit.readthedocs.io/en/latest/reference/datasources/nocloud.html)).
 
 If `.metaData.instance-id` is not defined, the controller automatically
@@ -180,9 +180,9 @@ generated automatically by the runner.)
 *Since: 2.3.0*
 
 You can define a display password using a Kubernetes secret.
-When you start a VM, the controller checks if there is a secret 
-with labels "app.kubernetes.io/name: vm-runner, 
-app.kubernetes.io/component: display-secret, 
+When you start a VM, the controller checks if there is a secret
+with labels "app.kubernetes.io/name: vm-runner,
+app.kubernetes.io/component: display-secret,
 app.kubernetes.io/instance: *vmname*" in the namespace of the
 VM definition. The name of the secret can be chosen freely.
 
@@ -204,13 +204,13 @@ data:
 ```
 
 If such a secret for the VM is found, the VM is configured to use
-the display password specified. The display password in the secret 
+the display password specified. The display password in the secret
 can be updated while the VM runs[^delay]. Activating/deactivating
 the display password while a VM runs is not supported by Qemu and
 therefore requires stopping the VM, adding/removing the secret and
 restarting the VM.
 
-[^delay]: Be aware of the possible delay, see e.g. 
+[^delay]: Be aware of the possible delay, see e.g.
     [here](https://web.archive.org/web/20240223073838/https://ahmet.im/blog/kubernetes-secret-volumes-delay/).
 
 *Since: 3.0.0*
@@ -221,7 +221,7 @@ values are those defined by qemu (`+n` seconds from now, `n` Unix
 timestamp, `never` and `now`).
 
 Unless `spec.vm.display.spice.generateSecret` is set to `false` in the VM
-definition (CRD), the controller creates a secret for the display 
+definition (CRD), the controller creates a secret for the display
 password automatically if none is found. The secret is created
 with a random password that expires immediately, which makes the
 display effectively inaccessible until the secret is modified.

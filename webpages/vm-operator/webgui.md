@@ -11,7 +11,7 @@ implemented using components from the
 project. Configuration of the GUI therefore follows the conventions
 of that framework.
 
-The structure of the configuration information should be easy to 
+The structure of the configuration information should be easy to
 understand from the examples provided. In general, configuration values
 are applied to the individual components that make up an application.
 The hierarchy of the components is reflected in the configuration
@@ -22,9 +22,9 @@ for information about the complete component structure.)
 
 ## Network access
 
-By default, the service is made available at port 8080 of the manager 
+By default, the service is made available at port 8080 of the manager
 pod. Of course, a kubernetes service and an ingress configuration must
-be added as required by the environment. (See the 
+be added as required by the environment. (See the
 [definition](https://github.com/mnlipp/VM-Operator/blob/main/deploy/vmop-service.yaml)
 from the
 [sample deployment](https://github.com/mnlipp/VM-Operator/tree/main/deploy)).
@@ -49,7 +49,7 @@ and role management.
           # configure an OIDC provider for user management and
           # authorization. See the text for details.
           oidcProviders: {}
-          
+
           # Support for "local" users is provided as a fallback mechanism.
           # Note that up to Version 2.2.x "users" was an object with user names
           # as its properties. Starting with 2.3.0 it is a list as shown.
@@ -60,11 +60,11 @@ and role management.
             - name: test
               fullName: Test Account
               password: "Generate hash with bcrypt"
-              
+
         # Required for using OIDC, see the text for details.
         "/OidcClient":
           redirectUri: https://my.server.here/oauth/callback"
-          
+
         # May be used for assigning roles to both local users and users from
         # the OIDC provider. Not needed if roles are managed by the OIDC provider.
         "/RoleConfigurator":
@@ -79,7 +79,7 @@ and role management.
             "*":
             - other
           replace: false
-          
+
         # Manages the permissions for the roles.
         "/RoleConletFilter":
           conletTypesByRole:
@@ -98,8 +98,8 @@ and role management.
 ```
 
 How local users can be configured should be obvious from the example.
-The configuration of OIDC providers for user authentication (and 
-optionally for role assignment) is explained in the documentation of the 
+The configuration of OIDC providers for user authentication (and
+optionally for role assignment) is explained in the documentation of the
 [login conlet](https://jgrapes.org/javadoc-webconsole/org/jgrapes/webconlet/oidclogin/LoginConlet.html).
 Details about the `RoleConfigurator` and `RoleConletFilter` can also be found
 in the documentation of the
@@ -113,5 +113,5 @@ all users to use the login conlet to log out.
 
 ## Views
 
-The configuration of the components that provide the manager and 
+The configuration of the components that provide the manager and
 users views is explained in the respective sections.

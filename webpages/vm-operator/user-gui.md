@@ -19,20 +19,20 @@ requirement are unexpectedly complex.
 ## Control access to VMs
 
 First of all, we have to define which VMs a user can access. This
-is done using the optional property `spec.permissions` of the 
+is done using the optional property `spec.permissions` of the
 VM definition (CRD).
 
 ```yaml
 spec:
   permissions:
   - role: admin
-    may: 
+    may:
     - "*"
   - user: test
     may:
     - start
     - stop
-    - accessConsole 
+    - accessConsole
 ```
 
 Permissions can be granted to individual users or to roles. There
@@ -104,7 +104,7 @@ spec:
 ```
 
 The value of `server` is used as value for key "host" in the
-connection file, thus overriding the default value. The 
+connection file, thus overriding the default value. The
 value of `proxyUrl` is used as value for key "proxy".
 
 ## Securing access
@@ -123,8 +123,8 @@ in the future or with value "never" or doesn't define a
 `password-expiry` at all.
 
 The automatically generated password is the base64 encoded value
-of 16 (strong) random bytes (128 random bits). It is valid for 
-10 seconds only. This may be challenging on a slower computer 
+of 16 (strong) random bytes (128 random bits). It is valid for
+10 seconds only. This may be challenging on a slower computer
 or if users may not enable automatic open for connection files
 in the browser. The validity can therefore be adjusted in the
 configuration.

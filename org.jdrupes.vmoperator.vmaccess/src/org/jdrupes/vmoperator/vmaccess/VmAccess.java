@@ -198,9 +198,8 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
                     // Delete connection file
                     deleteConnectionFile
                         = Optional.ofNullable(c.get("deleteConnectionFile"))
-                            .filter(v -> v instanceof String)
-                            .map(v -> (String) v)
-                            .map(Boolean::parseBoolean).orElse(true);
+                            .map(Object::toString).map(Boolean::parseBoolean)
+                            .orElse(true);
 
                     // Users or roles for which previews should be synchronized
                     syncUsers = ((List<Map<String, String>>) c.getOrDefault(
@@ -685,8 +684,7 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
      * On vm pool changed.
      *
      * @param event the event
-     * @param channel the channel
-     * @throws InterruptedException 
+     * @throws InterruptedException the interrupted exception
      */
     @Handler(namedChannels = "manager")
     @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")

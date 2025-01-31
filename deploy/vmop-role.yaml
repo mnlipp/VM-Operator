@@ -9,6 +9,7 @@ rules:
   - vmoperator.jdrupes.org
   resources:
   - vms
+  - vmpools
   verbs:
   - '*'
 - apiGroups:

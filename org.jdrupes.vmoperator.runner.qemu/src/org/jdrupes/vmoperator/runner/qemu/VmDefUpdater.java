@@ -111,12 +111,12 @@ public class VmDefUpdater extends Component {
     /**
      * Update condition.
      *
-     * @param apiClient the api client
-     * @param from the vM definition
+     * @param from the VM definition
      * @param status the current status
      * @param type the condition type
      * @param state the new state
      * @param reason the reason for the change
+     * @param message the message
      */
     protected void updateCondition(VmDefinitionModel from, JsonObject status,
             String type, boolean state, String reason, String message) {
