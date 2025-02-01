@@ -41,7 +41,7 @@ import org.jdrupes.vmoperator.common.K8sV1ConfigMapStub;
 import org.jdrupes.vmoperator.common.K8sV1PodStub;
 import org.jdrupes.vmoperator.common.K8sV1StatefulSetStub;
 import org.jdrupes.vmoperator.common.VmDefinition;
-import org.jdrupes.vmoperator.common.VmDefinitionModels;
+import org.jdrupes.vmoperator.common.VmDefinitions;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
 import org.jdrupes.vmoperator.common.VmPool;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
@@ -64,7 +64,7 @@ import org.jgrapes.core.annotation.Handler;
  */
 @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.ExcessiveImports" })
 public class VmMonitor extends
-        AbstractMonitor<VmDefinition, VmDefinitionModels, VmChannel> {
+        AbstractMonitor<VmDefinition, VmDefinitions, VmChannel> {
 
     private final ChannelManager<String, VmChannel, ?> channelManager;
 
@@ -77,7 +77,7 @@ public class VmMonitor extends
     public VmMonitor(Channel componentChannel,
             ChannelManager<String, VmChannel, ?> channelManager) {
         super(componentChannel, VmDefinition.class,
-            VmDefinitionModels.class);
+            VmDefinitions.class);
         this.channelManager = channelManager;
     }
 

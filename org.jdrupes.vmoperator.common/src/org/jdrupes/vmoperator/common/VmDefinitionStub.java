@@ -33,10 +33,10 @@ import java.util.Collection;
  */
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class VmDefinitionStub
-        extends K8sDynamicStubBase<VmDefinition, VmDefinitionModels> {
+        extends K8sDynamicStubBase<VmDefinition, VmDefinitions> {
 
     private static DynamicTypeAdapterFactory<VmDefinition,
-            VmDefinitionModels> taf = new VmDefintionModelTypeAdapterFactory();
+            VmDefinitions> taf = new VmDefintionModelTypeAdapterFactory();
 
     /**
      * Instantiates a new stub for VM defintions.
@@ -48,7 +48,7 @@ public class VmDefinitionStub
      */
     public VmDefinitionStub(K8sClient client, APIResource context,
             String namespace, String name) {
-        super(VmDefinition.class, VmDefinitionModels.class, taf, client,
+        super(VmDefinition.class, VmDefinitions.class, taf, client,
             context, namespace, name);
     }
 
@@ -104,7 +104,7 @@ public class VmDefinitionStub
         var model = new VmDefinition(client.getJSON().getGson(),
             K8s.yamlToJson(client, yaml));
         return K8sGenericStub.create(VmDefinition.class,
-            VmDefinitionModels.class, client, context, model,
+            VmDefinitions.class, client, context, model,
             (c, ns, n) -> new VmDefinitionStub(c, context, ns, n));
     }
 
@@ -122,7 +122,7 @@ public class VmDefinitionStub
             APIResource context, String namespace, ListOptions options)
             throws ApiException {
         return K8sGenericStub.list(VmDefinition.class,
-            VmDefinitionModels.class, client, context, namespace, options,
+            VmDefinitions.class, client, context, namespace, options,
             (c, ns, n) -> new VmDefinitionStub(c, context, ns, n));
     }
 
@@ -144,13 +144,13 @@ public class VmDefinitionStub
      * A factory for creating VmDefinitionModel(s) objects.
      */
     public static class VmDefintionModelTypeAdapterFactory extends
-            DynamicTypeAdapterFactory<VmDefinition, VmDefinitionModels> {
+            DynamicTypeAdapterFactory<VmDefinition, VmDefinitions> {
 
         /**
          * Instantiates a new dynamic model type adapter factory.
          */
         public VmDefintionModelTypeAdapterFactory() {
-            super(VmDefinition.class, VmDefinitionModels.class);
+            super(VmDefinition.class, VmDefinitions.class);
         }
     }
 
