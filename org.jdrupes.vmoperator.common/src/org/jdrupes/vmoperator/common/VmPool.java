@@ -135,6 +135,78 @@ public class VmPool {
     }
 
     /**
+     * Collect all permissions for the given user with the given roles.
+     *
+     * @param user the user
+     * @param roles the roles
+     * @return the sets the
+     */
+    public Set<Permission> permissionsFor(String user,
+            Collection<String> roles) {
+        return permissions.stream()
+            .filter(g -> DataPath.get(g, "user").map(u -> u.equals(user))
+                .orElse(false)
+                || DataPath.get(g, "role").map(roles::contains).orElse(false))
+            .map(g -> DataPath.<Set<Permission>> get(g, "may")
+                .orElse(Collections.emptySet()).stream())
+            .flatMap(Function.identity()).collect(Collectors.toSet());
+    }
+
+    /**
+     * Checks if the given VM belongs to the pool and is not in use.
+     *
+     * @param vmDef the vm def
+     * @return true, if is assignable
+     */
+    @SuppressWarnings("PMD.SimplifyBooleanReturns")
+    public boolean isAssignable(VmDefinition vmDef) {
+        // Check if the VM is in the pool
+        if (!vmDef.pools().contains(name)) {
+            return false;
+        }
+
+        // Check if the VM is not in use
+        if (vmDef.consoleConnected()) {
+            return false;
+        }
+
+        // If not assigned, it's usable
+        if (vmDef.assignedTo().isEmpty()) {
+            return true;
+        }
+
+        // Check if it is to be retained
+        if (vmDef.assignmentLastUsed()
+            .map(this::retainUntil)
+            .map(ru -> Instant.now().isBefore(ru)).orElse(false)) {
+            return false;
+        }
+
+        // Additional check in case lastUsed has not been updated
+        // by PoolMonitor#onVmDefChanged() yet ("race condition")
+        if (vmDef.condition("ConsoleConnected")
+            .map(cc -> cc.getLastTransitionTime().toInstant())
+            .map(this::retainUntil)
+            .map(ru -> Instant.now().isBefore(ru)).orElse(false)) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Return the instant until which an assignment should be retained.
+     *
+     * @param lastUsed the last used
+     * @return the instant
+     */
+    public Instant retainUntil(Instant lastUsed) {
+        if (retention.startsWith("P")) {
+            return lastUsed.plus(Duration.parse(retention));
+        }
+        return Instant.parse(retention);
+    }
+
+    /**
      * To string.
      *
      * @return the string
@@ -157,36 +229,5 @@ public class VmPool {
         }
         builder.append(']');
         return builder.toString();
-    }
-
-    /**
-     * Collect all permissions for the given user with the given roles.
-     *
-     * @param user the user
-     * @param roles the roles
-     * @return the sets the
-     */
-    public Set<Permission> permissionsFor(String user,
-            Collection<String> roles) {
-        return permissions.stream()
-            .filter(g -> DataPath.get(g, "user").map(u -> u.equals(user))
-                .orElse(false)
-                || DataPath.get(g, "role").map(roles::contains).orElse(false))
-            .map(g -> DataPath.<Set<Permission>> get(g, "may")
-                .orElse(Collections.emptySet()).stream())
-            .flatMap(Function.identity()).collect(Collectors.toSet());
-    }
-
-    /**
-     * Return the instant until which an assignment should be retained.
-     *
-     * @param lastUsed the last used
-     * @return the instant
-     */
-    public Instant retainUntil(Instant lastUsed) {
-        if (retention.startsWith("P")) {
-            return lastUsed.plus(Duration.parse(retention));
-        }
-        return Instant.parse(retention);
     }
 }

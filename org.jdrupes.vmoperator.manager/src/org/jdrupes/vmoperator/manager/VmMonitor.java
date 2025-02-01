@@ -18,8 +18,6 @@
 
 package org.jdrupes.vmoperator.manager;
 
-import com.google.gson.JsonObject;
-import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Watch;
@@ -55,9 +53,9 @@ import org.jdrupes.vmoperator.manager.events.GetPools;
 import org.jdrupes.vmoperator.manager.events.GetVms;
 import org.jdrupes.vmoperator.manager.events.GetVms.VmData;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
+import org.jdrupes.vmoperator.manager.events.UpdateAssignment;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
-import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Event;
 import org.jgrapes.core.annotation.Handler;
@@ -277,7 +275,7 @@ public class VmMonitor extends
             return;
         }
 
-        // Get the pool definition for retention time calculations
+        // Get the pool definition assignability check
         VmPool vmPool = newEventPipeline().fire(new GetPools()
             .withName(event.fromPool())).get().stream().findFirst()
             .orElse(null);
@@ -286,9 +284,8 @@ public class VmMonitor extends
         }
 
         // Find available VM.
-        var pool = vmPool;
         assignedVm = channelManager.channels().stream()
-            .filter(c -> isAssignable(pool, c.vmDefinition()))
+            .filter(c -> vmPool.isAssignable(c.vmDefinition()))
             .sorted(Comparator.comparing((VmChannel c) -> c.vmDefinition()
                 .assignmentLastUsed().orElse(Instant.ofEpochSecond(0)))
                 .thenComparing(preferRunning))
@@ -300,23 +297,14 @@ public class VmMonitor extends
         }
 
         // Assign to user
+        assignedVm.get().pipeline().fire(new UpdateAssignment(vmPool.name(),
+            event.toUser()), assignedVm.get()).get();
         var vmDef = assignedVm.get().vmDefinition();
-        var vmStub = VmDefinitionStub.get(client(),
-            new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
-            vmDef.namespace(), vmDef.name());
-        vmStub.updateStatus(from -> {
-            JsonObject status = from.status();
-            var assignment = GsonPtr.to(status).to("assignment");
-            assignment.set("pool", event.fromPool());
-            assignment.set("user", event.toUser());
-            assignment.set("lastUsed", Instant.now().toString());
-            return status;
-        });
         event.setResult(new VmData(vmDef, assignedVm.get()));
 
         // Make sure that a newly assigned VM is running.
-        fire(new ModifyVm(vmDef.name(), "state", "Running",
-            assignedVm.get()));
+        assignedVm.get().pipeline().fire(new ModifyVm(vmDef.name(),
+            "state", "Running", assignedVm.get()));
     }
 
     private static Comparator<VmChannel> preferRunning
@@ -332,38 +320,4 @@ public class VmMonitor extends
             }
         };
 
-    @SuppressWarnings("PMD.SimplifyBooleanReturns")
-    private boolean isAssignable(VmPool pool, VmDefinition vmDef) {
-        // Check if the VM is in the pool
-        if (!vmDef.pools().contains(pool.name())) {
-            return false;
-        }
-
-        // Check if the VM is not in use
-        if (vmDef.consoleConnected()) {
-            return false;
-        }
-
-        // If not assigned, it's usable
-        if (vmDef.assignedTo().isEmpty()) {
-            return true;
-        }
-
-        // Check if it is to be retained
-        if (vmDef.assignmentLastUsed()
-            .map(lu -> pool.retainUntil(lu))
-            .map(ru -> Instant.now().isBefore(ru)).orElse(false)) {
-            return false;
-        }
-
-        // Additional check in case lastUsed has not been updated
-        // by PoolMonitor#onVmDefChanged() yet ("race condition")
-        if (vmDef.condition("ConsoleConnected")
-            .map(cc -> cc.getLastTransitionTime().toInstant())
-            .map(t -> pool.retainUntil(t))
-            .map(ru -> Instant.now().isBefore(ru)).orElse(false)) {
-            return false;
-        }
-        return true;
-    }
 }
