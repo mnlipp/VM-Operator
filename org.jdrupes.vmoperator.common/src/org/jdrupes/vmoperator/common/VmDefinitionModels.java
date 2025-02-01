@@ -25,7 +25,7 @@ import com.google.gson.JsonObject;
  * Represents a list of {@link VmDefinitionModel}s.
  */
 public class VmDefinitionModels
-        extends K8sDynamicModelsBase<VmDefinitionModel> {
+        extends K8sDynamicModelsBase<VmDefinition> {
 
     /**
      * Initialize the object list using the given JSON data.
@@ -34,6 +34,6 @@ public class VmDefinitionModels
      * @param data the data
      */
     public VmDefinitionModels(Gson delegate, JsonObject data) {
-        super(VmDefinitionModel.class, delegate, data);
+        super(VmDefinition.class, delegate, data);
     }
 }

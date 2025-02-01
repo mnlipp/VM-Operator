@@ -225,7 +225,7 @@ public class Controller extends Component {
             new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
             vmDef.namespace(), vmDef.name());
         vmStub.updateStatus(from -> {
-            JsonObject status = from.status();
+            JsonObject status = from.statusJson();
             var assignment = GsonPtr.to(status).to("assignment");
             assignment.set("pool", event.usedPool());
             assignment.set("user", event.toUser());

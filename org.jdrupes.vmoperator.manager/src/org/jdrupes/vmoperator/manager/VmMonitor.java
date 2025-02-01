@@ -41,7 +41,6 @@ import org.jdrupes.vmoperator.common.K8sV1ConfigMapStub;
 import org.jdrupes.vmoperator.common.K8sV1PodStub;
 import org.jdrupes.vmoperator.common.K8sV1StatefulSetStub;
 import org.jdrupes.vmoperator.common.VmDefinition;
-import org.jdrupes.vmoperator.common.VmDefinitionModel;
 import org.jdrupes.vmoperator.common.VmDefinitionModels;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
 import org.jdrupes.vmoperator.common.VmPool;
@@ -65,7 +64,7 @@ import org.jgrapes.core.annotation.Handler;
  */
 @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.ExcessiveImports" })
 public class VmMonitor extends
-        AbstractMonitor<VmDefinitionModel, VmDefinitionModels, VmChannel> {
+        AbstractMonitor<VmDefinition, VmDefinitionModels, VmChannel> {
 
     private final ChannelManager<String, VmChannel, ?> channelManager;
 
@@ -77,7 +76,7 @@ public class VmMonitor extends
      */
     public VmMonitor(Channel componentChannel,
             ChannelManager<String, VmChannel, ?> channelManager) {
-        super(componentChannel, VmDefinitionModel.class,
+        super(componentChannel, VmDefinition.class,
             VmDefinitionModels.class);
         this.channelManager = channelManager;
     }
@@ -122,7 +121,7 @@ public class VmMonitor extends
 
     @Override
     protected void handleChange(K8sClient client,
-            Watch.Response<VmDefinitionModel> response) {
+            Watch.Response<VmDefinition> response) {
         V1ObjectMeta metadata = response.object.getMetadata();
         AtomicBoolean toBeAdded = new AtomicBoolean(false);
         VmChannel channel = channelManager.channel(metadata.getName())
@@ -132,21 +131,17 @@ public class VmMonitor extends
             });
 
         // Get full definition and associate with channel as backup
-        var vmModel = response.object;
-        if (vmModel.data() == null) {
+        var vmDef = response.object;
+        if (vmDef.data() == null) {
             // ADDED event does not provide data, see
             // https://github.com/kubernetes-client/java/issues/3215
-            vmModel = getModel(client, vmModel);
+            vmDef = getModel(client, vmDef);
         }
-        VmDefinition vmDef = null;
-        if (vmModel.data() != null) {
+        if (vmDef.data() != null) {
             // New data, augment and save
-            vmDef = client.getJSON().getGson().fromJson(vmModel.data(),
-                VmDefinition.class);
             addDynamicData(channel.client(), vmDef, channel.vmDefinition());
             channel.setVmDefinition(vmDef);
-        }
-        if (vmDef == null) {
+        } else {
             // Reuse cached (e.g. if deleted)
             vmDef = channel.vmDefinition();
         }
@@ -173,8 +168,7 @@ public class VmMonitor extends
         channel.pipeline().fire(chgEvt, channel);
     }
 
-    private VmDefinitionModel getModel(K8sClient client,
-            VmDefinitionModel vmDef) {
+    private VmDefinition getModel(K8sClient client, VmDefinition vmDef) {
         try {
             return VmDefinitionStub.get(client, context(), namespace(),
                 vmDef.metadata().getName()).model().orElse(null);

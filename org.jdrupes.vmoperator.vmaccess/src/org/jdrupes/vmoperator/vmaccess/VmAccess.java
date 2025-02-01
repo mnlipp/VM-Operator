@@ -593,7 +593,7 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
                     Map.of("namespace", vmDef.namespace(),
                         "name", vmDef.name()),
                     "spec", vmDef.spec(),
-                    "status", vmDef.getStatus());
+                    "status", vmDef.status());
             } catch (JsonSyntaxException e) {
                 logger.log(Level.SEVERE, e,
                     () -> "Failed to serialize VM definition");
