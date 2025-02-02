@@ -256,49 +256,56 @@ public class VmMonitor extends
     @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     public void onAssignVm(AssignVm event)
             throws ApiException, InterruptedException {
-        // Search for existing assignment.
-        var assignedVm = channelManager.channels().stream()
-            .filter(c -> c.vmDefinition().assignedFrom()
-                .map(p -> p.equals(event.fromPool())).orElse(false))
-            .filter(c -> c.vmDefinition().assignedTo()
-                .map(u -> u.equals(event.toUser())).orElse(false))
-            .findFirst();
-        if (assignedVm.isPresent()) {
-            var vmDef = assignedVm.get().vmDefinition();
-            event.setResult(new VmData(vmDef, assignedVm.get()));
-            return;
+        while (true) {
+            // Search for existing assignment.
+            var vmQuery = channelManager.channels().stream()
+                .filter(c -> c.vmDefinition().assignedFrom()
+                    .map(p -> p.equals(event.fromPool())).orElse(false))
+                .filter(c -> c.vmDefinition().assignedTo()
+                    .map(u -> u.equals(event.toUser())).orElse(false))
+                .findFirst();
+            if (vmQuery.isPresent()) {
+                var vmDef = vmQuery.get().vmDefinition();
+                event.setResult(new VmData(vmDef, vmQuery.get()));
+                return;
+            }
+
+            // Get the pool definition for checking possible assignment
+            VmPool vmPool = newEventPipeline().fire(new GetPools()
+                .withName(event.fromPool())).get().stream().findFirst()
+                .orElse(null);
+            if (vmPool == null) {
+                return;
+            }
+
+            // Find available VM.
+            vmQuery = channelManager.channels().stream()
+                .filter(c -> vmPool.isAssignable(c.vmDefinition()))
+                .sorted(Comparator.comparing((VmChannel c) -> c.vmDefinition()
+                    .assignmentLastUsed().orElse(Instant.ofEpochSecond(0)))
+                    .thenComparing(preferRunning))
+                .findFirst();
+
+            // None found
+            if (vmQuery.isEmpty()) {
+                return;
+            }
+
+            // Assign to user
+            var chosenVm = vmQuery.get();
+            var vmPipeline = chosenVm.pipeline();
+            if (Optional.ofNullable(vmPipeline.fire(new UpdateAssignment(
+                vmPool.name(), event.toUser()), chosenVm).get())
+                .orElse(false)) {
+                var vmDef = chosenVm.vmDefinition();
+                event.setResult(new VmData(vmDef, chosenVm));
+
+                // Make sure that a newly assigned VM is running.
+                chosenVm.pipeline().fire(new ModifyVm(vmDef.name(),
+                    "state", "Running", chosenVm));
+                return;
+            }
         }
-
-        // Get the pool definition assignability check
-        VmPool vmPool = newEventPipeline().fire(new GetPools()
-            .withName(event.fromPool())).get().stream().findFirst()
-            .orElse(null);
-        if (vmPool == null) {
-            return;
-        }
-
-        // Find available VM.
-        assignedVm = channelManager.channels().stream()
-            .filter(c -> vmPool.isAssignable(c.vmDefinition()))
-            .sorted(Comparator.comparing((VmChannel c) -> c.vmDefinition()
-                .assignmentLastUsed().orElse(Instant.ofEpochSecond(0)))
-                .thenComparing(preferRunning))
-            .findFirst();
-
-        // None found
-        if (assignedVm.isEmpty()) {
-            return;
-        }
-
-        // Assign to user
-        assignedVm.get().pipeline().fire(new UpdateAssignment(vmPool.name(),
-            event.toUser()), assignedVm.get()).get();
-        var vmDef = assignedVm.get().vmDefinition();
-        event.setResult(new VmData(vmDef, assignedVm.get()));
-
-        // Make sure that a newly assigned VM is running.
-        assignedVm.get().pipeline().fire(new ModifyVm(vmDef.name(),
-            "state", "Running", assignedVm.get()));
     }
 
     private static Comparator<VmChannel> preferRunning

@@ -24,6 +24,7 @@ import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -211,7 +212,10 @@ public class Controller extends Component {
     }
 
     /**
-     * Update the assignment information in the status of the VM CR.
+     * Attempt to Update the assignment information in the status of the
+     * VM CR. Returns true if successful. The handler does not attempt
+     * retries, because in case of failure it will be necessary to
+     * re-evaluate the chosen VM.
      *
      * @param event the event
      * @param channel the channel
@@ -220,18 +224,27 @@ public class Controller extends Component {
     @Handler
     public void onUpdatedAssignment(UpdateAssignment event, VmChannel channel)
             throws ApiException {
-        var vmDef = channel.vmDefinition();
-        var vmStub = VmDefinitionStub.get(channel.client(),
-            new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
-            vmDef.namespace(), vmDef.name());
-        vmStub.updateStatus(from -> {
-            JsonObject status = from.statusJson();
-            var assignment = GsonPtr.to(status).to("assignment");
-            assignment.set("pool", event.usedPool());
-            assignment.set("user", event.toUser());
-            assignment.set("lastUsed", Instant.now().toString());
-            return status;
-        });
-        event.setResult(true);
+        try {
+            var vmDef = channel.vmDefinition();
+            var vmStub = VmDefinitionStub.get(channel.client(),
+                new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
+                vmDef.namespace(), vmDef.name());
+            if (vmStub.updateStatus(vmDef, from -> {
+                JsonObject status = from.statusJson();
+                var assignment = GsonPtr.to(status).to("assignment");
+                assignment.set("pool", event.usedPool());
+                assignment.set("user", event.toUser());
+                assignment.set("lastUsed", Instant.now().toString());
+                return status;
+            }).isPresent()) {
+                event.setResult(true);
+            }
+        } catch (ApiException e) {
+            // Log exceptions except for conflict, which can be expected
+            if (HttpURLConnection.HTTP_CONFLICT != e.getCode()) {
+                throw e;
+            }
+        }
+        event.setResult(false);
     }
 }
