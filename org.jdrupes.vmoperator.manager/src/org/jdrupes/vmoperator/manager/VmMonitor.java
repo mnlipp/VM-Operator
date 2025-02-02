@@ -41,9 +41,9 @@ import org.jdrupes.vmoperator.common.K8sV1ConfigMapStub;
 import org.jdrupes.vmoperator.common.K8sV1PodStub;
 import org.jdrupes.vmoperator.common.K8sV1StatefulSetStub;
 import org.jdrupes.vmoperator.common.VmDefinition;
-import org.jdrupes.vmoperator.common.VmDefinitionModel;
-import org.jdrupes.vmoperator.common.VmDefinitionModels;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
+import org.jdrupes.vmoperator.common.VmDefinitions;
+import org.jdrupes.vmoperator.common.VmExtraData;
 import org.jdrupes.vmoperator.common.VmPool;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
@@ -65,7 +65,7 @@ import org.jgrapes.core.annotation.Handler;
  */
 @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.ExcessiveImports" })
 public class VmMonitor extends
-        AbstractMonitor<VmDefinitionModel, VmDefinitionModels, VmChannel> {
+        AbstractMonitor<VmDefinition, VmDefinitions, VmChannel> {
 
     private final ChannelManager<String, VmChannel, ?> channelManager;
 
@@ -77,8 +77,8 @@ public class VmMonitor extends
      */
     public VmMonitor(Channel componentChannel,
             ChannelManager<String, VmChannel, ?> channelManager) {
-        super(componentChannel, VmDefinitionModel.class,
-            VmDefinitionModels.class);
+        super(componentChannel, VmDefinition.class,
+            VmDefinitions.class);
         this.channelManager = channelManager;
     }
 
@@ -122,7 +122,7 @@ public class VmMonitor extends
 
     @Override
     protected void handleChange(K8sClient client,
-            Watch.Response<VmDefinitionModel> response) {
+            Watch.Response<VmDefinition> response) {
         V1ObjectMeta metadata = response.object.getMetadata();
         AtomicBoolean toBeAdded = new AtomicBoolean(false);
         VmChannel channel = channelManager.channel(metadata.getName())
@@ -132,21 +132,17 @@ public class VmMonitor extends
             });
 
         // Get full definition and associate with channel as backup
-        var vmModel = response.object;
-        if (vmModel.data() == null) {
+        var vmDef = response.object;
+        if (vmDef.data() == null) {
             // ADDED event does not provide data, see
             // https://github.com/kubernetes-client/java/issues/3215
-            vmModel = getModel(client, vmModel);
+            vmDef = getModel(client, vmDef);
         }
-        VmDefinition vmDef = null;
-        if (vmModel.data() != null) {
+        if (vmDef.data() != null) {
             // New data, augment and save
-            vmDef = client.getJSON().getGson().fromJson(vmModel.data(),
-                VmDefinition.class);
-            addDynamicData(channel.client(), vmDef, channel.vmDefinition());
+            addExtraData(channel.client(), vmDef, channel.vmDefinition());
             channel.setVmDefinition(vmDef);
-        }
-        if (vmDef == null) {
+        } else {
             // Reuse cached (e.g. if deleted)
             vmDef = channel.vmDefinition();
         }
@@ -173,8 +169,7 @@ public class VmMonitor extends
         channel.pipeline().fire(chgEvt, channel);
     }
 
-    private VmDefinitionModel getModel(K8sClient client,
-            VmDefinitionModel vmDef) {
+    private VmDefinition getModel(K8sClient client, VmDefinition vmDef) {
         try {
             return VmDefinitionStub.get(client, context(), namespace(),
                 vmDef.metadata().getName()).model().orElse(null);
@@ -184,17 +179,14 @@ public class VmMonitor extends
     }
 
     @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-    private void addDynamicData(K8sClient client, VmDefinition vmDef,
+    private void addExtraData(K8sClient client, VmDefinition vmDef,
             VmDefinition prevState) {
-        // Maintain (or initialize) the resetCount
-        vmDef.extra("resetCount",
-            Optional.ofNullable(prevState).map(d -> d.extra("resetCount"))
-                .orElse(0L));
+        var extra = new VmExtraData(vmDef);
 
-        // Node information
-        // Add defaults in case the VM is not running
-        vmDef.extra("nodeName", "");
-        vmDef.extra("nodeAddress", "");
+        // Maintain (or initialize) the resetCount
+        extra.resetCount(
+            Optional.ofNullable(prevState).flatMap(VmDefinition::extra)
+                .map(VmExtraData::resetCount).orElse(0L));
 
         // VM definition status changes before the pod terminates.
         // This results in pod information being shown for a stopped
@@ -202,6 +194,8 @@ public class VmMonitor extends
         if (!vmDef.conditionStatus("Running").orElse(false)) {
             return;
         }
+
+        // Get pod and extract node information.
         var podSearch = new ListOptions();
         podSearch.setLabelSelector("app.kubernetes.io/name=" + APP_NAME
             + ",app.kubernetes.io/component=" + APP_NAME
@@ -211,16 +205,15 @@ public class VmMonitor extends
                 = K8sV1PodStub.list(client, namespace(), podSearch);
             for (var podStub : podList) {
                 var nodeName = podStub.model().get().getSpec().getNodeName();
-                vmDef.extra("nodeName", nodeName);
-                logger.fine(() -> "Added node name " + nodeName
+                logger.fine(() -> "Adding node name " + nodeName
                     + " to VM info for " + vmDef.name());
                 @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
                 var addrs = new ArrayList<String>();
                 podStub.model().get().getStatus().getPodIPs().stream()
                     .map(ip -> ip.getIp()).forEach(addrs::add);
-                vmDef.extra("nodeAddresses", addrs);
-                logger.fine(() -> "Added node addresses " + addrs
+                logger.fine(() -> "Adding node addresses " + addrs
                     + " to VM info for " + vmDef.name());
+                extra.nodeInfo(nodeName, addrs);
             }
         } catch (ApiException e) {
             logger.log(Level.WARNING, e,
@@ -262,49 +255,56 @@ public class VmMonitor extends
     @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     public void onAssignVm(AssignVm event)
             throws ApiException, InterruptedException {
-        // Search for existing assignment.
-        var assignedVm = channelManager.channels().stream()
-            .filter(c -> c.vmDefinition().assignedFrom()
-                .map(p -> p.equals(event.fromPool())).orElse(false))
-            .filter(c -> c.vmDefinition().assignedTo()
-                .map(u -> u.equals(event.toUser())).orElse(false))
-            .findFirst();
-        if (assignedVm.isPresent()) {
-            var vmDef = assignedVm.get().vmDefinition();
-            event.setResult(new VmData(vmDef, assignedVm.get()));
-            return;
+        while (true) {
+            // Search for existing assignment.
+            var vmQuery = channelManager.channels().stream()
+                .filter(c -> c.vmDefinition().assignedFrom()
+                    .map(p -> p.equals(event.fromPool())).orElse(false))
+                .filter(c -> c.vmDefinition().assignedTo()
+                    .map(u -> u.equals(event.toUser())).orElse(false))
+                .findFirst();
+            if (vmQuery.isPresent()) {
+                var vmDef = vmQuery.get().vmDefinition();
+                event.setResult(new VmData(vmDef, vmQuery.get()));
+                return;
+            }
+
+            // Get the pool definition for checking possible assignment
+            VmPool vmPool = newEventPipeline().fire(new GetPools()
+                .withName(event.fromPool())).get().stream().findFirst()
+                .orElse(null);
+            if (vmPool == null) {
+                return;
+            }
+
+            // Find available VM.
+            vmQuery = channelManager.channels().stream()
+                .filter(c -> vmPool.isAssignable(c.vmDefinition()))
+                .sorted(Comparator.comparing((VmChannel c) -> c.vmDefinition()
+                    .assignmentLastUsed().orElse(Instant.ofEpochSecond(0)))
+                    .thenComparing(preferRunning))
+                .findFirst();
+
+            // None found
+            if (vmQuery.isEmpty()) {
+                return;
+            }
+
+            // Assign to user
+            var chosenVm = vmQuery.get();
+            var vmPipeline = chosenVm.pipeline();
+            if (Optional.ofNullable(vmPipeline.fire(new UpdateAssignment(
+                vmPool.name(), event.toUser()), chosenVm).get())
+                .orElse(false)) {
+                var vmDef = chosenVm.vmDefinition();
+                event.setResult(new VmData(vmDef, chosenVm));
+
+                // Make sure that a newly assigned VM is running.
+                chosenVm.pipeline().fire(new ModifyVm(vmDef.name(),
+                    "state", "Running", chosenVm));
+                return;
+            }
         }
-
-        // Get the pool definition assignability check
-        VmPool vmPool = newEventPipeline().fire(new GetPools()
-            .withName(event.fromPool())).get().stream().findFirst()
-            .orElse(null);
-        if (vmPool == null) {
-            return;
-        }
-
-        // Find available VM.
-        assignedVm = channelManager.channels().stream()
-            .filter(c -> vmPool.isAssignable(c.vmDefinition()))
-            .sorted(Comparator.comparing((VmChannel c) -> c.vmDefinition()
-                .assignmentLastUsed().orElse(Instant.ofEpochSecond(0)))
-                .thenComparing(preferRunning))
-            .findFirst();
-
-        // None found
-        if (assignedVm.isEmpty()) {
-            return;
-        }
-
-        // Assign to user
-        assignedVm.get().pipeline().fire(new UpdateAssignment(vmPool.name(),
-            event.toUser()), assignedVm.get()).get();
-        var vmDef = assignedVm.get().vmDefinition();
-        event.setResult(new VmData(vmDef, assignedVm.get()));
-
-        // Make sure that a newly assigned VM is running.
-        assignedVm.get().pipeline().fire(new ModifyVm(vmDef.name(),
-            "state", "Running", assignedVm.get()));
     }
 
     private static Comparator<VmChannel> preferRunning

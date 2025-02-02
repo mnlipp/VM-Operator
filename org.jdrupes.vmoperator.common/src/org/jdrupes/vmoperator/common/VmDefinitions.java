@@ -22,10 +22,10 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 /**
- * Represents a list of {@link VmDefinitionModel}s.
+ * Represents a list of {@link VmDefinition}s.
  */
-public class VmDefinitionModels
-        extends K8sDynamicModelsBase<VmDefinitionModel> {
+public class VmDefinitions
+        extends K8sDynamicModelsBase<VmDefinition> {
 
     /**
      * Initialize the object list using the given JSON data.
@@ -33,7 +33,7 @@ public class VmDefinitionModels
      * @param delegate the gson instance to use for extracting structured data
      * @param data the data
      */
-    public VmDefinitionModels(Gson delegate, JsonObject data) {
-        super(VmDefinitionModel.class, delegate, data);
+    public VmDefinitions(Gson delegate, JsonObject data) {
+        super(VmDefinition.class, delegate, data);
     }
 }

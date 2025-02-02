@@ -187,7 +187,8 @@ public class PoolMonitor extends
             new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
             vmDef.namespace(), vmDef.name());
         vmStub.updateStatus(from -> {
-            JsonObject status = from.status();
+            // TODO
+            JsonObject status = from.statusJson();
             var assignment = GsonPtr.to(status).to("assignment");
             assignment.set("lastUsed", ccChange.get().toString());
             return status;

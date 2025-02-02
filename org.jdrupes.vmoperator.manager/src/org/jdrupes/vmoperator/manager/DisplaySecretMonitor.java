@@ -185,7 +185,7 @@ public class DisplaySecretMonitor
             new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
             event.vmDefinition().namespace(), event.vmDefinition().name());
         vmStub.updateStatus(from -> {
-            JsonObject status = from.status();
+            JsonObject status = from.statusJson();
             status.addProperty("consoleUser", event.user());
             return status;
         });

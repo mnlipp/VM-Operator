@@ -33,7 +33,7 @@ import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.common.K8s;
-import org.jdrupes.vmoperator.common.VmDefinitionModel;
+import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
 import org.jdrupes.vmoperator.runner.qemu.events.BalloonChangeEvent;
 import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
@@ -140,12 +140,12 @@ public class StatusUpdater extends VmDefUpdater {
         if (vmDef.isPresent()
             && vmDef.get().metadata().getGeneration() == observedGeneration
             && (event.configuration().hasDisplayPassword
-                || vmDef.get().status().getAsJsonPrimitive(
+                || vmDef.get().statusJson().getAsJsonPrimitive(
                     "displayPasswordSerial").getAsInt() == -1)) {
             return;
         }
         vmStub.updateStatus(vmDef.get(), from -> {
-            JsonObject status = from.status();
+            JsonObject status = from.statusJson();
             if (!event.configuration().hasDisplayPassword) {
                 status.addProperty("displayPasswordSerial", -1);
             }
@@ -169,14 +169,14 @@ public class StatusUpdater extends VmDefUpdater {
         "PMD.AvoidLiteralsInIfCondition" })
     public void onRunnerStateChanged(RunnerStateChange event)
             throws ApiException {
-        VmDefinitionModel vmDef;
+        VmDefinition vmDef;
         if (vmStub == null || (vmDef = vmStub.model().orElse(null)) == null) {
             return;
         }
         vmStub.updateStatus(vmDef, from -> {
-            JsonObject status = from.status();
+            JsonObject status = from.statusJson();
             boolean running = RUNNING_STATES.contains(event.runState());
-            updateCondition(vmDef, vmDef.status(), "Running", running,
+            updateCondition(vmDef, vmDef.statusJson(), "Running", running,
                 event.reason(), event.message());
             if (event.runState() == RunState.STARTING) {
                 status.addProperty("ram", GsonPtr.to(from.data())
@@ -230,7 +230,7 @@ public class StatusUpdater extends VmDefUpdater {
             return;
         }
         vmStub.updateStatus(from -> {
-            JsonObject status = from.status();
+            JsonObject status = from.statusJson();
             status.addProperty("ram",
                 new Quantity(new BigDecimal(event.size()), Format.BINARY_SI)
                     .toSuffixedString());
@@ -250,7 +250,7 @@ public class StatusUpdater extends VmDefUpdater {
             return;
         }
         vmStub.updateStatus(from -> {
-            JsonObject status = from.status();
+            JsonObject status = from.statusJson();
             status.addProperty("cpus", event.usedCpus().size());
             return status;
         });
@@ -269,7 +269,7 @@ public class StatusUpdater extends VmDefUpdater {
             return;
         }
         vmStub.updateStatus(from -> {
-            JsonObject status = from.status();
+            JsonObject status = from.statusJson();
             status.addProperty("displayPasswordSerial",
                 status.get("displayPasswordSerial").getAsLong() + 1);
             return status;
