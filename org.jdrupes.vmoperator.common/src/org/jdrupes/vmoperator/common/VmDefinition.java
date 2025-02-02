@@ -24,9 +24,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.kubernetes.client.openapi.JSON;
 import io.kubernetes.client.openapi.models.V1Condition;
-import io.kubernetes.client.util.Strings;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,9 +35,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.jdrupes.vmoperator.util.DataPath;
@@ -52,7 +47,7 @@ import org.jdrupes.vmoperator.util.DataPath;
     "PMD.CouplingBetweenObjects" })
 public class VmDefinition extends K8sDynamicModel {
 
-    @SuppressWarnings("PMD.FieldNamingConventions")
+    @SuppressWarnings({ "PMD.FieldNamingConventions", "unused" })
     private static final Logger logger
         = Logger.getLogger(VmDefinition.class.getName());
     @SuppressWarnings("PMD.FieldNamingConventions")
@@ -62,7 +57,7 @@ public class VmDefinition extends K8sDynamicModel {
         = new ObjectMapper().registerModule(new JavaTimeModule());
 
     private final Model model;
-    private final Map<String, Object> extra = new ConcurrentHashMap<>();
+    private VmExtraData extraData;
 
     /**
      * The VM state from the VM definition.
@@ -295,27 +290,21 @@ public class VmDefinition extends K8sDynamicModel {
     }
 
     /**
-     * Set extra data (locally used, unknown to kubernetes).
-     *
-     * @param property the property
-     * @param value the value
+     * Set extra data (unknown to kubernetes).
      * @return the VM definition
      */
-    public VmDefinition extra(String property, Object value) {
-        extra.put(property, value);
+    /* default */ VmDefinition extra(VmExtraData extraData) {
+        this.extraData = extraData;
         return this;
     }
 
     /**
-     * Return extra data.
+     * Return the extra data.
      *
-     * @param <T> the generic type
-     * @param property the property
-     * @return the object
+     * @return the data
      */
-    @SuppressWarnings("unchecked")
-    public <T> T extra(String property) {
-        return (T) extra.get(property);
+    public Optional<VmExtraData> extra() {
+        return Optional.ofNullable(extraData);
     }
 
     /**
@@ -401,78 +390,6 @@ public class VmDefinition extends K8sDynamicModel {
     public Optional<Long> displayPasswordSerial() {
         return this.<Number> fromStatus("displayPasswordSerial")
             .map(Number::longValue);
-    }
-
-    /**
-     * Create a connection file.
-     *
-     * @param password the password
-     * @param preferredIpVersion the preferred IP version
-     * @param deleteConnectionFile the delete connection file
-     * @return the string
-     */
-    public String connectionFile(String password,
-            Class<?> preferredIpVersion, boolean deleteConnectionFile) {
-        var addr = displayIp(preferredIpVersion);
-        if (addr.isEmpty()) {
-            logger.severe(() -> "Failed to find display IP for " + name());
-            return null;
-        }
-        var port = this.<Number> fromVm("display", "spice", "port")
-            .map(Number::longValue);
-        if (port.isEmpty()) {
-            logger.severe(() -> "No port defined for display of " + name());
-            return null;
-        }
-        StringBuffer data = new StringBuffer(100)
-            .append("[virt-viewer]\ntype=spice\nhost=")
-            .append(addr.get().getHostAddress()).append("\nport=")
-            .append(port.get().toString())
-            .append('\n');
-        if (password != null) {
-            data.append("password=").append(password).append('\n');
-        }
-        this.<String> fromVm("display", "spice", "proxyUrl")
-            .ifPresent(u -> {
-                if (!Strings.isNullOrEmpty(u)) {
-                    data.append("proxy=").append(u).append('\n');
-                }
-            });
-        if (deleteConnectionFile) {
-            data.append("delete-this-file=1\n");
-        }
-        return data.toString();
-    }
-
-    private Optional<InetAddress> displayIp(Class<?> preferredIpVersion) {
-        Optional<String> server = fromVm("display", "spice", "server");
-        if (server.isPresent()) {
-            var srv = server.get();
-            try {
-                var addr = InetAddress.getByName(srv);
-                logger.fine(() -> "Using IP address from CRD for "
-                    + getMetadata().getName() + ": " + addr);
-                return Optional.of(addr);
-            } catch (UnknownHostException e) {
-                logger.log(Level.SEVERE, e, () -> "Invalid server address "
-                    + srv + ": " + e.getMessage());
-                return Optional.empty();
-            }
-        }
-        var addrs = Optional.<List<String>> ofNullable(
-            extra("nodeAddresses")).orElse(Collections.emptyList()).stream()
-            .map(a -> {
-                try {
-                    return InetAddress.getByName(a);
-                } catch (UnknownHostException e) {
-                    logger.warning(() -> "Invalid IP address: " + a);
-                    return null;
-                }
-            }).filter(a -> a != null).toList();
-        logger.fine(() -> "Known IP addresses for " + name() + ": " + addrs);
-        return addrs.stream()
-            .filter(a -> preferredIpVersion.isAssignableFrom(a.getClass()))
-            .findFirst().or(() -> addrs.stream().findFirst());
     }
 
     /**

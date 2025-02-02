@@ -810,13 +810,12 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
         }
         var pwQuery = Event.onCompletion(new GetDisplayPassword(vmDef, user),
             e -> {
-                var data = vmDef.connectionFile(e.password().orElse(null),
-                    preferredIpVersion, deleteConnectionFile);
-                if (data == null) {
-                    return;
-                }
-                channel.respond(new NotifyConletView(type(),
-                    model.getConletId(), "openConsole", data));
+                vmDef.extra()
+                    .map(xtra -> xtra.connectionFile(e.password().orElse(null),
+                        preferredIpVersion, deleteConnectionFile))
+                    .ifPresent(
+                        cf -> channel.respond(new NotifyConletView(type(),
+                            model.getConletId(), "openConsole", cf)));
             });
         fire(pwQuery, vmChannel);
     }

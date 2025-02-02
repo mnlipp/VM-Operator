@@ -248,7 +248,7 @@ public class Reconciler extends Component {
     public void onResetVm(ResetVm event, VmChannel channel)
             throws ApiException, IOException, TemplateException {
         var vmDef = channel.vmDefinition();
-        vmDef.extra("resetCount", vmDef.<Long> extra("resetCount") + 1);
+        vmDef.extra().ifPresent(e -> e.resetCount(e.resetCount() + 1));
         Map<String, Object> model
             = prepareModel(channel.client(), channel.vmDefinition());
         cmReconciler.reconcile(model, channel);

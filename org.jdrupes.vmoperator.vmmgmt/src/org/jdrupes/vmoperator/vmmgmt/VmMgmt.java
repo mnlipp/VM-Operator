@@ -41,6 +41,7 @@ import java.util.Set;
 import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinition.Permission;
+import org.jdrupes.vmoperator.common.VmExtraData;
 import org.jdrupes.vmoperator.manager.events.ChannelTracker;
 import org.jdrupes.vmoperator.manager.events.GetDisplayPassword;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
@@ -252,7 +253,7 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
                 "name", vmDef.name()),
             "spec", spec,
             "status", status,
-            "nodeName", vmDef.extra("nodeName"),
+            "nodeName", vmDef.extra().map(VmExtraData::nodeName).orElse(""),
             "permissions", vmDef.permissionsFor(user, roles).stream()
                 .map(VmDefinition.Permission::toString).toList());
     }
@@ -484,13 +485,11 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
         }
         var pwQuery = Event.onCompletion(new GetDisplayPassword(vmDef, user),
             e -> {
-                var data = vmDef.connectionFile(e.password().orElse(null),
-                    preferredIpVersion, deleteConnectionFile);
-                if (data == null) {
-                    return;
-                }
-                channel.respond(new NotifyConletView(type(),
-                    model.getConletId(), "openConsole", data));
+                vmDef.extra().map(xtra -> xtra.connectionFile(
+                    e.password().orElse(null), preferredIpVersion,
+                    deleteConnectionFile)).ifPresent(
+                        cf -> channel.respond(new NotifyConletView(type(),
+                            model.getConletId(), "openConsole", cf)));
             });
         fire(pwQuery, vmChannel);
     }

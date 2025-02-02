@@ -43,6 +43,7 @@ import org.jdrupes.vmoperator.common.K8sV1StatefulSetStub;
 import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
 import org.jdrupes.vmoperator.common.VmDefinitions;
+import org.jdrupes.vmoperator.common.VmExtraData;
 import org.jdrupes.vmoperator.common.VmPool;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
@@ -139,7 +140,7 @@ public class VmMonitor extends
         }
         if (vmDef.data() != null) {
             // New data, augment and save
-            addDynamicData(channel.client(), vmDef, channel.vmDefinition());
+            addExtraData(channel.client(), vmDef, channel.vmDefinition());
             channel.setVmDefinition(vmDef);
         } else {
             // Reuse cached (e.g. if deleted)
@@ -178,17 +179,14 @@ public class VmMonitor extends
     }
 
     @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-    private void addDynamicData(K8sClient client, VmDefinition vmDef,
+    private void addExtraData(K8sClient client, VmDefinition vmDef,
             VmDefinition prevState) {
-        // Maintain (or initialize) the resetCount
-        vmDef.extra("resetCount",
-            Optional.ofNullable(prevState).map(d -> d.extra("resetCount"))
-                .orElse(0L));
+        var extra = new VmExtraData(vmDef);
 
-        // Node information
-        // Add defaults in case the VM is not running
-        vmDef.extra("nodeName", "");
-        vmDef.extra("nodeAddress", "");
+        // Maintain (or initialize) the resetCount
+        extra.resetCount(
+            Optional.ofNullable(prevState).flatMap(VmDefinition::extra)
+                .map(VmExtraData::resetCount).orElse(0L));
 
         // VM definition status changes before the pod terminates.
         // This results in pod information being shown for a stopped
@@ -196,6 +194,8 @@ public class VmMonitor extends
         if (!vmDef.conditionStatus("Running").orElse(false)) {
             return;
         }
+
+        // Get pod and extract node information.
         var podSearch = new ListOptions();
         podSearch.setLabelSelector("app.kubernetes.io/name=" + APP_NAME
             + ",app.kubernetes.io/component=" + APP_NAME
@@ -205,16 +205,15 @@ public class VmMonitor extends
                 = K8sV1PodStub.list(client, namespace(), podSearch);
             for (var podStub : podList) {
                 var nodeName = podStub.model().get().getSpec().getNodeName();
-                vmDef.extra("nodeName", nodeName);
-                logger.fine(() -> "Added node name " + nodeName
+                logger.fine(() -> "Adding node name " + nodeName
                     + " to VM info for " + vmDef.name());
                 @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
                 var addrs = new ArrayList<String>();
                 podStub.model().get().getStatus().getPodIPs().stream()
                     .map(ip -> ip.getIp()).forEach(addrs::add);
-                vmDef.extra("nodeAddresses", addrs);
-                logger.fine(() -> "Added node addresses " + addrs
+                logger.fine(() -> "Adding node addresses " + addrs
                     + " to VM info for " + vmDef.name());
+                extra.nodeInfo(nodeName, addrs);
             }
         } catch (ApiException e) {
             logger.log(Level.WARNING, e,
