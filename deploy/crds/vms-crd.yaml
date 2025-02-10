@@ -1491,6 +1491,10 @@ spec:
                     by the runner if password protection is not enabled.
                   type: integer
                   default: 0
+                osinfo:
+                  description: Copy of the OS info provided by the guest agent.
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
                 assignment:
                   description: >-
                     The assignment of this VM to a a particular user.

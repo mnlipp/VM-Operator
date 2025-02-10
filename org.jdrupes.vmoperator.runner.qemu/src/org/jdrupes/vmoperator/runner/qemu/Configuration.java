@@ -67,6 +67,9 @@ public class Configuration implements Dto {
     /** The monitor socket. */
     public Path monitorSocket;
 
+    /** The guest agent socket socket. */
+    public Path guestAgentSocket;
+
     /** The firmware rom. */
     public Path firmwareRom;
 
@@ -341,6 +344,7 @@ public class Configuration implements Dto {
             runtimeDir.toFile().mkdir();
             swtpmSocket = runtimeDir.resolve("swtpm-sock");
             monitorSocket = runtimeDir.resolve("monitor.sock");
+            guestAgentSocket = runtimeDir.resolve("org.qemu.guest_agent.0");
         }
         if (!Files.isDirectory(runtimeDir) || !Files.isWritable(runtimeDir)) {
             logger.severe(() -> String.format(
