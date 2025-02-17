@@ -33,7 +33,6 @@ import java.util.logging.Level;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCommand;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpGuestGetOsinfo;
 import org.jdrupes.vmoperator.runner.qemu.events.GuestAgentCommand;
-import org.jdrupes.vmoperator.runner.qemu.events.MonitorReady;
 import org.jdrupes.vmoperator.runner.qemu.events.OsinfoEvent;
 import org.jdrupes.vmoperator.runner.qemu.events.VserportChangeEvent;
 import org.jgrapes.core.Channel;
@@ -188,10 +187,6 @@ public class GuestAgentClient extends Component {
         logger.fine(() -> "guest agent(in): " + line);
         try {
             var response = mapper.readValue(line, ObjectNode.class);
-            if (response.has("QMP")) {
-                rep.fire(new MonitorReady());
-                return;
-            }
             if (response.has("return") || response.has("error")) {
                 QmpCommand executed = executing.poll();
                 logger.fine(

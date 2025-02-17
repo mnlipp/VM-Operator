@@ -61,6 +61,7 @@ import org.jdrupes.vmoperator.runner.qemu.commands.QmpReset;
 import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
 import org.jdrupes.vmoperator.runner.qemu.events.Exit;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
+import org.jdrupes.vmoperator.runner.qemu.events.OsinfoEvent;
 import org.jdrupes.vmoperator.runner.qemu.events.QmpConfigured;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.RunState;
@@ -619,8 +620,8 @@ public class Runner extends Component {
     }
 
     /**
-     * On monitor ready.
-     *
+     * When the monitor is ready, send QEMU its initial configuration.  
+     * 
      * @param event the event
      */
     @Handler
@@ -629,34 +630,50 @@ public class Runner extends Component {
     }
 
     /**
-     * On configure qemu.
-     *
-     * @param event the event
-     */
-    @Handler(priority = -1000)
-    public void onConfigureQemuFinal(ConfigureQemu event) {
-        if (state == RunState.STARTING) {
-            fire(new MonitorCommand(new QmpCont()));
-            state = RunState.RUNNING;
-            rep.fire(new RunnerStateChange(state, "VmStarted",
-                "Qemu has been configured and is continuing"));
-        }
-    }
-
-    /**
-     * On configure qemu.
+     * Whenever a new QEMU configuration is available, check if it
+     * is supposed to trigger a reset.
      *
      * @param event the event
      */
     @Handler
     public void onConfigureQemu(ConfigureQemu event) {
-        if (state == RunState.RUNNING) {
+        if (state.vmActive()) {
             if (resetCounter != null
                 && event.configuration().resetCounter != null
                 && event.configuration().resetCounter > resetCounter) {
                 fire(new MonitorCommand(new QmpReset()));
             }
             resetCounter = event.configuration().resetCounter;
+        }
+    }
+
+    /**
+     * As last step when handling a new configuration, check if
+     * QEMU is suspended after startup and should be continued. 
+     * 
+     * @param event the event
+     */
+    @Handler(priority = -1000)
+    public void onConfigureQemuFinal(ConfigureQemu event) {
+        if (state == RunState.STARTING) {
+            state = RunState.BOOTING;
+            fire(new MonitorCommand(new QmpCont()));
+            rep.fire(new RunnerStateChange(state, "VmStarted",
+                "Qemu has been configured and is continuing"));
+        }
+    }
+
+    /**
+     * Receiving the OSinfo means that the OS has been booted.
+     *
+     * @param event the event
+     */
+    @Handler
+    public void onOsinfo(OsinfoEvent event) {
+        if (state == RunState.BOOTING) {
+            state = RunState.BOOTED;
+            rep.fire(new RunnerStateChange(state, "VmBooted",
+                "The VM has started the guest agent."));
         }
     }
 
@@ -675,6 +692,7 @@ public class Runner extends Component {
                 mayBeStartQemu(QemuPreps.CloudInit);
                 return;
             }
+
             // No other process(es) may exit during startup
             if (state == RunState.STARTING) {
                 logger.severe(() -> "Process " + procDef.name
@@ -683,7 +701,9 @@ public class Runner extends Component {
                 rep.fire(new Stop());
                 return;
             }
-            if (procDef.equals(qemuDefinition) && state == RunState.RUNNING) {
+
+            // No processes may exit while the VM is running normally
+            if (procDef.equals(qemuDefinition) && state.vmActive()) {
                 rep.fire(new Exit(event.exitValue()));
             }
             logger.info(() -> "Process " + procDef.name
