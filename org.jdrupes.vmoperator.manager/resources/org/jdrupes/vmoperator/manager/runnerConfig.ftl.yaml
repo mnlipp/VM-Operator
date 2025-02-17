@@ -10,7 +10,7 @@ metadata:
   annotations:
     vmoperator.jdrupes.org/version: ${ managerVersion }
   ownerReferences:
-  - apiVersion: ${ cr.apiVersion }
+  - apiVersion: ${ cr.apiVersion() }
     kind: ${ constants.VM_OP_KIND_VM }
     name: ${ cr.name() }
     uid: ${ cr.metadata().getUid() }
@@ -53,7 +53,7 @@ data:
       # i.e. if you start the VM without a value for this property, and
       # decide to trigger a reset later, you have to first set the value
       # and then inrement it.
-      resetCounter: ${ cr.extra("resetCount")?c }
+      resetCounter: ${ cr.extra().get().resetCount()?c }
 
       # Forward the cloud-init data if provided
       <#if spec.cloudInit??>    

@@ -16,24 +16,45 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.jdrupes.vmoperator.common;
+package org.jdrupes.vmoperator.manager.events;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
+import org.jgrapes.core.Event;
 
 /**
- * Represents a VM definition.
+ * Note the assignment to a user in the VM status.
  */
 @SuppressWarnings("PMD.DataClass")
-public class VmDefinitionModel extends K8sDynamicModel {
+public class UpdateAssignment extends Event<Boolean> {
+
+    private final String usedPool;
+    private final String toUser;
 
     /**
-     * Instantiates a new model from the JSON representation.
+     * Instantiates a new event.
      *
-     * @param delegate the gson instance to use for extracting structured data
-     * @param json the JSON
+     * @param usedPool the used pool
+     * @param toUser the to user
      */
-    public VmDefinitionModel(Gson delegate, JsonObject json) {
-        super(delegate, json);
+    public UpdateAssignment(String usedPool, String toUser) {
+        this.usedPool = usedPool;
+        this.toUser = toUser;
+    }
+
+    /**
+     * Gets the pool to assign from.
+     *
+     * @return the pool
+     */
+    public String usedPool() {
+        return usedPool;
+    }
+
+    /**
+     * Gets the user to assign to.
+     *
+     * @return the to user
+     */
+    public String toUser() {
+        return toUser;
     }
 }

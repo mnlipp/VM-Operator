@@ -20,11 +20,10 @@ package org.jdrupes.vmoperator.common;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import io.kubernetes.client.openapi.JSON;
 import io.kubernetes.client.openapi.models.V1Condition;
-import io.kubernetes.client.openapi.models.V1ObjectMeta;
-import io.kubernetes.client.util.Strings;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,9 +35,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.jdrupes.vmoperator.util.DataPath;
@@ -46,22 +43,21 @@ import org.jdrupes.vmoperator.util.DataPath;
 /**
  * Represents a VM definition.
  */
-@SuppressWarnings({ "PMD.DataClass", "PMD.TooManyMethods" })
-public class VmDefinition {
+@SuppressWarnings({ "PMD.DataClass", "PMD.TooManyMethods",
+    "PMD.CouplingBetweenObjects" })
+public class VmDefinition extends K8sDynamicModel {
 
-    @SuppressWarnings("PMD.FieldNamingConventions")
+    @SuppressWarnings({ "PMD.FieldNamingConventions", "unused" })
     private static final Logger logger
         = Logger.getLogger(VmDefinition.class.getName());
+    @SuppressWarnings("PMD.FieldNamingConventions")
+    private static final Gson gson = new JSON().getGson();
     @SuppressWarnings("PMD.FieldNamingConventions")
     private static final ObjectMapper objectMapper
         = new ObjectMapper().registerModule(new JavaTimeModule());
 
-    private String kind;
-    private String apiVersion;
-    private V1ObjectMeta metadata;
-    private Map<String, Object> spec;
-    private Map<String, Object> status;
-    private final Map<String, Object> extra = new ConcurrentHashMap<>();
+    private final Model model;
+    private VmExtraData extraData;
 
     /**
      * The VM state from the VM definition.
@@ -145,66 +141,34 @@ public class VmDefinition {
     }
 
     /**
-     * Gets the kind.
+     * Instantiates a new vm definition.
      *
-     * @return the kind
+     * @param delegate the delegate
+     * @param json the json
      */
-    public String getKind() {
-        return kind;
+    public VmDefinition(Gson delegate, JsonObject json) {
+        super(delegate, json);
+        model = gson.fromJson(json, Model.class);
     }
 
     /**
-     * Sets the kind.
+     * Gets the spec.
      *
-     * @param kind the kind to set
+     * @return the spec
      */
-    public void setKind(String kind) {
-        this.kind = kind;
+    public Map<String, Object> spec() {
+        return model.getSpec();
     }
 
     /**
-     * Gets the api version.
+     * Get a value from the spec using {@link DataPath#get}.
      *
-     * @return the apiVersion
+     * @param <T> the generic type
+     * @param selectors the selectors
+     * @return the value, if found
      */
-    public String getApiVersion() {
-        return apiVersion;
-    }
-
-    /**
-     * Sets the api version.
-     *
-     * @param apiVersion the apiVersion to set
-     */
-    public void setApiVersion(String apiVersion) {
-        this.apiVersion = apiVersion;
-    }
-
-    /**
-     * Gets the metadata.
-     *
-     * @return the metadata
-     */
-    public V1ObjectMeta getMetadata() {
-        return metadata;
-    }
-
-    /**
-     * Gets the metadata.
-     *
-     * @return the metadata
-     */
-    public V1ObjectMeta metadata() {
-        return metadata;
-    }
-
-    /**
-     * Sets the metadata.
-     *
-     * @param metadata the metadata to set
-     */
-    public void setMetadata(V1ObjectMeta metadata) {
-        this.metadata = metadata;
+    public <T> Optional<T> fromSpec(Object... selectors) {
+        return DataPath.get(spec(), selectors);
     }
 
     /**
@@ -218,35 +182,6 @@ public class VmDefinition {
     }
 
     /**
-     * Gets the spec.
-     *
-     * @return the spec
-     */
-    public Map<String, Object> getSpec() {
-        return spec;
-    }
-
-    /**
-     * Gets the spec.
-     *
-     * @return the spec
-     */
-    public Map<String, Object> spec() {
-        return spec;
-    }
-
-    /**
-     * Get a value from the spec using {@link DataPath#get}.
-     *
-     * @param <T> the generic type
-     * @param selectors the selectors
-     * @return the value, if found
-     */
-    public <T> Optional<T> fromSpec(Object... selectors) {
-        return DataPath.get(spec, selectors);
-    }
-
-    /**
      * Get a value from the `spec().get("vm")` using {@link DataPath#get}.
      *
      * @param <T> the generic type
@@ -254,26 +189,8 @@ public class VmDefinition {
      * @return the value, if found
      */
     public <T> Optional<T> fromVm(Object... selectors) {
-        return DataPath.get(spec, "vm")
+        return DataPath.get(spec(), "vm")
             .flatMap(vm -> DataPath.get(vm, selectors));
-    }
-
-    /**
-     * Sets the spec.
-     *
-     * @param spec the spec to set
-     */
-    public void setSpec(Map<String, Object> spec) {
-        this.spec = spec;
-    }
-
-    /**
-     * Gets the status.
-     *
-     * @return the status
-     */
-    public Map<String, Object> getStatus() {
-        return status;
     }
 
     /**
@@ -282,7 +199,7 @@ public class VmDefinition {
      * @return the status
      */
     public Map<String, Object> status() {
-        return status;
+        return model.getStatus();
     }
 
     /**
@@ -293,16 +210,7 @@ public class VmDefinition {
      * @return the value, if found
      */
     public <T> Optional<T> fromStatus(Object... selectors) {
-        return DataPath.get(status, selectors);
-    }
-
-    /**
-     * Sets the status.
-     *
-     * @param status the status to set
-     */
-    public void setStatus(Map<String, Object> status) {
-        this.status = status;
+        return DataPath.get(status(), selectors);
     }
 
     /**
@@ -382,27 +290,21 @@ public class VmDefinition {
     }
 
     /**
-     * Set extra data (locally used, unknown to kubernetes).
-     *
-     * @param property the property
-     * @param value the value
+     * Set extra data (unknown to kubernetes).
      * @return the VM definition
      */
-    public VmDefinition extra(String property, Object value) {
-        extra.put(property, value);
+    /* default */ VmDefinition extra(VmExtraData extraData) {
+        this.extraData = extraData;
         return this;
     }
 
     /**
-     * Return extra data.
+     * Return the extra data.
      *
-     * @param <T> the generic type
-     * @param property the property
-     * @return the object
+     * @return the data
      */
-    @SuppressWarnings("unchecked")
-    public <T> T extra(String property) {
-        return (T) extra.get(property);
+    public Optional<VmExtraData> extra() {
+        return Optional.ofNullable(extraData);
     }
 
     /**
@@ -411,7 +313,7 @@ public class VmDefinition {
      * @return the string
      */
     public String name() {
-        return metadata.getName();
+        return metadata().getName();
     }
 
     /**
@@ -420,7 +322,7 @@ public class VmDefinition {
      * @return the string
      */
     public String namespace() {
-        return metadata.getNamespace();
+        return metadata().getNamespace();
     }
 
     /**
@@ -491,85 +393,13 @@ public class VmDefinition {
     }
 
     /**
-     * Create a connection file.
-     *
-     * @param password the password
-     * @param preferredIpVersion the preferred IP version
-     * @param deleteConnectionFile the delete connection file
-     * @return the string
-     */
-    public String connectionFile(String password,
-            Class<?> preferredIpVersion, boolean deleteConnectionFile) {
-        var addr = displayIp(preferredIpVersion);
-        if (addr.isEmpty()) {
-            logger.severe(() -> "Failed to find display IP for " + name());
-            return null;
-        }
-        var port = this.<Number> fromVm("display", "spice", "port")
-            .map(Number::longValue);
-        if (port.isEmpty()) {
-            logger.severe(() -> "No port defined for display of " + name());
-            return null;
-        }
-        StringBuffer data = new StringBuffer(100)
-            .append("[virt-viewer]\ntype=spice\nhost=")
-            .append(addr.get().getHostAddress()).append("\nport=")
-            .append(port.get().toString())
-            .append('\n');
-        if (password != null) {
-            data.append("password=").append(password).append('\n');
-        }
-        this.<String> fromVm("display", "spice", "proxyUrl")
-            .ifPresent(u -> {
-                if (!Strings.isNullOrEmpty(u)) {
-                    data.append("proxy=").append(u).append('\n');
-                }
-            });
-        if (deleteConnectionFile) {
-            data.append("delete-this-file=1\n");
-        }
-        return data.toString();
-    }
-
-    private Optional<InetAddress> displayIp(Class<?> preferredIpVersion) {
-        Optional<String> server = fromVm("display", "spice", "server");
-        if (server.isPresent()) {
-            var srv = server.get();
-            try {
-                var addr = InetAddress.getByName(srv);
-                logger.fine(() -> "Using IP address from CRD for "
-                    + getMetadata().getName() + ": " + addr);
-                return Optional.of(addr);
-            } catch (UnknownHostException e) {
-                logger.log(Level.SEVERE, e, () -> "Invalid server address "
-                    + srv + ": " + e.getMessage());
-                return Optional.empty();
-            }
-        }
-        var addrs = Optional.<List<String>> ofNullable(
-            extra("nodeAddresses")).orElse(Collections.emptyList()).stream()
-            .map(a -> {
-                try {
-                    return InetAddress.getByName(a);
-                } catch (UnknownHostException e) {
-                    logger.warning(() -> "Invalid IP address: " + a);
-                    return null;
-                }
-            }).filter(a -> a != null).toList();
-        logger.fine(() -> "Known IP addresses for " + name() + ": " + addrs);
-        return addrs.stream()
-            .filter(a -> preferredIpVersion.isAssignableFrom(a.getClass()))
-            .findFirst().or(() -> addrs.stream().findFirst());
-    }
-
-    /**
      * Hash code.
      *
      * @return the int
      */
     @Override
     public int hashCode() {
-        return Objects.hash(metadata.getNamespace(), metadata.getName());
+        return Objects.hash(metadata().getNamespace(), metadata().getName());
     }
 
     /**
@@ -590,9 +420,55 @@ public class VmDefinition {
             return false;
         }
         VmDefinition other = (VmDefinition) obj;
-        return Objects.equals(metadata.getNamespace(),
-            other.metadata.getNamespace())
-            && Objects.equals(metadata.getName(), other.metadata.getName());
+        return Objects.equals(metadata().getNamespace(),
+            other.metadata().getNamespace())
+            && Objects.equals(metadata().getName(), other.metadata().getName());
+    }
+
+    /**
+     * The Class Model.
+     */
+    public static class Model {
+
+        private Map<String, Object> spec;
+        private Map<String, Object> status;
+
+        /**
+         * Gets the spec.
+         *
+         * @return the spec
+         */
+        public Map<String, Object> getSpec() {
+            return spec;
+        }
+
+        /**
+         * Sets the spec.
+         *
+         * @param spec the spec to set
+         */
+        public void setSpec(Map<String, Object> spec) {
+            this.spec = spec;
+        }
+
+        /**
+         * Gets the status.
+         *
+         * @return the status
+         */
+        public Map<String, Object> getStatus() {
+            return status;
+        }
+
+        /**
+         * Sets the status.
+         *
+         * @param status the status to set
+         */
+        public void setStatus(Map<String, Object> status) {
+            this.status = status;
+        }
+
     }
 
 }

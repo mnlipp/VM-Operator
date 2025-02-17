@@ -10,7 +10,7 @@ metadata:
   annotations:
     vmoperator.jdrupes.org/version: ${ managerVersion }
   ownerReferences:
-  - apiVersion: ${ cr.apiVersion }
+  - apiVersion: ${ cr.apiVersion() }
     kind: ${ constants.VM_OP_KIND_VM }
     name: ${ cr.name() }
     uid: ${ cr.metadata().getUid() }

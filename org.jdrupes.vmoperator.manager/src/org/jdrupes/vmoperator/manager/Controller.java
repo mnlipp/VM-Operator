@@ -18,23 +18,29 @@
 
 package org.jdrupes.vmoperator.manager;
 
+import com.google.gson.JsonObject;
 import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
+import org.jdrupes.vmoperator.common.VmDefinitionStub;
 import org.jdrupes.vmoperator.manager.events.ChannelManager;
 import org.jdrupes.vmoperator.manager.events.Exit;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
+import org.jdrupes.vmoperator.manager.events.UpdateAssignment;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
+import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.annotation.Handler;
@@ -203,5 +209,42 @@ public class Controller extends Component {
             logger.warning(
                 () -> "Cannot patch definition for Vm " + vmStub.name());
         }
+    }
+
+    /**
+     * Attempt to Update the assignment information in the status of the
+     * VM CR. Returns true if successful. The handler does not attempt
+     * retries, because in case of failure it will be necessary to
+     * re-evaluate the chosen VM.
+     *
+     * @param event the event
+     * @param channel the channel
+     * @throws ApiException the api exception
+     */
+    @Handler
+    public void onUpdatedAssignment(UpdateAssignment event, VmChannel channel)
+            throws ApiException {
+        try {
+            var vmDef = channel.vmDefinition();
+            var vmStub = VmDefinitionStub.get(channel.client(),
+                new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
+                vmDef.namespace(), vmDef.name());
+            if (vmStub.updateStatus(vmDef, from -> {
+                JsonObject status = from.statusJson();
+                var assignment = GsonPtr.to(status).to("assignment");
+                assignment.set("pool", event.usedPool());
+                assignment.set("user", event.toUser());
+                assignment.set("lastUsed", Instant.now().toString());
+                return status;
+            }).isPresent()) {
+                event.setResult(true);
+            }
+        } catch (ApiException e) {
+            // Log exceptions except for conflict, which can be expected
+            if (HttpURLConnection.HTTP_CONFLICT != e.getCode()) {
+                throw e;
+            }
+        }
+        event.setResult(false);
     }
 }

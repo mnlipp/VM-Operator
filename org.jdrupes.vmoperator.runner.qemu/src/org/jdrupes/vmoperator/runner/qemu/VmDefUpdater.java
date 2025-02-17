@@ -31,7 +31,7 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import org.jdrupes.vmoperator.common.K8sClient;
-import org.jdrupes.vmoperator.common.VmDefinitionModel;
+import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.runner.qemu.events.Exit;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
@@ -118,7 +118,7 @@ public class VmDefUpdater extends Component {
      * @param reason the reason for the change
      * @param message the message
      */
-    protected void updateCondition(VmDefinitionModel from, JsonObject status,
+    protected void updateCondition(VmDefinition from, JsonObject status,
             String type, boolean state, String reason, String message) {
         // Optimize, as we can get this several times
         var current = status.getAsJsonArray("conditions").asList().stream()
