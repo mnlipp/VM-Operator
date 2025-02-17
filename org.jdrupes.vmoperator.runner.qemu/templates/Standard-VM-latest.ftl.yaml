@@ -122,7 +122,7 @@
     #   Best explanation found: 
     #   https://fedoraproject.org/wiki/Features/VirtioSerial
     - [ "-device", "virtio-serial-pci,id=virtio-serial0" ]
-    #   - Guest agent serial connection
+    #   - Guest agent serial connection. MUST have id "channel0"!
     - [ "-device", "virtserialport,id=channel0,name=org.qemu.guest_agent.0,\
         chardev=guest-agent-socket" ]
     - [ "-chardev","socket,id=guest-agent-socket,\

@@ -5,9 +5,7 @@ metadata:
   name: test-vm
 spec:
   image:
-    repository: docker-registry.lan.mnl.de
-    path: vmoperator/org.jdrupes.vmoperator.runner.qemu-alpine
-    version: latest
+    source: registry.mnl.de/org/jdrupes/vm-operator/org.jdrupes.vmoperator.runner.qemu-arch:testing
     pullPolicy: Always
 
   permissions:
@@ -34,8 +32,9 @@ spec:
     currentCpus: 4
   
     networks:
-    - tap:
-        mac: "02:16:3e:33:58:10"
+    # No bridge on test cluster
+    - user: {}
+
     disks:
     - volumeClaimTemplate:
         metadata:

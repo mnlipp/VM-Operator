@@ -1,3 +1,4 @@
 /test-vm-ci.yaml
 /kubeconfig.yaml
 /crds/
+/.vm-operator-cmd.rc

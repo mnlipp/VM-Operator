@@ -18,12 +18,16 @@
 
 package org.jdrupes.vmoperator.runner.qemu;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.custom.Quantity.Format;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.JSON;
 import io.kubernetes.client.openapi.models.EventsV1Event;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -40,6 +44,7 @@ import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
 import org.jdrupes.vmoperator.runner.qemu.events.DisplayPasswordChanged;
 import org.jdrupes.vmoperator.runner.qemu.events.Exit;
 import org.jdrupes.vmoperator.runner.qemu.events.HotpluggableCpuStatus;
+import org.jdrupes.vmoperator.runner.qemu.events.OsinfoEvent;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.RunState;
 import org.jdrupes.vmoperator.runner.qemu.events.ShutdownEvent;
@@ -54,6 +59,12 @@ import org.jgrapes.core.events.Start;
  */
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class StatusUpdater extends VmDefUpdater {
+
+    @SuppressWarnings("PMD.FieldNamingConventions")
+    private static final Gson gson = new JSON().getGson();
+    @SuppressWarnings("PMD.FieldNamingConventions")
+    private static final ObjectMapper objectMapper
+        = new ObjectMapper().registerModule(new JavaTimeModule());
 
     private static final Set<RunState> RUNNING_STATES
         = Set.of(RunState.RUNNING, RunState.TERMINATING);
@@ -285,5 +296,27 @@ public class StatusUpdater extends VmDefUpdater {
     @Handler
     public void onShutdown(ShutdownEvent event) throws ApiException {
         shutdownByGuest = event.byGuest();
+    }
+
+    /**
+     * On osinfo.
+     *
+     * @param event the event
+     * @throws ApiException 
+     */
+    @Handler
+    public void onOsinfo(OsinfoEvent event) throws ApiException {
+        if (vmStub == null) {
+            return;
+        }
+        var asGson = gson.toJsonTree(
+            objectMapper.convertValue(event.osinfo(), Object.class));
+
+        vmStub.updateStatus(from -> {
+            JsonObject status = from.statusJson();
+            status.add("osinfo", asGson);
+            return status;
+        });
+
     }
 }
