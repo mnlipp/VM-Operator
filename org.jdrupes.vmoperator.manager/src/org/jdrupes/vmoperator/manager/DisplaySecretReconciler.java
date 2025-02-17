@@ -41,13 +41,16 @@ import org.jose4j.base64url.Base64;
 /**
  * Delegee for reconciling the display secret
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
+@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.TooManyStaticImports" })
 /* default */ class DisplaySecretReconciler {
 
     protected final Logger logger = Logger.getLogger(getClass().getName());
 
     /**
-     * Reconcile.
+     * Reconcile. If the configuration prevents generating a secret
+     * or the secret already exists, do nothing. Else generate a new
+     * secret with a random password and immediate expiration, thus
+     * preventing access to the display.
      *
      * @param event the event
      * @param model the model
