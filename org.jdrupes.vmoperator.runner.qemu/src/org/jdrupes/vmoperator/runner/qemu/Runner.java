@@ -218,6 +218,7 @@ public class Runner extends Component {
     private CommandDefinition cloudInitImgDefinition;
     private CommandDefinition qemuDefinition;
     private final QemuMonitor qemuMonitor;
+    private final GuestAgentClient guestAgentClient;
     private Integer resetCounter;
     private RunState state = RunState.INITIALIZING;
 
@@ -275,6 +276,7 @@ public class Runner extends Component {
         attach(new ProcessManager(channel()));
         attach(new SocketConnector(channel()));
         attach(qemuMonitor = new QemuMonitor(channel(), configDir));
+        attach(guestAgentClient = new GuestAgentClient(channel()));
         attach(new StatusUpdater(channel()));
         attach(new YamlConfigurationStore(channel(), configFile, false));
         fire(new WatchFile(configFile.toPath()));
@@ -349,6 +351,7 @@ public class Runner extends Component {
             // Forward some values to child components
             qemuMonitor.configure(config.monitorSocket,
                 config.vm.powerdownTimeout);
+            guestAgentClient.configure(config.guestAgentSocket);
         } catch (IllegalArgumentException | IOException | TemplateException e) {
             logger.log(Level.SEVERE, e, () -> "Invalid configuration: "
                 + e.getMessage());

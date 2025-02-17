@@ -7,6 +7,10 @@ Applys action to all VMs in the pool.
 
   --context                   Context to be passed to kubectl (required)
   -n, --namespace             Namespace to be passed to kubectl
+  
+Action is one of "start", "stop", "delete" or "delete-disks"
+
+Defaults for context and namespace are read from .vm-operator-cmd.rc.
 EOF
   exit 1  
 }
