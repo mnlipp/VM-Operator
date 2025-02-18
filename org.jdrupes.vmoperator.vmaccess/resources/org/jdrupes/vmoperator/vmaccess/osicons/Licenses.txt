@@ -1,0 +1,16 @@
+almalinux.svg: 
+  Source: https://commons.wikimedia.org/wiki/File:AlmaLinux_Icon_Logo.svg
+  License: https://github.com/AlmaLinux/wiki/blob/master/LICENSE
+  
+archlinux.svg:
+  Source: https://commons.wikimedia.org/wiki/File:Arch_Linux_%22Crystal%22_icon.svghttps://commons.wikimedia.org/wiki/File:Arch_Linux_%22Crystal%22_icon.svg
+  License: GPL v2 or later
+  
+debian.svg:
+  Source: https://commons.wikimedia.org/wiki/File:Openlogo-debianV2.svg
+  License : LGPL
+  
+tux.svg:
+  Source: https://commons.wikimedia.org/wiki/File:Tux.svghttps://commons.wikimedia.org/wiki/File:Tux.svg
+  License: Creative Commons CC0 1.0 Universal Public Domain Dedication. Creative Commons CC0 1.0 Universal Public Domain Dedication.
+
