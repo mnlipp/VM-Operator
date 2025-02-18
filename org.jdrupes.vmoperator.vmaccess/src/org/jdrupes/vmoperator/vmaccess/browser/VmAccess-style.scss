@@ -79,6 +79,20 @@
     z-index: 100;
     pointer-events: none;
   }  
+  
+  span.osicon {
+    width: 4.25em;
+    height: 3em;
+    padding: 0.25rem;
+    pointer-events: none;
+    
+    img {
+      display: block;
+      height: 1.75em;
+      margin: 0.2em auto 0;
+      pointer-events: none;
+    }
+  }
 }
 
 .jdrupes-vmoperator-vmaccess.jdrupes-vmoperator-vmaccess-edit {

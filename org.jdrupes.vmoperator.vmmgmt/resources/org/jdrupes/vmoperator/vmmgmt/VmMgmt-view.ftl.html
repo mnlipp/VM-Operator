@@ -130,6 +130,9 @@
             </table>
             <table class="table--basic table--basic--autoStriped">
               <tr>
+                <td colspan="2">{{ entry.status?.osinfo?.["pretty-name"] || "" }}</td>
+              </tr>
+              <tr>
                 <td>{{ localize("usedFrom") }}</td>
                 <td>{{ entry.usedFrom }}</td>
               </tr>

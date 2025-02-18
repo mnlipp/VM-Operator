@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="7.0275774mm"
+   height="7.0274887mm"
+   viewBox="0 0 7.0275774 7.0274887"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4 (e7c3feb100, 2024-10-09)"
+   sodipodi:docname="unknown.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:zoom="2.0031716"
+     inkscape:cx="5.9905002"
+     inkscape:cy="46.675981"
+     inkscape:window-width="1920"
+     inkscape:window-height="1008"
+     inkscape:window-x="0"
+     inkscape:window-y="35"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1">
+    <rect
+       x="306.39844"
+       y="313.45834"
+       width="131.31361"
+       height="134.13757"
+       id="rect2" />
+    <rect
+       x="204.7363"
+       y="247.09554"
+       width="162.37706"
+       height="97.426239"
+       id="rect1" />
+  </defs>
+  <g
+     inkscape:label="Ebene 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-101.48621,-144.98625)">
+    <text
+       xml:space="preserve"
+       transform="scale(0.26458333)"
+       id="text1"
+       style="font-size:16px;line-height:125%;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';letter-spacing:0px;word-spacing:0px;white-space:pre;shape-inside:url(#rect1);fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <text
+       xml:space="preserve"
+       transform="matrix(0.26458333,0,0,0.26458333,21.641841,63.192602)"
+       id="text2"
+       style="font-size:16px;line-height:125%;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';letter-spacing:0px;word-spacing:0px;white-space:pre;shape-inside:url(#rect2);fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"><tspan
+         x="306.39844"
+         y="327.92565"
+         id="tspan3"><tspan
+           style="font-stretch:condensed;font-family:'Fira Sans Condensed';-inkscape-font-specification:'Fira Sans Condensed,  Condensed';fill:#000000"
+           id="tspan1">OS</tspan></tspan></text>
+    <path
+       style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.657155;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:0;stroke-dasharray:none;paint-order:fill markers stroke"
+       id="path2"
+       sodipodi:type="arc"
+       sodipodi:cx="104.99995"
+       sodipodi:cy="148.49995"
+       sodipodi:rx="3.18698"
+       sodipodi:ry="3.18698"
+       sodipodi:start="5.6242269"
+       sodipodi:end="5.5711669"
+       sodipodi:arc-type="arc"
+       d="m 107.51967,146.54859 a 3.18698,3.18698 0 0 1 -0.5351,4.44498 3.18698,3.18698 0 0 1 -4.4517,-0.47609 3.18698,3.18698 0 0 1 0.41701,-4.45762 3.18698,3.18698 0 0 1 4.46275,0.35784"
+       sodipodi:open="true" />
+  </g>
+</svg>

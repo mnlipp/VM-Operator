@@ -18,6 +18,7 @@
 
 package org.jdrupes.vmoperator.runner.qemu.events;
 
+import java.util.EnumSet;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Components;
 import org.jgrapes.core.Event;
@@ -29,10 +30,28 @@ import org.jgrapes.core.Event;
 public class RunnerStateChange extends Event<Void> {
 
     /**
-     * The state.
+     * The states.
      */
     public enum RunState {
-        INITIALIZING, STARTING, RUNNING, TERMINATING, STOPPED
+        INITIALIZING, STARTING, BOOTING, BOOTED, TERMINATING, STOPPED;
+
+        /**
+         * Checks if the state is one of the states in which the VM is running.
+         *
+         * @return true, if is running
+         */
+        public boolean vmRunning() {
+            return EnumSet.of(BOOTING, BOOTED, TERMINATING).contains(this);
+        }
+
+        /**
+         * Checks if the state is one of the states in which the VM is active.
+         *
+         * @return true, if is active
+         */
+        public boolean vmActive() {
+            return EnumSet.of(BOOTING, BOOTED).contains(this);
+        }
     }
 
     private final RunState state;
