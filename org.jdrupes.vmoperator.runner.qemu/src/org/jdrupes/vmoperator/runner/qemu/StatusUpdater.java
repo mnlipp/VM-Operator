@@ -1,6 +1,6 @@
 /*
  * VM-Operator
- * Copyright (C) 2023,2024 Michael N. Lipp
+ * Copyright (C) 2023,2025 Michael N. Lipp
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -31,7 +31,6 @@ import io.kubernetes.client.openapi.JSON;
 import io.kubernetes.client.openapi.models.EventsV1Event;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.Set;
 import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
@@ -65,9 +64,6 @@ public class StatusUpdater extends VmDefUpdater {
     @SuppressWarnings("PMD.FieldNamingConventions")
     private static final ObjectMapper objectMapper
         = new ObjectMapper().registerModule(new JavaTimeModule());
-
-    private static final Set<RunState> RUNNING_STATES
-        = Set.of(RunState.RUNNING, RunState.TERMINATING);
 
     private long observedGeneration;
     private boolean guestShutdownStops;
@@ -186,16 +182,23 @@ public class StatusUpdater extends VmDefUpdater {
         }
         vmStub.updateStatus(vmDef, from -> {
             JsonObject status = from.statusJson();
-            boolean running = RUNNING_STATES.contains(event.runState());
+            boolean running = event.runState().vmRunning();
             updateCondition(vmDef, vmDef.statusJson(), "Running", running,
                 event.reason(), event.message());
+            updateCondition(vmDef, vmDef.statusJson(), "Booted",
+                event.runState() == RunState.BOOTED, event.reason(),
+                event.message());
             if (event.runState() == RunState.STARTING) {
                 status.addProperty("ram", GsonPtr.to(from.data())
                     .getAsString("spec", "vm", "maximumRam").orElse("0"));
                 status.addProperty("cpus", 1);
+
+                // In case we had an irregular shutdown
+                status.remove("osinfo");
             } else if (event.runState() == RunState.STOPPED) {
                 status.addProperty("ram", "0");
                 status.addProperty("cpus", 0);
+                status.remove("osinfo");
             }
 
             // In case console connection was still present

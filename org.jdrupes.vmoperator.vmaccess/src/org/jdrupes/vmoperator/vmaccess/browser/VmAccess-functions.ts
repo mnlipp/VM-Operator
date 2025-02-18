@@ -87,6 +87,26 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
             const running = computed(() => previewApi.vmDefinition.running);
             const inUse = computed(() => previewApi.vmDefinition.usedBy != '');
             const permissions = computed(() => previewApi.permissions);
+            const osicon = computed(() => {
+                if (!previewApi.vmDefinition.status?.osinfo?.id) {
+                    return null;
+                }
+                switch(previewApi.vmDefinition.status.osinfo.id) {
+                    case "almalinux": return "almalinux.svg";
+                    case "arch": return "arch.svg";
+                    case "debian": return "debian.svg";
+                    case "fedora": return "fedora.svg";
+                    case "mswindows": return "windows.svg";
+                    case "ubuntu": return "ubuntu.svg";
+                    default: {
+                        if ((previewApi.vmDefinition.status.osinfo.name || "")
+                            .toLowerCase().includes("linux")) {
+                            return "tux.svg";
+                        }
+                        return "unknown.svg";
+                    }
+                }
+            });
 
             watch(previewApi, (api: Api) => {
                 JGConsole.instance.updateConletTitle(conletId, 
@@ -101,7 +121,7 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
         
             return { localize, resourceBase, vmAction, poolName, vmName, 
                 configured, busy, startable, stoppable, running, inUse,
-                permissions };
+                permissions, osicon };
         },
         template: `
           <table>
@@ -111,13 +131,16 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
                   style="position: absolute;" :class="{ busy: busy }"
                   ><img role=button :aria-disabled="!running
                       || !permissions.includes('accessConsole')" 
-                  v-on:click="vmAction('openConsole')"
-                  :src="resourceBase + (running
+                    v-on:click="vmAction('openConsole')"
+                    :src="resourceBase + (running
                       ? (inUse ? 'computer-in-use.svg' : 'computer.svg') 
                       : 'computer-off.svg')"
-                  :title="localize('Open console')"></span><span
+                    :title="localize('Open console')"></span><span
+                    v-if="!busy && !inUse && osicon"
+                    style="position: absolute;" class="osicon"><img
+                      :src="resourceBase + 'osicons/' + osicon"></span><span
                   style="visibility: hidden;"><img
-                  :src="resourceBase + 'computer.svg'"></span></td>
+                    :src="resourceBase + 'computer.svg'"></span></td>
                 <td v-if="!poolName" style="padding: 0;"></td>
                 <td v-else>{{ vmName }}</td>
               </tr>
