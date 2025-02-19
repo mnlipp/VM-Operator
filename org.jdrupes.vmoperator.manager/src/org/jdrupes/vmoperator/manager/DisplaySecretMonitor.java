@@ -50,7 +50,7 @@ import static org.jdrupes.vmoperator.manager.Constants.COMP_DISPLAY_SECRET;
 import static org.jdrupes.vmoperator.manager.Constants.DATA_DISPLAY_PASSWORD;
 import static org.jdrupes.vmoperator.manager.Constants.DATA_PASSWORD_EXPIRY;
 import org.jdrupes.vmoperator.manager.events.ChannelDictionary;
-import org.jdrupes.vmoperator.manager.events.GetDisplayPassword;
+import org.jdrupes.vmoperator.manager.events.PrepareConsole;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jgrapes.core.Channel;
@@ -72,7 +72,7 @@ public class DisplaySecretMonitor
         extends AbstractMonitor<V1Secret, V1SecretList, VmChannel> {
 
     private int passwordValidity = 10;
-    private final List<PendingGet> pendingGets
+    private final List<PendingGet> pendingPrepares
         = Collections.synchronizedList(new LinkedList<>());
     private final ChannelDictionary<String, VmChannel, ?> channelDictionary;
 
@@ -178,49 +178,59 @@ public class DisplaySecretMonitor
      */
     @Handler
     @SuppressWarnings("PMD.StringInstantiation")
-    public void onGetDisplaySecrets(GetDisplayPassword event, VmChannel channel)
+    public void onPrepareConsole(PrepareConsole event, VmChannel channel)
             throws ApiException {
         // Update console user in status
         var vmStub = VmDefinitionStub.get(client(),
             new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
             event.vmDefinition().namespace(), event.vmDefinition().name());
-        vmStub.updateStatus(from -> {
+        var optVmDef = vmStub.updateStatus(from -> {
             JsonObject status = from.statusJson();
             status.addProperty("consoleUser", event.user());
             return status;
         });
+        if (optVmDef.isEmpty()) {
+            return;
+        }
+        var vmDef = optVmDef.get();
+
+        // Check if access is possible
+        if (event.loginUser()
+            ? !vmDef.conditionStatus("Booted").orElse(false)
+            : !vmDef.conditionStatus("Running").orElse(false)) {
+            return;
+        }
 
         // Look for secret
         ListOptions options = new ListOptions();
         options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
             + "app.kubernetes.io/component=" + COMP_DISPLAY_SECRET + ","
-            + "app.kubernetes.io/instance="
-            + event.vmDefinition().metadata().getName());
-        var stubs = K8sV1SecretStub.list(client(),
-            event.vmDefinition().namespace(), options);
+            + "app.kubernetes.io/instance=" + vmDef.name());
+        var stubs = K8sV1SecretStub.list(client(), vmDef.namespace(), options);
         if (stubs.isEmpty()) {
             // No secret means no password for this VM wanted
+            event.setResult(null);
             return;
         }
         var stub = stubs.iterator().next();
 
         // Check validity
-        var model = stub.model().get();
+        var secret = stub.model().get();
         @SuppressWarnings("PMD.StringInstantiation")
-        var expiry = Optional.ofNullable(model.getData()
+        var expiry = Optional.ofNullable(secret.getData()
             .get(DATA_PASSWORD_EXPIRY)).map(b -> new String(b)).orElse(null);
-        if (model.getData().get(DATA_DISPLAY_PASSWORD) != null
+        if (secret.getData().get(DATA_DISPLAY_PASSWORD) != null
             && stillValid(expiry)) {
             // Fixed secret, don't touch
             event.setResult(
-                new String(model.getData().get(DATA_DISPLAY_PASSWORD)));
+                new String(secret.getData().get(DATA_DISPLAY_PASSWORD)));
             return;
         }
         updatePassword(stub, event);
     }
 
     @SuppressWarnings("PMD.StringInstantiation")
-    private void updatePassword(K8sV1SecretStub stub, GetDisplayPassword event)
+    private void updatePassword(K8sV1SecretStub stub, PrepareConsole event)
             throws ApiException {
         SecureRandom random = null;
         try {
@@ -242,9 +252,9 @@ public class DisplaySecretMonitor
         var pending = new PendingGet(event,
             event.vmDefinition().displayPasswordSerial().orElse(0L) + 1,
             new CompletionLock(event, 1500));
-        pendingGets.add(pending);
+        pendingPrepares.add(pending);
         Event.onCompletion(event, e -> {
-            pendingGets.remove(pending);
+            pendingPrepares.remove(pending);
         });
 
         // Update, will (eventually) trigger confirmation
@@ -273,9 +283,9 @@ public class DisplaySecretMonitor
     @Handler
     @SuppressWarnings("PMD.AvoidSynchronizedStatement")
     public void onVmDefChanged(VmDefChanged event, Channel channel) {
-        synchronized (pendingGets) {
+        synchronized (pendingPrepares) {
             String vmName = event.vmDefinition().name();
-            for (var pending : pendingGets) {
+            for (var pending : pendingPrepares) {
                 if (pending.event.vmDefinition().name().equals(vmName)
                     && event.vmDefinition().displayPasswordSerial()
                         .map(s -> s >= pending.expectedSerial).orElse(false)) {
@@ -293,7 +303,7 @@ public class DisplaySecretMonitor
      */
     @SuppressWarnings("PMD.DataClass")
     private static class PendingGet {
-        public final GetDisplayPassword event;
+        public final PrepareConsole event;
         public final long expectedSerial;
         public final CompletionLock lock;
 
@@ -303,7 +313,7 @@ public class DisplaySecretMonitor
          * @param event the event
          * @param expectedSerial the expected serial
          */
-        public PendingGet(GetDisplayPassword event, long expectedSerial,
+        public PendingGet(PrepareConsole event, long expectedSerial,
                 CompletionLock lock) {
             super();
             this.event = event;

@@ -49,11 +49,11 @@ import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinition.Permission;
 import org.jdrupes.vmoperator.common.VmPool;
 import org.jdrupes.vmoperator.manager.events.AssignVm;
-import org.jdrupes.vmoperator.manager.events.GetDisplayPassword;
 import org.jdrupes.vmoperator.manager.events.GetPools;
 import org.jdrupes.vmoperator.manager.events.GetVms;
 import org.jdrupes.vmoperator.manager.events.GetVms.VmData;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
+import org.jdrupes.vmoperator.manager.events.PrepareConsole;
 import org.jdrupes.vmoperator.manager.events.ResetVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
@@ -808,16 +808,21 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
                 Map.of("autoClose", 5_000, "type", "Warning")));
             return;
         }
-        var pwQuery = Event.onCompletion(new GetDisplayPassword(vmDef, user),
-            e -> {
-                vmDef.extra()
-                    .map(xtra -> xtra.connectionFile(e.password().orElse(null),
-                        preferredIpVersion, deleteConnectionFile))
-                    .ifPresent(
-                        cf -> channel.respond(new NotifyConletView(type(),
-                            model.getConletId(), "openConsole", cf)));
-            });
+        var pwQuery = Event.onCompletion(new PrepareConsole(vmDef, user,
+            model.mode() == ResourceModel.Mode.POOL),
+            e -> gotPassword(channel, model, vmDef, e));
         fire(pwQuery, vmChannel);
+    }
+
+    private void gotPassword(ConsoleConnection channel, ResourceModel model,
+            VmDefinition vmDef, PrepareConsole event) {
+        if (!event.passwordAvailable()) {
+            return;
+        }
+        vmDef.extra().map(xtra -> xtra.connectionFile(event.password(),
+            preferredIpVersion, deleteConnectionFile))
+            .ifPresent(cf -> channel.respond(new NotifyConletView(type(),
+                model.getConletId(), "openConsole", cf)));
     }
 
     @SuppressWarnings({ "PMD.AvoidLiteralsInIfCondition",

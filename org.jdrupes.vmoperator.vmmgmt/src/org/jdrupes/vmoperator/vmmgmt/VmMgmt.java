@@ -43,8 +43,8 @@ import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinition.Permission;
 import org.jdrupes.vmoperator.common.VmExtraData;
 import org.jdrupes.vmoperator.manager.events.ChannelTracker;
-import org.jdrupes.vmoperator.manager.events.GetDisplayPassword;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
+import org.jdrupes.vmoperator.manager.events.PrepareConsole;
 import org.jdrupes.vmoperator.manager.events.ResetVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
@@ -483,15 +483,20 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
                 Map.of("autoClose", 5_000, "type", "Warning")));
             return;
         }
-        var pwQuery = Event.onCompletion(new GetDisplayPassword(vmDef, user),
-            e -> {
-                vmDef.extra().map(xtra -> xtra.connectionFile(
-                    e.password().orElse(null), preferredIpVersion,
-                    deleteConnectionFile)).ifPresent(
-                        cf -> channel.respond(new NotifyConletView(type(),
-                            model.getConletId(), "openConsole", cf)));
-            });
+        var pwQuery = Event.onCompletion(new PrepareConsole(vmDef, user),
+            e -> gotPassword(channel, model, vmDef, e));
         fire(pwQuery, vmChannel);
+    }
+
+    private void gotPassword(ConsoleConnection channel, VmsModel model,
+            VmDefinition vmDef, PrepareConsole event) {
+        if (!event.passwordAvailable()) {
+            return;
+        }
+        vmDef.extra().map(xtra -> xtra.connectionFile(event.password(),
+            preferredIpVersion, deleteConnectionFile)).ifPresent(
+                cf -> channel.respond(new NotifyConletView(type(),
+                    model.getConletId(), "openConsole", cf)));
     }
 
     @Override
