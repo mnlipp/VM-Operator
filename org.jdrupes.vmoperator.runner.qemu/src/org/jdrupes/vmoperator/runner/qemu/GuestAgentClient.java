@@ -20,6 +20,7 @@ package org.jdrupes.vmoperator.runner.qemu;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.io.Writer;
@@ -28,6 +29,8 @@ import java.net.UnixDomainSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.logging.Level;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCommand;
@@ -65,6 +68,8 @@ public class GuestAgentClient extends Component {
 
     private EventPipeline rep;
     private Path socketPath;
+    private List<Map<String, String>> guestAgentCmds;
+    private String guestAgentCmd;
     private SocketIOChannel gaChannel;
     private final Queue<QmpCommand> executing = new LinkedList<>();
 
@@ -72,6 +77,7 @@ public class GuestAgentClient extends Component {
      * Instantiates a new guest agent client.
      *
      * @param componentChannel the component channel
+     * @param guestAgentCmds 
      * @throws IOException Signals that an I/O exception has occurred.
      */
     @SuppressWarnings({ "PMD.AssignmentToNonFinalStatic",
@@ -87,10 +93,20 @@ public class GuestAgentClient extends Component {
      * forwarded from the {@link Runner} instead.
      *
      * @param socketPath the socket path
+     * @param guestAgentCmds 
      * @param powerdownTimeout 
      */
-    /* default */ void configure(Path socketPath) {
+    @SuppressWarnings("PMD.EmptyCatchBlock")
+    /* default */ void configure(Path socketPath, ArrayNode guestAgentCmds) {
         this.socketPath = socketPath;
+        try {
+            this.guestAgentCmds = mapper.convertValue(guestAgentCmds,
+                mapper.constructType(getClass()
+                    .getDeclaredField("guestAgentCmds").getGenericType()));
+        } catch (IllegalArgumentException | NoSuchFieldException
+                | SecurityException e) {
+            // Cannot happen
+        }
     }
 
     /**
@@ -193,12 +209,31 @@ public class GuestAgentClient extends Component {
                     () -> String.format("(Previous \"guest agent(in)\" is "
                         + "result from executing %s)", executed));
                 if (executed instanceof QmpGuestGetOsinfo) {
-                    rep.fire(new OsinfoEvent(response.get("return")));
+                    processOsInfo(response);
                 }
             }
         } catch (JsonProcessingException e) {
             throw new IOException(e);
         }
+    }
+
+    private void processOsInfo(ObjectNode response) {
+        var osInfo = new OsinfoEvent(response.get("return"));
+        var osId = osInfo.osinfo().get("id").asText();
+        for (var cmdDef : guestAgentCmds) {
+            if (osId.equals(cmdDef.get("osId"))
+                || "*".equals(cmdDef.get("osId"))) {
+                guestAgentCmd = cmdDef.get("executable");
+                break;
+            }
+        }
+        if (guestAgentCmd == null) {
+            logger.warning(() -> "No guest agent command for OS " + osId);
+        } else {
+            logger.fine(() -> "Guest agent command for OS " + osId
+                + " is " + guestAgentCmd);
+        }
+        rep.fire(osInfo);
     }
 
     /**

@@ -233,3 +233,7 @@
     </#list>
     </#if>
     </#if>
+
+"guestAgentCmds":
+  - "osId": "*"
+    "executable": "/usr/local/libexec/vm-operator-cmd"

@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import freemarker.core.ParseException;
@@ -197,6 +198,7 @@ public class Runner extends Component {
     private static final String QEMU = "qemu";
     private static final String SWTPM = "swtpm";
     private static final String CLOUD_INIT_IMG = "cloudInitImg";
+    private static final String GUEST_AGENT_CMDS = "guestAgentCmds";
     private static final String TEMPLATE_DIR
         = "/opt/" + APP_NAME.replace("-", "") + "/templates";
     private static final String DEFAULT_TEMPLATE
@@ -348,11 +350,16 @@ public class Runner extends Component {
                     .map(d -> new CommandDefinition(CLOUD_INIT_IMG, d))
                     .orElse(null);
             logger.finest(() -> cloudInitImgDefinition.toString());
+            var guestAgentCmds = (ArrayNode) tplData.get(GUEST_AGENT_CMDS);
+            if (guestAgentCmds != null) {
+                logger.finest(
+                    () -> "GuestAgentCmds: " + guestAgentCmds.toString());
+            }
 
             // Forward some values to child components
             qemuMonitor.configure(config.monitorSocket,
                 config.vm.powerdownTimeout);
-            guestAgentClient.configure(config.guestAgentSocket);
+            guestAgentClient.configure(config.guestAgentSocket, guestAgentCmds);
         } catch (IllegalArgumentException | IOException | TemplateException e) {
             logger.log(Level.SEVERE, e, () -> "Invalid configuration: "
                 + e.getMessage());
