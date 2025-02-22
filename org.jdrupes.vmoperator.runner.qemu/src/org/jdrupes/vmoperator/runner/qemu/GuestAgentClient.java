@@ -77,7 +77,6 @@ public class GuestAgentClient extends Component {
      * Instantiates a new guest agent client.
      *
      * @param componentChannel the component channel
-     * @param guestAgentCmds 
      * @throws IOException Signals that an I/O exception has occurred.
      */
     @SuppressWarnings({ "PMD.AssignmentToNonFinalStatic",
@@ -93,8 +92,7 @@ public class GuestAgentClient extends Component {
      * forwarded from the {@link Runner} instead.
      *
      * @param socketPath the socket path
-     * @param guestAgentCmds 
-     * @param powerdownTimeout 
+     * @param guestAgentCmds the guest agent cmds
      */
     @SuppressWarnings("PMD.EmptyCatchBlock")
     /* default */ void configure(Path socketPath, ArrayNode guestAgentCmds) {
