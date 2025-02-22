@@ -138,6 +138,8 @@ import org.jgrapes.util.events.ConfigurationUpdate;
  *   properties to be used by the runners managed by the controller.
  *   This property is a string that holds the content of
  *   a logging.properties file.
+ *   
+ * @see org.jdrupes.vmoperator.manager.DisplaySecretReconciler
  */
 @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",
     "PMD.AvoidDuplicateLiterals" })
@@ -163,6 +165,7 @@ public class Reconciler extends Component {
      *
      * @param componentChannel the component channel
      */
+    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public Reconciler(Channel componentChannel) {
         super(componentChannel);
 
@@ -177,7 +180,7 @@ public class Reconciler extends Component {
         fmConfig.setClassForTemplateLoading(Reconciler.class, "");
 
         cmReconciler = new ConfigMapReconciler(fmConfig);
-        dsReconciler = new DisplaySecretReconciler();
+        dsReconciler = attach(new DisplaySecretReconciler());
         stsReconciler = new StatefulSetReconciler(fmConfig);
         pvcReconciler = new PvcReconciler(fmConfig);
         podReconciler = new PodReconciler(fmConfig);
