@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
@@ -11,10 +11,31 @@
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
-    {% seo %}
+    <link href="../pagefind/pagefind-ui.css" rel="stylesheet">
+    <script src="../pagefind/pagefind-ui.js"></script>
+    <script>
+        window.addEventListener('DOMContentLoaded', (event) => {
+          new PagefindUI({ element: "#search", showSubResults: true,
+          // See https://github.com/CloudCannon/pagefind/issues/530
+          processResult: function (result) {
+              if (result?.meta?.image) {
+                  let resultBase = new URL(result.url, window.location);
+                  let remappedImage = new URL(result.meta.image, resultBase);
+                  if (remappedImage.hostname !== window.location.hostname) {
+                      result.meta.image = remappedImage.toString();
+                  } else {
+                      result.meta.image = remappedImage.pathname;
+                  }
+              }
+          }
+				 });
+        });
+    </script>
+   {% seo %}
   </head>
   <body>
     <div class="wrapper">
+      <div id="search"></div>
       <header>
         <div>
         <div style="float: left;">
@@ -68,4 +89,4 @@
     {% include matomo.html %}
 
   </body>
-</html>
+</html lang="en">
