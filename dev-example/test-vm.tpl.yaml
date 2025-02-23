@@ -14,7 +14,7 @@ spec:
 #    repository: ghcr.io
 #    path: mnlipp/org.jdrupes.vmoperator.runner.qemu-alpine
 #    version: "3.0.0"
-    source: registry.mnl.de/org/jdrupes/vm-operator/org.jdrupes.vmoperator.runner.qemu-arch:feature-auto-login
+    source: registry.mnl.de/org/jdrupes/vm-operator/org.jdrupes.vmoperator.runner.qemu-arch:testing
     pullPolicy: Always
 
   permissions:
