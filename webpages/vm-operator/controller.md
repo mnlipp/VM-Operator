@@ -1,5 +1,8 @@
 ---
 title: "VM-Operator: Controller — Reconciles the VM CRs"
+description: >-
+  Information about the VM Operator's controller component its
+  configuration options and the CRD used to define VMs.
 layout: vm-operator
 ---
 

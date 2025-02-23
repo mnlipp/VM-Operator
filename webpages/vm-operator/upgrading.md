@@ -1,5 +1,7 @@
 ---
 title: "VM-Operator: Upgrading — Issues to watch out for"
+description: >-
+  Information about issues to watch out for when upgrading the VM-Operator.
 layout: vm-operator
 ---
 

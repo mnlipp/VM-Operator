@@ -1,5 +1,9 @@
 ---
 title: "VM-Operator: User View — Allows users to manage their own VMs"
+description: >-
+  Information about the user view of the VM-Operator, which allows users
+  to access and optionally manage the VMs for which they have the
+  respective permissions.
 layout: vm-operator
 ---
 

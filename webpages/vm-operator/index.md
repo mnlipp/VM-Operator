@@ -1,6 +1,9 @@
 ---
-title: Run VMs on Kubernetes using Qemu/KVM and SPICE
-description: A solution for running VMs on Kubernetes with a web interface for admins and users. Focuses on running Qemu/KVM virtual machines and using SPICE as display protocol.
+title: "Run VMs on Kubernetes using QEMU/KVM and SPICE"
+description: >-
+  A solution for running VMs on Kubernetes with a web interface for
+  admins and users. Focuses on running QEMU/KVM virtual machines and
+  using SPICE as display protocol.
 layout: vm-operator
 ---
 
