@@ -26,6 +26,7 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Secret;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -33,16 +34,19 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.logging.Logger;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
+import static org.jdrupes.vmoperator.common.Constants.COMP_DISPLAY_SECRET;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.common.K8sV1SecretStub;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
-import static org.jdrupes.vmoperator.manager.Constants.COMP_DISPLAY_SECRET;
+import static org.jdrupes.vmoperator.manager.Constants.DATA_DISPLAY_LOGIN;
 import static org.jdrupes.vmoperator.manager.Constants.DATA_DISPLAY_PASSWORD;
+import static org.jdrupes.vmoperator.manager.Constants.DATA_DISPLAY_USER;
 import static org.jdrupes.vmoperator.manager.Constants.DATA_PASSWORD_EXPIRY;
 import org.jdrupes.vmoperator.manager.events.PrepareConsole;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
@@ -74,6 +78,15 @@ public class DisplaySecretReconciler extends Component {
     private int passwordValidity = 10;
     private final List<PendingGet> pendingPrepares
         = Collections.synchronizedList(new LinkedList<>());
+
+    /**
+     * Instantiates a new display secret reconciler.
+     *
+     * @param componentChannel the component channel
+     */
+    public DisplaySecretReconciler(Channel componentChannel) {
+        super(componentChannel);
+    }
 
     /**
      * On configuration update.
@@ -213,39 +226,13 @@ public class DisplaySecretReconciler extends Component {
         }
         var stub = stubs.iterator().next();
 
-        // Check validity
+        // Get secret and update
         var secret = stub.model().get();
-        @SuppressWarnings("PMD.StringInstantiation")
-        var expiry = Optional.ofNullable(secret.getData()
-            .get(DATA_PASSWORD_EXPIRY)).map(b -> new String(b)).orElse(null);
-        if (secret.getData().get(DATA_DISPLAY_PASSWORD) != null
-            && stillValid(expiry)) {
-            // Fixed secret, don't touch
-            event.setResult(
-                new String(secret.getData().get(DATA_DISPLAY_PASSWORD)));
+        var updPw = updatePassword(secret, event);
+        var updUsr = updateUser(secret, event);
+        if (!updPw && !updUsr) {
             return;
         }
-        updatePassword(stub, event);
-    }
-
-    @SuppressWarnings("PMD.StringInstantiation")
-    private void updatePassword(K8sV1SecretStub stub, PrepareConsole event)
-            throws ApiException {
-        SecureRandom random = null;
-        try {
-            random = SecureRandom.getInstanceStrong();
-        } catch (NoSuchAlgorithmException e) { // NOPMD
-            // "Every implementation of the Java platform is required
-            // to support at least one strong SecureRandom implementation."
-        }
-        byte[] bytes = new byte[16];
-        random.nextBytes(bytes);
-        var password = Base64.encode(bytes);
-        var model = stub.model().get();
-        model.setStringData(Map.of(DATA_DISPLAY_PASSWORD, password,
-            DATA_PASSWORD_EXPIRY,
-            Long.toString(Instant.now().getEpochSecond() + passwordValidity)));
-        event.setResult(password);
 
         // Prepare wait for confirmation (by VM status change)
         var pending = new PendingGet(event,
@@ -257,7 +244,52 @@ public class DisplaySecretReconciler extends Component {
         });
 
         // Update, will (eventually) trigger confirmation
-        stub.update(model).getObject();
+        stub.update(secret).getObject();
+    }
+
+    private boolean updateUser(V1Secret secret, PrepareConsole event) {
+        var curUser = DataPath.<byte[]> get(secret, "data", DATA_DISPLAY_USER)
+            .map(b -> new String(b, UTF_8)).orElse(null);
+        var curLogin = DataPath.<byte[]> get(secret, "data", DATA_DISPLAY_LOGIN)
+            .map(b -> new String(b, UTF_8)).map(Boolean::parseBoolean)
+            .orElse(null);
+        if (Objects.equals(curUser, event.user()) && Objects.equals(
+            curLogin, event.loginUser())) {
+            return false;
+        }
+        secret.getData().put(DATA_DISPLAY_USER, event.user().getBytes(UTF_8));
+        secret.getData().put(DATA_DISPLAY_LOGIN,
+            Boolean.toString(event.loginUser()).getBytes(UTF_8));
+        return true;
+    }
+
+    private boolean updatePassword(V1Secret secret, PrepareConsole event) {
+        var expiry = Optional.ofNullable(secret.getData()
+            .get(DATA_PASSWORD_EXPIRY)).map(b -> new String(b)).orElse(null);
+        if (secret.getData().get(DATA_DISPLAY_PASSWORD) != null
+            && stillValid(expiry)) {
+            // Fixed secret, don't touch
+            event.setResult(
+                new String(secret.getData().get(DATA_DISPLAY_PASSWORD)));
+            return false;
+        }
+
+        // Generate password and set expiry
+        SecureRandom random = null;
+        try {
+            random = SecureRandom.getInstanceStrong();
+        } catch (NoSuchAlgorithmException e) { // NOPMD
+            // "Every implementation of the Java platform is required
+            // to support at least one strong SecureRandom implementation."
+        }
+        byte[] bytes = new byte[16];
+        random.nextBytes(bytes);
+        var password = Base64.encode(bytes);
+        secret.setStringData(Map.of(DATA_DISPLAY_PASSWORD, password,
+            DATA_PASSWORD_EXPIRY,
+            Long.toString(Instant.now().getEpochSecond() + passwordValidity)));
+        event.setResult(password);
+        return true;
     }
 
     private boolean stillValid(String expiry) {

@@ -180,7 +180,7 @@ public class Reconciler extends Component {
         fmConfig.setClassForTemplateLoading(Reconciler.class, "");
 
         cmReconciler = new ConfigMapReconciler(fmConfig);
-        dsReconciler = attach(new DisplaySecretReconciler());
+        dsReconciler = attach(new DisplaySecretReconciler(componentChannel));
         stsReconciler = new StatefulSetReconciler(fmConfig);
         pvcReconciler = new PvcReconciler(fmConfig);
         podReconciler = new PodReconciler(fmConfig);

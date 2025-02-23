@@ -18,6 +18,7 @@
 
 package org.jdrupes.vmoperator.manager;
 
+// TODO: Auto-generated Javadoc
 /**
  * Some constants.
  */
@@ -32,6 +33,12 @@ public class Constants extends org.jdrupes.vmoperator.common.Constants {
 
     /** The Constant DATA_PASSWORD_EXPIRY. */
     public static final String DATA_PASSWORD_EXPIRY = "password-expiry";
+
+    /** The Constant DATA_DISPLAY_USER. */
+    public static final String DATA_DISPLAY_USER = "display-user";
+
+    /** The Constant DATA_DISPLAY_LOGIN. */
+    public static final String DATA_DISPLAY_LOGIN = "login-user";
 
     /** The Constant STATE_RUNNING. */
     public static final String STATE_RUNNING = "Running";
