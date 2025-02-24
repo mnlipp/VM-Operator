@@ -22,8 +22,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.logging.Level;
+import static org.jdrupes.vmoperator.common.Constants.DATA_DISPLAY_LOGIN;
 import static org.jdrupes.vmoperator.common.Constants.DATA_DISPLAY_PASSWORD;
+import static org.jdrupes.vmoperator.common.Constants.DATA_DISPLAY_USER;
 import static org.jdrupes.vmoperator.common.Constants.DATA_PASSWORD_EXPIRY;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpSetDisplayPassword;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpSetPasswordExpiry;
@@ -99,47 +102,41 @@ public class DisplayController extends Component {
     }
 
     private boolean setDisplayPassword() {
-        String password;
-        Path dpPath = configDir.resolve(DATA_DISPLAY_PASSWORD);
-        if (dpPath.toFile().canRead()) {
-            logger.finer(() -> "Found display password");
-            try {
-                password = Files.readString(dpPath);
-            } catch (IOException e) {
-                logger.log(Level.WARNING, e, () -> "Cannot read display"
-                    + " password: " + e.getMessage());
-                return false;
+        return readFromFile(DATA_DISPLAY_PASSWORD).map(password -> {
+            if (Objects.equals(this.currentPassword, password)) {
+                return true;
             }
-        } else {
-            logger.finer(() -> "No display password");
-            return false;
-        }
-
-        if (Objects.equals(this.currentPassword, password)) {
+            this.currentPassword = password;
+            logger.fine(() -> "Updating display password");
+            fire(new MonitorCommand(
+                new QmpSetDisplayPassword(protocol, password)));
             return true;
-        }
-        this.currentPassword = password;
-        logger.fine(() -> "Updating display password");
-        fire(new MonitorCommand(new QmpSetDisplayPassword(protocol, password)));
-        return true;
+        }).orElse(false);
     }
 
     private void setPasswordExpiry() {
-        Path pePath = configDir.resolve(DATA_PASSWORD_EXPIRY);
-        if (!pePath.toFile().canRead()) {
-            return;
-        }
-        logger.finer(() -> "Found expiry time");
-        String expiry;
-        try {
-            expiry = Files.readString(pePath);
-        } catch (IOException e) {
-            logger.log(Level.WARNING, e, () -> "Cannot read expiry"
-                + " time: " + e.getMessage());
-            return;
-        }
-        logger.fine(() -> "Updating expiry time");
-        fire(new MonitorCommand(new QmpSetPasswordExpiry(protocol, expiry)));
+        readFromFile(DATA_PASSWORD_EXPIRY).ifPresent(expiry -> {
+            logger.fine(() -> "Updating expiry time to " + expiry);
+            fire(
+                new MonitorCommand(new QmpSetPasswordExpiry(protocol, expiry)));
+        });
     }
 
+    private Optional<String> readFromFile(String dataItem) {
+        Path path = configDir.resolve(dataItem);
+        String label = dataItem.replace('-', ' ');
+        if (path.toFile().canRead()) {
+            logger.finer(() -> "Found display user");
+            try {
+                return Optional.ofNullable(Files.readString(path));
+            } catch (IOException e) {
+                logger.log(Level.WARNING, e, () -> "Cannot read " + label + ": "
+                    + e.getMessage());
+                return Optional.empty();
+            }
+        } else {
+            logger.finer(() -> "No " + label);
+            return Optional.empty();
+        }
+    }
 }
