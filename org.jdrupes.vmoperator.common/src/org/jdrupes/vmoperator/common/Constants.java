@@ -27,9 +27,6 @@ public class Constants {
     /** The Constant APP_NAME. */
     public static final String APP_NAME = "vm-runner";
 
-    /** The Constant COMP_DISPLAY_SECRETS. */
-    public static final String COMP_DISPLAY_SECRET = "display-secret";
-
     /** The Constant VM_OP_NAME. */
     public static final String VM_OP_NAME = "vm-operator";
 
@@ -41,4 +38,20 @@ public class Constants {
 
     /** The Constant VM_OP_KIND_VM_POOL. */
     public static final String VM_OP_KIND_VM_POOL = "VmPool";
+
+    /** The Constant COMP_DISPLAY_SECRETS. */
+    public static final String COMP_DISPLAY_SECRET = "display-secret";
+
+    /** The Constant DATA_DISPLAY_PASSWORD. */
+    public static final String DATA_DISPLAY_PASSWORD = "display-password";
+
+    /** The Constant DATA_PASSWORD_EXPIRY. */
+    public static final String DATA_PASSWORD_EXPIRY = "password-expiry";
+
+    /** The Constant DATA_DISPLAY_USER. */
+    public static final String DATA_DISPLAY_USER = "display-user";
+
+    /** The Constant DATA_DISPLAY_LOGIN. */
+    public static final String DATA_DISPLAY_LOGIN = "login-user";
+
 }

@@ -23,6 +23,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.logging.Level;
+import static org.jdrupes.vmoperator.common.Constants.DATA_DISPLAY_PASSWORD;
+import static org.jdrupes.vmoperator.common.Constants.DATA_PASSWORD_EXPIRY;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpSetDisplayPassword;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpSetPasswordExpiry;
 import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
@@ -40,8 +42,6 @@ import org.jgrapes.util.events.WatchFile;
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class DisplayController extends Component {
 
-    public static final String DISPLAY_PASSWORD_FILE = "display-password";
-    public static final String PASSWORD_EXPIRY_FILE = "password-expiry";
     private String currentPassword;
     private String protocol;
     private final Path configDir;
@@ -57,7 +57,7 @@ public class DisplayController extends Component {
     public DisplayController(Channel componentChannel, Path configDir) {
         super(componentChannel);
         this.configDir = configDir;
-        fire(new WatchFile(configDir.resolve(DISPLAY_PASSWORD_FILE)));
+        fire(new WatchFile(configDir.resolve(DATA_DISPLAY_PASSWORD)));
     }
 
     /**
@@ -83,7 +83,7 @@ public class DisplayController extends Component {
     @Handler
     @SuppressWarnings("PMD.EmptyCatchBlock")
     public void onFileChanged(FileChanged event) {
-        if (event.path().equals(configDir.resolve(DISPLAY_PASSWORD_FILE))) {
+        if (event.path().equals(configDir.resolve(DATA_DISPLAY_PASSWORD))) {
             updatePassword();
         }
     }
@@ -100,7 +100,7 @@ public class DisplayController extends Component {
 
     private boolean setDisplayPassword() {
         String password;
-        Path dpPath = configDir.resolve(DISPLAY_PASSWORD_FILE);
+        Path dpPath = configDir.resolve(DATA_DISPLAY_PASSWORD);
         if (dpPath.toFile().canRead()) {
             logger.finer(() -> "Found display password");
             try {
@@ -125,7 +125,7 @@ public class DisplayController extends Component {
     }
 
     private void setPasswordExpiry() {
-        Path pePath = configDir.resolve(PASSWORD_EXPIRY_FILE);
+        Path pePath = configDir.resolve(DATA_PASSWORD_EXPIRY);
         if (!pePath.toFile().canRead()) {
             return;
         }
