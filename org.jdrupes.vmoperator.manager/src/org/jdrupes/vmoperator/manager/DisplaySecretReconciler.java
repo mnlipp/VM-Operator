@@ -76,7 +76,7 @@ public class DisplaySecretReconciler extends Component {
 
     protected final Logger logger = Logger.getLogger(getClass().getName());
     private int passwordValidity = 10;
-    private final List<PendingGet> pendingPrepares
+    private final List<PendingPrepare> pendingPrepares
         = Collections.synchronizedList(new LinkedList<>());
 
     /**
@@ -234,8 +234,8 @@ public class DisplaySecretReconciler extends Component {
             return;
         }
 
-        // Prepare wait for confirmation (by VM status change)
-        var pending = new PendingGet(event,
+        // Register wait for confirmation (by VM status change)
+        var pending = new PendingPrepare(event,
             event.vmDefinition().displayPasswordSerial().orElse(0L) + 1,
             new CompletionLock(event, 1500));
         pendingPrepares.add(pending);
@@ -333,7 +333,7 @@ public class DisplaySecretReconciler extends Component {
      * The Class PendingGet.
      */
     @SuppressWarnings("PMD.DataClass")
-    private static class PendingGet {
+    private static class PendingPrepare {
         public final PrepareConsole event;
         public final long expectedSerial;
         public final CompletionLock lock;
@@ -344,7 +344,7 @@ public class DisplaySecretReconciler extends Component {
          * @param event the event
          * @param expectedSerial the expected serial
          */
-        public PendingGet(PrepareConsole event, long expectedSerial,
+        public PendingPrepare(PrepareConsole event, long expectedSerial,
                 CompletionLock lock) {
             super();
             this.event = event;
