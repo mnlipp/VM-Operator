@@ -122,11 +122,16 @@
     #   Best explanation found: 
     #   https://fedoraproject.org/wiki/Features/VirtioSerial
     - [ "-device", "virtio-serial-pci,id=virtio-serial0" ]
-    #   - Guest agent serial connection. MUST have id "channel0"!
+    #   - Guest agent serial connection.
     - [ "-device", "virtserialport,id=channel0,name=org.qemu.guest_agent.0,\
         chardev=guest-agent-socket" ]
     - [ "-chardev","socket,id=guest-agent-socket,\
         path=${ runtimeDir }/org.qemu.guest_agent.0,server=on,wait=off" ]
+    #   - VM operator agent serial connection.
+    - [ "-device", "virtserialport,id=channel1,name=org.jdrupes.vmop_agent.0,\
+        chardev=vmop-agent-socket" ]
+    - [ "-chardev","socket,id=vmop-agent-socket,\
+        path=${ runtimeDir }/org.jdrupes.vmop_agent.0,server=on,wait=off" ]
     # * USB Hub and devices (more in SPICE configuration below)
     #   https://qemu-project.gitlab.io/qemu/system/devices/usb.html
     #   https://github.com/qemu/qemu/blob/master/hw/usb/hcd-xhci.c
@@ -233,7 +238,3 @@
     </#list>
     </#if>
     </#if>
-
-"guestAgentCmds":
-  - "osId": "*"
-    "executable": "/usr/local/libexec/vm-operator-cmd"

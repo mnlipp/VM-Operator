@@ -23,7 +23,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import freemarker.core.ParseException;
@@ -198,7 +197,6 @@ public class Runner extends Component {
     private static final String QEMU = "qemu";
     private static final String SWTPM = "swtpm";
     private static final String CLOUD_INIT_IMG = "cloudInitImg";
-    private static final String GUEST_AGENT_CMDS = "guestAgentCmds";
     private static final String TEMPLATE_DIR
         = "/opt/" + APP_NAME.replace("-", "") + "/templates";
     private static final String DEFAULT_TEMPLATE
@@ -222,6 +220,7 @@ public class Runner extends Component {
     private CommandDefinition qemuDefinition;
     private final QemuMonitor qemuMonitor;
     private final GuestAgentClient guestAgentClient;
+    private final VmopAgentClient vmopAgentClient;
     private Integer resetCounter;
     private RunState state = RunState.INITIALIZING;
 
@@ -280,6 +279,7 @@ public class Runner extends Component {
         attach(new SocketConnector(channel()));
         attach(qemuMonitor = new QemuMonitor(channel(), configDir));
         attach(guestAgentClient = new GuestAgentClient(channel()));
+        attach(vmopAgentClient = new VmopAgentClient(channel()));
         attach(new StatusUpdater(channel()));
         attach(new YamlConfigurationStore(channel(), configFile, false));
         fire(new WatchFile(configFile.toPath()));
@@ -350,16 +350,12 @@ public class Runner extends Component {
                     .map(d -> new CommandDefinition(CLOUD_INIT_IMG, d))
                     .orElse(null);
             logger.finest(() -> cloudInitImgDefinition.toString());
-            var guestAgentCmds = (ArrayNode) tplData.get(GUEST_AGENT_CMDS);
-            if (guestAgentCmds != null) {
-                logger.finest(
-                    () -> "GuestAgentCmds: " + guestAgentCmds.toString());
-            }
 
             // Forward some values to child components
             qemuMonitor.configure(config.monitorSocket,
                 config.vm.powerdownTimeout);
-            guestAgentClient.configure(config.guestAgentSocket, guestAgentCmds);
+            configureAgentClient(guestAgentClient, "guest-agent-socket");
+            configureAgentClient(vmopAgentClient, "vmop-agent-socket");
         } catch (IllegalArgumentException | IOException | TemplateException e) {
             logger.log(Level.SEVERE, e, () -> "Invalid configuration: "
                 + e.getMessage());
@@ -482,6 +478,36 @@ public class Runner extends Component {
                 () -> "Cannot start runner: " + e.getMessage());
             fire(new Stop());
         }
+    }
+
+    @SuppressWarnings("PMD.CognitiveComplexity")
+    private void configureAgentClient(AgentConnector client, String chardev) {
+        String id = null;
+        Path path = null;
+        for (var arg : qemuDefinition.command) {
+            if (arg.startsWith("virtserialport,")
+                && arg.contains("chardev=" + chardev)) {
+                for (var prop : arg.split(",")) {
+                    if (prop.startsWith("id=")) {
+                        id = prop.substring(3);
+                    }
+                }
+            }
+            if (arg.startsWith("socket,")
+                && arg.contains("id=" + chardev)) {
+                for (var prop : arg.split(",")) {
+                    if (prop.startsWith("path=")) {
+                        path = Path.of(prop.substring(5));
+                    }
+                }
+            }
+        }
+        if (id == null || path == null) {
+            logger.warning(() -> "Definition of chardev " + chardev
+                + " missing in runner template.");
+            return;
+        }
+        client.configure(id, path);
     }
 
     /**
