@@ -19,6 +19,7 @@
 package org.jdrupes.vmoperator.runner.qemu;
 
 import java.io.IOException;
+import org.jdrupes.vmoperator.runner.qemu.events.VmopAgentConnected;
 import org.jgrapes.core.Channel;
 
 /**
@@ -42,7 +43,9 @@ public class VmopAgentClient extends AgentConnector {
 
     @Override
     protected void processInput(String line) throws IOException {
-        // TODO Auto-generated method stub
+        if (line.startsWith("220 ")) {
+            rep().fire(new VmopAgentConnected());
+        }
     }
 
 }

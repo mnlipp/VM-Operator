@@ -47,6 +47,7 @@ import org.jdrupes.vmoperator.runner.qemu.events.OsinfoEvent;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.RunState;
 import org.jdrupes.vmoperator.runner.qemu.events.ShutdownEvent;
+import org.jdrupes.vmoperator.runner.qemu.events.VmopAgentConnected;
 import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.annotation.Handler;
@@ -192,20 +193,21 @@ public class StatusUpdater extends VmDefUpdater {
                 status.addProperty("ram", GsonPtr.to(from.data())
                     .getAsString("spec", "vm", "maximumRam").orElse("0"));
                 status.addProperty("cpus", 1);
-
-                // In case we had an irregular shutdown
-                status.remove("osinfo");
             } else if (event.runState() == RunState.STOPPED) {
                 status.addProperty("ram", "0");
                 status.addProperty("cpus", 0);
-                status.remove("osinfo");
             }
 
-            // In case console connection was still present
             if (!running) {
+                // In case console connection was still present
                 status.addProperty("consoleClient", "");
                 updateCondition(from, status, "ConsoleConnected", false,
-                    "VmStopped", "The VM has been shut down");
+                    "VmStopped", "The VM is not running");
+
+                // In case we had an irregular shutdown
+                status.remove("osinfo");
+                updateCondition(vmDef, vmDef.statusJson(), "VmopAgentConnected",
+                    false, "VmStopped", "The VM is not running");
             }
             return status;
         });
@@ -321,5 +323,25 @@ public class StatusUpdater extends VmDefUpdater {
             return status;
         });
 
+    }
+
+    /**
+     * @param event the event
+     * @throws ApiException 
+     */
+    @Handler
+    @SuppressWarnings("PMD.AssignmentInOperand")
+    public void onVmopAgentConnected(VmopAgentConnected event)
+            throws ApiException {
+        VmDefinition vmDef;
+        if (vmStub == null || (vmDef = vmStub.model().orElse(null)) == null) {
+            return;
+        }
+        vmStub.updateStatus(from -> {
+            JsonObject status = from.statusJson();
+            updateCondition(vmDef, status, "VmopAgentConnected",
+                true, "VmopAgentStarted", "The VM operator agent is running");
+            return status;
+        });
     }
 }

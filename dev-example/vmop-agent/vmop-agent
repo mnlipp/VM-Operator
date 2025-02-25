@@ -1,0 +1,19 @@
+#!/usr/bin/bash
+
+hostSerial="/dev/virtio-ports/org.jdrupes.vmop_agent.0"
+
+if [ ! -w "$hostSerial" ]; then
+  echo >&2 "Device $hostSerial not writable"
+  exit 1
+fi
+
+if ! exec {con}<>"$hostSerial"; then
+  echo >&2 "Cannot open device $hostSerial"
+  exit 1
+fi
+
+echo >&${con} "220 Hello"
+
+while read line <&${con}; do
+  true
+done
