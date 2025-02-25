@@ -5,7 +5,7 @@ buildscript {
 }
 
 plugins {
-    id 'org.ajoberstar.grgit' version '5.2.0' apply false
+    id 'org.ajoberstar.grgit' version '5.2.0'
     id 'org.ajoberstar.git-publish' version '4.2.0' apply false
     id 'pl.allegro.tech.build.axion-release' version '1.17.2' apply false
     id 'org.jdrupes.vmoperator.versioning-conventions'
@@ -28,7 +28,9 @@ task stage {
             tc -> tc.findByName("build") }.flatten()
     }
     
-    if (JavaVersion.current() == JavaVersion.VERSION_21) {
+    def gitBranch = grgit.branch.current.name.replace('/', '-')
+    if (JavaVersion.current() == JavaVersion.VERSION_21
+        && gitBranch == "main") {
         // Publish JavaDoc
         dependsOn gitPublishPush
     }
