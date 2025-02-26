@@ -74,7 +74,7 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
             const busy = computed(() => previewApi.vmDefinition.spec
                 && (previewApi.vmDefinition.spec.vm.state === 'Running'
                         && (previewApi.poolName
-                            ? !previewApi.vmDefinition.booted
+                            ? !previewApi.vmDefinition.vmopAgent
                             : !previewApi.vmDefinition.running)
                     || previewApi.vmDefinition.spec.vm.state === 'Stopped' 
                         && previewApi.vmDefinition.running));
@@ -87,7 +87,7 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
                 previewApi.vmDefinition.spec.vm.state !== 'Stopped' 
                 && previewApi.vmDefinition.running);
             const running = computed(() => previewApi.vmDefinition.running);
-            const booted = computed(() => previewApi.vmDefinition.booted);
+            const vmopAgent = computed(() => previewApi.vmDefinition.vmopAgent);
             const inUse = computed(() => previewApi.vmDefinition.usedBy != '');
             const permissions = computed(() => previewApi.permissions);
             const osicon = computed(() => {
@@ -123,7 +123,7 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
             };
         
             return { localize, resourceBase, vmAction, poolName, vmName, 
-                configured, busy, startable, stoppable, running, booted,
+                configured, busy, startable, stoppable, running, vmopAgent,
                 inUse, permissions, osicon };
         },
         template: `
@@ -133,7 +133,7 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
                 <td rowspan="2" style="position: relative"><span
                   style="position: absolute;" :class="{ busy: busy }"
                   ><img role=button :aria-disabled="(poolName 
-                      ? !booted : !running)
+                      ? !vmopAgent : !running)
                       || !permissions.includes('accessConsole')" 
                     v-on:click="vmAction('openConsole')"
                     :src="resourceBase + (running
@@ -215,9 +215,9 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmaccess.VmAccess",
                     vmDefinition.running = condition.status === "True";
                     vmDefinition.runningConditionSince 
                         = new Date(condition.lastTransitionTime);
-                } else if (condition.type === "Booted") {
-                    vmDefinition.booted = condition.status === "True";
-                    vmDefinition.bootedConditionSince 
+                } else if (condition.type === "VmopAgentConnected") {
+                    vmDefinition.vmopAgent = condition.status === "True";
+                    vmDefinition.vmopAgentConditionSince 
                         = new Date(condition.lastTransitionTime);
                 }
             })
