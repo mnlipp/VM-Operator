@@ -50,6 +50,12 @@ doLogin() {
     echo >&${con} "504 Won't log in root"
     return
   fi
+  curUser=$(loginctl -j | jq -r '.[] | select(.tty=="tty1") | .user')
+  if [ "$curUser" = "$user" ]; then
+    echo >&${con} "201 User already logged in"
+    return
+  fi
+  attemptLogout
   uid=$(id -u ${user} 2>/dev/null)
   if [ $? != 0 ]; then
     ( flock 200
@@ -69,7 +75,7 @@ doLogin() {
     -p ExecStartPre="/usr/bin/chvt 1" \
     dbus-run-session -- gnome-shell --display-server --wayland
   if [ $? -eq 0 ]; then
-    echo >&${con} "201 User logged in"
+    echo >&${con} "201 User logged in successfully"
   else
     echo >&${con} "451 $(<${temperr})"
   fi
@@ -79,16 +85,16 @@ attemptLogout() {
   systemctl status vmop-user-desktop > /dev/null 2>&1
   if [ $? = 0 ]; then
     systemctl stop vmop-user-desktop
-    echo >&${con} "102 Desktop stopped"
   fi
-}
-
-doLogout() {
-  attemptLogout
   loginctl -j | jq -r '.[] | select(.tty=="tty1") | .session' \
   | while read sid; do
     loginctl kill-session $sid
   done
+  echo >&${con} "102 Desktop stopped"
+}
+
+doLogout() {
+  attemptLogout
   echo >&${con} "202 User logged out"
 }
 
