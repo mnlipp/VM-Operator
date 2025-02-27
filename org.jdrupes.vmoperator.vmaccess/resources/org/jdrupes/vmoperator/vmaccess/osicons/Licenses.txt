@@ -9,7 +9,11 @@ archlinux.svg:
 debian.svg:
   Source: https://commons.wikimedia.org/wiki/File:Openlogo-debianV2.svg
   License : LGPL
-  
+
+fedora.svg:
+  Source: https://commons.wikimedia.org/wiki/File:Fedora_icon_(2021).svg
+  License: Public Domain
+
 tux.svg:
   Source: https://commons.wikimedia.org/wiki/File:Tux.svghttps://commons.wikimedia.org/wiki/File:Tux.svg
   License: Creative Commons CC0 1.0 Universal Public Domain Dedication. Creative Commons CC0 1.0 Universal Public Domain Dedication.
