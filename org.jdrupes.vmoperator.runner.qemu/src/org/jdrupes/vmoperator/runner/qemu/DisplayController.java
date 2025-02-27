@@ -186,7 +186,7 @@ public class DisplayController extends Component {
         Path path = configDir.resolve(dataItem);
         String label = dataItem.replace('-', ' ');
         if (path.toFile().canRead()) {
-            logger.finer(() -> "Found display user");
+            logger.finer(() -> "Found " + label);
             try {
                 return Optional.ofNullable(Files.readString(path));
             } catch (IOException e) {
