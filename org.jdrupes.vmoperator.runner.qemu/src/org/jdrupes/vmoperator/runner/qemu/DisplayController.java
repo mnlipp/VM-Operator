@@ -33,6 +33,10 @@ import org.jdrupes.vmoperator.runner.qemu.commands.QmpSetPasswordExpiry;
 import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.RunState;
+import org.jdrupes.vmoperator.runner.qemu.events.VmopAgentConnected;
+import org.jdrupes.vmoperator.runner.qemu.events.VmopAgentLogIn;
+import org.jdrupes.vmoperator.runner.qemu.events.VmopAgentLogOut;
+import org.jdrupes.vmoperator.runner.qemu.events.VmopAgentLoggedIn;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.annotation.Handler;
@@ -48,6 +52,8 @@ public class DisplayController extends Component {
     private String currentPassword;
     private String protocol;
     private final Path configDir;
+    private boolean vmopAgentConnected;
+    private boolean userLoginRequested;
 
     /**
      * Instantiates a new Display controller.
@@ -64,6 +70,16 @@ public class DisplayController extends Component {
     }
 
     /**
+     * On vmop agent connected.
+     *
+     * @param event the event
+     */
+    @Handler
+    public void onVmopAgentConnected(VmopAgentConnected event) {
+        vmopAgentConnected = true;
+    }
+
+    /**
      * On configure qemu.
      *
      * @param event the event
@@ -75,7 +91,7 @@ public class DisplayController extends Component {
         }
         protocol
             = event.configuration().vm.display.spice != null ? "spice" : null;
-        updatePassword();
+        configureAccess(false);
     }
 
     /**
@@ -87,12 +103,56 @@ public class DisplayController extends Component {
     @SuppressWarnings("PMD.EmptyCatchBlock")
     public void onFileChanged(FileChanged event) {
         if (event.path().equals(configDir.resolve(DATA_DISPLAY_PASSWORD))) {
-            updatePassword();
+            configureAccess(true);
         }
     }
 
     @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
-    private void updatePassword() {
+    private void configureAccess(boolean passwordChange) {
+        var userLoginConfigured = readFromFile(DATA_DISPLAY_LOGIN)
+            .map(Boolean::parseBoolean).orElse(false);
+        if (!userLoginConfigured) {
+            // Check if it was configured before and there may thus be an
+            // active auto login
+            if (userLoginRequested && vmopAgentConnected) {
+                // Make sure to log out
+                fire(new VmopAgentLogOut());
+            }
+            userLoginRequested = false;
+            configurePassword();
+            return;
+        }
+
+        // With user login configured, we have to make sure that the
+        // user is logged in before we set the password and thus allow
+        // access to the display.
+        userLoginRequested = true;
+        if (!vmopAgentConnected) {
+            if (passwordChange) {
+                logger.warning(() -> "Request for user login before "
+                    + "VM operator agent has connected");
+            }
+            return;
+        }
+
+        var user = readFromFile(DATA_DISPLAY_USER);
+        if (user.isEmpty()) {
+            logger.warning(() -> "Login requested, but no user configured");
+        }
+        fire(new VmopAgentLogIn(user.get()).setAssociated(this, user.get()));
+    }
+
+    /**
+     * On vmop agent logged in.
+     *
+     * @param event the event
+     */
+    @Handler
+    public void onVmopAgentLoggedIn(VmopAgentLoggedIn event) {
+        configurePassword();
+    }
+
+    private void configurePassword() {
         if (protocol == null) {
             return;
         }

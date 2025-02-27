@@ -47,8 +47,8 @@ import org.jgrapes.util.events.WatchFile;
 /**
  * A component that handles the communication with QEMU over a socket.
  * 
- * If the log level for this class is set to fine, the messages 
- * exchanged on the socket are logged.
+ * Derived classes should log the messages exchanged on the socket
+ * if the log level is set to fine.
  */
 public abstract class QemuConnector extends Component {
 
@@ -172,6 +172,22 @@ public abstract class QemuConnector extends Component {
      */
     protected Optional<Writer> writer() {
         return qemuChannel().flatMap(c -> c.associated(Writer.class));
+    }
+
+    /**
+     * Send the given command to QEMU. A newline is appended to the
+     * command automatically.
+     *
+     * @param command the command
+     * @return true, if successful
+     * @throws IOException Signals that an I/O exception has occurred.
+     */
+    protected boolean sendCommand(String command) throws IOException {
+        if (writer().isEmpty()) {
+            return false;
+        }
+        writer().get().append(command).append('\n').flush();
+        return true;
     }
 
     /**

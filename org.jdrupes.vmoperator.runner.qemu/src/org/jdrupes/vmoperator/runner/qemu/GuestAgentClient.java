@@ -88,10 +88,12 @@ public class GuestAgentClient extends AgentConnector {
      * On guest agent command.
      *
      * @param event the event
+     * @throws IOException 
      */
     @Handler
     @SuppressWarnings("PMD.AvoidSynchronizedStatement")
-    public void onGuestAgentCommand(GuestAgentCommand event) {
+    public void onGuestAgentCommand(GuestAgentCommand event)
+            throws IOException {
         if (qemuChannel() == null) {
             return;
         }
@@ -106,15 +108,10 @@ public class GuestAgentClient extends AgentConnector {
             return;
         }
         synchronized (executing) {
-            writer().ifPresent(writer -> {
-                try {
-                    executing.add(command);
-                    writer.append(asText).append('\n').flush();
-                } catch (IOException e) {
-                    // Cannot happen, but...
-                    logger.log(Level.WARNING, e, e::getMessage);
-                }
-            });
+            if (writer().isPresent()) {
+                executing.add(command);
+                sendCommand(asText);
+            }
         }
     }
 }

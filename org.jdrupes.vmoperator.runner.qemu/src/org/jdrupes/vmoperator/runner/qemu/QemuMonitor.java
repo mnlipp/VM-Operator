@@ -155,11 +155,12 @@ public class QemuMonitor extends QemuConnector {
      * On monitor command.
      *
      * @param event the event
+     * @throws IOException 
      */
     @Handler
     @SuppressWarnings({ "PMD.AvoidLiteralsInIfCondition",
         "PMD.AvoidSynchronizedStatement" })
-    public void onExecQmpCommand(MonitorCommand event) {
+    public void onExecQmpCommand(MonitorCommand event) throws IOException {
         var command = event.command();
         logger.fine(() -> "monitor(out): " + command.toString());
         String asText;
@@ -171,15 +172,10 @@ public class QemuMonitor extends QemuConnector {
             return;
         }
         synchronized (executing) {
-            writer().ifPresent(writer -> {
-                try {
-                    executing.add(command);
-                    writer.append(asText).append('\n').flush();
-                } catch (IOException e) {
-                    // Cannot happen, but...
-                    logger.log(Level.WARNING, e, e::getMessage);
-                }
-            });
+            if (writer().isPresent()) {
+                executing.add(command);
+                sendCommand(asText);
+            }
         }
     }
 
