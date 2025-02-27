@@ -35,7 +35,6 @@ import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.RunState;
 import org.jdrupes.vmoperator.runner.qemu.events.VmopAgentConnected;
 import org.jdrupes.vmoperator.runner.qemu.events.VmopAgentLogIn;
-import org.jdrupes.vmoperator.runner.qemu.events.VmopAgentLogOut;
 import org.jdrupes.vmoperator.runner.qemu.events.VmopAgentLoggedIn;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
@@ -53,7 +52,6 @@ public class DisplayController extends Component {
     private String protocol;
     private final Path configDir;
     private boolean vmopAgentConnected;
-    private boolean userLoginRequested;
 
     /**
      * Instantiates a new Display controller.
@@ -112,13 +110,6 @@ public class DisplayController extends Component {
         var userLoginConfigured = readFromFile(DATA_DISPLAY_LOGIN)
             .map(Boolean::parseBoolean).orElse(false);
         if (!userLoginConfigured) {
-            // Check if it was configured before and there may thus be an
-            // active auto login
-            if (userLoginRequested && vmopAgentConnected) {
-                // Make sure to log out
-                fire(new VmopAgentLogOut());
-            }
-            userLoginRequested = false;
             configurePassword();
             return;
         }
@@ -126,7 +117,6 @@ public class DisplayController extends Component {
         // With user login configured, we have to make sure that the
         // user is logged in before we set the password and thus allow
         // access to the display.
-        userLoginRequested = true;
         if (!vmopAgentConnected) {
             if (passwordChange) {
                 logger.warning(() -> "Request for user login before "
