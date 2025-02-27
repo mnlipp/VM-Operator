@@ -77,7 +77,7 @@ doLogin() {
   if [ $? -eq 0 ]; then
     echo >&${con} "201 User logged in successfully"
   else
-    echo >&${con} "451 $(<${temperr})"
+    echo >&${con} "451 $(tr '\n' ' ' <${temperr})"
   fi
 }
 
