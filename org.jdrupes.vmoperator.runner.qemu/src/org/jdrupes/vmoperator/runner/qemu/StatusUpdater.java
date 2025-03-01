@@ -114,8 +114,15 @@ public class StatusUpdater extends VmDefUpdater {
             vmStub = VmDefinitionStub.get(apiClient,
                 new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
                 namespace, vmName);
-            vmStub.model().ifPresent(model -> {
-                observedGeneration = model.getMetadata().getGeneration();
+            var vmDef = vmStub.model().orElse(null);
+            if (vmDef == null) {
+                return;
+            }
+            observedGeneration = vmDef.getMetadata().getGeneration();
+            vmStub.updateStatus(from -> {
+                JsonObject status = from.statusJson();
+                status.remove("loggedInUser");
+                return status;
             });
         } catch (ApiException e) {
             logger.log(Level.SEVERE, e,
@@ -197,6 +204,7 @@ public class StatusUpdater extends VmDefUpdater {
             } else if (event.runState() == RunState.STOPPED) {
                 status.addProperty("ram", "0");
                 status.addProperty("cpus", 0);
+                status.remove("loggedInUser");
             }
 
             if (!running) {
