@@ -28,11 +28,11 @@ import io.kubernetes.client.util.generic.options.PatchOptions;
 import java.io.IOException;
 import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
-import org.jdrupes.vmoperator.common.Constants.Crd;
-import org.jdrupes.vmoperator.common.Constants.DisplaySecret;
+import static org.jdrupes.vmoperator.common.Constants.VM_OP_NAME;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sV1PodStub;
 import org.jdrupes.vmoperator.common.K8sV1SecretStub;
+import static org.jdrupes.vmoperator.manager.Constants.COMP_DISPLAY_SECRET;
 import org.jdrupes.vmoperator.manager.events.ChannelDictionary;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jgrapes.core.Channel;
@@ -61,7 +61,7 @@ public class DisplaySecretMonitor
         context(K8sV1SecretStub.CONTEXT);
         ListOptions options = new ListOptions();
         options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
-            + "app.kubernetes.io/component=" + DisplaySecret.NAME);
+            + "app.kubernetes.io/component=" + COMP_DISPLAY_SECRET);
         options(options);
     }
 
@@ -95,7 +95,7 @@ public class DisplaySecretMonitor
         // Force update for pod
         ListOptions listOpts = new ListOptions();
         listOpts.setLabelSelector(
-            "app.kubernetes.io/managed-by=" + Crd.NAME + ","
+            "app.kubernetes.io/managed-by=" + VM_OP_NAME + ","
                 + "app.kubernetes.io/name=" + APP_NAME + ","
                 + "app.kubernetes.io/instance=" + change.object.getMetadata()
                     .getLabels().get("app.kubernetes.io/instance"));

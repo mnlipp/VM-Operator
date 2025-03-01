@@ -27,47 +27,24 @@ public class Constants {
     /** The Constant APP_NAME. */
     public static final String APP_NAME = "vm-runner";
 
-    /**
-     * Constants related to the CRD.
-     */
-    @SuppressWarnings("PMD.ShortClassName")
-    public static class Crd {
+    /** The Constant VM_OP_NAME. */
+    public static final String VM_OP_NAME = "vm-operator";
 
-        /** The Constant NAME. */
-        public static final String NAME = "vm-operator";
+    /** The Constant VM_OP_GROUP. */
+    public static final String VM_OP_GROUP = "vmoperator.jdrupes.org";
 
-        /** The Constant GROUP. */
-        public static final String GROUP = "vmoperator.jdrupes.org";
+    /** The Constant VM_OP_KIND_VM. */
+    public static final String VM_OP_KIND_VM = "VirtualMachine";
 
-        /** The Constant KIND_VM. */
-        public static final String KIND_VM = "VirtualMachine";
+    /** The Constant VM_OP_KIND_VM_POOL. */
+    public static final String VM_OP_KIND_VM_POOL = "VmPool";
 
-        /** The Constant KIND_VM_POOL. */
-        public static final String KIND_VM_POOL = "VmPool";
-    }
+    /** The Constant COMP_DISPLAY_SECRETS. */
+    public static final String COMP_DISPLAY_SECRET = "display-secret";
 
-    /**
-     * Constants for the display secret.
-     */
-    public static class DisplaySecret {
+    /** The Constant DATA_DISPLAY_PASSWORD. */
+    public static final String DATA_DISPLAY_PASSWORD = "display-password";
 
-        /** The Constant NAME. */
-        public static final String NAME = "display-secret";
-
-        /** The Constant DISPLAY_PASSWORD. */
-        public static final String DISPLAY_PASSWORD = "display-password";
-
-        /** The Constant PASSWORD_EXPIRY. */
-        public static final String PASSWORD_EXPIRY = "password-expiry";
-    }
-
-    /**
-     * Constants for status fields.
-     */
-    public static class Status {
-
-        /** The Constant LOGGED_IN_USER. */
-        public static final String LOGGED_IN_USER = "loggedInUser";
-
-    }
+    /** The Constant DATA_PASSWORD_EXPIRY. */
+    public static final String DATA_PASSWORD_EXPIRY = "password-expiry";
 }

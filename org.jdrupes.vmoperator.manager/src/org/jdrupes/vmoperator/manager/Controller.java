@@ -29,7 +29,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.logging.Level;
-import org.jdrupes.vmoperator.common.Constants.Crd;
+import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
+import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
@@ -193,7 +194,7 @@ public class Controller extends Component {
     private void patchVmDef(K8sClient client, String name, String path,
             Object value) throws ApiException, IOException {
         var vmStub = K8sDynamicStub.get(client,
-            new GroupVersionKind(Crd.GROUP, "", Crd.KIND_VM), namespace,
+            new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM), namespace,
             name);
 
         // Patch running
@@ -226,7 +227,7 @@ public class Controller extends Component {
         try {
             var vmDef = channel.vmDefinition();
             var vmStub = VmDefinitionStub.get(channel.client(),
-                new GroupVersionKind(Crd.GROUP, "", Crd.KIND_VM),
+                new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
                 vmDef.namespace(), vmDef.name());
             if (vmStub.updateStatus(vmDef, from -> {
                 JsonObject status = from.statusJson();

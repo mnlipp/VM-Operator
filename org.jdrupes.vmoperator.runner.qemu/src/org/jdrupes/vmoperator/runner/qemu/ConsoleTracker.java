@@ -25,7 +25,8 @@ import io.kubernetes.client.openapi.models.EventsV1Event;
 import java.io.IOException;
 import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
-import org.jdrupes.vmoperator.common.Constants.Crd;
+import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
+import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
@@ -73,7 +74,7 @@ public class ConsoleTracker extends VmDefUpdater {
         }
         try {
             vmStub = VmDefinitionStub.get(apiClient,
-                new GroupVersionKind(Crd.GROUP, "", Crd.KIND_VM),
+                new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
                 namespace, vmName);
         } catch (ApiException e) {
             logger.log(Level.SEVERE, e,
@@ -114,7 +115,7 @@ public class ConsoleTracker extends VmDefUpdater {
 
         // Log event
         var evt = new EventsV1Event()
-            .reportingController(Crd.GROUP + "/" + APP_NAME)
+            .reportingController(VM_OP_GROUP + "/" + APP_NAME)
             .action("ConsoleConnectionUpdate")
             .reason("Connection from " + event.clientHost());
         K8s.createEvent(apiClient, vmStub.model().get(), evt);
@@ -149,7 +150,7 @@ public class ConsoleTracker extends VmDefUpdater {
 
         // Log event
         var evt = new EventsV1Event()
-            .reportingController(Crd.GROUP + "/" + APP_NAME)
+            .reportingController(VM_OP_GROUP + "/" + APP_NAME)
             .action("ConsoleConnectionUpdate")
             .reason("Disconnected from " + event.clientHost());
         K8s.createEvent(apiClient, vmStub.model().get(), evt);

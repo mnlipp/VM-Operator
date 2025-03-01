@@ -33,8 +33,8 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
-import org.jdrupes.vmoperator.common.Constants.Crd;
-import org.jdrupes.vmoperator.common.Constants.Status;
+import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
+import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
@@ -112,17 +112,11 @@ public class StatusUpdater extends VmDefUpdater {
         }
         try {
             vmStub = VmDefinitionStub.get(apiClient,
-                new GroupVersionKind(Crd.GROUP, "", Crd.KIND_VM),
+                new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
                 namespace, vmName);
-            var vmDef = vmStub.updateStatus(from -> {
-                JsonObject status = from.statusJson();
-                status.remove(Status.LOGGED_IN_USER);
-                return status;
-            }).orElse(null);
-            if (vmDef == null) {
-                return;
-            }
-            observedGeneration = vmDef.getMetadata().getGeneration();
+            vmStub.model().ifPresent(model -> {
+                observedGeneration = model.getMetadata().getGeneration();
+            });
         } catch (ApiException e) {
             logger.log(Level.SEVERE, e,
                 () -> "Cannot access VM object, terminating.");
@@ -160,7 +154,7 @@ public class StatusUpdater extends VmDefUpdater {
                     "displayPasswordSerial").getAsInt() == -1)) {
             return;
         }
-        vmStub.updateStatus(from -> {
+        vmStub.updateStatus(vmDef.get(), from -> {
             JsonObject status = from.statusJson();
             if (!event.configuration().hasDisplayPassword) {
                 status.addProperty("displayPasswordSerial", -1);
@@ -189,7 +183,7 @@ public class StatusUpdater extends VmDefUpdater {
         if (vmStub == null || (vmDef = vmStub.model().orElse(null)) == null) {
             return;
         }
-        vmStub.updateStatus(from -> {
+        vmStub.updateStatus(vmDef, from -> {
             JsonObject status = from.statusJson();
             boolean running = event.runState().vmRunning();
             updateCondition(vmDef, vmDef.statusJson(), "Running", running,
@@ -204,7 +198,6 @@ public class StatusUpdater extends VmDefUpdater {
             } else if (event.runState() == RunState.STOPPED) {
                 status.addProperty("ram", "0");
                 status.addProperty("cpus", 0);
-                status.remove(Status.LOGGED_IN_USER);
             }
 
             if (!running) {
@@ -237,7 +230,7 @@ public class StatusUpdater extends VmDefUpdater {
 
         // Log event
         var evt = new EventsV1Event()
-            .reportingController(Crd.GROUP + "/" + APP_NAME)
+            .reportingController(VM_OP_GROUP + "/" + APP_NAME)
             .action("StatusUpdate").reason(event.reason())
             .note(event.message());
         K8s.createEvent(apiClient, vmDef, evt);
@@ -364,8 +357,7 @@ public class StatusUpdater extends VmDefUpdater {
             throws ApiException {
         vmStub.updateStatus(from -> {
             JsonObject status = from.statusJson();
-            status.addProperty(Status.LOGGED_IN_USER,
-                event.triggering().user());
+            status.addProperty("loggedInUser", event.triggering().user());
             return status;
         });
     }
@@ -380,7 +372,7 @@ public class StatusUpdater extends VmDefUpdater {
             throws ApiException {
         vmStub.updateStatus(from -> {
             JsonObject status = from.statusJson();
-            status.remove(Status.LOGGED_IN_USER);
+            status.remove("loggedInUser");
             return status;
         });
     }

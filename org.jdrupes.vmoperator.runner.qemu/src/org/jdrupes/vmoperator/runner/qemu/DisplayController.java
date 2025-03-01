@@ -24,7 +24,8 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Level;
-import org.jdrupes.vmoperator.common.Constants.DisplaySecret;
+import static org.jdrupes.vmoperator.common.Constants.DATA_DISPLAY_PASSWORD;
+import static org.jdrupes.vmoperator.common.Constants.DATA_PASSWORD_EXPIRY;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpSetDisplayPassword;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpSetPasswordExpiry;
 import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
@@ -63,7 +64,7 @@ public class DisplayController extends Component {
     public DisplayController(Channel componentChannel, Path configDir) {
         super(componentChannel);
         this.configDir = configDir;
-        fire(new WatchFile(configDir.resolve(DisplaySecret.DISPLAY_PASSWORD)));
+        fire(new WatchFile(configDir.resolve(DATA_DISPLAY_PASSWORD)));
     }
 
     /**
@@ -114,8 +115,7 @@ public class DisplayController extends Component {
     @Handler
     @SuppressWarnings("PMD.EmptyCatchBlock")
     public void onFileChanged(FileChanged event) {
-        if (event.path()
-            .equals(configDir.resolve(DisplaySecret.DISPLAY_PASSWORD))) {
+        if (event.path().equals(configDir.resolve(DATA_DISPLAY_PASSWORD))) {
             configurePassword();
         }
     }
@@ -130,7 +130,7 @@ public class DisplayController extends Component {
     }
 
     private boolean setDisplayPassword() {
-        return readFromFile(DisplaySecret.DISPLAY_PASSWORD).map(password -> {
+        return readFromFile(DATA_DISPLAY_PASSWORD).map(password -> {
             if (Objects.equals(this.currentPassword, password)) {
                 return true;
             }
@@ -143,7 +143,7 @@ public class DisplayController extends Component {
     }
 
     private void setPasswordExpiry() {
-        readFromFile(DisplaySecret.PASSWORD_EXPIRY).ifPresent(expiry -> {
+        readFromFile(DATA_PASSWORD_EXPIRY).ifPresent(expiry -> {
             logger.fine(() -> "Updating expiry time to " + expiry);
             fire(
                 new MonitorCommand(new QmpSetPasswordExpiry(protocol, expiry)));

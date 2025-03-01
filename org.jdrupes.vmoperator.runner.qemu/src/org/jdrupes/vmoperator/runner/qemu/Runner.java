@@ -56,7 +56,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
-import org.jdrupes.vmoperator.common.Constants.DisplaySecret;
+import static org.jdrupes.vmoperator.common.Constants.DATA_DISPLAY_PASSWORD;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCont;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpReset;
 import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
@@ -312,7 +312,7 @@ public class Runner extends Component {
 
             // Add some values from other sources to configuration
             newConf.asOf = Instant.ofEpochSecond(configFile.lastModified());
-            Path dsPath = configDir.resolve(DisplaySecret.DISPLAY_PASSWORD);
+            Path dsPath = configDir.resolve(DATA_DISPLAY_PASSWORD);
             newConf.hasDisplayPassword = dsPath.toFile().canRead();
 
             // Special actions for initial configuration (startup)

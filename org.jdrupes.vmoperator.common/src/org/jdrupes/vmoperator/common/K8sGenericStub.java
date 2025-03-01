@@ -193,7 +193,7 @@ public class K8sGenericStub<O extends KubernetesObject,
     }
 
     /**
-     * Updates the object's status. This method will not retry.
+     * Updates the object's status.
      *
      * @param object the current state of the object (passed to `status`)
      * @param status function that returns the new status
@@ -231,7 +231,7 @@ public class K8sGenericStub<O extends KubernetesObject,
     }
 
     /**
-     * Updates the status. In case of conflict, retries up to 16 times.
+     * Updates the status.
      *
      * @param status the status
      * @return the kubernetes api response

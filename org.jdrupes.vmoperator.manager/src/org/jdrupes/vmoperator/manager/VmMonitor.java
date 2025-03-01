@@ -31,7 +31,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
-import org.jdrupes.vmoperator.common.Constants.Crd;
+import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
+import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
 import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
@@ -45,6 +46,7 @@ import org.jdrupes.vmoperator.common.VmDefinitions;
 import org.jdrupes.vmoperator.common.VmExtraData;
 import org.jdrupes.vmoperator.common.VmPool;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
+import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
 import org.jdrupes.vmoperator.manager.events.AssignVm;
 import org.jdrupes.vmoperator.manager.events.ChannelManager;
 import org.jdrupes.vmoperator.manager.events.GetPools;
@@ -85,7 +87,7 @@ public class VmMonitor extends
         client(new K8sClient());
 
         // Get all our API versions
-        var ctx = K8s.context(client(), Crd.GROUP, "", Crd.KIND_VM);
+        var ctx = K8s.context(client(), VM_OP_GROUP, "", VM_OP_KIND_VM);
         if (ctx.isEmpty()) {
             logger.severe(() -> "Cannot get CRD context.");
             return;
@@ -103,7 +105,7 @@ public class VmMonitor extends
             .stream().map(stub -> stub.name()).collect(Collectors.toSet());
         ListOptions opts = new ListOptions();
         opts.setLabelSelector(
-            "app.kubernetes.io/managed-by=" + Crd.NAME + ","
+            "app.kubernetes.io/managed-by=" + VM_OP_NAME + ","
                 + "app.kubernetes.io/name=" + APP_NAME);
         for (var context : Set.of(K8sV1StatefulSetStub.CONTEXT,
             K8sV1ConfigMapStub.CONTEXT)) {

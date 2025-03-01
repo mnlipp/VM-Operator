@@ -13,8 +13,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
-import org.jdrupes.vmoperator.common.Constants.Crd;
-import org.jdrupes.vmoperator.common.Constants.DisplaySecret;
+import static org.jdrupes.vmoperator.common.Constants.COMP_DISPLAY_SECRET;
+import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
+import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
+import static org.jdrupes.vmoperator.common.Constants.VM_OP_NAME;
 import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
@@ -58,7 +60,7 @@ class BasicTests {
         waitForManager();
 
         // Context for working with our CR
-        var apiRes = K8s.context(client, Crd.GROUP, null, Crd.KIND_VM);
+        var apiRes = K8s.context(client, VM_OP_GROUP, null, VM_OP_KIND_VM);
         assertTrue(apiRes.isPresent());
         vmsContext = apiRes.get();
 
@@ -68,7 +70,7 @@ class BasicTests {
         ListOptions listOpts = new ListOptions();
         listOpts.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
             + "app.kubernetes.io/instance=" + VM_NAME + ","
-            + "app.kubernetes.io/component=" + DisplaySecret.NAME);
+            + "app.kubernetes.io/component=" + COMP_DISPLAY_SECRET);
         var secrets = K8sV1SecretStub.list(client, "vmop-dev", listOpts);
         for (var secret : secrets) {
             secret.delete();
@@ -98,7 +100,7 @@ class BasicTests {
     private static void deletePvcs() throws ApiException {
         ListOptions listOpts = new ListOptions();
         listOpts.setLabelSelector(
-            "app.kubernetes.io/managed-by=" + Crd.NAME + ","
+            "app.kubernetes.io/managed-by=" + VM_OP_NAME + ","
                 + "app.kubernetes.io/name=" + APP_NAME + ","
                 + "app.kubernetes.io/instance=" + VM_NAME);
         var knownPvcs = K8sV1PvcStub.list(client, "vmop-dev", listOpts);
@@ -137,11 +139,11 @@ class BasicTests {
             List.of("labels", "app.kubernetes.io/name"), Constants.APP_NAME,
             List.of("labels", "app.kubernetes.io/instance"), VM_NAME,
             List.of("labels", "app.kubernetes.io/managed-by"),
-            Crd.NAME,
+            Constants.VM_OP_NAME,
             List.of("annotations", "vmoperator.jdrupes.org/version"), EXISTS,
             List.of("ownerReferences", 0, "apiVersion"),
             vmsContext.getGroup() + "/" + vmsContext.getVersions().get(0),
-            List.of("ownerReferences", 0, "kind"), Crd.KIND_VM,
+            List.of("ownerReferences", 0, "kind"), Constants.VM_OP_KIND_VM,
             List.of("ownerReferences", 0, "name"), VM_NAME,
             List.of("ownerReferences", 0, "uid"), EXISTS);
         checkProps(config.getMetadata(), toCheck);
@@ -187,7 +189,7 @@ class BasicTests {
         ListOptions listOpts = new ListOptions();
         listOpts.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
             + "app.kubernetes.io/instance=" + VM_NAME + ","
-            + "app.kubernetes.io/component=" + DisplaySecret.NAME);
+            + "app.kubernetes.io/component=" + COMP_DISPLAY_SECRET);
         Collection<K8sV1SecretStub> secrets = null;
         for (int i = 0; i < 10; i++) {
             secrets = K8sV1SecretStub.list(client, "vmop-dev", listOpts);
@@ -218,7 +220,7 @@ class BasicTests {
             List.of("labels", "app.kubernetes.io/name"), Constants.APP_NAME,
             List.of("labels", "app.kubernetes.io/instance"), VM_NAME,
             List.of("labels", "app.kubernetes.io/managed-by"),
-            Crd.NAME));
+            Constants.VM_OP_NAME));
         checkProps(pvc.getSpec(), Map.of(
             List.of("resources", "requests", "storage"),
             Quantity.fromString("1Mi")));
@@ -239,7 +241,7 @@ class BasicTests {
             List.of("labels", "app.kubernetes.io/name"), Constants.APP_NAME,
             List.of("labels", "app.kubernetes.io/instance"), VM_NAME,
             List.of("labels", "app.kubernetes.io/managed-by"),
-            Crd.NAME,
+            Constants.VM_OP_NAME,
             List.of("annotations", "use_as"), "system-disk"));
         checkProps(pvc.getSpec(), Map.of(
             List.of("resources", "requests", "storage"),
@@ -261,7 +263,7 @@ class BasicTests {
             List.of("labels", "app.kubernetes.io/name"), Constants.APP_NAME,
             List.of("labels", "app.kubernetes.io/instance"), VM_NAME,
             List.of("labels", "app.kubernetes.io/managed-by"),
-            Crd.NAME));
+            Constants.VM_OP_NAME));
         checkProps(pvc.getSpec(), Map.of(
             List.of("resources", "requests", "storage"),
             Quantity.fromString("1Gi")));
@@ -289,12 +291,12 @@ class BasicTests {
             List.of("labels", "app.kubernetes.io/instance"), VM_NAME,
             List.of("labels", "app.kubernetes.io/component"), APP_NAME,
             List.of("labels", "app.kubernetes.io/managed-by"),
-            Crd.NAME,
+            Constants.VM_OP_NAME,
             List.of("annotations", "vmrunner.jdrupes.org/cmVersion"), EXISTS,
             List.of("annotations", "vmoperator.jdrupes.org/version"), EXISTS,
             List.of("ownerReferences", 0, "apiVersion"),
             vmsContext.getGroup() + "/" + vmsContext.getVersions().get(0),
-            List.of("ownerReferences", 0, "kind"), Crd.KIND_VM,
+            List.of("ownerReferences", 0, "kind"), Constants.VM_OP_KIND_VM,
             List.of("ownerReferences", 0, "name"), VM_NAME,
             List.of("ownerReferences", 0, "uid"), EXISTS));
         checkProps(pod.getSpec(), Map.of(
@@ -317,7 +319,7 @@ class BasicTests {
         checkProps(svc.getMetadata(), Map.of(
             List.of("labels", "app.kubernetes.io/name"), APP_NAME,
             List.of("labels", "app.kubernetes.io/instance"), VM_NAME,
-            List.of("labels", "app.kubernetes.io/managed-by"), Crd.NAME,
+            List.of("labels", "app.kubernetes.io/managed-by"), VM_OP_NAME,
             List.of("labels", "label1"), "label1",
             List.of("labels", "label2"), "replaced",
             List.of("labels", "label3"), "added",
