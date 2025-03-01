@@ -153,11 +153,13 @@ public class StatusUpdater extends VmDefUpdater {
         // by a new version of the CR. So we update only if we have
         // a new version of the CR. There's one exception: the display
         // password is configured by a file, not by the CR.
-        var vmDef = vmStub.model();
-        if (vmDef.isPresent()
-            && vmDef.get().metadata().getGeneration() == observedGeneration
+        var vmDef = vmStub.model().orElse(null);
+        if (vmDef == null) {
+            return;
+        }
+        if (vmDef.metadata().getGeneration() == observedGeneration
             && (event.configuration().hasDisplayPassword
-                || vmDef.get().statusJson().getAsJsonPrimitive(
+                || vmDef.statusJson().getAsJsonPrimitive(
                     "displayPasswordSerial").getAsInt() == -1)) {
             return;
         }
@@ -172,7 +174,7 @@ public class StatusUpdater extends VmDefUpdater {
                 .forEach(cond -> cond.addProperty("observedGeneration",
                     from.getMetadata().getGeneration()));
             return status;
-        });
+        }, vmDef);
     }
 
     /**
@@ -219,7 +221,7 @@ public class StatusUpdater extends VmDefUpdater {
                     "The VM is not running");
             }
             return status;
-        });
+        }, vmDef);
 
         // Maybe stop VM
         if (event.runState() == RunState.TERMINATING && !event.failed()
@@ -325,7 +327,6 @@ public class StatusUpdater extends VmDefUpdater {
         }
         var asGson = gson.toJsonTree(
             objectMapper.convertValue(event.osinfo(), Object.class));
-
         vmStub.updateStatus(from -> {
             JsonObject status = from.statusJson();
             status.add("osinfo", asGson);
@@ -349,7 +350,7 @@ public class StatusUpdater extends VmDefUpdater {
         vmStub.updateStatus(from -> {
             return updateCondition(vmDef, "VmopAgentConnected",
                 true, "VmopAgentStarted", "The VM operator agent is running");
-        });
+        }, vmDef);
     }
 
     /**
