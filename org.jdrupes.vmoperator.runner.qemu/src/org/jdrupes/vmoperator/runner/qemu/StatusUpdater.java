@@ -33,8 +33,8 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
-import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
-import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
+import org.jdrupes.vmoperator.common.Constants.Crd;
+import org.jdrupes.vmoperator.common.Constants.Status;
 import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
@@ -112,7 +112,7 @@ public class StatusUpdater extends VmDefUpdater {
         }
         try {
             vmStub = VmDefinitionStub.get(apiClient,
-                new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
+                new GroupVersionKind(Crd.GROUP, "", Crd.KIND_VM),
                 namespace, vmName);
             var vmDef = vmStub.model().orElse(null);
             if (vmDef == null) {
@@ -121,7 +121,7 @@ public class StatusUpdater extends VmDefUpdater {
             observedGeneration = vmDef.getMetadata().getGeneration();
             vmStub.updateStatus(from -> {
                 JsonObject status = from.statusJson();
-                status.remove("loggedInUser");
+                status.remove(Status.LOGGED_IN_USER);
                 return status;
             });
         } catch (ApiException e) {
@@ -206,12 +206,12 @@ public class StatusUpdater extends VmDefUpdater {
             } else if (event.runState() == RunState.STOPPED) {
                 status.addProperty("ram", "0");
                 status.addProperty("cpus", 0);
-                status.remove("loggedInUser");
+                status.remove(Status.LOGGED_IN_USER);
             }
 
             if (!running) {
                 // In case console connection was still present
-                status.addProperty("consoleClient", "");
+                status.addProperty(Status.CONSOLE_CLIENT, "");
                 updateCondition(from, "ConsoleConnected", false, "VmStopped",
                     "The VM is not running");
 
@@ -239,7 +239,7 @@ public class StatusUpdater extends VmDefUpdater {
 
         // Log event
         var evt = new EventsV1Event()
-            .reportingController(VM_OP_GROUP + "/" + APP_NAME)
+            .reportingController(Crd.GROUP + "/" + APP_NAME)
             .action("StatusUpdate").reason(event.reason())
             .note(event.message());
         K8s.createEvent(apiClient, vmDef, evt);
@@ -363,7 +363,8 @@ public class StatusUpdater extends VmDefUpdater {
             throws ApiException {
         vmStub.updateStatus(from -> {
             JsonObject status = from.statusJson();
-            status.addProperty("loggedInUser", event.triggering().user());
+            status.addProperty(Status.LOGGED_IN_USER,
+                event.triggering().user());
             return status;
         });
     }
@@ -378,7 +379,7 @@ public class StatusUpdater extends VmDefUpdater {
             throws ApiException {
         vmStub.updateStatus(from -> {
             JsonObject status = from.statusJson();
-            status.remove("loggedInUser");
+            status.remove(Status.LOGGED_IN_USER);
             return status;
         });
     }

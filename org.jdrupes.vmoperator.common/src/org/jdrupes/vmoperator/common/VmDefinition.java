@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import org.jdrupes.vmoperator.common.Constants.Status;
 import org.jdrupes.vmoperator.util.DataPath;
 
 /**
@@ -286,7 +287,7 @@ public class VmDefinition extends K8sDynamicModel {
      * @return the optional
      */
     public Optional<String> consoleUser() {
-        return this.<String> fromStatus("consoleUser");
+        return this.<String> fromStatus(Status.CONSOLE_USER);
     }
 
     /**

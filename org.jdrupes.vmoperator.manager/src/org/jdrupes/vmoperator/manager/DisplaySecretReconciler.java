@@ -37,14 +37,12 @@ import java.util.Optional;
 import java.util.Scanner;
 import java.util.logging.Logger;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
-import static org.jdrupes.vmoperator.common.Constants.COMP_DISPLAY_SECRET;
-import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
-import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
+import org.jdrupes.vmoperator.common.Constants.Crd;
+import org.jdrupes.vmoperator.common.Constants.DisplaySecret;
+import org.jdrupes.vmoperator.common.Constants.Status;
 import org.jdrupes.vmoperator.common.K8sV1SecretStub;
 import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
-import static org.jdrupes.vmoperator.manager.Constants.DATA_DISPLAY_PASSWORD;
-import static org.jdrupes.vmoperator.manager.Constants.DATA_PASSWORD_EXPIRY;
 import org.jdrupes.vmoperator.manager.events.PrepareConsole;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
@@ -143,7 +141,7 @@ public class DisplaySecretReconciler extends Component {
         var vmDef = event.vmDefinition();
         ListOptions options = new ListOptions();
         options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
-            + "app.kubernetes.io/component=" + COMP_DISPLAY_SECRET + ","
+            + "app.kubernetes.io/component=" + DisplaySecret.NAME + ","
             + "app.kubernetes.io/instance=" + vmDef.name());
         var stubs = K8sV1SecretStub.list(channel.client(), vmDef.namespace(),
             options);
@@ -154,9 +152,9 @@ public class DisplaySecretReconciler extends Component {
         // Create secret
         var secret = new V1Secret();
         secret.setMetadata(new V1ObjectMeta().namespace(vmDef.namespace())
-            .name(vmDef.name() + "-" + COMP_DISPLAY_SECRET)
+            .name(vmDef.name() + "-" + DisplaySecret.NAME)
             .putLabelsItem("app.kubernetes.io/name", APP_NAME)
-            .putLabelsItem("app.kubernetes.io/component", COMP_DISPLAY_SECRET)
+            .putLabelsItem("app.kubernetes.io/component", DisplaySecret.NAME)
             .putLabelsItem("app.kubernetes.io/instance", vmDef.name()));
         secret.setType("Opaque");
         SecureRandom random = null;
@@ -169,8 +167,8 @@ public class DisplaySecretReconciler extends Component {
         byte[] bytes = new byte[16];
         random.nextBytes(bytes);
         var password = Base64.encode(bytes);
-        secret.setStringData(Map.of(DATA_DISPLAY_PASSWORD, password,
-            DATA_PASSWORD_EXPIRY, "now"));
+        secret.setStringData(Map.of(DisplaySecret.PASSWORD, password,
+            DisplaySecret.EXPIRY, "now"));
         K8sV1SecretStub.create(channel.client(), secret);
     }
 
@@ -196,7 +194,7 @@ public class DisplaySecretReconciler extends Component {
 
         // Check if access is possible
         if (event.loginUser()
-            ? !vmDef.<String> fromStatus("loggedInUser")
+            ? !vmDef.<String> fromStatus(Status.LOGGED_IN_USER)
                 .map(u -> u.equals(event.user())).orElse(false)
             : !vmDef.conditionStatus("Running").orElse(false)) {
             return;
@@ -229,11 +227,11 @@ public class DisplaySecretReconciler extends Component {
     private VmDefinition updateConsoleUser(PrepareConsole event,
             VmChannel channel) throws ApiException {
         var vmStub = VmDefinitionStub.get(channel.client(),
-            new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
+            new GroupVersionKind(Crd.GROUP, "", Crd.KIND_VM),
             event.vmDefinition().namespace(), event.vmDefinition().name());
         return vmStub.updateStatus(from -> {
             JsonObject status = from.statusJson();
-            status.addProperty("consoleUser", event.user());
+            status.addProperty(Status.CONSOLE_USER, event.user());
             return status;
         }).orElse(null);
     }
@@ -243,7 +241,7 @@ public class DisplaySecretReconciler extends Component {
         // Look for secret
         ListOptions options = new ListOptions();
         options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
-            + "app.kubernetes.io/component=" + COMP_DISPLAY_SECRET + ","
+            + "app.kubernetes.io/component=" + DisplaySecret.NAME + ","
             + "app.kubernetes.io/instance=" + vmDef.name());
         var stubs = K8sV1SecretStub.list(channel.client(), vmDef.namespace(),
             options);
@@ -257,12 +255,12 @@ public class DisplaySecretReconciler extends Component {
 
     private boolean updatePassword(V1Secret secret, PrepareConsole event) {
         var expiry = Optional.ofNullable(secret.getData()
-            .get(DATA_PASSWORD_EXPIRY)).map(b -> new String(b)).orElse(null);
-        if (secret.getData().get(DATA_DISPLAY_PASSWORD) != null
+            .get(DisplaySecret.EXPIRY)).map(b -> new String(b)).orElse(null);
+        if (secret.getData().get(DisplaySecret.PASSWORD) != null
             && stillValid(expiry)) {
             // Fixed secret, don't touch
             event.setResult(
-                new String(secret.getData().get(DATA_DISPLAY_PASSWORD)));
+                new String(secret.getData().get(DisplaySecret.PASSWORD)));
             return false;
         }
 
@@ -277,8 +275,8 @@ public class DisplaySecretReconciler extends Component {
         byte[] bytes = new byte[16];
         random.nextBytes(bytes);
         var password = Base64.encode(bytes);
-        secret.setStringData(Map.of(DATA_DISPLAY_PASSWORD, password,
-            DATA_PASSWORD_EXPIRY,
+        secret.setStringData(Map.of(DisplaySecret.PASSWORD, password,
+            DisplaySecret.EXPIRY,
             Long.toString(Instant.now().getEpochSecond() + passwordValidity)));
         event.setResult(password);
         return true;
