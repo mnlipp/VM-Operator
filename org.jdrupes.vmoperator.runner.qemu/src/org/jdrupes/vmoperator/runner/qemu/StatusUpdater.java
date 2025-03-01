@@ -154,7 +154,7 @@ public class StatusUpdater extends VmDefUpdater {
                     "displayPasswordSerial").getAsInt() == -1)) {
             return;
         }
-        vmStub.updateStatus(vmDef.get(), from -> {
+        vmStub.updateStatus(from -> {
             JsonObject status = from.statusJson();
             if (!event.configuration().hasDisplayPassword) {
                 status.addProperty("displayPasswordSerial", -1);
@@ -183,12 +183,11 @@ public class StatusUpdater extends VmDefUpdater {
         if (vmStub == null || (vmDef = vmStub.model().orElse(null)) == null) {
             return;
         }
-        vmStub.updateStatus(vmDef, from -> {
-            JsonObject status = from.statusJson();
+        vmStub.updateStatus(from -> {
             boolean running = event.runState().vmRunning();
-            updateCondition(vmDef, vmDef.statusJson(), "Running", running,
-                event.reason(), event.message());
-            updateCondition(vmDef, vmDef.statusJson(), "Booted",
+            updateCondition(vmDef, "Running", running, event.reason(),
+                event.message());
+            JsonObject status = updateCondition(vmDef, "Booted",
                 event.runState() == RunState.BOOTED, event.reason(),
                 event.message());
             if (event.runState() == RunState.STARTING) {
@@ -203,13 +202,13 @@ public class StatusUpdater extends VmDefUpdater {
             if (!running) {
                 // In case console connection was still present
                 status.addProperty("consoleClient", "");
-                updateCondition(from, status, "ConsoleConnected", false,
-                    "VmStopped", "The VM is not running");
+                updateCondition(from, "ConsoleConnected", false, "VmStopped",
+                    "The VM is not running");
 
                 // In case we had an irregular shutdown
                 status.remove("osinfo");
-                updateCondition(vmDef, vmDef.statusJson(), "VmopAgentConnected",
-                    false, "VmStopped", "The VM is not running");
+                updateCondition(vmDef, "VmopAgentConnected", false, "VmStopped",
+                    "The VM is not running");
             }
             return status;
         });
@@ -340,10 +339,8 @@ public class StatusUpdater extends VmDefUpdater {
             return;
         }
         vmStub.updateStatus(from -> {
-            JsonObject status = from.statusJson();
-            updateCondition(vmDef, status, "VmopAgentConnected",
+            return updateCondition(vmDef, "VmopAgentConnected",
                 true, "VmopAgentStarted", "The VM operator agent is running");
-            return status;
         });
     }
 

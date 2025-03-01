@@ -196,51 +196,52 @@ public class K8sGenericStub<O extends KubernetesObject,
      * Updates the object's status.
      *
      * @param object the current state of the object (passed to `status`)
-     * @param status function that returns the new status
+     * @param updater function that returns the new status
      * @return the updated model or empty if the object was not found
      * @throws ApiException the api exception
      */
     @SuppressWarnings("PMD.AssignmentInOperand")
-    public Optional<O> updateStatus(O object, Function<O, Object> status)
+    public Optional<O> updateStatus(O object, Function<O, Object> updater)
             throws ApiException {
-        return K8s.optional(api.updateStatus(object, status));
+        return K8s.optional(api.updateStatus(object, updater));
     }
 
     /**
      * Gets the object and updates the status. In case of conflict, retries
      * up to `retries` times.
      *
-     * @param status the status
+     * @param updater the function updating the status
      * @param retries the retries in case of conflict
      * @return the updated model or empty if the object was not found
      * @throws ApiException the api exception
      */
     @SuppressWarnings({ "PMD.AssignmentInOperand", "PMD.UnusedAssignment" })
-    public Optional<O> updateStatus(Function<O, Object> status, int retries)
+    public Optional<O> updateStatus(Function<O, Object> updater, int retries)
             throws ApiException {
-        try {
-            return updateStatus(api.get(namespace, name).throwsApiException()
-                .getObject(), status);
-        } catch (ApiException e) {
-            if (HttpURLConnection.HTTP_CONFLICT != e.getCode()
-                || retries-- <= 0) {
-                throw e;
+        while (true) {
+            try {
+                return updateStatus(api.get(namespace, name)
+                    .throwsApiException().getObject(), updater);
+            } catch (ApiException e) {
+                if (HttpURLConnection.HTTP_CONFLICT != e.getCode()
+                    || retries-- <= 0) {
+                    throw e;
+                }
             }
         }
-        return Optional.empty();
     }
 
     /**
-     * Updates the status.
+     * Updates the status. In case of conflict, retries up to 16 times.
      *
-     * @param status the status
+     * @param updater the function updating the status
      * @return the kubernetes api response
      * the updated model or empty if not successful
      * @throws ApiException the api exception
      */
-    public Optional<O> updateStatus(Function<O, Object> status)
+    public Optional<O> updateStatus(Function<O, Object> updater)
             throws ApiException {
-        return updateStatus(status, 16);
+        return updateStatus(updater, 16);
     }
 
     /**
