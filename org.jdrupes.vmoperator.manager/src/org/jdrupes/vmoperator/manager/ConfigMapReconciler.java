@@ -33,9 +33,9 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
 import java.util.logging.Logger;
+import org.jdrupes.vmoperator.common.Constants.Crd;
 import org.jdrupes.vmoperator.common.K8s;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
-import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.util.DataPath;
 import org.jdrupes.vmoperator.util.GsonPtr;
@@ -121,7 +121,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
             DynamicKubernetesObject newCm) {
         ListOptions listOpts = new ListOptions();
         listOpts.setLabelSelector(
-            "app.kubernetes.io/managed-by=" + VM_OP_NAME + ","
+            "app.kubernetes.io/managed-by=" + Crd.NAME + ","
                 + "app.kubernetes.io/name=" + APP_NAME + ","
                 + "app.kubernetes.io/instance=" + newCm.getMetadata()
                     .getLabels().get("app.kubernetes.io/instance"));

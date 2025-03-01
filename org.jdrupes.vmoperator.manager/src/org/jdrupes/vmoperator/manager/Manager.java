@@ -40,7 +40,7 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import static org.jdrupes.vmoperator.manager.Constants.VM_OP_NAME;
+import org.jdrupes.vmoperator.common.Constants.Crd;
 import org.jdrupes.vmoperator.manager.events.Exit;
 import org.jdrupes.vmoperator.util.FsdUtils;
 import org.jgrapes.core.Channel;
@@ -108,7 +108,7 @@ public class Manager extends Component {
 
         // Configuration store with file in /etc/opt (default)
         File cfgFile = new File(cmdLine.getOptionValue('c',
-            "/etc/opt/" + VM_OP_NAME.replace("-", "") + "/config.yaml"));
+            "/etc/opt/" + Crd.NAME.replace("-", "") + "/config.yaml"));
         logger.config(() -> "Using configuration from: " + cfgFile.getPath());
         // Don't rely on night config to produce a good exception
         // for this simple case
@@ -271,7 +271,7 @@ public class Manager extends Component {
         try {
             // Get logging properties from file and put them in effect
             InputStream props;
-            var path = FsdUtils.findConfigFile(VM_OP_NAME.replace("-", ""),
+            var path = FsdUtils.findConfigFile(Crd.NAME.replace("-", ""),
                 "logging.properties");
             if (path.isPresent()) {
                 props = Files.newInputStream(path.get());

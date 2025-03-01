@@ -36,7 +36,7 @@ import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
-import static org.jdrupes.vmoperator.common.Constants.VM_OP_NAME;
+import org.jdrupes.vmoperator.common.Constants.Crd;
 import org.jdrupes.vmoperator.common.K8sV1PvcStub;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
@@ -83,7 +83,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         // Existing disks
         ListOptions listOpts = new ListOptions();
         listOpts.setLabelSelector(
-            "app.kubernetes.io/managed-by=" + VM_OP_NAME + ","
+            "app.kubernetes.io/managed-by=" + Crd.NAME + ","
                 + "app.kubernetes.io/name=" + APP_NAME + ","
                 + "app.kubernetes.io/instance=" + vmDef.name());
         var knownDisks = K8sV1PvcStub.list(channel.client(),

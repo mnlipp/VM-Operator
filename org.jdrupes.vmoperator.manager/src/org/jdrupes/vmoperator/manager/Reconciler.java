@@ -46,12 +46,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
+import org.jdrupes.vmoperator.common.Constants.DisplaySecret;
 import org.jdrupes.vmoperator.common.Convertions;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jdrupes.vmoperator.common.K8sV1SecretStub;
 import org.jdrupes.vmoperator.common.VmDefinition;
-import static org.jdrupes.vmoperator.manager.Constants.COMP_DISPLAY_SECRET;
 import org.jdrupes.vmoperator.manager.events.ResetVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
@@ -276,7 +276,7 @@ public class Reconciler extends Component {
         // Check if we have a display secret
         ListOptions options = new ListOptions();
         options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
-            + "app.kubernetes.io/component=" + COMP_DISPLAY_SECRET + ","
+            + "app.kubernetes.io/component=" + DisplaySecret.NAME + ","
             + "app.kubernetes.io/instance=" + vmDef.name());
         var dsStub = K8sV1SecretStub
             .list(client, vmDef.namespace(), options)

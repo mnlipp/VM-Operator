@@ -12,11 +12,12 @@ layout: vm-operator
 ### Shared file system
 
 Mount a shared file system as home file system on all VMs in the pool.
+If you want to use the sample script for logging in a user, the filesystem
+must support POSIX file access control lists (ACLs).
 
 ### Restrict access
 
-The only possibility to access the VMs should be via a desktop started by
-the VM-Operator.
+The VMs should only be accessible via a desktop started by the VM-Operator.
 
  * Disable the display manager.
  
@@ -31,10 +32,17 @@ the VM-Operator.
    # systemctl mask getty@tty1
    # systemctl stop getty@tty1
    ```
+
+You can, of course, disable `getty` completely. If you do this, make sure
+that you can still access your master VM through `ssh`, else you have
+locked yourself out.
+
+Strictly speaking, it is not necessary to disable these services, because
+the sample script includes a `Conflicts=` directive in the systemd service
+that starts the desktop for the user. However, this is mainly intended for
+development purposes and not for production.
    
-   You can, of course, disable `getty` completely. If you do this, make sure
-   that you can still access your master VM through `ssh`, else you have
-   locked yourself out.
+The following should actually be configured for any VM.
    
  * Prevent suspend/hibernate, because it will lock the VM.
  

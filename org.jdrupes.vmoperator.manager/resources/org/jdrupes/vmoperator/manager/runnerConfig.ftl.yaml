@@ -201,6 +201,9 @@ data:
           <#if spec.vm.display.outputs?? >
           outputs: ${ spec.vm.display.outputs?c }
           </#if>
+          <#if spec.vm.display.loggedInUser?? >
+          loggedInUser: "${ spec.vm.display.loggedInUser }"
+          </#if>
           <#if spec.vm.display.spice??>
           spice:
             port: ${ spec.vm.display.spice.port?c }

@@ -248,6 +248,9 @@ public class Configuration implements Dto {
         /** The number of outputs. */
         public int outputs = 1;
 
+        /** The logged in user. */
+        public String loggedInUser;
+
         /** The spice. */
         public Spice spice;
     }

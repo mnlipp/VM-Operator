@@ -1430,6 +1430,12 @@ spec:
                         outputs:
                           type: integer
                           default: 1
+                        loggedInUser:
+                          description: >-
+                            The name of a user that should be automatically
+                            logged in on the display. Note that this requires
+                            support from an agent in the guest OS.
+                          type: string
                         spice:
                           type: object
                           properties:
@@ -1485,6 +1491,11 @@ spec:
                     connection.
                   type: string
                   default: ""
+                loggedInUser:
+                  description: >-
+                    The name of a user that is currently logged in by the
+                    VM operator agent.
+                  type: string
                 displayPasswordSerial:
                   description: >-
                     Counts changes of the display password. Set to -1

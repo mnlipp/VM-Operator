@@ -26,7 +26,6 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Secret;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -34,20 +33,16 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.logging.Logger;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
-import static org.jdrupes.vmoperator.common.Constants.COMP_DISPLAY_SECRET;
-import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
-import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
+import org.jdrupes.vmoperator.common.Constants.Crd;
+import org.jdrupes.vmoperator.common.Constants.DisplaySecret;
+import org.jdrupes.vmoperator.common.Constants.Status;
 import org.jdrupes.vmoperator.common.K8sV1SecretStub;
+import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
-import static org.jdrupes.vmoperator.manager.Constants.DATA_DISPLAY_LOGIN;
-import static org.jdrupes.vmoperator.manager.Constants.DATA_DISPLAY_PASSWORD;
-import static org.jdrupes.vmoperator.manager.Constants.DATA_DISPLAY_USER;
-import static org.jdrupes.vmoperator.manager.Constants.DATA_PASSWORD_EXPIRY;
 import org.jdrupes.vmoperator.manager.events.PrepareConsole;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
@@ -146,7 +141,7 @@ public class DisplaySecretReconciler extends Component {
         var vmDef = event.vmDefinition();
         ListOptions options = new ListOptions();
         options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
-            + "app.kubernetes.io/component=" + COMP_DISPLAY_SECRET + ","
+            + "app.kubernetes.io/component=" + DisplaySecret.NAME + ","
             + "app.kubernetes.io/instance=" + vmDef.name());
         var stubs = K8sV1SecretStub.list(channel.client(), vmDef.namespace(),
             options);
@@ -157,9 +152,9 @@ public class DisplaySecretReconciler extends Component {
         // Create secret
         var secret = new V1Secret();
         secret.setMetadata(new V1ObjectMeta().namespace(vmDef.namespace())
-            .name(vmDef.name() + "-" + COMP_DISPLAY_SECRET)
+            .name(vmDef.name() + "-" + DisplaySecret.NAME)
             .putLabelsItem("app.kubernetes.io/name", APP_NAME)
-            .putLabelsItem("app.kubernetes.io/component", COMP_DISPLAY_SECRET)
+            .putLabelsItem("app.kubernetes.io/component", DisplaySecret.NAME)
             .putLabelsItem("app.kubernetes.io/instance", vmDef.name()));
         secret.setType("Opaque");
         SecureRandom random = null;
@@ -172,8 +167,8 @@ public class DisplaySecretReconciler extends Component {
         byte[] bytes = new byte[16];
         random.nextBytes(bytes);
         var password = Base64.encode(bytes);
-        secret.setStringData(Map.of(DATA_DISPLAY_PASSWORD, password,
-            DATA_PASSWORD_EXPIRY, "now"));
+        secret.setStringData(Map.of(DisplaySecret.DISPLAY_PASSWORD, password,
+            DisplaySecret.PASSWORD_EXPIRY, "now"));
         K8sV1SecretStub.create(channel.client(), secret);
     }
 
@@ -192,49 +187,31 @@ public class DisplaySecretReconciler extends Component {
     public void onPrepareConsole(PrepareConsole event, VmChannel channel)
             throws ApiException {
         // Update console user in status
-        var vmStub = VmDefinitionStub.get(channel.client(),
-            new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
-            event.vmDefinition().namespace(), event.vmDefinition().name());
-        var optVmDef = vmStub.updateStatus(from -> {
-            JsonObject status = from.statusJson();
-            status.addProperty("consoleUser", event.user());
-            return status;
-        });
-        if (optVmDef.isEmpty()) {
+        var vmDef = updateConsoleUser(event, channel);
+        if (vmDef == null) {
             return;
         }
-        var vmDef = optVmDef.get();
 
         // Check if access is possible
         if (event.loginUser()
-            ? !vmDef.conditionStatus("Booted").orElse(false)
+            ? !vmDef.<String> fromStatus(Status.LOGGED_IN_USER)
+                .map(u -> u.equals(event.user())).orElse(false)
             : !vmDef.conditionStatus("Running").orElse(false)) {
             return;
         }
 
-        // Look for secret
-        ListOptions options = new ListOptions();
-        options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
-            + "app.kubernetes.io/component=" + COMP_DISPLAY_SECRET + ","
-            + "app.kubernetes.io/instance=" + vmDef.name());
-        var stubs = K8sV1SecretStub.list(channel.client(), vmDef.namespace(),
-            options);
-        if (stubs.isEmpty()) {
-            // No secret means no password for this VM wanted
-            event.setResult(null);
+        // Get secret and update password in secret
+        var stub = getSecretStub(event, channel, vmDef);
+        if (stub == null) {
             return;
         }
-        var stub = stubs.iterator().next();
-
-        // Get secret and update
         var secret = stub.model().get();
-        var updPw = updatePassword(secret, event);
-        var updUsr = updateUser(secret, event);
-        if (!updPw && !updUsr) {
+        if (!updatePassword(secret, event)) {
             return;
         }
 
-        // Register wait for confirmation (by VM status change)
+        // Register wait for confirmation (by VM status change,
+        // after secret update)
         var pending = new PendingPrepare(event,
             event.vmDefinition().displayPasswordSerial().orElse(0L) + 1,
             new CompletionLock(event, 1500));
@@ -247,30 +224,45 @@ public class DisplaySecretReconciler extends Component {
         stub.update(secret).getObject();
     }
 
-    private boolean updateUser(V1Secret secret, PrepareConsole event) {
-        var curUser = DataPath.<byte[]> get(secret, "data", DATA_DISPLAY_USER)
-            .map(b -> new String(b, UTF_8)).orElse(null);
-        var curLogin = DataPath.<byte[]> get(secret, "data", DATA_DISPLAY_LOGIN)
-            .map(b -> new String(b, UTF_8)).map(Boolean::parseBoolean)
-            .orElse(null);
-        if (Objects.equals(curUser, event.user()) && Objects.equals(
-            curLogin, event.loginUser())) {
-            return false;
+    private VmDefinition updateConsoleUser(PrepareConsole event,
+            VmChannel channel) throws ApiException {
+        var vmStub = VmDefinitionStub.get(channel.client(),
+            new GroupVersionKind(Crd.GROUP, "", Crd.KIND_VM),
+            event.vmDefinition().namespace(), event.vmDefinition().name());
+        return vmStub.updateStatus(from -> {
+            JsonObject status = from.statusJson();
+            status.addProperty("consoleUser", event.user());
+            return status;
+        }).orElse(null);
+    }
+
+    private K8sV1SecretStub getSecretStub(PrepareConsole event,
+            VmChannel channel, VmDefinition vmDef) throws ApiException {
+        // Look for secret
+        ListOptions options = new ListOptions();
+        options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
+            + "app.kubernetes.io/component=" + DisplaySecret.NAME + ","
+            + "app.kubernetes.io/instance=" + vmDef.name());
+        var stubs = K8sV1SecretStub.list(channel.client(), vmDef.namespace(),
+            options);
+        if (stubs.isEmpty()) {
+            // No secret means no password for this VM wanted
+            event.setResult(null);
+            return null;
         }
-        secret.getData().put(DATA_DISPLAY_USER, event.user().getBytes(UTF_8));
-        secret.getData().put(DATA_DISPLAY_LOGIN,
-            Boolean.toString(event.loginUser()).getBytes(UTF_8));
-        return true;
+        return stubs.iterator().next();
     }
 
     private boolean updatePassword(V1Secret secret, PrepareConsole event) {
         var expiry = Optional.ofNullable(secret.getData()
-            .get(DATA_PASSWORD_EXPIRY)).map(b -> new String(b)).orElse(null);
-        if (secret.getData().get(DATA_DISPLAY_PASSWORD) != null
+            .get(DisplaySecret.PASSWORD_EXPIRY)).map(b -> new String(b))
+            .orElse(null);
+        if (secret.getData().get(DisplaySecret.DISPLAY_PASSWORD) != null
             && stillValid(expiry)) {
             // Fixed secret, don't touch
             event.setResult(
-                new String(secret.getData().get(DATA_DISPLAY_PASSWORD)));
+                new String(
+                    secret.getData().get(DisplaySecret.DISPLAY_PASSWORD)));
             return false;
         }
 
@@ -285,8 +277,8 @@ public class DisplaySecretReconciler extends Component {
         byte[] bytes = new byte[16];
         random.nextBytes(bytes);
         var password = Base64.encode(bytes);
-        secret.setStringData(Map.of(DATA_DISPLAY_PASSWORD, password,
-            DATA_PASSWORD_EXPIRY,
+        secret.setStringData(Map.of(DisplaySecret.DISPLAY_PASSWORD, password,
+            DisplaySecret.PASSWORD_EXPIRY,
             Long.toString(Instant.now().getEpochSecond() + passwordValidity)));
         event.setResult(password);
         return true;

@@ -126,8 +126,18 @@ attemptLogout() {
 
 # Log out any user currently using tty1. This is invoked when executing
 # the logout command and therefore sends back a 2xx return code.
+# Also try to restart gdm, if it is not running.
 doLogout() {
   attemptLogout
+  systemctl status gdm >/dev/null 2>&1
+  if [ $? != 0 ]; then
+    systemctl restart gdm 2>$temperr
+    if [ $? -eq 0 ]; then
+      echo >&${con} "102 gdm restarted"
+    else
+      echo >&${con} "102 Restarting gdm failed: $(tr '\n' ' ' <${temperr})"
+    fi
+  fi
   echo >&${con} "202 User logged out"
 }
 
