@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import org.jdrupes.vmoperator.common.Constants.Crd;
+import org.jdrupes.vmoperator.common.Constants.Status;
 import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicModel;
@@ -187,7 +188,7 @@ public class PoolMonitor extends
         vmStub.updateStatus(from -> {
             // TODO
             JsonObject status = from.statusJson();
-            var assignment = GsonPtr.to(status).to("assignment");
+            var assignment = GsonPtr.to(status).to(Status.ASSIGNMENT);
             assignment.set("lastUsed", ccChange.get().toString());
             return status;
         });

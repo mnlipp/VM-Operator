@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
+import org.jdrupes.vmoperator.common.Constants.Status;
 import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinition.Permission;
@@ -243,8 +244,8 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
             DataPath.<String> get(vmSpec, "currentRam").orElse("0")).getNumber()
             .toBigInteger());
         var status = DataPath.deepCopy(vmDef.status());
-        status.put("ram", Quantity.fromString(
-            DataPath.<String> get(status, "ram").orElse("0")).getNumber()
+        status.put(Status.RAM, Quantity.fromString(
+            DataPath.<String> get(status, Status.RAM).orElse("0")).getNumber()
             .toBigInteger());
 
         // Build result
@@ -383,10 +384,10 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
         Summary summary = new Summary();
         for (var vmDef : channelTracker.associated()) {
             summary.totalVms += 1;
-            summary.usedCpus += vmDef.<Number> fromStatus("cpus")
+            summary.usedCpus += vmDef.<Number> fromStatus(Status.CPUS)
                 .map(Number::intValue).orElse(0);
             summary.usedRam = summary.usedRam
-                .add(vmDef.<String> fromStatus("ram")
+                .add(vmDef.<String> fromStatus(Status.RAM)
                     .map(r -> Quantity.fromString(r).getNumber().toBigInteger())
                     .orElse(BigInteger.ZERO));
             if (vmDef.conditionStatus("Running").orElse(false)) {

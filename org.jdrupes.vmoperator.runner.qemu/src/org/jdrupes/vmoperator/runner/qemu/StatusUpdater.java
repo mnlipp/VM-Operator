@@ -160,13 +160,13 @@ public class StatusUpdater extends VmDefUpdater {
         if (vmDef.metadata().getGeneration() == observedGeneration
             && (event.configuration().hasDisplayPassword
                 || vmDef.statusJson().getAsJsonPrimitive(
-                    "displayPasswordSerial").getAsInt() == -1)) {
+                    Status.DISPLAY_PASSWORD_SERIAL).getAsInt() == -1)) {
             return;
         }
         vmStub.updateStatus(from -> {
             JsonObject status = from.statusJson();
             if (!event.configuration().hasDisplayPassword) {
-                status.addProperty("displayPasswordSerial", -1);
+                status.addProperty(Status.DISPLAY_PASSWORD_SERIAL, -1);
             }
             status.getAsJsonArray("conditions").asList().stream()
                 .map(cond -> (JsonObject) cond).filter(cond -> "Running"
@@ -200,12 +200,12 @@ public class StatusUpdater extends VmDefUpdater {
                 event.runState() == RunState.BOOTED, event.reason(),
                 event.message());
             if (event.runState() == RunState.STARTING) {
-                status.addProperty("ram", GsonPtr.to(from.data())
+                status.addProperty(Status.RAM, GsonPtr.to(from.data())
                     .getAsString("spec", "vm", "maximumRam").orElse("0"));
-                status.addProperty("cpus", 1);
+                status.addProperty(Status.CPUS, 1);
             } else if (event.runState() == RunState.STOPPED) {
-                status.addProperty("ram", "0");
-                status.addProperty("cpus", 0);
+                status.addProperty(Status.RAM, "0");
+                status.addProperty(Status.CPUS, 0);
                 status.remove(Status.LOGGED_IN_USER);
             }
 
@@ -216,7 +216,7 @@ public class StatusUpdater extends VmDefUpdater {
                     "The VM is not running");
 
                 // In case we had an irregular shutdown
-                status.remove("osinfo");
+                status.remove(Status.OSINFO);
                 updateCondition(vmDef, "VmopAgentConnected", false, "VmStopped",
                     "The VM is not running");
             }
@@ -258,7 +258,7 @@ public class StatusUpdater extends VmDefUpdater {
         }
         vmStub.updateStatus(from -> {
             JsonObject status = from.statusJson();
-            status.addProperty("ram",
+            status.addProperty(Status.RAM,
                 new Quantity(new BigDecimal(event.size()), Format.BINARY_SI)
                     .toSuffixedString());
             return status;
@@ -278,7 +278,7 @@ public class StatusUpdater extends VmDefUpdater {
         }
         vmStub.updateStatus(from -> {
             JsonObject status = from.statusJson();
-            status.addProperty("cpus", event.usedCpus().size());
+            status.addProperty(Status.CPUS, event.usedCpus().size());
             return status;
         });
     }
@@ -297,8 +297,8 @@ public class StatusUpdater extends VmDefUpdater {
         }
         vmStub.updateStatus(from -> {
             JsonObject status = from.statusJson();
-            status.addProperty("displayPasswordSerial",
-                status.get("displayPasswordSerial").getAsLong() + 1);
+            status.addProperty(Status.DISPLAY_PASSWORD_SERIAL,
+                status.get(Status.DISPLAY_PASSWORD_SERIAL).getAsLong() + 1);
             return status;
         });
     }
@@ -329,7 +329,7 @@ public class StatusUpdater extends VmDefUpdater {
             objectMapper.convertValue(event.osinfo(), Object.class));
         vmStub.updateStatus(from -> {
             JsonObject status = from.statusJson();
-            status.add("osinfo", asGson);
+            status.add(Status.OSINFO, asGson);
             return status;
         });
 

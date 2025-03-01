@@ -220,7 +220,7 @@ public class VmDefinition extends K8sDynamicModel {
      * @return the optional
      */
     public Optional<String> assignedFrom() {
-        return fromStatus("assignment", "pool");
+        return fromStatus(Status.ASSIGNMENT, "pool");
     }
 
     /**
@@ -229,7 +229,7 @@ public class VmDefinition extends K8sDynamicModel {
      * @return the optional
      */
     public Optional<String> assignedTo() {
-        return fromStatus("assignment", "user");
+        return fromStatus(Status.ASSIGNMENT, "user");
     }
 
     /**
@@ -238,7 +238,7 @@ public class VmDefinition extends K8sDynamicModel {
      * @return the optional
      */
     public Optional<Instant> assignmentLastUsed() {
-        return this.<String> fromStatus("assignment", "lastUsed")
+        return this.<String> fromStatus(Status.ASSIGNMENT, "lastUsed")
             .map(Instant::parse);
     }
 
@@ -389,7 +389,7 @@ public class VmDefinition extends K8sDynamicModel {
      * @return the optional
      */
     public Optional<Long> displayPasswordSerial() {
-        return this.<Number> fromStatus("displayPasswordSerial")
+        return this.<Number> fromStatus(Status.DISPLAY_PASSWORD_SERIAL)
             .map(Number::longValue);
     }
 

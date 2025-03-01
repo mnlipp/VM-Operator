@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.logging.Level;
 import org.jdrupes.vmoperator.common.Constants.Crd;
+import org.jdrupes.vmoperator.common.Constants.Status;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
@@ -230,7 +231,7 @@ public class Controller extends Component {
                 vmDef.namespace(), vmDef.name());
             if (vmStub.updateStatus(vmDef, from -> {
                 JsonObject status = from.statusJson();
-                var assignment = GsonPtr.to(status).to("assignment");
+                var assignment = GsonPtr.to(status).to(Status.ASSIGNMENT);
                 assignment.set("pool", event.usedPool());
                 assignment.set("user", event.toUser());
                 assignment.set("lastUsed", Instant.now().toString());

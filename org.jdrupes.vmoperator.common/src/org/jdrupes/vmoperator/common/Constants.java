@@ -50,6 +50,19 @@ public class Constants {
      * Status related constants.
      */
     public static class Status {
+        /** The Constant CPUS. */
+        public static final String CPUS = "cpus";
+
+        /** The Constant RAM. */
+        public static final String RAM = "ram";
+
+        /** The Constant OSINFO. */
+        public static final String OSINFO = "osinfo";
+
+        /** The Constant DISPLAY_PASSWORD_SERIAL. */
+        public static final String DISPLAY_PASSWORD_SERIAL
+            = "displayPasswordSerial";
+
         /** The Constant LOGGED_IN_USER. */
         public static final String LOGGED_IN_USER = "loggedInUser";
 
@@ -58,6 +71,9 @@ public class Constants {
 
         /** The Constant CONSOLE_USER. */
         public static final String CONSOLE_USER = "consoleUser";
+
+        /** The Constant ASSIGNMENT. */
+        public static final String ASSIGNMENT = "assignment";
     }
 
     /**
