@@ -1,5 +1,5 @@
 ---
-title: "VM-Operator: The Manager — Provides the controller and a web user interface"
+title: "VM-Operator: The Manager — Provides the controller and a Web UI"
 description: >-
   Information about the installation and configuration of the
   VM Operator.
