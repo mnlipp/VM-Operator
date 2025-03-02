@@ -2,7 +2,7 @@ plugins:
   - jekyll-seo-tag
   - jekyll-sitemap
 
-url: "https://jdrupes.org"
+url: "https://vm-operator.jdrupes.org"
     
 author: Michael N. Lipp
 
