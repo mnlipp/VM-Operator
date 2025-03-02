@@ -124,6 +124,7 @@ gitPublish {
     branch = 'main'
     contents {
         from("${rootProject.projectDir}/webpages") {
+            include '_includes/matomo-vm-operator.jdrupes.org.html'
             include '_layouts/vm-operator.html'
             include 'vm-operator/**'
         }
