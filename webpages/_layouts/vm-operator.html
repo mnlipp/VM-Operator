@@ -81,6 +81,27 @@
         {{ content }}
       </section>
       <footer>
+        <!-- Optional footer data -->
+        <p id=githubfooter style="padding: 5px 6px; visibility: hidden">
+          Hosted on GitHub Pages &mdash; 
+          <a href="https://github.com/site/terms" target="_top">Terms</a>
+          &mdash; <a href="https://github.com/site/privacy" target="_top">Privacy</a>
+        </p>
+        <p id=readthedocsfooter style="padding: 5px 6px; visibility: hidden">
+          Hosted on Readthedocs &mdash; 
+          <a href="https://docs.readthedocs.io/page/terms-of-service.html" target="_top">Terms</a>
+          &mdash; <a href="https://docs.readthedocs.io/page/privacy-policy.html" target="_top">Privacy</a>
+        </p>
+        <script type="text/javascript">
+        if (location.hostname.indexOf("github") !== -1 || location.hostname.indexOf("jdrupes.org") !== -1) {
+            document.getElementById("githubfooter").style.visibility="visible";
+        } else if (location.hostname.indexOf("readthedocs") !== -1) {
+          document.getElementById("readthedocsfooter").style.visibility="visible";
+        }
+        </script>
+        
+        
+        
         <p><small>Hosted on GitHub Pages &mdash; <a href="https://github.com/site/terms">Terms</a>
         &mdash; <a href="https://github.com/site/privacy">Privacy</a> 
         &mdash; Theme derived from <a href="https://github.com/orderedlist/minimal">minimal</a></small></p>
