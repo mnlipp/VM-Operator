@@ -14,4 +14,5 @@ build:
     - cd webpages && bundle install
     # Build the site and save generated files into Read the Docs directory
     - cd webpages && jekyll build --destination $READTHEDOCS_OUTPUT/html
+    - cp webpages/robots-readthedocs.txt $READTHEDOCS_OUTPUT/html
     
