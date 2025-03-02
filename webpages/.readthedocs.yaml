@@ -10,8 +10,8 @@ build:
     ruby: "3.3"
   commands:
     # Install dependencies
-    - gem install bundle
-    - bundle install
+    - cd webpages && gem install bundle
+    - cd webpages && bundle install
     # Build the site and save generated files into Read the Docs directory
-    - jekyll build --destination $READTHEDOCS_OUTPUT/html
+    - cd webpages && jekyll build --destination $READTHEDOCS_OUTPUT/html
     
