@@ -5,18 +5,19 @@
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <meta name="referrer" content="no-referrer">
     <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
-    <link rel="stylesheet" href="../stylesheets/styles.css">
-    <link rel="stylesheet" href="../stylesheets/pygment_trac.css">
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
     <meta name="viewport" content="width=device-width">
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
-    <link href="/vm-operator/pagefind/pagefind-ui.css" rel="stylesheet">
-    <script src="/vm-operator/pagefind/pagefind-ui.js"></script>
+    <link href="pagefind/pagefind-ui.css" rel="stylesheet">
+    <script src="pagefind/pagefind-ui.js"></script>
     <script>
         window.addEventListener('DOMContentLoaded', (event) => {
           new PagefindUI({ element: "#search", showSubResults: true,
-          bundlePath: "/vm-operator/pagefind/",
+          // Regrettably works with absolute path only
+          bundlePath: "/pagefind/",
           // See https://github.com/CloudCannon/pagefind/issues/530
           processResult: function (result) {
               if (result?.meta?.image) {
@@ -40,7 +41,7 @@
       <header>
         <div>
         <div style="float: left;">
-          <div class="index-title"><a style="color: #222;" href="https://jdrupes.org/vm-operator/">VM-Operator</a></div>
+          <div class="index-title"><a style="color: #222;" href="https://vm-operator.jdrupes.org/">VM-Operator</a></div>
           <div class="index-subtitle">By <a href="https://github.com/mnlipp/">Michael N. Lipp</a></div>
           <p><a rel="me" href="https://fosstodon.org/@mnl"><img alt="Mastodon Follow" 
             src="https://img.shields.io/mastodon/follow/108843609567976408?domain=https%3A%2F%2Ffosstodon.org&style=social"></a></p>
@@ -68,7 +69,7 @@
         <li><p class="part-entry"><a href="user-gui.html">For Users</a></p></li>
         </ul>
         <p class="part-list-title"><a href="upgrading.html">Upgrading</a></p>
-        <p class="part-list-title"><a href="https://jdrupes.org/vm-operator/latest-release/javadoc/index.html">Javadoc</a></p>
+        <p class="part-list-title"><a href="https://vm-operator.jdrupes.org/javadoc/index.html">Javadoc</a></p>
 
       </header>
       <section>

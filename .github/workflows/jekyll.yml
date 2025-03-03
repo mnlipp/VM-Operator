@@ -60,9 +60,9 @@ jobs:
       - name: Build apidocs
         run: ./gradlew apidocs
       - name: Copy javadoc
-        run: cp -a build/javadoc webpages/_site/vm-operator/
+        run: cp -a build/javadoc webpages/_site/
       - name: Index pagefind
-        run: cd webpages && npx pagefind --source "_site/vm-operator"          
+        run: cd webpages && npx pagefind --source "_site"          
       - name: Upload artifact
         # Automatically uploads an artifact from the './_site' directory by default
         uses: actions/upload-pages-artifact@v3
