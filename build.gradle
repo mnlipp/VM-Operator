@@ -19,20 +19,13 @@ allprojects {
 }
 
 task stage {
-    description = 'To be executed by CI, build and update JavaDoc.'
+    description = 'To be executed by CI.'
     group = 'build'
 
     // Build everything first
     gradle.projectsEvaluated {
         dependsOn subprojects.tasks.collect { 
             tc -> tc.findByName("build") }.flatten()
-    }
-    
-    def gitBranch = grgit.branch.current.name.replace('/', '-')
-    if (JavaVersion.current() == JavaVersion.VERSION_21
-        && gitBranch == "main") {
-        // Publish JavaDoc
-        dependsOn gitPublishPush
     }
 }
 
