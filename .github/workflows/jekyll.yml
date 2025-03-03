@@ -63,6 +63,11 @@ jobs:
         run: ./gradlew apidocs
       - name: Copy javadoc
         run: cp -a build/javadoc webpages/_site/
+      - name: Generate the sitemap
+        uses: cicirello/generate-sitemap@v1
+        with:
+          path-to-root: webpages/_site
+          base-url-path: https://vm-operator.jdrupes.org
       - name: Index pagefind
         run: cd webpages && npx pagefind --source "_site"          
       - name: Upload artifact

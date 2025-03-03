@@ -1,6 +1,5 @@
 plugins:
   - jekyll-seo-tag
-  - jekyll-sitemap
 
 url: "https://vm-operator.jdrupes.org"
     
