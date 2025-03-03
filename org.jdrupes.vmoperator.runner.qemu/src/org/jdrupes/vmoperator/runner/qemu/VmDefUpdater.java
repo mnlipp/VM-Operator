@@ -31,6 +31,7 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import org.jdrupes.vmoperator.common.K8sClient;
+import org.jdrupes.vmoperator.common.K8sGenericStub;
 import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.runner.qemu.events.Exit;
 import org.jgrapes.core.Channel;
@@ -109,17 +110,21 @@ public class VmDefUpdater extends Component {
     }
 
     /**
-     * Update condition.
+     * Update condition. The `from` VM definition is used to determine the
+     * observed generation and the current status. This method is intended
+     * to be called in the function passed to
+     * {@link K8sGenericStub#updateStatus}.
      *
      * @param from the VM definition
-     * @param status the current status
      * @param type the condition type
      * @param state the new state
      * @param reason the reason for the change
      * @param message the message
+     * @return the updated status
      */
-    protected void updateCondition(VmDefinition from, JsonObject status,
-            String type, boolean state, String reason, String message) {
+    protected JsonObject updateCondition(VmDefinition from, String type,
+            boolean state, String reason, String message) {
+        JsonObject status = from.statusJson();
         // Optimize, as we can get this several times
         var current = status.getAsJsonArray("conditions").asList().stream()
             .map(cond -> (JsonObject) cond)
@@ -127,7 +132,7 @@ public class VmDefUpdater extends Component {
             .findFirst()
             .map(cond -> "True".equals(cond.get("status").getAsString()));
         if (current.isPresent() && current.get() == state) {
-            return;
+            return status;
         }
 
         // Do update
@@ -150,5 +155,6 @@ public class VmDefUpdater extends Component {
         newConds.addAll(toReplace);
         status.add("conditions",
             apiClient.getJSON().getGson().toJsonTree(newConds));
+        return status;
     }
 }

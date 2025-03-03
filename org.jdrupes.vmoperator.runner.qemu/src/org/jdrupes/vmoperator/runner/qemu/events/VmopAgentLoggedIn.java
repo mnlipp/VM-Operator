@@ -1,6 +1,6 @@
 /*
  * VM-Operator
- * Copyright (C) 2023 Michael N. Lipp
+ * Copyright (C) 2025 Michael N. Lipp
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,21 +16,34 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.jdrupes.vmoperator.manager;
+package org.jdrupes.vmoperator.runner.qemu.events;
+
+import org.jgrapes.core.Event;
 
 /**
- * Some constants.
+ * Signals that the logout command has been processes by the
+ * VM operator agent.
  */
-@SuppressWarnings("PMD.DataClass")
-public class Constants extends org.jdrupes.vmoperator.common.Constants {
+public class VmopAgentLoggedIn extends Event<Void> {
 
-    /** The Constant STATE_RUNNING. */
-    public static final String STATE_RUNNING = "Running";
+    private final VmopAgentLogIn triggering;
 
-    /** The Constant STATE_STOPPED. */
-    public static final String STATE_STOPPED = "Stopped";
+    /**
+     * Instantiates a new vmop agent logged in.
+     *
+     * @param triggeringEvent the triggering event
+     */
+    public VmopAgentLoggedIn(VmopAgentLogIn triggeringEvent) {
+        this.triggering = triggeringEvent;
+    }
 
-    /** The Constant IMAGE_REPO_PATH. */
-    public static final String IMAGE_REPO_PATH
-        = "/var/local/vmop-image-repository";
+    /**
+     * Gets the triggering event.
+     *
+     * @return the triggering
+     */
+    public VmopAgentLogIn triggering() {
+        return triggering;
+    }
+
 }

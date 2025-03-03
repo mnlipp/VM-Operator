@@ -1,24 +1,47 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <meta name="referrer" content="no-referrer">
     <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
-    <link rel="stylesheet" href="../stylesheets/styles.css">
-    <link rel="stylesheet" href="../stylesheets/pygment_trac.css">
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
     <meta name="viewport" content="width=device-width">
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
-    {% seo %}
+    <link href="pagefind/pagefind-ui.css" rel="stylesheet">
+    <script src="pagefind/pagefind-ui.js"></script>
+    <script>
+        window.addEventListener('DOMContentLoaded', (event) => {
+          new PagefindUI({ element: "#search", showSubResults: true,
+          // Regrettably works with absolute path only
+          bundlePath: "/pagefind/",
+          // See https://github.com/CloudCannon/pagefind/issues/530
+          processResult: function (result) {
+              if (result?.meta?.image) {
+                  let resultBase = new URL(result.url, window.location);
+                  let remappedImage = new URL(result.meta.image, resultBase);
+                  if (remappedImage.hostname !== window.location.hostname) {
+                      result.meta.image = remappedImage.toString();
+                  } else {
+                      result.meta.image = remappedImage.pathname;
+                  }
+              }
+          }
+				 });
+        });
+    </script>
+   {% seo %}
   </head>
   <body>
     <div class="wrapper">
+      <div id="search"></div>
       <header>
         <div>
         <div style="float: left;">
-          <div class="index-title"><a style="color: #222;" href="https://jdrupes.org/vm-operator/">VM-Operator</a></div>
+          <div class="index-title"><a style="color: #222;" href="https://vm-operator.jdrupes.org/">VM-Operator</a></div>
           <div class="index-subtitle">By <a href="https://github.com/mnlipp/">Michael N. Lipp</a></div>
           <p><a rel="me" href="https://fosstodon.org/@mnl"><img alt="Mastodon Follow" 
             src="https://img.shields.io/mastodon/follow/108843609567976408?domain=https%3A%2F%2Ffosstodon.org&style=social"></a></p>
@@ -46,7 +69,7 @@
         <li><p class="part-entry"><a href="user-gui.html">For Users</a></p></li>
         </ul>
         <p class="part-list-title"><a href="upgrading.html">Upgrading</a></p>
-        <p class="part-list-title"><a href="latest-release/javadoc/index.html">Javadoc</a></p>
+        <p class="part-list-title"><a href="https://vm-operator.jdrupes.org/javadoc/index.html">Javadoc</a></p>
 
       </header>
       <section>
@@ -59,13 +82,30 @@
         {{ content }}
       </section>
       <footer>
-        <p><small>Hosted on GitHub Pages &mdash; <a href="https://github.com/site/terms">Terms</a>
-        &mdash; <a href="https://github.com/site/privacy">Privacy</a> 
-        &mdash; Theme derived from <a href="https://github.com/orderedlist/minimal">minimal</a></small></p>
+        <!-- Optional footer data -->
+        <p id=githubfooter style="display: none"><small>
+          Hosted on GitHub Pages &mdash;
+          <a href="https://github.com/site/terms" target="_top">Terms</a>
+          &mdash; <a href="https://github.com/site/privacy" target="_top">Privacy</a>
+          &mdash; Theme derived from <a href="https://github.com/orderedlist/minimal">minimal</a></small>
+        </p>
+        <p id=readthedocsfooter style="display: none"><small>
+          Hosted on Readthedocs &mdash; 
+          <a href="https://docs.readthedocs.io/page/terms-of-service.html" target="_top">Terms</a>
+          &mdash; <a href="https://docs.readthedocs.io/page/privacy-policy.html" target="_top">Privacy</a>
+          &mdash; Theme derived from <a href="https://github.com/orderedlist/minimal">minimal</a></small>
+        </p>
+        <script type="text/javascript">
+        if (location.hostname.indexOf("github") !== -1 || location.hostname.indexOf("jdrupes.org") !== -1) {
+            document.getElementById("githubfooter").style.display="inherit";
+        } else if (location.hostname.indexOf("readthedocs") !== -1) {
+          document.getElementById("readthedocsfooter").style.display="inherit";
+        }
+        </script>
       </footer>
     </div>
 
     {% include matomo.html %}
 
   </body>
-</html>
+</html lang="en">

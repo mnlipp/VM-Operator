@@ -39,7 +39,7 @@ import org.jdrupes.vmoperator.util.FsdUtils;
 /**
  * The configuration information from the configuration file.
  */
-@SuppressWarnings("PMD.ExcessivePublicCount")
+@SuppressWarnings({ "PMD.ExcessivePublicCount", "PMD.TooManyFields" })
 public class Configuration implements Dto {
     private static final String CI_INSTANCE_ID = "instance-id";
 
@@ -66,9 +66,6 @@ public class Configuration implements Dto {
 
     /** The monitor socket. */
     public Path monitorSocket;
-
-    /** The guest agent socket socket. */
-    public Path guestAgentSocket;
 
     /** The firmware rom. */
     public Path firmwareRom;
@@ -251,6 +248,9 @@ public class Configuration implements Dto {
         /** The number of outputs. */
         public int outputs = 1;
 
+        /** The logged in user. */
+        public String loggedInUser;
+
         /** The spice. */
         public Spice spice;
     }
@@ -344,7 +344,6 @@ public class Configuration implements Dto {
             runtimeDir.toFile().mkdir();
             swtpmSocket = runtimeDir.resolve("swtpm-sock");
             monitorSocket = runtimeDir.resolve("monitor.sock");
-            guestAgentSocket = runtimeDir.resolve("org.qemu.guest_agent.0");
         }
         if (!Files.isDirectory(runtimeDir) || !Files.isWritable(runtimeDir)) {
             logger.severe(() -> String.format(

@@ -1,5 +1,9 @@
 ---
 title: "VM-Operator: The Runner — Starts and monitors a VM"
+description: >-
+  Description of the VM Operator's runner component which starts
+  QEMU and thus the VM, optionally together with a TPM, in a
+  kubenernetes pod and monitors everything.
 layout: vm-operator
 ---
 

@@ -56,6 +56,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
+import org.jdrupes.vmoperator.common.Constants.DisplaySecret;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCont;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpReset;
 import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
@@ -220,6 +221,7 @@ public class Runner extends Component {
     private CommandDefinition qemuDefinition;
     private final QemuMonitor qemuMonitor;
     private final GuestAgentClient guestAgentClient;
+    private final VmopAgentClient vmopAgentClient;
     private Integer resetCounter;
     private RunState state = RunState.INITIALIZING;
 
@@ -278,6 +280,7 @@ public class Runner extends Component {
         attach(new SocketConnector(channel()));
         attach(qemuMonitor = new QemuMonitor(channel(), configDir));
         attach(guestAgentClient = new GuestAgentClient(channel()));
+        attach(vmopAgentClient = new VmopAgentClient(channel()));
         attach(new StatusUpdater(channel()));
         attach(new YamlConfigurationStore(channel(), configFile, false));
         fire(new WatchFile(configFile.toPath()));
@@ -309,8 +312,7 @@ public class Runner extends Component {
 
             // Add some values from other sources to configuration
             newConf.asOf = Instant.ofEpochSecond(configFile.lastModified());
-            Path dsPath
-                = configDir.resolve(DisplayController.DISPLAY_PASSWORD_FILE);
+            Path dsPath = configDir.resolve(DisplaySecret.PASSWORD);
             newConf.hasDisplayPassword = dsPath.toFile().canRead();
 
             // Special actions for initial configuration (startup)
@@ -352,7 +354,8 @@ public class Runner extends Component {
             // Forward some values to child components
             qemuMonitor.configure(config.monitorSocket,
                 config.vm.powerdownTimeout);
-            guestAgentClient.configure(config.guestAgentSocket);
+            configureAgentClient(guestAgentClient, "guest-agent-socket");
+            configureAgentClient(vmopAgentClient, "vmop-agent-socket");
         } catch (IllegalArgumentException | IOException | TemplateException e) {
             logger.log(Level.SEVERE, e, () -> "Invalid configuration: "
                 + e.getMessage());
@@ -475,6 +478,36 @@ public class Runner extends Component {
                 () -> "Cannot start runner: " + e.getMessage());
             fire(new Stop());
         }
+    }
+
+    @SuppressWarnings("PMD.CognitiveComplexity")
+    private void configureAgentClient(AgentConnector client, String chardev) {
+        String id = null;
+        Path path = null;
+        for (var arg : qemuDefinition.command) {
+            if (arg.startsWith("virtserialport,")
+                && arg.contains("chardev=" + chardev)) {
+                for (var prop : arg.split(",")) {
+                    if (prop.startsWith("id=")) {
+                        id = prop.substring(3);
+                    }
+                }
+            }
+            if (arg.startsWith("socket,")
+                && arg.contains("id=" + chardev)) {
+                for (var prop : arg.split(",")) {
+                    if (prop.startsWith("path=")) {
+                        path = Path.of(prop.substring(5));
+                    }
+                }
+            }
+        }
+        if (id == null || path == null) {
+            logger.warning(() -> "Definition of chardev " + chardev
+                + " missing in runner template.");
+            return;
+        }
+        client.configure(id, path);
     }
 
     /**

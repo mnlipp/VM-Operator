@@ -1,6 +1,6 @@
 /*
  * VM-Operator
- * Copyright (C) 2023 Michael N. Lipp
+ * Copyright (C) 2025 Michael N. Lipp
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,21 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.jdrupes.vmoperator.manager;
+package org.jdrupes.vmoperator.runner.qemu.events;
+
+import org.jgrapes.core.Event;
 
 /**
- * Some constants.
+ * Signals information about the guest OS.
  */
-@SuppressWarnings("PMD.DataClass")
-public class Constants extends org.jdrupes.vmoperator.common.Constants {
-
-    /** The Constant STATE_RUNNING. */
-    public static final String STATE_RUNNING = "Running";
-
-    /** The Constant STATE_STOPPED. */
-    public static final String STATE_STOPPED = "Stopped";
-
-    /** The Constant IMAGE_REPO_PATH. */
-    public static final String IMAGE_REPO_PATH
-        = "/var/local/vmop-image-repository";
+public class VmopAgentConnected extends Event<Void> {
 }

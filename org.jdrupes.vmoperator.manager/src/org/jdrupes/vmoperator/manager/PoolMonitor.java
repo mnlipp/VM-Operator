@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
-import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
+import org.jdrupes.vmoperator.common.Constants.Crd;
+import org.jdrupes.vmoperator.common.Constants.Status;
 import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicModel;
@@ -38,7 +38,6 @@ import org.jdrupes.vmoperator.common.K8sDynamicStub;
 import org.jdrupes.vmoperator.common.K8sObserver.ResponseType;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
 import org.jdrupes.vmoperator.common.VmPool;
-import static org.jdrupes.vmoperator.manager.Constants.VM_OP_KIND_VM_POOL;
 import org.jdrupes.vmoperator.manager.events.GetPools;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.manager.events.VmPoolChanged;
@@ -88,7 +87,7 @@ public class PoolMonitor extends
         client(new K8sClient());
 
         // Get all our API versions
-        var ctx = K8s.context(client(), VM_OP_GROUP, "", VM_OP_KIND_VM_POOL);
+        var ctx = K8s.context(client(), Crd.GROUP, "", Crd.KIND_VM_POOL);
         if (ctx.isEmpty()) {
             logger.severe(() -> "Cannot get CRD context.");
             return;
@@ -184,12 +183,12 @@ public class PoolMonitor extends
             return;
         }
         var vmStub = VmDefinitionStub.get(client(),
-            new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
+            new GroupVersionKind(Crd.GROUP, "", Crd.KIND_VM),
             vmDef.namespace(), vmDef.name());
         vmStub.updateStatus(from -> {
             // TODO
             JsonObject status = from.statusJson();
-            var assignment = GsonPtr.to(status).to("assignment");
+            var assignment = GsonPtr.to(status).to(Status.ASSIGNMENT);
             assignment.set("lastUsed", ccChange.get().toString());
             return status;
         });

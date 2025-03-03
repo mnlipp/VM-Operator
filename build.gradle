@@ -5,7 +5,7 @@ buildscript {
 }
 
 plugins {
-    id 'org.ajoberstar.grgit' version '5.2.0' apply false
+    id 'org.ajoberstar.grgit' version '5.2.0'
     id 'org.ajoberstar.git-publish' version '4.2.0' apply false
     id 'pl.allegro.tech.build.axion-release' version '1.17.2' apply false
     id 'org.jdrupes.vmoperator.versioning-conventions'
@@ -19,18 +19,13 @@ allprojects {
 }
 
 task stage {
-    description = 'To be executed by CI, build and update JavaDoc.'
+    description = 'To be executed by CI.'
     group = 'build'
 
     // Build everything first
     gradle.projectsEvaluated {
         dependsOn subprojects.tasks.collect { 
             tc -> tc.findByName("build") }.flatten()
-    }
-    
-    if (JavaVersion.current() == JavaVersion.VERSION_21) {
-        // Publish JavaDoc
-        dependsOn gitPublishPush
     }
 }
 

@@ -22,12 +22,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import freemarker.template.AdapterTemplateModel;
 import freemarker.template.Configuration;
-import freemarker.template.DefaultObjectWrapperBuilder;
 import freemarker.template.SimpleNumber;
 import freemarker.template.SimpleScalar;
 import freemarker.template.TemplateException;
 import freemarker.template.TemplateExceptionHandler;
-import freemarker.template.TemplateHashModel;
 import freemarker.template.TemplateMethodModelEx;
 import freemarker.template.TemplateModel;
 import freemarker.template.TemplateModelException;
@@ -37,21 +35,23 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
+import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
+import org.jdrupes.vmoperator.common.Constants.DisplaySecret;
 import org.jdrupes.vmoperator.common.Convertions;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jdrupes.vmoperator.common.K8sV1SecretStub;
 import org.jdrupes.vmoperator.common.VmDefinition;
-import static org.jdrupes.vmoperator.manager.Constants.COMP_DISPLAY_SECRET;
 import org.jdrupes.vmoperator.manager.events.ResetVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
@@ -138,6 +138,8 @@ import org.jgrapes.util.events.ConfigurationUpdate;
  *   properties to be used by the runners managed by the controller.
  *   This property is a string that holds the content of
  *   a logging.properties file.
+ *   
+ * @see org.jdrupes.vmoperator.manager.DisplaySecretReconciler
  */
 @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",
     "PMD.AvoidDuplicateLiterals" })
@@ -163,6 +165,7 @@ public class Reconciler extends Component {
      *
      * @param componentChannel the component channel
      */
+    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public Reconciler(Channel componentChannel) {
         super(componentChannel);
 
@@ -177,7 +180,7 @@ public class Reconciler extends Component {
         fmConfig.setClassForTemplateLoading(Reconciler.class, "");
 
         cmReconciler = new ConfigMapReconciler(fmConfig);
-        dsReconciler = new DisplaySecretReconciler();
+        dsReconciler = attach(new DisplaySecretReconciler(componentChannel));
         stsReconciler = new StatefulSetReconciler(fmConfig);
         pvcReconciler = new PvcReconciler(fmConfig);
         podReconciler = new PodReconciler(fmConfig);
@@ -263,17 +266,14 @@ public class Reconciler extends Component {
             Optional.ofNullable(Reconciler.class.getPackage()
                 .getImplementationVersion()).orElse("(Unknown)"));
         model.put("cr", vmDef);
-        model.put("constants",
-            (TemplateHashModel) new DefaultObjectWrapperBuilder(
-                Configuration.VERSION_2_3_32)
-                    .build().getStaticModels()
-                    .get(Constants.class.getName()));
+        // Freemarker's static models don't handle nested classes.
+        model.put("constants", constantsMap(Constants.class));
         model.put("reconciler", config);
 
         // Check if we have a display secret
         ListOptions options = new ListOptions();
         options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
-            + "app.kubernetes.io/component=" + COMP_DISPLAY_SECRET + ","
+            + "app.kubernetes.io/component=" + DisplaySecret.NAME + ","
             + "app.kubernetes.io/instance=" + vmDef.name());
         var dsStub = K8sV1SecretStub
             .list(client, vmDef.namespace(), options)
@@ -292,6 +292,30 @@ public class Reconciler extends Component {
         model.put("adjustCloudInitMeta", adjustCloudInitMetaModel);
         model.put("toJson", toJsonModel);
         return model;
+    }
+
+    @SuppressWarnings("PMD.EmptyCatchBlock")
+    private Map<String, Object> constantsMap(Class<?> clazz) {
+        @SuppressWarnings("PMD.UseConcurrentHashMap")
+        Map<String, Object> result = new HashMap<>();
+        Arrays.stream(clazz.getFields()).filter(f -> {
+            var modifiers = f.getModifiers();
+            return Modifier.isStatic(modifiers) && Modifier.isPublic(modifiers)
+                && f.getType() == String.class;
+        }).forEach(f -> {
+            try {
+                result.put(f.getName(), f.get(null));
+            } catch (IllegalArgumentException | IllegalAccessException e) {
+                // Should not happen, ignore
+            }
+        });
+        Arrays.stream(clazz.getClasses()).filter(c -> {
+            var modifiers = c.getModifiers();
+            return Modifier.isStatic(modifiers) && Modifier.isPublic(modifiers);
+        }).forEach(c -> {
+            result.put(c.getSimpleName(), constantsMap(c));
+        });
+        return result;
     }
 
     private final TemplateMethodModelEx parseQuantityModel

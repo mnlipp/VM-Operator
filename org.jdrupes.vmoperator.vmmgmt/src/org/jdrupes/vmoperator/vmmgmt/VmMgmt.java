@@ -38,13 +38,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
+import org.jdrupes.vmoperator.common.Constants.Status;
 import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinition.Permission;
 import org.jdrupes.vmoperator.common.VmExtraData;
 import org.jdrupes.vmoperator.manager.events.ChannelTracker;
-import org.jdrupes.vmoperator.manager.events.GetDisplayPassword;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
+import org.jdrupes.vmoperator.manager.events.PrepareConsole;
 import org.jdrupes.vmoperator.manager.events.ResetVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
@@ -243,8 +244,8 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
             DataPath.<String> get(vmSpec, "currentRam").orElse("0")).getNumber()
             .toBigInteger());
         var status = DataPath.deepCopy(vmDef.status());
-        status.put("ram", Quantity.fromString(
-            DataPath.<String> get(status, "ram").orElse("0")).getNumber()
+        status.put(Status.RAM, Quantity.fromString(
+            DataPath.<String> get(status, Status.RAM).orElse("0")).getNumber()
             .toBigInteger());
 
         // Build result
@@ -383,10 +384,10 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
         Summary summary = new Summary();
         for (var vmDef : channelTracker.associated()) {
             summary.totalVms += 1;
-            summary.usedCpus += vmDef.<Number> fromStatus("cpus")
+            summary.usedCpus += vmDef.<Number> fromStatus(Status.CPUS)
                 .map(Number::intValue).orElse(0);
             summary.usedRam = summary.usedRam
-                .add(vmDef.<String> fromStatus("ram")
+                .add(vmDef.<String> fromStatus(Status.RAM)
                     .map(r -> Quantity.fromString(r).getNumber().toBigInteger())
                     .orElse(BigInteger.ZERO));
             if (vmDef.conditionStatus("Running").orElse(false)) {
@@ -483,15 +484,20 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
                 Map.of("autoClose", 5_000, "type", "Warning")));
             return;
         }
-        var pwQuery = Event.onCompletion(new GetDisplayPassword(vmDef, user),
-            e -> {
-                vmDef.extra().map(xtra -> xtra.connectionFile(
-                    e.password().orElse(null), preferredIpVersion,
-                    deleteConnectionFile)).ifPresent(
-                        cf -> channel.respond(new NotifyConletView(type(),
-                            model.getConletId(), "openConsole", cf)));
-            });
+        var pwQuery = Event.onCompletion(new PrepareConsole(vmDef, user),
+            e -> gotPassword(channel, model, vmDef, e));
         fire(pwQuery, vmChannel);
+    }
+
+    private void gotPassword(ConsoleConnection channel, VmsModel model,
+            VmDefinition vmDef, PrepareConsole event) {
+        if (!event.passwordAvailable()) {
+            return;
+        }
+        vmDef.extra().map(xtra -> xtra.connectionFile(event.password(),
+            preferredIpVersion, deleteConnectionFile)).ifPresent(
+                cf -> channel.respond(new NotifyConletView(type(),
+                    model.getConletId(), "openConsole", cf)));
     }
 
     @Override

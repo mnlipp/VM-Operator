@@ -73,7 +73,9 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
             const configured = computed(() => previewApi.vmDefinition.spec);
             const busy = computed(() => previewApi.vmDefinition.spec
                 && (previewApi.vmDefinition.spec.vm.state === 'Running'
-                        && !previewApi.vmDefinition.running
+                        && (previewApi.poolName
+                            ? !previewApi.vmDefinition.vmopAgent
+                            : !previewApi.vmDefinition.running)
                     || previewApi.vmDefinition.spec.vm.state === 'Stopped' 
                         && previewApi.vmDefinition.running));
             const startable = computed(() => previewApi.vmDefinition.spec
@@ -85,6 +87,7 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
                 previewApi.vmDefinition.spec.vm.state !== 'Stopped' 
                 && previewApi.vmDefinition.running);
             const running = computed(() => previewApi.vmDefinition.running);
+            const vmopAgent = computed(() => previewApi.vmDefinition.vmopAgent);
             const inUse = computed(() => previewApi.vmDefinition.usedBy != '');
             const permissions = computed(() => previewApi.permissions);
             const osicon = computed(() => {
@@ -120,8 +123,8 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
             };
         
             return { localize, resourceBase, vmAction, poolName, vmName, 
-                configured, busy, startable, stoppable, running, inUse,
-                permissions, osicon };
+                configured, busy, startable, stoppable, running, vmopAgent,
+                inUse, permissions, osicon };
         },
         template: `
           <table>
@@ -129,7 +132,8 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
               <tr>
                 <td rowspan="2" style="position: relative"><span
                   style="position: absolute;" :class="{ busy: busy }"
-                  ><img role=button :aria-disabled="!running
+                  ><img role=button :aria-disabled="(poolName 
+                      ? !vmopAgent : !running)
                       || !permissions.includes('accessConsole')" 
                     v-on:click="vmAction('openConsole')"
                     :src="resourceBase + (running
@@ -206,14 +210,17 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmaccess.VmAccess",
             vmDefinition.currentCpus = vmDefinition.status.cpus;
             vmDefinition.currentRam = Number(vmDefinition.status.ram);
             vmDefinition.usedBy = vmDefinition.status.consoleClient || "";
-            for (const condition of vmDefinition.status.conditions) {
+            vmDefinition.status.conditions.forEach((condition: any) => {
                 if (condition.type === "Running") {
                     vmDefinition.running = condition.status === "True";
                     vmDefinition.runningConditionSince 
                         = new Date(condition.lastTransitionTime);
-                    break;
+                } else if (condition.type === "VmopAgentConnected") {
+                    vmDefinition.vmopAgent = condition.status === "True";
+                    vmDefinition.vmopAgentConditionSince 
+                        = new Date(condition.lastTransitionTime);
                 }
-            }
+            })
         } else {
             vmDefinition = {};
         }

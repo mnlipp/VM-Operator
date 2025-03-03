@@ -19,13 +19,8 @@
 package org.jdrupes.vmoperator.runner.qemu;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
-import java.io.Writer;
-import java.lang.reflect.UndeclaredThrowableException;
-import java.net.UnixDomainSocketAddress;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -42,24 +37,13 @@ import org.jdrupes.vmoperator.runner.qemu.events.MonitorReady;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorResult;
 import org.jdrupes.vmoperator.runner.qemu.events.PowerdownEvent;
 import org.jgrapes.core.Channel;
-import org.jgrapes.core.Component;
 import org.jgrapes.core.Components;
 import org.jgrapes.core.Components.Timer;
-import org.jgrapes.core.EventPipeline;
 import org.jgrapes.core.annotation.Handler;
-import org.jgrapes.core.events.Start;
 import org.jgrapes.core.events.Stop;
 import org.jgrapes.io.events.Closed;
-import org.jgrapes.io.events.ConnectError;
-import org.jgrapes.io.events.Input;
-import org.jgrapes.io.events.OpenSocketConnection;
-import org.jgrapes.io.util.ByteBufferWriter;
-import org.jgrapes.io.util.LineCollector;
 import org.jgrapes.net.SocketIOChannel;
-import org.jgrapes.net.events.ClientConnected;
 import org.jgrapes.util.events.ConfigurationUpdate;
-import org.jgrapes.util.events.FileChanged;
-import org.jgrapes.util.events.WatchFile;
 
 /**
  * A component that handles the communication over the Qemu monitor
@@ -69,14 +53,9 @@ import org.jgrapes.util.events.WatchFile;
  * exchanged on the monitor socket are logged.
  */
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
-public class QemuMonitor extends Component {
+public class QemuMonitor extends QemuConnector {
 
-    private static ObjectMapper mapper = new ObjectMapper();
-
-    private EventPipeline rep;
-    private Path socketPath;
     private int powerdownTimeout;
-    private SocketIOChannel monitorChannel;
     private final Queue<QmpCommand> executing = new LinkedList<>();
     private Instant powerdownStartedAt;
     private Stop suspendedStop;
@@ -84,7 +63,7 @@ public class QemuMonitor extends Component {
     private boolean powerdownConfirmed;
 
     /**
-     * Instantiates a new qemu monitor.
+     * Instantiates a new QEMU monitor.
      *
      * @param componentChannel the component channel
      * @param configDir the config dir
@@ -111,109 +90,26 @@ public class QemuMonitor extends Component {
      * @param powerdownTimeout 
      */
     /* default */ void configure(Path socketPath, int powerdownTimeout) {
-        this.socketPath = socketPath;
+        super.configure(socketPath);
         this.powerdownTimeout = powerdownTimeout;
     }
 
     /**
-     * Handle the start event.
-     *
-     * @param event the event
-     * @throws IOException Signals that an I/O exception has occurred.
+     * When the socket is connected, send the capabilities command.
      */
-    @Handler
-    public void onStart(Start event) throws IOException {
-        rep = event.associated(EventPipeline.class).get();
-        if (socketPath == null) {
-            return;
-        }
-        Files.deleteIfExists(socketPath);
-        fire(new WatchFile(socketPath));
+    @Override
+    protected void socketConnected() {
+        fire(new MonitorCommand(new QmpCapabilities()));
     }
 
-    /**
-     * Watch for the creation of the swtpm socket and start the
-     * qemu process if it has been created.
-     *
-     * @param event the event
-     */
-    @Handler
-    public void onFileChanged(FileChanged event) {
-        if (event.change() == FileChanged.Kind.CREATED
-            && event.path().equals(socketPath)) {
-            // qemu running, open socket
-            fire(new OpenSocketConnection(
-                UnixDomainSocketAddress.of(socketPath))
-                    .setAssociated(QemuMonitor.class, this));
-        }
-    }
-
-    /**
-     * Check if this is from opening the monitor socket and if true,
-     * save the socket in the context and associate the channel with
-     * the context. Then send the initial message to the socket.
-     *
-     * @param event the event
-     * @param channel the channel
-     */
-    @SuppressWarnings("resource")
-    @Handler
-    public void onClientConnected(ClientConnected event,
-            SocketIOChannel channel) {
-        event.openEvent().associated(QemuMonitor.class).ifPresent(qm -> {
-            monitorChannel = channel;
-            channel.setAssociated(QemuMonitor.class, this);
-            channel.setAssociated(Writer.class, new ByteBufferWriter(
-                channel).nativeCharset());
-            channel.setAssociated(LineCollector.class,
-                new LineCollector()
-                    .consumer(line -> {
-                        try {
-                            processMonitorInput(line);
-                        } catch (IOException e) {
-                            throw new UndeclaredThrowableException(e);
-                        }
-                    }));
-            fire(new MonitorCommand(new QmpCapabilities()));
-        });
-    }
-
-    /**
-     * Called when a connection attempt fails.
-     *
-     * @param event the event
-     * @param channel the channel
-     */
-    @Handler
-    public void onConnectError(ConnectError event, SocketIOChannel channel) {
-        event.event().associated(QemuMonitor.class).ifPresent(qm -> {
-            rep.fire(new Stop());
-        });
-    }
-
-    /**
-     * Handle data from qemu monitor connection.
-     *
-     * @param event the event
-     * @param channel the channel
-     */
-    @Handler
-    public void onInput(Input<?> event, SocketIOChannel channel) {
-        if (channel.associated(QemuMonitor.class).isEmpty()) {
-            return;
-        }
-        channel.associated(LineCollector.class).ifPresent(collector -> {
-            collector.feed(event);
-        });
-    }
-
-    private void processMonitorInput(String line)
+    @Override
+    protected void processInput(String line)
             throws IOException {
         logger.fine(() -> "monitor(in): " + line);
         try {
             var response = mapper.readValue(line, ObjectNode.class);
             if (response.has("QMP")) {
-                rep.fire(new MonitorReady());
+                rep().fire(new MonitorReady());
                 return;
             }
             if (response.has("return") || response.has("error")) {
@@ -221,11 +117,11 @@ public class QemuMonitor extends Component {
                 logger.fine(
                     () -> String.format("(Previous \"monitor(in)\" is result "
                         + "from executing %s)", executed));
-                rep.fire(MonitorResult.from(executed, response));
+                rep().fire(MonitorResult.from(executed, response));
                 return;
             }
             if (response.has("event")) {
-                MonitorEvent.from(response).ifPresent(rep::fire);
+                MonitorEvent.from(response).ifPresent(rep()::fire);
             }
         } catch (JsonProcessingException e) {
             throw new IOException(e);
@@ -241,8 +137,8 @@ public class QemuMonitor extends Component {
     @SuppressWarnings({ "PMD.AvoidSynchronizedStatement",
         "PMD.AvoidDuplicateLiterals" })
     public void onClosed(Closed<?> event, SocketIOChannel channel) {
+        super.onClosed(event, channel);
         channel.associated(QemuMonitor.class).ifPresent(qm -> {
-            monitorChannel = null;
             synchronized (this) {
                 if (powerdownTimer != null) {
                     powerdownTimer.cancel();
@@ -259,11 +155,12 @@ public class QemuMonitor extends Component {
      * On monitor command.
      *
      * @param event the event
+     * @throws IOException 
      */
     @Handler
     @SuppressWarnings({ "PMD.AvoidLiteralsInIfCondition",
         "PMD.AvoidSynchronizedStatement" })
-    public void onExecQmpCommand(MonitorCommand event) {
+    public void onExecQmpCommand(MonitorCommand event) throws IOException {
         var command = event.command();
         logger.fine(() -> "monitor(out): " + command.toString());
         String asText;
@@ -275,15 +172,10 @@ public class QemuMonitor extends Component {
             return;
         }
         synchronized (executing) {
-            monitorChannel.associated(Writer.class).ifPresent(writer -> {
-                try {
-                    executing.add(command);
-                    writer.append(asText).append('\n').flush();
-                } catch (IOException e) {
-                    // Cannot happen, but...
-                    logger.log(Level.WARNING, e, e::getMessage);
-                }
-            });
+            if (writer().isPresent()) {
+                executing.add(command);
+                sendCommand(asText);
+            }
         }
     }
 
@@ -295,7 +187,7 @@ public class QemuMonitor extends Component {
     @Handler(priority = 100)
     @SuppressWarnings("PMD.AvoidSynchronizedStatement")
     public void onStop(Stop event) {
-        if (monitorChannel != null) {
+        if (qemuChannel() != null) {
             // We have a connection to Qemu, attempt ACPI shutdown.
             event.suspendHandling();
             suspendedStop = event;

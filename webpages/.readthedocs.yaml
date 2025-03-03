@@ -1,0 +1,18 @@
+# Read the Docs configuration file
+# See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
+
+# Required
+version: 2
+# Set the OS, Python version, and other tools you might need
+build:
+  os: ubuntu-24.04
+  tools:
+    ruby: "3.3"
+  commands:
+    # Install dependencies
+    - cd webpages && gem install bundle
+    - cd webpages && bundle install
+    # Build the site and save generated files into Read the Docs directory
+    - cd webpages && jekyll build --destination $READTHEDOCS_OUTPUT/html
+    - cp webpages/robots-readthedocs.txt $READTHEDOCS_OUTPUT/html/robots.txt
+    

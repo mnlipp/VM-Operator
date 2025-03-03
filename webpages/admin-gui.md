@@ -1,5 +1,9 @@
 ---
 title: "VM-Operator: Administrator View — Provides an overview of running VMs"
+description: >-
+  Information about the administrator view of the VM-Operator, which provides
+  an overview of the defined VMs, their state and resource consumptions and
+  actions for starting, stopping and accessing the VMs.
 layout: vm-operator
 ---
 

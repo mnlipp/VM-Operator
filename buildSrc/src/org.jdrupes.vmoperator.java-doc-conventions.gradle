@@ -118,33 +118,3 @@ if (System.properties['org.ajoberstar.grgit.auth.username'] == null) {
     System.setProperty('org.ajoberstar.grgit.auth.username',
         project.rootProject.properties['website.push.token'] ?: "nouser")
 }
-
-gitPublish {
-    repoUri = 'https://github.com/mnlipp/jdrupes.org.git'
-    branch = 'main'
-    contents {
-        from("${rootProject.projectDir}/webpages") {
-            include '_layouts/vm-operator.html'
-            include 'vm-operator/**'
-        }
-        from("${rootProject.buildDir}/javadoc") {
-            into 'vm-operator/javadoc'
-        }
-        if (!findProject(':org.jdrupes.vmoperator.runner.qemu').isSnapshot
-                && !findProject(':org.jdrupes.vmoperator.manager').isSnapshot) {
-            from("${rootProject.buildDir}/javadoc") {
-                into 'vm-operator/latest-release/javadoc'
-            }
-        }
-    }
-    preserve { include '**/*' }
-    commitMessage = "Updated."
-}
-
-gradle.projectsEvaluated {
-    tasks.gitPublishReset.mustRunAfter subprojects.tasks
-        .collect { tc -> tc.findByName("build") }.flatten()
-    tasks.gitPublishReset.mustRunAfter subprojects.tasks
-        .collect { tc -> tc.findByName("test") }.flatten()
-    tasks.gitPublishCopy.dependsOn apidocs
-}

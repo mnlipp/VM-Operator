@@ -189,6 +189,56 @@ footer {
     margin-bottom:5px;
 }
 
+#search {
+
+  --pagefind-ui-font: inherit;
+  --pagefind-ui-border-radius: 4px;
+
+  position: absolute;
+  right: 1em;
+  top: 1em;
+
+  .pagefind-ui__form {
+    width: 20em;
+    margin-left: auto;
+    
+    &::before {
+      top: calc(17px * var(--pagefind-ui-scale));      
+    }
+  }
+    
+  .pagefind-ui__search-input {
+    font-weight: inherit;
+    height: calc(48px * var(--pagefind-ui-scale));
+  }
+
+  .pagefind-ui__search-clear {
+    font-weight: inherit;
+    height: calc(42px * var(--pagefind-ui-scale));
+  }
+  
+  .pagefind-ui__drawer {
+    position: absolute;
+    right: 0;
+    width: 40em;
+    background-color: white;
+    border: solid var(--pagefind-ui-border-width) var(--pagefind-ui-border);
+    padding: 0 1em 1em 1em;
+  }
+  
+  .pagefind-ui__message {
+    padding-top: 0;
+  }
+
+  .pagefind-ui__result {
+    padding: 0;
+  }
+  
+  .pagefind-ui__result-title {
+    font-weight: inherit;
+  }
+}
+
 @media print, screen and (max-width: 960px) {
 
   div.wrapper {
