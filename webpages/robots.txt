@@ -1,2 +1,3 @@
 User-agent: *
 Allow: /
+Sitemap: https://vm-operator.jdrupes.org/sitemap.xml
