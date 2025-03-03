@@ -11,7 +11,7 @@ layout: vm-operator
 
 ![Overview picture](index-pic.svg)
 
-The goal of this project is to provide an easy to use and flexible solution
+This project provides an easy to use and flexible solution
 for running Qemu/KVM based VMs in Kubernetes pods.
 
 The image used for the VM pods combines Qemu and a control program
