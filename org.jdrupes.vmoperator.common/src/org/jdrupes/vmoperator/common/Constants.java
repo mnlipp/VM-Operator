@@ -18,6 +18,7 @@
 
 package org.jdrupes.vmoperator.common;
 
+// TODO: Auto-generated Javadoc
 /**
  * Some constants.
  */
@@ -27,18 +28,67 @@ public class Constants {
     /** The Constant APP_NAME. */
     public static final String APP_NAME = "vm-runner";
 
-    /** The Constant COMP_DISPLAY_SECRETS. */
-    public static final String COMP_DISPLAY_SECRET = "display-secret";
-
     /** The Constant VM_OP_NAME. */
     public static final String VM_OP_NAME = "vm-operator";
 
-    /** The Constant VM_OP_GROUP. */
-    public static final String VM_OP_GROUP = "vmoperator.jdrupes.org";
+    /**
+     * Constants related to the CRD.
+     */
+    @SuppressWarnings("PMD.ShortClassName")
+    public static class Crd {
+        /** The Constant GROUP. */
+        public static final String GROUP = "vmoperator.jdrupes.org";
 
-    /** The Constant VM_OP_KIND_VM. */
-    public static final String VM_OP_KIND_VM = "VirtualMachine";
+        /** The Constant KIND_VM. */
+        public static final String KIND_VM = "VirtualMachine";
 
-    /** The Constant VM_OP_KIND_VM_POOL. */
-    public static final String VM_OP_KIND_VM_POOL = "VmPool";
+        /** The Constant KIND_VM_POOL. */
+        public static final String KIND_VM_POOL = "VmPool";
+    }
+
+    /**
+     * Status related constants.
+     */
+    public static class Status {
+        /** The Constant CPUS. */
+        public static final String CPUS = "cpus";
+
+        /** The Constant RAM. */
+        public static final String RAM = "ram";
+
+        /** The Constant OSINFO. */
+        public static final String OSINFO = "osinfo";
+
+        /** The Constant DISPLAY_PASSWORD_SERIAL. */
+        public static final String DISPLAY_PASSWORD_SERIAL
+            = "displayPasswordSerial";
+
+        /** The Constant LOGGED_IN_USER. */
+        public static final String LOGGED_IN_USER = "loggedInUser";
+
+        /** The Constant CONSOLE_CLIENT. */
+        public static final String CONSOLE_CLIENT = "consoleClient";
+
+        /** The Constant CONSOLE_USER. */
+        public static final String CONSOLE_USER = "consoleUser";
+
+        /** The Constant ASSIGNMENT. */
+        public static final String ASSIGNMENT = "assignment";
+    }
+
+    /**
+     * DisplaySecret related constants.
+     */
+    public static class DisplaySecret {
+
+        /** The Constant NAME. */
+        public static final String NAME = "display-secret";
+
+        /** The Constant PASSWORD. */
+        public static final String PASSWORD = "display-password";
+
+        /** The Constant EXPIRY. */
+        public static final String EXPIRY = "password-expiry";
+
+    }
 }

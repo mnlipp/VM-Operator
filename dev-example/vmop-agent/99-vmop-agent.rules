@@ -1,0 +1,2 @@
+SUBSYSTEM=="virtio-ports", ATTR{name}=="org.jdrupes.vmop_agent.0", \
+  TAG+="systemd" ENV{SYSTEMD_WANTS}="vmop-agent.service"

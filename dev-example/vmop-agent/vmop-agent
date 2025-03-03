@@ -1,0 +1,159 @@
+#!/usr/bin/bash
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --path) shift; ttyPath="$1";;
+    --path=*) IFS='=' read -r option value <<< "$1"; ttyPath="$value";;
+  esac
+  shift
+done
+
+ttyPath="${ttyPath:-/dev/virtio-ports/org.jdrupes.vmop_agent.0}"
+
+if [ ! -w "$ttyPath" ]; then
+  echo >&2 "Device $ttyPath not writable"
+  exit 1
+fi
+
+# Create fd for the tty in variable con 
+if ! exec {con}<>"$ttyPath"; then
+  echo >&2 "Cannot open device $ttyPath"
+  exit 1
+fi
+
+# Temporary file for logging error messages, clear tty and signal ready
+temperr=$(mktemp)
+clear >/dev/tty1
+echo >&${con} "220 Hello"
+
+# This script uses the (shared) home directory as "dictonary" for
+# synchronizing the username and the uid between hosts.
+#
+# Every user has a directory with his username. The directory is
+# owned by root to prevent changes of access rights by the user.
+# The uid and gid of the directory are equal. Thus the name of the
+# directory and the id from the group ownership also provide the
+# association between the username and the uid.
+
+# Add the user with name $1 to the host's "user database". This
+# may not be invoked concurrently. 
+createUser() {
+  local missing=$1
+  local uid
+  local userHome="/home/$missing"
+  local createOpts=""
+  
+  # Retrieve or create the uid for the username
+  if [ -d "$userHome" ]; then
+    # If a home directory exists, use the id from the group ownership as uid
+    uid=$(ls -ldn "$userHome" | head -n 1 | awk '{print $4}')
+    createOpts="--no-create-home"
+  else
+    # Else get the maximum of all ids from the group ownership +1 
+    uid=$(ls -ln "/home" | tail -n +2 | awk '{print $4}' | sort | tail -1)
+    uid=$(( $uid + 1 ))
+    if [ $uid -lt 1100 ]; then
+      uid=1100
+    fi
+    createOpts="--create-home"
+  fi
+  groupadd -g $uid $missing
+  useradd $missing -u $uid -g $uid $createOpts
+}
+
+# Login the user, i.e. create a desktopn for the user.
+doLogin() {
+  user=$1
+  if [ "$user" = "root" ]; then
+    echo >&${con} "504 Won't log in root"
+    return
+  fi
+  
+  # Check if this user is already logged in on tty1
+  curUser=$(loginctl -j | jq -r '.[] | select(.tty=="tty1") | .user')
+  if [ "$curUser" = "$user" ]; then
+    echo >&${con} "201 User already logged in"
+    return
+  fi
+  
+  # Terminate a running desktop (fail safe)
+  attemptLogout
+  
+  # Check if username is known on this host. If not, create user
+  uid=$(id -u ${user} 2>/dev/null)
+  if [ $? != 0 ]; then
+    ( flock 200
+      createUser ${user}
+    ) 200>/home/.gen-uid-lock
+    
+    # This should now work, else something went wrong
+    uid=$(id -u ${user} 2>/dev/null)
+    if [ $? != 0 ]; then
+      echo >&${con} "451 Cannot determine uid"
+      return
+    fi
+  fi
+  
+  # Start the desktop for the user
+  systemd-run 2>$temperr \
+    --unit vmop-user-desktop --uid=$uid --gid=$uid \
+    --working-directory="/home/$user" -p TTYPath=/dev/tty1 \
+    -p PAMName=login -p StandardInput=tty -p StandardOutput=journal \
+    -p Conflicts="gdm.service getty@tty1.service" \
+    -E XDG_RUNTIME_DIR="/run/user/$uid" \
+    -p ExecStartPre="/usr/bin/chvt 1" \
+    dbus-run-session -- gnome-shell --display-server --wayland
+  if [ $? -eq 0 ]; then
+    echo >&${con} "201 User logged in successfully"
+  else
+    echo >&${con} "451 $(tr '\n' ' ' <${temperr})"
+  fi
+}
+
+# Attempt to log out a user currently using tty1. This is an intermediate
+# operation that can be invoked from other operations
+attemptLogout() {
+  systemctl status vmop-user-desktop > /dev/null 2>&1
+  if [ $? = 0 ]; then
+    systemctl stop vmop-user-desktop
+  fi
+  loginctl -j | jq -r '.[] | select(.tty=="tty1") | .session' \
+  | while read sid; do
+    loginctl kill-session $sid
+  done
+  echo >&${con} "102 Desktop stopped"
+}
+
+# Log out any user currently using tty1. This is invoked when executing
+# the logout command and therefore sends back a 2xx return code.
+# Also try to restart gdm, if it is not running.
+doLogout() {
+  attemptLogout
+  systemctl status gdm >/dev/null 2>&1
+  if [ $? != 0 ]; then
+    systemctl restart gdm 2>$temperr
+    if [ $? -eq 0 ]; then
+      echo >&${con} "102 gdm restarted"
+    else
+      echo >&${con} "102 Restarting gdm failed: $(tr '\n' ' ' <${temperr})"
+    fi
+  fi
+  echo >&${con} "202 User logged out"
+}
+
+while read line <&${con}; do
+  case $line in
+  "login "*) IFS=' ' read -ra args <<< "$line"; doLogin ${args[1]};;
+  "logout") doLogout;;
+  esac
+done
+
+onExit() {
+  attemptLogout
+  if [ -n "$temperr" ]; then
+    rm -f $temperr
+  fi
+  echo >&${con} "240 Quit"
+}
+
+trap onExit EXIT

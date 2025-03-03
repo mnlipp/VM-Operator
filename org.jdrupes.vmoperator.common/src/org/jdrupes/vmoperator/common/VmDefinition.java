@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import org.jdrupes.vmoperator.common.Constants.Status;
 import org.jdrupes.vmoperator.util.DataPath;
 
 /**
@@ -219,7 +220,7 @@ public class VmDefinition extends K8sDynamicModel {
      * @return the optional
      */
     public Optional<String> assignedFrom() {
-        return fromStatus("assignment", "pool");
+        return fromStatus(Status.ASSIGNMENT, "pool");
     }
 
     /**
@@ -228,7 +229,7 @@ public class VmDefinition extends K8sDynamicModel {
      * @return the optional
      */
     public Optional<String> assignedTo() {
-        return fromStatus("assignment", "user");
+        return fromStatus(Status.ASSIGNMENT, "user");
     }
 
     /**
@@ -237,7 +238,7 @@ public class VmDefinition extends K8sDynamicModel {
      * @return the optional
      */
     public Optional<Instant> assignmentLastUsed() {
-        return this.<String> fromStatus("assignment", "lastUsed")
+        return this.<String> fromStatus(Status.ASSIGNMENT, "lastUsed")
             .map(Instant::parse);
     }
 
@@ -286,7 +287,7 @@ public class VmDefinition extends K8sDynamicModel {
      * @return the optional
      */
     public Optional<String> consoleUser() {
-        return this.<String> fromStatus("consoleUser");
+        return this.<String> fromStatus(Status.CONSOLE_USER);
     }
 
     /**
@@ -388,7 +389,7 @@ public class VmDefinition extends K8sDynamicModel {
      * @return the optional
      */
     public Optional<Long> displayPasswordSerial() {
-        return this.<Number> fromStatus("displayPasswordSerial")
+        return this.<Number> fromStatus(Status.DISPLAY_PASSWORD_SERIAL)
             .map(Number::longValue);
     }
 

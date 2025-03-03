@@ -11,7 +11,7 @@ metadata:
     vmoperator.jdrupes.org/version: ${ managerVersion }
   ownerReferences:
   - apiVersion: ${ cr.apiVersion() }
-    kind: ${ constants.VM_OP_KIND_VM }
+    kind: ${ constants.Crd.KIND_VM }
     name: ${ cr.name() }
     uid: ${ cr.metadata().getUid() }
     controller: false
@@ -200,6 +200,9 @@ data:
         display:
           <#if spec.vm.display.outputs?? >
           outputs: ${ spec.vm.display.outputs?c }
+          </#if>
+          <#if spec.vm.display.loggedInUser?? >
+          loggedInUser: "${ spec.vm.display.loggedInUser }"
           </#if>
           <#if spec.vm.display.spice??>
           spice:

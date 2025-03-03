@@ -15,7 +15,7 @@ metadata:
     vmoperator.jdrupes.org/version: ${ managerVersion }
   ownerReferences:
   - apiVersion: ${ cr.apiVersion() }
-    kind: ${ constants.VM_OP_KIND_VM }
+    kind: ${ constants.Crd.KIND_VM }
     name: ${ cr.name() }
     uid: ${ cr.metadata().getUid() }
     blockOwnerDeletion: true

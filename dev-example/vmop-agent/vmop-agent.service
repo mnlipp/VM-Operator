@@ -1,0 +1,15 @@
+[Unit]
+Description=VM-Operator (Guest) Agent
+BindsTo=dev-virtio\x2dports-org.jdrupes.vmop_agent.0.device
+After=dev-virtio\x2dports-org.jdrupes.vmop_agent.0.device multi-user.target
+IgnoreOnIsolate=True
+
+[Service]
+UMask=0077
+#EnvironmentFile=/etc/sysconfig/vmop-agent
+ExecStart=/usr/local/libexec/vmop-agent
+Restart=always
+RestartSec=0
+
+[Install]
+WantedBy=dev-virtio\x2dports-org.jdrupes.vmop_agent.0.device

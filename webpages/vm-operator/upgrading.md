@@ -9,16 +9,31 @@ layout: vm-operator
 
 ## To version 4.0.0
 
-The VmViewer conlet has been renamed to VmAccess. This affects the
-[configuration](https://jdrupes.org/vm-operator/user-gui.html). Configuration information using the old path
-"/Manager/GuiHttpServer/ConsoleWeblet/WebConsole/ComponentCollector/VmViewer"
-is still accepted for backward compatibility, but should be updated.
+ * The VmViewer conlet has been renamed to VmAccess. This affects the
+   [configuration](https://jdrupes.org/vm-operator/user-gui.html). Configuration
+   information using the old path
+   `/Manager/GuiHttpServer/ConsoleWeblet/WebConsole/ComponentCollector/VmViewer`
+   is still accepted for backward compatibility until the next major version,
+   but should be updated.
 
-The change of name also causes conlets added to the overview page by
-users to "disappear" from the GUI. They have to be re-added.
+   The change of name also causes conlets added to the overview page by
+   users to "disappear" from the GUI. They have to be re-added.
 
-The latter behavior also applies to the VmConlet conlet which has been
-renamed to VmMgmt.
+   The latter behavior also applies to the VmConlet conlet which has been
+   renamed to VmMgmt.
+   
+ * The configuration property `passwordValidity` has been moved from component
+   `/Manager/Controller/DisplaySecretMonitor` to
+   `/Manager/Controller/Reconciler/DisplaySecretReconciler`. The old path is 
+   still accepted for backward compatibility until the next major version,
+   but should be updated.
+
+ * The standard [template](./runner.html#stand-alone-configuration) used
+   to generate the QEMU command has been updated. Unless you have enabled
+   automatic updates of the template in the VM definition, you have to
+   update the template manually. If you're using your own template, you
+   have to add a virtual serial port (see the git history of the standard
+   template for the required addition).
 
 ## To version 3.4.0
 

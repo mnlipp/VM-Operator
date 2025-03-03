@@ -131,15 +131,19 @@ of 16 (strong) random bytes (128 random bits). It is valid for
 10 seconds only. This may be challenging on a slower computer
 or if users may not enable automatic open for connection files
 in the browser. The validity can therefore be adjusted in the
-configuration.
+configuration.[^oldPath]
 
 ```yaml
 "/Manager":
   "/Controller":
-    "/DisplaySecretMonitor":
-      # Validity of generated password in seconds
-      passwordValidity: 10
+    "/Reconciler":
+      "/DisplaySecretReconciler":
+        # Validity of generated password in seconds
+        passwordValidity: 10
 ```
+
+[^oldPath]: Before version 4.0, the path for `passwordValidity` was
+  `/Manager/Controller/DisplaySecretMonitor`.
 
 Taking into account that the controller generates a display
 secret automatically by default, this approach to securing

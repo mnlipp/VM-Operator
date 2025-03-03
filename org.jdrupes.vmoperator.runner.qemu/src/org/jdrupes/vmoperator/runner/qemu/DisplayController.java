@@ -1,6 +1,6 @@
 /*
  * VM-Operator
- * Copyright (C) 2023 Michael N. Lipp
+ * Copyright (C) 2023,2025 Michael N. Lipp
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,14 +22,20 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.logging.Level;
+import org.jdrupes.vmoperator.common.Constants.DisplaySecret;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpSetDisplayPassword;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpSetPasswordExpiry;
 import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.RunState;
+import org.jdrupes.vmoperator.runner.qemu.events.VmopAgentConnected;
+import org.jdrupes.vmoperator.runner.qemu.events.VmopAgentLogIn;
+import org.jdrupes.vmoperator.runner.qemu.events.VmopAgentLogOut;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
+import org.jgrapes.core.Event;
 import org.jgrapes.core.annotation.Handler;
 import org.jgrapes.util.events.FileChanged;
 import org.jgrapes.util.events.WatchFile;
@@ -40,11 +46,11 @@ import org.jgrapes.util.events.WatchFile;
 @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class DisplayController extends Component {
 
-    public static final String DISPLAY_PASSWORD_FILE = "display-password";
-    public static final String PASSWORD_EXPIRY_FILE = "password-expiry";
     private String currentPassword;
     private String protocol;
     private final Path configDir;
+    private boolean vmopAgentConnected;
+    private String loggedInUser;
 
     /**
      * Instantiates a new Display controller.
@@ -57,7 +63,7 @@ public class DisplayController extends Component {
     public DisplayController(Channel componentChannel, Path configDir) {
         super(componentChannel);
         this.configDir = configDir;
-        fire(new WatchFile(configDir.resolve(DISPLAY_PASSWORD_FILE)));
+        fire(new WatchFile(configDir.resolve(DisplaySecret.PASSWORD)));
     }
 
     /**
@@ -72,7 +78,32 @@ public class DisplayController extends Component {
         }
         protocol
             = event.configuration().vm.display.spice != null ? "spice" : null;
-        updatePassword();
+        loggedInUser = event.configuration().vm.display.loggedInUser;
+        configureLogin();
+        if (event.runState() == RunState.STARTING) {
+            configurePassword();
+        }
+    }
+
+    /**
+     * On vmop agent connected.
+     *
+     * @param event the event
+     */
+    @Handler
+    public void onVmopAgentConnected(VmopAgentConnected event) {
+        vmopAgentConnected = true;
+        configureLogin();
+    }
+
+    private void configureLogin() {
+        if (!vmopAgentConnected) {
+            return;
+        }
+        Event<?> evt = loggedInUser != null
+            ? new VmopAgentLogIn(loggedInUser)
+            : new VmopAgentLogOut();
+        fire(evt);
     }
 
     /**
@@ -83,13 +114,12 @@ public class DisplayController extends Component {
     @Handler
     @SuppressWarnings("PMD.EmptyCatchBlock")
     public void onFileChanged(FileChanged event) {
-        if (event.path().equals(configDir.resolve(DISPLAY_PASSWORD_FILE))) {
-            updatePassword();
+        if (event.path().equals(configDir.resolve(DisplaySecret.PASSWORD))) {
+            configurePassword();
         }
     }
 
-    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
-    private void updatePassword() {
+    private void configurePassword() {
         if (protocol == null) {
             return;
         }
@@ -99,47 +129,41 @@ public class DisplayController extends Component {
     }
 
     private boolean setDisplayPassword() {
-        String password;
-        Path dpPath = configDir.resolve(DISPLAY_PASSWORD_FILE);
-        if (dpPath.toFile().canRead()) {
-            logger.finer(() -> "Found display password");
-            try {
-                password = Files.readString(dpPath);
-            } catch (IOException e) {
-                logger.log(Level.WARNING, e, () -> "Cannot read display"
-                    + " password: " + e.getMessage());
-                return false;
+        return readFromFile(DisplaySecret.PASSWORD).map(password -> {
+            if (Objects.equals(this.currentPassword, password)) {
+                return true;
             }
-        } else {
-            logger.finer(() -> "No display password");
-            return false;
-        }
-
-        if (Objects.equals(this.currentPassword, password)) {
+            this.currentPassword = password;
+            logger.fine(() -> "Updating display password");
+            fire(new MonitorCommand(
+                new QmpSetDisplayPassword(protocol, password)));
             return true;
-        }
-        this.currentPassword = password;
-        logger.fine(() -> "Updating display password");
-        fire(new MonitorCommand(new QmpSetDisplayPassword(protocol, password)));
-        return true;
+        }).orElse(false);
     }
 
     private void setPasswordExpiry() {
-        Path pePath = configDir.resolve(PASSWORD_EXPIRY_FILE);
-        if (!pePath.toFile().canRead()) {
-            return;
-        }
-        logger.finer(() -> "Found expiry time");
-        String expiry;
-        try {
-            expiry = Files.readString(pePath);
-        } catch (IOException e) {
-            logger.log(Level.WARNING, e, () -> "Cannot read expiry"
-                + " time: " + e.getMessage());
-            return;
-        }
-        logger.fine(() -> "Updating expiry time");
-        fire(new MonitorCommand(new QmpSetPasswordExpiry(protocol, expiry)));
+        readFromFile(DisplaySecret.EXPIRY).ifPresent(expiry -> {
+            logger.fine(() -> "Updating expiry time to " + expiry);
+            fire(
+                new MonitorCommand(new QmpSetPasswordExpiry(protocol, expiry)));
+        });
     }
 
+    private Optional<String> readFromFile(String dataItem) {
+        Path path = configDir.resolve(dataItem);
+        String label = dataItem.replace('-', ' ');
+        if (path.toFile().canRead()) {
+            logger.finer(() -> "Found " + label);
+            try {
+                return Optional.ofNullable(Files.readString(path));
+            } catch (IOException e) {
+                logger.log(Level.WARNING, e, () -> "Cannot read " + label + ": "
+                    + e.getMessage());
+                return Optional.empty();
+            }
+        } else {
+            logger.finer(() -> "No " + label);
+            return Optional.empty();
+        }
+    }
 }

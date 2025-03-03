@@ -31,8 +31,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
-import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
-import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
+import org.jdrupes.vmoperator.common.Constants.Crd;
 import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
@@ -87,7 +86,7 @@ public class VmMonitor extends
         client(new K8sClient());
 
         // Get all our API versions
-        var ctx = K8s.context(client(), VM_OP_GROUP, "", VM_OP_KIND_VM);
+        var ctx = K8s.context(client(), Crd.GROUP, "", Crd.KIND_VM);
         if (ctx.isEmpty()) {
             logger.severe(() -> "Cannot get CRD context.");
             return;

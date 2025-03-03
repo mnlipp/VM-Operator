@@ -33,8 +33,8 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
-import static org.jdrupes.vmoperator.common.Constants.VM_OP_GROUP;
-import static org.jdrupes.vmoperator.common.Constants.VM_OP_KIND_VM;
+import org.jdrupes.vmoperator.common.Constants.Crd;
+import org.jdrupes.vmoperator.common.Constants.Status;
 import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
@@ -47,6 +47,9 @@ import org.jdrupes.vmoperator.runner.qemu.events.OsinfoEvent;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.RunState;
 import org.jdrupes.vmoperator.runner.qemu.events.ShutdownEvent;
+import org.jdrupes.vmoperator.runner.qemu.events.VmopAgentConnected;
+import org.jdrupes.vmoperator.runner.qemu.events.VmopAgentLoggedIn;
+import org.jdrupes.vmoperator.runner.qemu.events.VmopAgentLoggedOut;
 import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.annotation.Handler;
@@ -109,10 +112,17 @@ public class StatusUpdater extends VmDefUpdater {
         }
         try {
             vmStub = VmDefinitionStub.get(apiClient,
-                new GroupVersionKind(VM_OP_GROUP, "", VM_OP_KIND_VM),
+                new GroupVersionKind(Crd.GROUP, "", Crd.KIND_VM),
                 namespace, vmName);
-            vmStub.model().ifPresent(model -> {
-                observedGeneration = model.getMetadata().getGeneration();
+            var vmDef = vmStub.model().orElse(null);
+            if (vmDef == null) {
+                return;
+            }
+            observedGeneration = vmDef.getMetadata().getGeneration();
+            vmStub.updateStatus(from -> {
+                JsonObject status = from.statusJson();
+                status.remove(Status.LOGGED_IN_USER);
+                return status;
             });
         } catch (ApiException e) {
             logger.log(Level.SEVERE, e,
@@ -143,18 +153,20 @@ public class StatusUpdater extends VmDefUpdater {
         // by a new version of the CR. So we update only if we have
         // a new version of the CR. There's one exception: the display
         // password is configured by a file, not by the CR.
-        var vmDef = vmStub.model();
-        if (vmDef.isPresent()
-            && vmDef.get().metadata().getGeneration() == observedGeneration
-            && (event.configuration().hasDisplayPassword
-                || vmDef.get().statusJson().getAsJsonPrimitive(
-                    "displayPasswordSerial").getAsInt() == -1)) {
+        var vmDef = vmStub.model().orElse(null);
+        if (vmDef == null) {
             return;
         }
-        vmStub.updateStatus(vmDef.get(), from -> {
+        if (vmDef.metadata().getGeneration() == observedGeneration
+            && (event.configuration().hasDisplayPassword
+                || vmDef.statusJson().getAsJsonPrimitive(
+                    Status.DISPLAY_PASSWORD_SERIAL).getAsInt() == -1)) {
+            return;
+        }
+        vmStub.updateStatus(from -> {
             JsonObject status = from.statusJson();
             if (!event.configuration().hasDisplayPassword) {
-                status.addProperty("displayPasswordSerial", -1);
+                status.addProperty(Status.DISPLAY_PASSWORD_SERIAL, -1);
             }
             status.getAsJsonArray("conditions").asList().stream()
                 .map(cond -> (JsonObject) cond).filter(cond -> "Running"
@@ -162,7 +174,7 @@ public class StatusUpdater extends VmDefUpdater {
                 .forEach(cond -> cond.addProperty("observedGeneration",
                     from.getMetadata().getGeneration()));
             return status;
-        });
+        }, vmDef);
     }
 
     /**
@@ -172,43 +184,44 @@ public class StatusUpdater extends VmDefUpdater {
      * @throws ApiException 
      */
     @Handler
-    @SuppressWarnings({ "PMD.AssignmentInOperand",
-        "PMD.AvoidLiteralsInIfCondition" })
+    @SuppressWarnings({ "PMD.AvoidLiteralsInIfCondition",
+        "PMD.AssignmentInOperand", "PMD.AvoidDuplicateLiterals" })
     public void onRunnerStateChanged(RunnerStateChange event)
             throws ApiException {
         VmDefinition vmDef;
         if (vmStub == null || (vmDef = vmStub.model().orElse(null)) == null) {
             return;
         }
-        vmStub.updateStatus(vmDef, from -> {
-            JsonObject status = from.statusJson();
+        vmStub.updateStatus(from -> {
             boolean running = event.runState().vmRunning();
-            updateCondition(vmDef, vmDef.statusJson(), "Running", running,
-                event.reason(), event.message());
-            updateCondition(vmDef, vmDef.statusJson(), "Booted",
+            updateCondition(vmDef, "Running", running, event.reason(),
+                event.message());
+            JsonObject status = updateCondition(vmDef, "Booted",
                 event.runState() == RunState.BOOTED, event.reason(),
                 event.message());
             if (event.runState() == RunState.STARTING) {
-                status.addProperty("ram", GsonPtr.to(from.data())
+                status.addProperty(Status.RAM, GsonPtr.to(from.data())
                     .getAsString("spec", "vm", "maximumRam").orElse("0"));
-                status.addProperty("cpus", 1);
+                status.addProperty(Status.CPUS, 1);
+            } else if (event.runState() == RunState.STOPPED) {
+                status.addProperty(Status.RAM, "0");
+                status.addProperty(Status.CPUS, 0);
+                status.remove(Status.LOGGED_IN_USER);
+            }
+
+            if (!running) {
+                // In case console connection was still present
+                status.addProperty(Status.CONSOLE_CLIENT, "");
+                updateCondition(from, "ConsoleConnected", false, "VmStopped",
+                    "The VM is not running");
 
                 // In case we had an irregular shutdown
-                status.remove("osinfo");
-            } else if (event.runState() == RunState.STOPPED) {
-                status.addProperty("ram", "0");
-                status.addProperty("cpus", 0);
-                status.remove("osinfo");
-            }
-
-            // In case console connection was still present
-            if (!running) {
-                status.addProperty("consoleClient", "");
-                updateCondition(from, status, "ConsoleConnected", false,
-                    "VmStopped", "The VM has been shut down");
+                status.remove(Status.OSINFO);
+                updateCondition(vmDef, "VmopAgentConnected", false, "VmStopped",
+                    "The VM is not running");
             }
             return status;
-        });
+        }, vmDef);
 
         // Maybe stop VM
         if (event.runState() == RunState.TERMINATING && !event.failed()
@@ -226,7 +239,7 @@ public class StatusUpdater extends VmDefUpdater {
 
         // Log event
         var evt = new EventsV1Event()
-            .reportingController(VM_OP_GROUP + "/" + APP_NAME)
+            .reportingController(Crd.GROUP + "/" + APP_NAME)
             .action("StatusUpdate").reason(event.reason())
             .note(event.message());
         K8s.createEvent(apiClient, vmDef, evt);
@@ -245,7 +258,7 @@ public class StatusUpdater extends VmDefUpdater {
         }
         vmStub.updateStatus(from -> {
             JsonObject status = from.statusJson();
-            status.addProperty("ram",
+            status.addProperty(Status.RAM,
                 new Quantity(new BigDecimal(event.size()), Format.BINARY_SI)
                     .toSuffixedString());
             return status;
@@ -265,7 +278,7 @@ public class StatusUpdater extends VmDefUpdater {
         }
         vmStub.updateStatus(from -> {
             JsonObject status = from.statusJson();
-            status.addProperty("cpus", event.usedCpus().size());
+            status.addProperty(Status.CPUS, event.usedCpus().size());
             return status;
         });
     }
@@ -284,8 +297,8 @@ public class StatusUpdater extends VmDefUpdater {
         }
         vmStub.updateStatus(from -> {
             JsonObject status = from.statusJson();
-            status.addProperty("displayPasswordSerial",
-                status.get("displayPasswordSerial").getAsLong() + 1);
+            status.addProperty(Status.DISPLAY_PASSWORD_SERIAL,
+                status.get(Status.DISPLAY_PASSWORD_SERIAL).getAsLong() + 1);
             return status;
         });
     }
@@ -314,12 +327,60 @@ public class StatusUpdater extends VmDefUpdater {
         }
         var asGson = gson.toJsonTree(
             objectMapper.convertValue(event.osinfo(), Object.class));
-
         vmStub.updateStatus(from -> {
             JsonObject status = from.statusJson();
-            status.add("osinfo", asGson);
+            status.add(Status.OSINFO, asGson);
             return status;
         });
 
+    }
+
+    /**
+     * @param event the event
+     * @throws ApiException 
+     */
+    @Handler
+    @SuppressWarnings("PMD.AssignmentInOperand")
+    public void onVmopAgentConnected(VmopAgentConnected event)
+            throws ApiException {
+        VmDefinition vmDef;
+        if (vmStub == null || (vmDef = vmStub.model().orElse(null)) == null) {
+            return;
+        }
+        vmStub.updateStatus(from -> {
+            return updateCondition(vmDef, "VmopAgentConnected",
+                true, "VmopAgentStarted", "The VM operator agent is running");
+        }, vmDef);
+    }
+
+    /**
+     * @param event the event
+     * @throws ApiException 
+     */
+    @Handler
+    @SuppressWarnings("PMD.AssignmentInOperand")
+    public void onVmopAgentLoggedIn(VmopAgentLoggedIn event)
+            throws ApiException {
+        vmStub.updateStatus(from -> {
+            JsonObject status = from.statusJson();
+            status.addProperty(Status.LOGGED_IN_USER,
+                event.triggering().user());
+            return status;
+        });
+    }
+
+    /**
+     * @param event the event
+     * @throws ApiException 
+     */
+    @Handler
+    @SuppressWarnings("PMD.AssignmentInOperand")
+    public void onVmopAgentLoggedOut(VmopAgentLoggedOut event)
+            throws ApiException {
+        vmStub.updateStatus(from -> {
+            JsonObject status = from.statusJson();
+            status.remove(Status.LOGGED_IN_USER);
+            return status;
+        });
     }
 }
