@@ -265,7 +265,7 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
     public void onConsoleConfigured(ConsoleConfigured event,
             ConsoleConnection connection) throws InterruptedException,
             IOException {
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings({ "unchecked", "PMD.PrematureDeclaration" })
         final var rendered
             = (Set<ResourceModel>) connection.session().get(RENDERED);
         connection.session().remove(RENDERED);

@@ -25,7 +25,7 @@ The VMs should only be accessible via a desktop started by the VM-Operator.
     # systemctl disable gdm
     # systemctl stop gdm
     ```
-   
+
   * Disable `getty` on tty1.
 
     ```console
@@ -55,7 +55,7 @@ The following should actually be configured for any VM.
 The VM-Operator agent runs as a systemd service. Sample configuration
 files can be found
 [here](https://github.com/mnlipp/VM-Operator/tree/main/dev-example/vmop-agent).
-Copy 
+Copy
 
   * `99-vmop-agent.rules` to `/usr/local/lib/udev/rules.d/99-vmop-agent.rules`,
   * `vmop-agent` to `/usr/local/libexec/vmop-agent` and

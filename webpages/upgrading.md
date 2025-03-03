@@ -10,7 +10,7 @@ layout: vm-operator
 ## To version 4.0.0
 
   * The VmViewer conlet has been renamed to VmAccess. This affects the
-    [configuration](https://jdrupes.org/vm-operator/user-gui.html). 
+    [configuration](https://jdrupes.org/vm-operator/user-gui.html).
     Configuration information using the old path
     `/Manager/GuiHttpServer/ConsoleWeblet/WebConsole/ComponentCollector/VmViewer`
     is still accepted for backward compatibility until the next major version,
@@ -24,7 +24,7 @@ layout: vm-operator
 
   * The configuration property `passwordValidity` has been moved from component
     `/Manager/Controller/DisplaySecretMonitor` to
-    `/Manager/Controller/Reconciler/DisplaySecretReconciler`. The old path is 
+    `/Manager/Controller/Reconciler/DisplaySecretReconciler`. The old path is
     still accepted for backward compatibility until the next major version,
     but should be updated.
 
