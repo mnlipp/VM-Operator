@@ -43,7 +43,7 @@ import org.jdrupes.vmoperator.common.Constants.Status;
 import org.jdrupes.vmoperator.common.K8sV1SecretStub;
 import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
-import org.jdrupes.vmoperator.manager.events.PrepareConsole;
+import org.jdrupes.vmoperator.manager.events.GetDisplaySecret;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.util.DataPath;
@@ -71,7 +71,7 @@ public class DisplaySecretReconciler extends Component {
 
     protected final Logger logger = Logger.getLogger(getClass().getName());
     private int passwordValidity = 10;
-    private final List<PendingPrepare> pendingPrepares
+    private final List<PendingRequest> pendingPrepares
         = Collections.synchronizedList(new LinkedList<>());
 
     /**
@@ -184,21 +184,23 @@ public class DisplaySecretReconciler extends Component {
      */
     @Handler
     @SuppressWarnings("PMD.StringInstantiation")
-    public void onPrepareConsole(PrepareConsole event, VmChannel channel)
+    public void onGetDisplaySecret(GetDisplaySecret event, VmChannel channel)
             throws ApiException {
-        // Update console user in status
-        var vmDef = updateConsoleUser(event, channel);
-        if (vmDef == null) {
+        // Get VM definition and check if running
+        var vmStub = VmDefinitionStub.get(channel.client(),
+            new GroupVersionKind(Crd.GROUP, "", Crd.KIND_VM),
+            event.vmDefinition().namespace(), event.vmDefinition().name());
+        var vmDef = vmStub.model().orElse(null);
+        if (vmDef == null || !vmDef.conditionStatus("Running").orElse(false)) {
             return;
         }
 
-        // Check if access is possible
-        if (event.loginUser()
-            ? !vmDef.<String> fromStatus(Status.LOGGED_IN_USER)
-                .map(u -> u.equals(event.user())).orElse(false)
-            : !vmDef.conditionStatus("Running").orElse(false)) {
-            return;
-        }
+        // Update console user in status
+        vmDef = vmStub.updateStatus(from -> {
+            JsonObject status = from.statusJson();
+            status.addProperty(Status.CONSOLE_USER, event.user());
+            return status;
+        }).get();
 
         // Get secret and update password in secret
         var stub = getSecretStub(event, channel, vmDef);
@@ -212,7 +214,7 @@ public class DisplaySecretReconciler extends Component {
 
         // Register wait for confirmation (by VM status change,
         // after secret update)
-        var pending = new PendingPrepare(event,
+        var pending = new PendingRequest(event,
             event.vmDefinition().displayPasswordSerial().orElse(0L) + 1,
             new CompletionLock(event, 1500));
         pendingPrepares.add(pending);
@@ -224,19 +226,7 @@ public class DisplaySecretReconciler extends Component {
         stub.update(secret).getObject();
     }
 
-    private VmDefinition updateConsoleUser(PrepareConsole event,
-            VmChannel channel) throws ApiException {
-        var vmStub = VmDefinitionStub.get(channel.client(),
-            new GroupVersionKind(Crd.GROUP, "", Crd.KIND_VM),
-            event.vmDefinition().namespace(), event.vmDefinition().name());
-        return vmStub.updateStatus(from -> {
-            JsonObject status = from.statusJson();
-            status.addProperty(Status.CONSOLE_USER, event.user());
-            return status;
-        }).orElse(null);
-    }
-
-    private K8sV1SecretStub getSecretStub(PrepareConsole event,
+    private K8sV1SecretStub getSecretStub(GetDisplaySecret event,
             VmChannel channel, VmDefinition vmDef) throws ApiException {
         // Look for secret
         ListOptions options = new ListOptions();
@@ -253,7 +243,7 @@ public class DisplaySecretReconciler extends Component {
         return stubs.iterator().next();
     }
 
-    private boolean updatePassword(V1Secret secret, PrepareConsole event) {
+    private boolean updatePassword(V1Secret secret, GetDisplaySecret event) {
         var expiry = Optional.ofNullable(secret.getData()
             .get(DisplaySecret.EXPIRY)).map(b -> new String(b)).orElse(null);
         if (secret.getData().get(DisplaySecret.PASSWORD) != null
@@ -323,8 +313,8 @@ public class DisplaySecretReconciler extends Component {
      * The Class PendingGet.
      */
     @SuppressWarnings("PMD.DataClass")
-    private static class PendingPrepare {
-        public final PrepareConsole event;
+    private static class PendingRequest {
+        public final GetDisplaySecret event;
         public final long expectedSerial;
         public final CompletionLock lock;
 
@@ -334,7 +324,7 @@ public class DisplaySecretReconciler extends Component {
          * @param event the event
          * @param expectedSerial the expected serial
          */
-        public PendingPrepare(PrepareConsole event, long expectedSerial,
+        public PendingRequest(GetDisplaySecret event, long expectedSerial,
                 CompletionLock lock) {
             super();
             this.event = event;
