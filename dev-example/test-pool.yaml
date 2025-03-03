@@ -5,6 +5,7 @@ metadata:
   name: test-vms
 spec:
   retention: "PT1m"
+  loginOnAssignment: true
   permissions:
   - user: admin
     may:

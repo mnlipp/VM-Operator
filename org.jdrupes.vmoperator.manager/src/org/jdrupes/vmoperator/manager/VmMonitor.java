@@ -301,6 +301,10 @@ public class VmMonitor extends
                 // Make sure that a newly assigned VM is running.
                 chosenVm.pipeline().fire(new ModifyVm(vmDef.name(),
                     "state", "Running", chosenVm));
+                if (vmPool.loginOnAssignment()) {
+                    chosenVm.pipeline().fire(new ModifyVm(vmDef.name(),
+                        "display/loggedInUser", event.toUser(), chosenVm));
+                }
                 return;
             }
         }

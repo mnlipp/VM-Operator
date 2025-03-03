@@ -37,8 +37,9 @@ import org.jdrupes.vmoperator.util.DataPath;
 @SuppressWarnings({ "PMD.DataClass" })
 public class VmPool {
 
-    private String name;
+    private final String name;
     private String retention;
+    private boolean loginOnAssignment;
     private boolean defined;
     private List<Grant> permissions = Collections.emptyList();
     private final Set<String> vms
@@ -54,6 +55,19 @@ public class VmPool {
     }
 
     /**
+     * Fill the properties of a provisionally created pool from
+     * the definition.
+     *
+     * @param definition the definition
+     */
+    public void defineFrom(VmPool definition) {
+        retention = definition.retention();
+        permissions = definition.permissions();
+        loginOnAssignment = definition.loginOnAssignment();
+        defined = true;
+    }
+
+    /**
      * Returns the name.
      *
      * @return the name
@@ -63,12 +77,12 @@ public class VmPool {
     }
 
     /**
-     * Sets the name.
+     * Checks if is login on assignment.
      *
-     * @param name the name to set
+     * @return the loginOnAssignment
      */
-    public void setName(String name) {
-        this.name = name;
+    public boolean loginOnAssignment() {
+        return loginOnAssignment;
     }
 
     /**
@@ -81,12 +95,10 @@ public class VmPool {
     }
 
     /**
-     * Sets if is.
-     *
-     * @param defined the defined to set
+     * Marks the pool as undefined.
      */
-    public void setDefined(boolean defined) {
-        this.defined = defined;
+    public void setUndefined() {
+        defined = false;
     }
 
     /**
@@ -99,30 +111,12 @@ public class VmPool {
     }
 
     /**
-     * Sets the retention.
-     *
-     * @param retention the retention to set
-     */
-    public void setRetention(String retention) {
-        this.retention = retention;
-    }
-
-    /**
      * Permissions granted for a VM from the pool.
      *
      * @return the permissions
      */
     public List<Grant> permissions() {
         return permissions;
-    }
-
-    /**
-     * Sets the permissions.
-     *
-     * @param permissions the permissions to set
-     */
-    public void setPermissions(List<Grant> permissions) {
-        this.permissions = permissions;
     }
 
     /**

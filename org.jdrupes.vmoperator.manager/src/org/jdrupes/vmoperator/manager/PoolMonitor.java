@@ -105,7 +105,7 @@ public class PoolMonitor extends
         // When pool is deleted, save VMs in pending
         if (type == ResponseType.DELETED) {
             Optional.ofNullable(pools.get(poolName)).ifPresent(pool -> {
-                pool.setDefined(false);
+                pool.setUndefined();
                 if (pool.vms().isEmpty()) {
                     pools.remove(poolName);
                 }
@@ -129,11 +129,8 @@ public class PoolMonitor extends
 
         // Get pool and merge changes
         var vmPool = pools.computeIfAbsent(poolName, k -> new VmPool(poolName));
-        var newData = client().getJSON().getGson().fromJson(
-            GsonPtr.to(poolModel.data()).to("spec").get(), VmPool.class);
-        vmPool.setRetention(newData.retention());
-        vmPool.setPermissions(newData.permissions());
-        vmPool.setDefined(true);
+        vmPool.defineFrom(client().getJSON().getGson().fromJson(
+            GsonPtr.to(poolModel.data()).to("spec").get(), VmPool.class));
         poolPipeline.fire(new VmPoolChanged(vmPool));
     }
 
