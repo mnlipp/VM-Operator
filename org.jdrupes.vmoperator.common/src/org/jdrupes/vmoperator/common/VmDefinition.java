@@ -377,10 +377,34 @@ public class VmDefinition extends K8sDynamicModel {
      * @param permissions the permissions
      * @return true, if successful
      */
+    @SuppressWarnings("PMD.SimplifyBooleanReturns")
     public boolean consoleAccessible(String user, Set<Permission> permissions) {
-        return !conditionStatus("ConsoleConnected").orElse(true)
-            || consoleUser().map(cu -> cu.equals(user)).orElse(true)
-            || permissions.contains(VmDefinition.Permission.TAKE_CONSOLE);
+        // If user has takeConsole permission, console is always accessible
+        if (permissions.contains(VmDefinition.Permission.TAKE_CONSOLE)) {
+            return true;
+        }
+
+        // Check if an automatic login is requested. If so, allow access only
+        // if the log in has been established
+        var wantedLogIn = DataPath.<String> get(spec(), "vm", "display",
+            "loggedInUser").orElse(null);
+        if (wantedLogIn != null
+            && !wantedLogIn.equals(status().get(Status.LOGGED_IN_USER))) {
+            return false;
+        }
+
+        // If the console is not in use, allow access
+        if (!conditionStatus("ConsoleConnected").orElse(true)) {
+            return true;
+        }
+
+        // If the console is in use by the user, allow access
+        if (consoleUser().map(cu -> cu.equals(user)).orElse(true)) {
+            return true;
+        }
+
+        // Else deny access
+        return false;
     }
 
     /**

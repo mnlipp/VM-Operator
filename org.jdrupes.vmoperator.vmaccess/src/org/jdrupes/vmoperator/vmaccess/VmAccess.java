@@ -804,7 +804,7 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
             .map(ConsoleUser::getName).orElse("");
         if (!vmDef.consoleAccessible(user, perms)) {
             channel.respond(new DisplayNotification(
-                resourceBundle.getString("consoleTakenNotification"),
+                resourceBundle.getString("consoleInaccessibleNotification"),
                 Map.of("autoClose", 5_000, "type", "Warning")));
             return;
         }
