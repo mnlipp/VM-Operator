@@ -45,6 +45,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import org.jdrupes.vmoperator.common.Constants.DisplaySecret;
 import org.jdrupes.vmoperator.common.Convertions;
@@ -52,6 +53,9 @@ import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jdrupes.vmoperator.common.K8sV1SecretStub;
 import org.jdrupes.vmoperator.common.VmDefinition;
+import org.jdrupes.vmoperator.common.VmDefinition.Assignment;
+import org.jdrupes.vmoperator.common.VmPool;
+import org.jdrupes.vmoperator.manager.events.GetPools;
 import org.jdrupes.vmoperator.manager.events.ResetVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
@@ -212,11 +216,6 @@ public class Reconciler extends Component {
     @SuppressWarnings("PMD.ConfusingTernary")
     public void onVmDefChanged(VmDefChanged event, VmChannel channel)
             throws ApiException, TemplateException, IOException {
-        // We're only interested in "spec" changes.
-        if (!event.specChanged()) {
-            return;
-        }
-
         // Ownership relationships takes care of deletions
         if (event.type() == K8sObserver.ResponseType.DELETED) {
             logger.fine(
@@ -228,6 +227,11 @@ public class Reconciler extends Component {
         Map<String, Object> model
             = prepareModel(channel.client(), event.vmDefinition());
         var configMap = cmReconciler.reconcile(model, channel);
+
+        // The remaining reconcilers depend only on changes of the spec part.
+        if (!event.specChanged()) {
+            return;
+        }
         model.put("cm", configMap);
         dsReconciler.reconcile(event, model, channel);
         // Manage (eventual) removal of stateful set.
@@ -266,24 +270,10 @@ public class Reconciler extends Component {
             Optional.ofNullable(Reconciler.class.getPackage()
                 .getImplementationVersion()).orElse("(Unknown)"));
         model.put("cr", vmDef);
-        // Freemarker's static models don't handle nested classes.
-        model.put("constants", constantsMap(Constants.class));
         model.put("reconciler", config);
-
-        // Check if we have a display secret
-        ListOptions options = new ListOptions();
-        options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
-            + "app.kubernetes.io/component=" + DisplaySecret.NAME + ","
-            + "app.kubernetes.io/instance=" + vmDef.name());
-        var dsStub = K8sV1SecretStub
-            .list(client, vmDef.namespace(), options)
-            .stream()
-            .findFirst();
-        if (dsStub.isPresent()) {
-            dsStub.get().model().ifPresent(m -> {
-                model.put("displaySecret", m.getMetadata().getName());
-            });
-        }
+        model.put("constants", constantsMap(Constants.class));
+        addLoginRequestedFor(model, vmDef);
+        addDisplaySecret(client, model, vmDef);
 
         // Methods
         model.put("parseQuantity", parseQuantityModel);
@@ -294,6 +284,13 @@ public class Reconciler extends Component {
         return model;
     }
 
+    /**
+     * Creates a map with constants. Needed because freemarker doesn't support
+     * nested classes with its static models.
+     *
+     * @param clazz the clazz
+     * @return the map
+     */
     @SuppressWarnings("PMD.EmptyCatchBlock")
     private Map<String, Object> constantsMap(Class<?> clazz) {
         @SuppressWarnings("PMD.UseConcurrentHashMap")
@@ -316,6 +313,38 @@ public class Reconciler extends Component {
             result.put(c.getSimpleName(), constantsMap(c));
         });
         return result;
+    }
+
+    private void addLoginRequestedFor(Map<String, Object> model,
+            VmDefinition vmDef) {
+        vmDef.assignment().filter(a -> {
+            try {
+                return newEventPipeline()
+                    .fire(new GetPools().withName(a.pool())).get()
+                    .stream().findFirst().map(VmPool::loginOnAssignment)
+                    .orElse(false);
+            } catch (InterruptedException e) {
+                logger.log(Level.WARNING, e, e::getMessage);
+            }
+            return false;
+        }).map(Assignment::user)
+            .or(() -> vmDef.fromSpec("vm", "display", "loggedInUser"))
+            .ifPresent(u -> model.put("loginRequestedFor", u));
+    }
+
+    private void addDisplaySecret(K8sClient client, Map<String, Object> model,
+            VmDefinition vmDef) throws ApiException {
+        ListOptions options = new ListOptions();
+        options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
+            + "app.kubernetes.io/component=" + DisplaySecret.NAME + ","
+            + "app.kubernetes.io/instance=" + vmDef.name());
+        var dsStub = K8sV1SecretStub
+            .list(client, vmDef.namespace(), options).stream().findFirst();
+        if (dsStub.isPresent()) {
+            dsStub.get().model().ifPresent(m -> {
+                model.put("displaySecret", m.getMetadata().getName());
+            });
+        }
     }
 
     private final TemplateMethodModelEx parseQuantityModel

@@ -142,6 +142,16 @@ public class VmDefinition extends K8sDynamicModel {
     }
 
     /**
+     * The assignment information.
+     *
+     * @param pool the pool
+     * @param user the user
+     * @param lastUsed the last used
+     */
+    public record Assignment(String pool, String user, Instant lastUsed) {
+    }
+
+    /**
      * Instantiates a new vm definition.
      *
      * @param delegate the delegate
@@ -215,31 +225,15 @@ public class VmDefinition extends K8sDynamicModel {
     }
 
     /**
-     * The pool that the VM was taken from.
+     * The assignment information.
      *
      * @return the optional
      */
-    public Optional<String> assignedFrom() {
-        return fromStatus(Status.ASSIGNMENT, "pool");
-    }
-
-    /**
-     * The user that the VM was assigned to.
-     *
-     * @return the optional
-     */
-    public Optional<String> assignedTo() {
-        return fromStatus(Status.ASSIGNMENT, "user");
-    }
-
-    /**
-     * Last usage of assigned VM.
-     *
-     * @return the optional
-     */
-    public Optional<Instant> assignmentLastUsed() {
-        return this.<String> fromStatus(Status.ASSIGNMENT, "lastUsed")
-            .map(Instant::parse);
+    public Optional<Assignment> assignment() {
+        return this.<Map<String, Object>> fromStatus(Status.ASSIGNMENT)
+            .filter(m -> !m.isEmpty()).map(a -> new Assignment(
+                a.get("pool").toString(), a.get("user").toString(),
+                Instant.parse(a.get("lastUsed").toString())));
     }
 
     /**

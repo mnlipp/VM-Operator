@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.jdrupes.vmoperator.common.VmDefinition.Assignment;
 import org.jdrupes.vmoperator.common.VmDefinition.Grant;
 import org.jdrupes.vmoperator.common.VmDefinition.Permission;
 import org.jdrupes.vmoperator.util.DataPath;
@@ -165,13 +166,12 @@ public class VmPool {
         }
 
         // If not assigned, it's usable
-        if (vmDef.assignedTo().isEmpty()) {
+        if (vmDef.assignment().isEmpty()) {
             return true;
         }
 
         // Check if it is to be retained
-        if (vmDef.assignmentLastUsed()
-            .map(this::retainUntil)
+        if (vmDef.assignment().map(Assignment::lastUsed).map(this::retainUntil)
             .map(ru -> Instant.now().isBefore(ru)).orElse(false)) {
             return false;
         }

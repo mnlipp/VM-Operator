@@ -46,6 +46,7 @@ import java.util.stream.Collectors;
 import org.bouncycastle.util.Objects;
 import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jdrupes.vmoperator.common.VmDefinition;
+import org.jdrupes.vmoperator.common.VmDefinition.Assignment;
 import org.jdrupes.vmoperator.common.VmDefinition.Permission;
 import org.jdrupes.vmoperator.common.VmPool;
 import org.jdrupes.vmoperator.manager.events.AssignVm;
@@ -657,10 +658,11 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
                     var user
                         = WebConsoleUtils.userFromSession(connection.session())
                             .map(ConsoleUser::getName).orElse(null);
-                    var toBeUsedByConlet = vmDef.assignedFrom()
+                    var toBeUsedByConlet = vmDef.assignment()
+                        .map(Assignment::pool)
                         .map(p -> p.equals(model.get().name())).orElse(false)
-                        && vmDef.assignedTo().map(u -> u.equals(user))
-                            .orElse(false);
+                        && vmDef.assignment().map(Assignment::user)
+                            .map(u -> u.equals(user)).orElse(false);
                     if (!Objects.areEqual(model.get().assignedVm(),
                         vmDef.name()) && !toBeUsedByConlet) {
                         continue;
