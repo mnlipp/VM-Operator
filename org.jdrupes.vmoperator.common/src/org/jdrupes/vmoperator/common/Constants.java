@@ -74,6 +74,21 @@ public class Constants {
 
         /** The Constant ASSIGNMENT. */
         public static final String ASSIGNMENT = "assignment";
+
+        /** The Constant COND_RUNNING. */
+        public static final String COND_RUNNING = "Running";
+
+        /** The Constant COND_BOOTED. */
+        public static final String COND_BOOTED = "Booted";
+
+        /** The Constant COND_VMOP_AGENT. */
+        public static final String COND_VMOP_AGENT = "VmopAgentConnected";
+
+        /** The Constant COND_USER_LOGGED_IN. */
+        public static final String COND_USER_LOGGED_IN = "UserLoggedIn";
+
+        /** The Constant COND_CONSOLE. */
+        public static final String COND_CONSOLE = "ConsoleConnected";
     }
 
     /**
