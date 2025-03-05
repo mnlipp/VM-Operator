@@ -129,9 +129,12 @@ public class VmDefUpdater extends Component {
         var current = status.getAsJsonArray("conditions").asList().stream()
             .map(cond -> (JsonObject) cond)
             .filter(cond -> type.equals(cond.get("type").getAsString()))
-            .findFirst()
-            .map(cond -> "True".equals(cond.get("status").getAsString()));
-        if (current.isPresent() && current.get() == state) {
+            .findFirst();
+        if (current.isPresent()
+            && current.map(c -> c.get("status").getAsString())
+                .map("True"::equals).map(s -> s == state).orElse(false)
+            && current.map(c -> c.get("reason").getAsString())
+                .map(reason::equals).orElse(false)) {
             return status;
         }
 

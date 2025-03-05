@@ -8,13 +8,9 @@ metadata:
   
 spec:
   image:
-#    repository: docker-registry.lan.mnl.de
-#    path: vmoperator/org.jdrupes.vmoperator.runner.qemu-arch
-#    pullPolicy: Always
-#    repository: ghcr.io
-#    path: mnlipp/org.jdrupes.vmoperator.runner.qemu-alpine
-#    version: "3.0.0"
-    source: registry.mnl.de/org/jdrupes/vm-operator/org.jdrupes.vmoperator.runner.qemu-arch:testing
+    repository: ghcr.io
+    path: mnlipp/org.jdrupes.vmoperator.runner.qemu-alpine
+    version: latest
     pullPolicy: Always
 
   permissions:

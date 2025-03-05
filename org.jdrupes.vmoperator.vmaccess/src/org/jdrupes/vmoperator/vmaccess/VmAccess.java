@@ -46,14 +46,15 @@ import java.util.stream.Collectors;
 import org.bouncycastle.util.Objects;
 import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jdrupes.vmoperator.common.VmDefinition;
+import org.jdrupes.vmoperator.common.VmDefinition.Assignment;
 import org.jdrupes.vmoperator.common.VmDefinition.Permission;
 import org.jdrupes.vmoperator.common.VmPool;
 import org.jdrupes.vmoperator.manager.events.AssignVm;
+import org.jdrupes.vmoperator.manager.events.GetDisplaySecret;
 import org.jdrupes.vmoperator.manager.events.GetPools;
 import org.jdrupes.vmoperator.manager.events.GetVms;
 import org.jdrupes.vmoperator.manager.events.GetVms.VmData;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
-import org.jdrupes.vmoperator.manager.events.PrepareConsole;
 import org.jdrupes.vmoperator.manager.events.ResetVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
@@ -265,7 +266,7 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
     public void onConsoleConfigured(ConsoleConfigured event,
             ConsoleConnection connection) throws InterruptedException,
             IOException {
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings({ "unchecked", "PMD.PrematureDeclaration" })
         final var rendered
             = (Set<ResourceModel>) connection.session().get(RENDERED);
         connection.session().remove(RENDERED);
@@ -523,6 +524,13 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
             .assignedTo(user)).get().stream().findFirst();
     }
 
+    /**
+     * Returns the permissions from the VM definition.
+     *
+     * @param vmDef the VM definition
+     * @param session the session
+     * @return the sets the
+     */
     private Set<Permission> permissions(VmDefinition vmDef, Session session) {
         var user = WebConsoleUtils.userFromSession(session)
             .map(ConsoleUser::getName).orElse(null);
@@ -531,6 +539,13 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
         return vmDef.permissionsFor(user, roles);
     }
 
+    /**
+     * Returns the permissions from the pool.
+     *
+     * @param pool the pool
+     * @param session the session
+     * @return the sets the
+     */
     private Set<Permission> permissions(VmPool pool, Session session) {
         var user = WebConsoleUtils.userFromSession(session)
             .map(ConsoleUser::getName).orElse(null);
@@ -539,23 +554,33 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
         return pool.permissionsFor(user, roles);
     }
 
-    private Set<Permission> permissions(ResourceModel model, Session session,
-            VmPool pool, VmDefinition vmDef) throws InterruptedException {
+    /**
+     * Returns the permissions from the VM definition or the pool depending
+     * on the state of the model.
+     *
+     * @param session the session
+     * @param model the model
+     * @param vmDef the vm def
+     * @return the sets the
+     * @throws InterruptedException the interrupted exception
+     */
+    private Set<Permission> permissions(Session session, ResourceModel model,
+            VmDefinition vmDef) throws InterruptedException {
         var user = WebConsoleUtils.userFromSession(session)
             .map(ConsoleUser::getName).orElse(null);
         var roles = WebConsoleUtils.rolesFromSession(session)
             .stream().map(ConsoleRole::getName).toList();
         if (model.mode() == ResourceModel.Mode.POOL) {
-            if (pool == null) {
-                pool = appPipeline.fire(new GetPools()
-                    .withName(model.name())).get().stream().findFirst()
-                    .orElse(null);
-            }
+            // Use permissions from pool
+            var pool = appPipeline.fire(new GetPools().withName(model.name()))
+                .get().stream().findFirst().orElse(null);
             if (pool == null) {
                 return Collections.emptySet();
             }
             return pool.permissionsFor(user, roles);
         }
+
+        // Use permissions from VM
         if (vmDef == null) {
             vmDef = appPipeline.fire(new GetVms().assignedFrom(model.name())
                 .assignedTo(user)).get().stream().map(VmData::definition)
@@ -577,7 +602,7 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
             VmDefinition vmDef) throws InterruptedException {
         channel.respond(new NotifyConletView(type(),
             model.getConletId(), "updateConfig", model.mode(), model.name(),
-            permissions(model, channel.session(), null, vmDef).stream()
+            permissions(channel.session(), model, vmDef).stream()
                 .map(VmDefinition.Permission::toString).toList()));
     }
 
@@ -588,12 +613,17 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
             model.setAssignedVm(null);
         } else {
             model.setAssignedVm(vmDef.name());
+            var session = channel.session();
+            var user = WebConsoleUtils.userFromSession(session)
+                .map(ConsoleUser::getName).orElse(null);
+            var perms = permissions(session, model, vmDef);
             try {
-                data = Map.of("metadata",
-                    Map.of("namespace", vmDef.namespace(),
+                data = Map.of(
+                    "metadata", Map.of("namespace", vmDef.namespace(),
                         "name", vmDef.name()),
                     "spec", vmDef.spec(),
-                    "status", vmDef.status());
+                    "status", vmDef.status(),
+                    "consoleAccessible", vmDef.consoleAccessible(user, perms));
             } catch (JsonSyntaxException e) {
                 logger.log(Level.SEVERE, e,
                     () -> "Failed to serialize VM definition");
@@ -634,6 +664,8 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
         // Update known conlets
         for (var entry : conletIdsByConsoleConnection().entrySet()) {
             var connection = entry.getKey();
+            var user = WebConsoleUtils.userFromSession(connection.session())
+                .map(ConsoleUser::getName).orElse(null);
             for (var conletId : entry.getValue()) {
                 var model = stateFromSession(connection.session(), conletId);
                 if (model.isEmpty()
@@ -654,13 +686,11 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
                 } else {
                     // Check if VM is used by pool conlet or to be assigned to
                     // it
-                    var user
-                        = WebConsoleUtils.userFromSession(connection.session())
-                            .map(ConsoleUser::getName).orElse(null);
-                    var toBeUsedByConlet = vmDef.assignedFrom()
+                    var toBeUsedByConlet = vmDef.assignment()
+                        .map(Assignment::pool)
                         .map(p -> p.equals(model.get().name())).orElse(false)
-                        && vmDef.assignedTo().map(u -> u.equals(user))
-                            .orElse(false);
+                        && vmDef.assignment().map(Assignment::user)
+                            .map(u -> u.equals(user)).orElse(false);
                     if (!Objects.areEqual(model.get().assignedVm(),
                         vmDef.name()) && !toBeUsedByConlet) {
                         continue;
@@ -750,7 +780,7 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
         var vmChannel = vmData.get().channel();
         var vmDef = vmData.get().definition();
         var vmName = vmDef.metadata().getName();
-        var perms = permissions(model, channel.session(), null, vmDef);
+        var perms = permissions(channel.session(), model, vmDef);
         var resourceBundle = resourceBundle(channel.locale());
         switch (event.method()) {
         case "start":
@@ -774,9 +804,7 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
             }
             break;
         case "openConsole":
-            if (perms.contains(VmDefinition.Permission.ACCESS_CONSOLE)) {
-                openConsole(channel, model, vmChannel, vmDef, perms);
-            }
+            openConsole(channel, model, vmChannel, vmDef, perms);
             break;
         default:// ignore
             break;
@@ -804,22 +832,21 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
             .map(ConsoleUser::getName).orElse("");
         if (!vmDef.consoleAccessible(user, perms)) {
             channel.respond(new DisplayNotification(
-                resourceBundle.getString("consoleTakenNotification"),
+                resourceBundle.getString("consoleInaccessibleNotification"),
                 Map.of("autoClose", 5_000, "type", "Warning")));
             return;
         }
-        var pwQuery = Event.onCompletion(new PrepareConsole(vmDef, user,
-            model.mode() == ResourceModel.Mode.POOL),
+        var pwQuery = Event.onCompletion(new GetDisplaySecret(vmDef, user),
             e -> gotPassword(channel, model, vmDef, e));
         fire(pwQuery, vmChannel);
     }
 
     private void gotPassword(ConsoleConnection channel, ResourceModel model,
-            VmDefinition vmDef, PrepareConsole event) {
-        if (!event.passwordAvailable()) {
+            VmDefinition vmDef, GetDisplaySecret event) {
+        if (!event.secretAvailable()) {
             return;
         }
-        vmDef.extra().map(xtra -> xtra.connectionFile(event.password(),
+        vmDef.extra().map(xtra -> xtra.connectionFile(event.secret(),
             preferredIpVersion, deleteConnectionFile))
             .ifPresent(cf -> channel.respond(new NotifyConletView(type(),
                 model.getConletId(), "openConsole", cf)));

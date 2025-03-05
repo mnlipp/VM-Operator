@@ -19,19 +19,19 @@ must support POSIX file access control lists (ACLs).
 
 The VMs should only be accessible via a desktop started by the VM-Operator.
 
- * Disable the display manager.
- 
-   ```console
-   # systemctl disable gdm
-   # systemctl stop gdm
-   ```
-   
- * Disable `getty` on tty1.
- 
-   ```console
-   # systemctl mask getty@tty1
-   # systemctl stop getty@tty1
-   ```
+  * Disable the display manager.
+
+    ```console
+    # systemctl disable gdm
+    # systemctl stop gdm
+    ```
+
+  * Disable `getty` on tty1.
+
+    ```console
+    # systemctl mask getty@tty1
+    # systemctl stop getty@tty1
+    ```
 
 You can, of course, disable `getty` completely. If you do this, make sure
 that you can still access your master VM through `ssh`, else you have
@@ -44,18 +44,18 @@ development purposes and not for production.
    
 The following should actually be configured for any VM.
    
- * Prevent suspend/hibernate, because it will lock the VM.
+  * Prevent suspend/hibernate, because it will lock the VM.
  
-   ```console
-   # systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
-   ```
+    ```console
+    # systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
+    ```
  
 ### Install the VM-Operator agent
 
 The VM-Operator agent runs as a systemd service. Sample configuration
 files can be found
 [here](https://github.com/mnlipp/VM-Operator/tree/main/dev-example/vmop-agent).
-Copy 
+Copy
 
   * `99-vmop-agent.rules` to `/usr/local/lib/udev/rules.d/99-vmop-agent.rules`,
   * `vmop-agent` to `/usr/local/libexec/vmop-agent` and

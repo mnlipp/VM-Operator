@@ -1534,6 +1534,24 @@ spec:
                     lastTransitionTime: "1970-01-01T00:00:00Z"
                     reason: Creation
                     message: "Creation of CR"
+                  - type: Booted
+                    status: "False"
+                    observedGeneration: 1
+                    lastTransitionTime: "1970-01-01T00:00:00Z"
+                    reason: Creation
+                    message: "Creation of CR"
+                  - type: VmopAgentConnected
+                    status: "False"
+                    observedGeneration: 1
+                    lastTransitionTime: "1970-01-01T00:00:00Z"
+                    reason: Creation
+                    message: "Creation of CR"
+                  - type: UserLoggedIn
+                    status: "False"
+                    observedGeneration: 1
+                    lastTransitionTime: "1970-01-01T00:00:00Z"
+                    reason: Creation
+                    message: "Creation of CR"
                   - type: ConsoleConnected
                     status: "False"
                     observedGeneration: 1

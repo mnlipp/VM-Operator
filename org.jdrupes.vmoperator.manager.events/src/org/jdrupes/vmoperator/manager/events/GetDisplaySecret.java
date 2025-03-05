@@ -25,46 +25,29 @@ import org.jgrapes.core.Event;
  * Gets the current display secret and optionally updates it.
  */
 @SuppressWarnings("PMD.DataClass")
-public class PrepareConsole extends Event<String> {
+public class GetDisplaySecret extends Event<String> {
 
     private final VmDefinition vmDef;
     private final String user;
-    private final boolean loginUser;
 
     /**
      * Instantiates a new request for the display secret.
      * After handling the event, a result of `null` means that
-     * no password is needed. No result means that the console
-     * is not accessible.
-     *
-     * @param vmDef the vm name
-     * @param user the requesting user
-     * @param loginUser login the user
-     */
-    public PrepareConsole(VmDefinition vmDef, String user,
-            boolean loginUser) {
-        this.vmDef = vmDef;
-        this.user = user;
-        this.loginUser = loginUser;
-    }
-
-    /**
-     * Instantiates a new request for the display secret.
-     * After handling the event, a result of `null` means that
-     * no password is needed. No result means that the console
+     * no secret is needed. No result means that the console
      * is not accessible.
      * 
      * @param vmDef the vm name
      * @param user the requesting user
      */
-    public PrepareConsole(VmDefinition vmDef, String user) {
-        this(vmDef, user, false);
+    public GetDisplaySecret(VmDefinition vmDef, String user) {
+        this.vmDef = vmDef;
+        this.user = user;
     }
 
     /**
-     * Gets the vm definition.
+     * Gets the VM definition.
      *
-     * @return the vm definition
+     * @return the VM definition
      */
     public VmDefinition vmDefinition() {
         return vmDef;
@@ -80,23 +63,14 @@ public class PrepareConsole extends Event<String> {
     }
 
     /**
-     * Checks if the user should be logged in before allowing access.
-     *
-     * @return the loginUser
-     */
-    public boolean loginUser() {
-        return loginUser;
-    }
-
-    /**
      * Returns `true` if a password is available. May only be called
      * when the event is completed. Note that the password returned
-     * by {@link #password()} may be `null`, indicating that no password
+     * by {@link #secret()} may be `null`, indicating that no password
      * is needed.
      *
      * @return true, if successful
      */
-    public boolean passwordAvailable() {
+    public boolean secretAvailable() {
         if (!isDone()) {
             throw new IllegalStateException("Event is not done.");
         }
@@ -104,13 +78,13 @@ public class PrepareConsole extends Event<String> {
     }
 
     /**
-     * Return the password. May only be called when the event has been
-     * completed with a valid result (see {@link #passwordAvailable()}).
+     * Return the secret. May only be called when the event has been
+     * completed with a valid result (see {@link #secretAvailable()}).
      *
      * @return the password. A value of `null` means that no password
      * is required.
      */
-    public String password() {
+    public String secret() {
         if (!isDone() || currentResults().isEmpty()) {
             throw new IllegalStateException("Event is not done.");
         }

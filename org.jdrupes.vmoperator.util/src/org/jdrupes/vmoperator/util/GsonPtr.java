@@ -328,6 +328,18 @@ public class GsonPtr {
     }
 
     /**
+     * Short for `set(selector, new JsonPrimitive(value))`.
+     *
+     * @param selector the selector
+     * @param value the value
+     * @return the gson ptr
+     * @see #set(Object, JsonElement)
+     */
+    public GsonPtr set(Object selector, Boolean value) {
+        return set(selector, new JsonPrimitive(value));
+    }
+
+    /**
      * Same as {@link #set(Object, JsonElement)}, but sets the value
      * only if it doesn't exist yet, else returns the existing value.
      * If this pointer points to a {@link JsonArray} and the selector

@@ -60,21 +60,21 @@
           <td class="jdrupes-vmoperator-vmmgmt-view-action-list">
             <span role="button" 
               v-if="entry.spec.vm.state != 'Running' && !entry['running']
-                && entry.permissions.includes('start')" 
+                && entry.permissions.includes('START')" 
               tabindex="0" class="fa fa-play" :title="localize('Start VM')"
               v-on:click="vmAction(entry.name, 'start')"></span>
             <span role="button" v-else class="fa fa-play"
               aria-disabled="true" :title="localize('Start VM')"></span>
             <span role="button"
               v-if="entry.spec.vm.state != 'Stopped' && entry['running']
-                && entry.permissions.includes('stop')" 
+                && entry.permissions.includes('STOP')" 
               tabindex="0" class="fa fa-stop" :title="localize('Stop VM')"
               v-on:click="vmAction(entry.name, 'stop')"></span>
             <span role="button" v-else class="fa fa-stop"
               aria-disabled="true" :title="localize('Stop VM')"></span>
             <span role="button"
               :aria-disabled="!entry['running'] 
-                || !entry.permissions.includes('reset')" 
+                || !entry.permissions.includes('RESET')" 
               tabindex="0" class="svg-icon" :title="localize('Reset VM')"
               v-on:click="vmAction(entry.name, 'reset')">
               <svg viewBox="0 0 1541.33 1535.5083">
@@ -86,8 +86,7 @@
               ? 'computer-off.svg' : (entry.usedFrom 
                 ? 'computer-in-use.svg' : 'computer.svg'))"
               :title="localize('Open console')" 
-              :aria-disabled="!entry['running']
-                || !(entry.permissions.includes('accessConsole'))"
+              :aria-disabled="!entry.consoleAccessible"
               v-on:click="vmAction(entry.name, 'openConsole')">
           </td>
         </tr>
