@@ -35,6 +35,8 @@ import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import org.jdrupes.vmoperator.common.Constants.Crd;
 import org.jdrupes.vmoperator.common.Constants.Status;
+import org.jdrupes.vmoperator.common.Constants.Status.Condition;
+import org.jdrupes.vmoperator.common.Constants.Status.Condition.Reason;
 import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
@@ -200,7 +202,7 @@ public class StatusUpdater extends VmDefUpdater {
             boolean running = event.runState().vmRunning();
             updateCondition(vmDef, Status.COND_RUNNING, running, event.reason(),
                 event.message());
-            JsonObject status = updateCondition(vmDef, Status.COND_BOOTED,
+            JsonObject status = updateCondition(vmDef, Condition.BOOTED,
                 event.runState() == RunState.BOOTED, event.reason(),
                 event.message());
             if (event.runState() == RunState.STARTING) {
@@ -216,11 +218,12 @@ public class StatusUpdater extends VmDefUpdater {
             if (!running) {
                 // In case console connection was still present
                 status.addProperty(Status.CONSOLE_CLIENT, "");
-                updateCondition(from, Status.COND_CONSOLE, false, "VmStopped",
+                updateCondition(from, Condition.CONSOLE_CONNECTED, false,
+                    "VmStopped",
                     "The VM is not running");
 
                 // In case we had an irregular shutdown
-                updateCondition(from, Status.COND_USER_LOGGED_IN, false,
+                updateCondition(from, Condition.USER_LOGGED_IN, false,
                     "VmStopped", "The VM is not running");
                 status.remove(Status.OSINFO);
                 updateCondition(vmDef, "VmopAgentConnected", false, "VmStopped",
@@ -253,22 +256,22 @@ public class StatusUpdater extends VmDefUpdater {
 
     private void updateUserLoggedIn(VmDefinition from) {
         if (loggedInUser == null) {
-            updateCondition(from, Status.COND_USER_LOGGED_IN, false,
-                "NotRequested", "No user to be logged in");
+            updateCondition(from, Condition.USER_LOGGED_IN, false,
+                Reason.NOT_REQUESTED, "No user to be logged in");
             return;
         }
-        if (!from.conditionStatus(Status.COND_VMOP_AGENT).orElse(false)) {
-            updateCondition(from, Status.COND_USER_LOGGED_IN, false,
+        if (!from.conditionStatus(Condition.VMOP_AGENT).orElse(false)) {
+            updateCondition(from, Condition.USER_LOGGED_IN, false,
                 "VmopAgentDisconnected", "Waiting for VMOP agent to connect");
             return;
         }
         if (!from.fromStatus(Status.LOGGED_IN_USER).map(loggedInUser::equals)
             .orElse(false)) {
-            updateCondition(from, Status.COND_USER_LOGGED_IN, false,
+            updateCondition(from, Condition.USER_LOGGED_IN, false,
                 "Processing", "Waiting for user to be logged in");
         }
-        updateCondition(from, Status.COND_USER_LOGGED_IN, true,
-            "UserLoggedIn", "User is logged in");
+        updateCondition(from, Condition.USER_LOGGED_IN, true,
+            Reason.LOGGED_IN, "User is logged in");
     }
 
     /**
