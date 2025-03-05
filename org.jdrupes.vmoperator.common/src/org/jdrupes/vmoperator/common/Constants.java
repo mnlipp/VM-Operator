@@ -75,13 +75,13 @@ public class Constants {
         /** The Constant ASSIGNMENT. */
         public static final String ASSIGNMENT = "assignment";
 
-        /** The Constant COND_RUNNING. */
-        public static final String COND_RUNNING = "Running";
-
         /**
          * Conditions used in Status.
          */
         public static class Condition {
+            /** The Constant COND_RUNNING. */
+            public static final String RUNNING = "Running";
+
             /** The Constant COND_BOOTED. */
             public static final String BOOTED = "Booted";
 

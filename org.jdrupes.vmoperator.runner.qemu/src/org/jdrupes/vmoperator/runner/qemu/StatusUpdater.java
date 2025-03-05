@@ -174,7 +174,7 @@ public class StatusUpdater extends VmDefUpdater {
             }
             status.getAsJsonArray("conditions").asList().stream()
                 .map(cond -> (JsonObject) cond)
-                .filter(cond -> Status.COND_RUNNING
+                .filter(cond -> Condition.RUNNING
                     .equals(cond.get("type").getAsString()))
                 .forEach(cond -> cond.addProperty("observedGeneration",
                     from.getMetadata().getGeneration()));
@@ -200,7 +200,7 @@ public class StatusUpdater extends VmDefUpdater {
         }
         vmStub.updateStatus(from -> {
             boolean running = event.runState().vmRunning();
-            updateCondition(vmDef, Status.COND_RUNNING, running, event.reason(),
+            updateCondition(vmDef, Condition.RUNNING, running, event.reason(),
                 event.message());
             JsonObject status = updateCondition(vmDef, Condition.BOOTED,
                 event.runState() == RunState.BOOTED, event.reason(),
