@@ -39,6 +39,8 @@ import java.util.function.Function;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.jdrupes.vmoperator.common.Constants.Status;
+import org.jdrupes.vmoperator.common.Constants.Status.Condition;
+import org.jdrupes.vmoperator.common.Constants.Status.Condition.Reason;
 import org.jdrupes.vmoperator.util.DataPath;
 
 /**
@@ -363,9 +365,17 @@ public class VmDefinition extends K8sDynamicModel {
     }
 
     /**
-     * Check if the console is accessible. Returns true if the console is
-     * currently unused, used by the given user or if the permissions
-     * allow taking over the console. 
+     * Check if the console is accessible. Always returns `true` if 
+     * the VM is running and the permissions allow taking over the
+     * console. Else, returns `true` if
+     * 
+     *   * the permissions allow access to the console and
+     * 
+     *   * the VM is running and
+     * 
+     *   * the console is currently unused or used by the given user and
+     *     
+     *   * if user login is requested, the given user is logged in.
      *
      * @param user the user
      * @param permissions the permissions
@@ -373,32 +383,29 @@ public class VmDefinition extends K8sDynamicModel {
      */
     @SuppressWarnings("PMD.SimplifyBooleanReturns")
     public boolean consoleAccessible(String user, Set<Permission> permissions) {
-        // If user has takeConsole permission, console is always accessible
-        if (permissions.contains(VmDefinition.Permission.TAKE_CONSOLE)) {
+        // Basic checks
+        if (!conditionStatus(Condition.RUNNING).orElse(false)) {
+            return false;
+        }
+        if (permissions.contains(Permission.TAKE_CONSOLE)) {
             return true;
         }
-
-        // Check if an automatic login is requested. If so, allow access only
-        // if the log in has been established
-        var wantedLogIn = DataPath.<String> get(spec(), "vm", "display",
-            "loggedInUser").orElse(null);
-        if (wantedLogIn != null
-            && !wantedLogIn.equals(status().get(Status.LOGGED_IN_USER))) {
+        if (!permissions.contains(Permission.ACCESS_CONSOLE)) {
             return false;
         }
 
-        // If the console is not in use, allow access
-        if (!conditionStatus("ConsoleConnected").orElse(true)) {
-            return true;
+        // If the console is in use by another user, deny access
+        if (conditionStatus(Condition.CONSOLE_CONNECTED).orElse(false)
+            && !consoleUser().map(cu -> cu.equals(user)).orElse(false)) {
+            return false;
         }
 
-        // If the console is in use by the user, allow access
-        if (consoleUser().map(cu -> cu.equals(user)).orElse(true)) {
+        // If no login is requested, allow access, else check if user matches
+        if (condition(Condition.USER_LOGGED_IN).map(V1Condition::getReason)
+            .map(r -> Reason.NOT_REQUESTED.equals(r)).orElse(false)) {
             return true;
         }
-
-        // Else deny access
-        return false;
+        return user.equals(status().get(Status.LOGGED_IN_USER));
     }
 
     /**

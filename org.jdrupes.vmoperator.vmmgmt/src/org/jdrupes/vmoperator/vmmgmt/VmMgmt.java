@@ -249,14 +249,15 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
             .toBigInteger());
 
         // Build result
+        var perms = vmDef.permissionsFor(user, roles);
         return Map.of("metadata",
             Map.of("namespace", vmDef.namespace(),
                 "name", vmDef.name()),
             "spec", spec,
             "status", status,
             "nodeName", vmDef.extra().map(VmExtraData::nodeName).orElse(""),
-            "permissions", vmDef.permissionsFor(user, roles).stream()
-                .map(VmDefinition.Permission::toString).toList());
+            "consoleAccessible", vmDef.consoleAccessible(user, perms),
+            "permissions", perms);
     }
 
     /**
@@ -438,9 +439,7 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
             }
             break;
         case "openConsole":
-            if (perms.contains(VmDefinition.Permission.ACCESS_CONSOLE)) {
-                openConsole(channel, model, vmChannel, vmDef, user, perms);
-            }
+            openConsole(channel, model, vmChannel, vmDef, user, perms);
             break;
         case "cpus":
             fire(new ModifyVm(vmName, "currentCpus",
