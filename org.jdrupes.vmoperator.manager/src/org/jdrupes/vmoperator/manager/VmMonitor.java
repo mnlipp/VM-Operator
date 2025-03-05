@@ -40,6 +40,7 @@ import org.jdrupes.vmoperator.common.K8sV1ConfigMapStub;
 import org.jdrupes.vmoperator.common.K8sV1PodStub;
 import org.jdrupes.vmoperator.common.K8sV1StatefulSetStub;
 import org.jdrupes.vmoperator.common.VmDefinition;
+import org.jdrupes.vmoperator.common.VmDefinition.Assignment;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
 import org.jdrupes.vmoperator.common.VmDefinitions;
 import org.jdrupes.vmoperator.common.VmExtraData;
@@ -234,10 +235,10 @@ public class VmMonitor extends
                 || !c.vmDefinition().permissionsFor(event.user().orElse(null),
                     event.roles()).isEmpty())
             .filter(c -> event.fromPool().isEmpty()
-                || c.vmDefinition().assignedFrom()
+                || c.vmDefinition().assignment().map(Assignment::pool)
                     .map(p -> p.equals(event.fromPool().get())).orElse(false))
             .filter(c -> event.toUser().isEmpty()
-                || c.vmDefinition().assignedTo()
+                || c.vmDefinition().assignment().map(Assignment::user)
                     .map(u -> u.equals(event.toUser().get())).orElse(false))
             .map(c -> new VmData(c.vmDefinition(), c))
             .toList());
@@ -257,9 +258,9 @@ public class VmMonitor extends
         while (true) {
             // Search for existing assignment.
             var vmQuery = channelManager.channels().stream()
-                .filter(c -> c.vmDefinition().assignedFrom()
+                .filter(c -> c.vmDefinition().assignment().map(Assignment::pool)
                     .map(p -> p.equals(event.fromPool())).orElse(false))
-                .filter(c -> c.vmDefinition().assignedTo()
+                .filter(c -> c.vmDefinition().assignment().map(Assignment::user)
                     .map(u -> u.equals(event.toUser())).orElse(false))
                 .findFirst();
             if (vmQuery.isPresent()) {
@@ -280,7 +281,8 @@ public class VmMonitor extends
             vmQuery = channelManager.channels().stream()
                 .filter(c -> vmPool.isAssignable(c.vmDefinition()))
                 .sorted(Comparator.comparing((VmChannel c) -> c.vmDefinition()
-                    .assignmentLastUsed().orElse(Instant.ofEpochSecond(0)))
+                    .assignment().map(Assignment::lastUsed)
+                    .orElse(Instant.ofEpochSecond(0)))
                     .thenComparing(preferRunning))
                 .findFirst();
 
@@ -293,7 +295,7 @@ public class VmMonitor extends
             var chosenVm = vmQuery.get();
             var vmPipeline = chosenVm.pipeline();
             if (Optional.ofNullable(vmPipeline.fire(new UpdateAssignment(
-                vmPool.name(), event.toUser()), chosenVm).get())
+                vmPool, event.toUser()), chosenVm).get())
                 .orElse(false)) {
                 var vmDef = chosenVm.vmDefinition();
                 event.setResult(new VmData(vmDef, chosenVm));

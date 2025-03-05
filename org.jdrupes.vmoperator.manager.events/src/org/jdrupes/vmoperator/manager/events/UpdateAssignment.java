@@ -18,6 +18,7 @@
 
 package org.jdrupes.vmoperator.manager.events;
 
+import org.jdrupes.vmoperator.common.VmPool;
 import org.jgrapes.core.Event;
 
 /**
@@ -26,31 +27,31 @@ import org.jgrapes.core.Event;
 @SuppressWarnings("PMD.DataClass")
 public class UpdateAssignment extends Event<Boolean> {
 
-    private final String usedPool;
+    private final VmPool fromPool;
     private final String toUser;
 
     /**
      * Instantiates a new event.
      *
-     * @param usedPool the used pool
+     * @param fromPool the pool from which the VM was assigned
      * @param toUser the to user
      */
-    public UpdateAssignment(String usedPool, String toUser) {
-        this.usedPool = usedPool;
+    public UpdateAssignment(VmPool fromPool, String toUser) {
+        this.fromPool = fromPool;
         this.toUser = toUser;
     }
 
     /**
-     * Gets the pool to assign from.
+     * Gets the pool from which the VM was assigned.
      *
      * @return the pool
      */
-    public String usedPool() {
-        return usedPool;
+    public VmPool fromPool() {
+        return fromPool;
     }
 
     /**
-     * Gets the user to assign to.
+     * Gets the user to whom the VM was assigned.
      *
      * @return the to user
      */

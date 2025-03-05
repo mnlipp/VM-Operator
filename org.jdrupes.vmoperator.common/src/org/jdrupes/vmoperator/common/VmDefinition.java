@@ -39,6 +39,8 @@ import java.util.function.Function;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.jdrupes.vmoperator.common.Constants.Status;
+import org.jdrupes.vmoperator.common.Constants.Status.Condition;
+import org.jdrupes.vmoperator.common.Constants.Status.Condition.Reason;
 import org.jdrupes.vmoperator.util.DataPath;
 
 /**
@@ -142,6 +144,16 @@ public class VmDefinition extends K8sDynamicModel {
     }
 
     /**
+     * The assignment information.
+     *
+     * @param pool the pool
+     * @param user the user
+     * @param lastUsed the last used
+     */
+    public record Assignment(String pool, String user, Instant lastUsed) {
+    }
+
+    /**
      * Instantiates a new vm definition.
      *
      * @param delegate the delegate
@@ -215,31 +227,15 @@ public class VmDefinition extends K8sDynamicModel {
     }
 
     /**
-     * The pool that the VM was taken from.
+     * The assignment information.
      *
      * @return the optional
      */
-    public Optional<String> assignedFrom() {
-        return fromStatus(Status.ASSIGNMENT, "pool");
-    }
-
-    /**
-     * The user that the VM was assigned to.
-     *
-     * @return the optional
-     */
-    public Optional<String> assignedTo() {
-        return fromStatus(Status.ASSIGNMENT, "user");
-    }
-
-    /**
-     * Last usage of assigned VM.
-     *
-     * @return the optional
-     */
-    public Optional<Instant> assignmentLastUsed() {
-        return this.<String> fromStatus(Status.ASSIGNMENT, "lastUsed")
-            .map(Instant::parse);
+    public Optional<Assignment> assignment() {
+        return this.<Map<String, Object>> fromStatus(Status.ASSIGNMENT)
+            .filter(m -> !m.isEmpty()).map(a -> new Assignment(
+                a.get("pool").toString(), a.get("user").toString(),
+                Instant.parse(a.get("lastUsed").toString())));
     }
 
     /**
@@ -369,18 +365,47 @@ public class VmDefinition extends K8sDynamicModel {
     }
 
     /**
-     * Check if the console is accessible. Returns true if the console is
-     * currently unused, used by the given user or if the permissions
-     * allow taking over the console. 
+     * Check if the console is accessible. Always returns `true` if 
+     * the VM is running and the permissions allow taking over the
+     * console. Else, returns `true` if
+     * 
+     *   * the permissions allow access to the console and
+     * 
+     *   * the VM is running and
+     * 
+     *   * the console is currently unused or used by the given user and
+     *     
+     *   * if user login is requested, the given user is logged in.
      *
      * @param user the user
      * @param permissions the permissions
      * @return true, if successful
      */
+    @SuppressWarnings("PMD.SimplifyBooleanReturns")
     public boolean consoleAccessible(String user, Set<Permission> permissions) {
-        return !conditionStatus("ConsoleConnected").orElse(true)
-            || consoleUser().map(cu -> cu.equals(user)).orElse(true)
-            || permissions.contains(VmDefinition.Permission.TAKE_CONSOLE);
+        // Basic checks
+        if (!conditionStatus(Condition.RUNNING).orElse(false)) {
+            return false;
+        }
+        if (permissions.contains(Permission.TAKE_CONSOLE)) {
+            return true;
+        }
+        if (!permissions.contains(Permission.ACCESS_CONSOLE)) {
+            return false;
+        }
+
+        // If the console is in use by another user, deny access
+        if (conditionStatus(Condition.CONSOLE_CONNECTED).orElse(false)
+            && !consoleUser().map(cu -> cu.equals(user)).orElse(false)) {
+            return false;
+        }
+
+        // If no login is requested, allow access, else check if user matches
+        if (condition(Condition.USER_LOGGED_IN).map(V1Condition::getReason)
+            .map(r -> Reason.NOT_REQUESTED.equals(r)).orElse(false)) {
+            return true;
+        }
+        return user.equals(status().get(Status.LOGGED_IN_USER));
     }
 
     /**

@@ -1,6 +1,6 @@
 /*
  * VM-Operator
- * Copyright (C) 2024 Michael N. Lipp
+ * Copyright (C) 2024,2025 Michael N. Lipp
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -71,11 +71,10 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
             const poolName = computed(() => previewApi.poolName);
             const vmName = computed(() => previewApi.vmDefinition.name);
             const configured = computed(() => previewApi.vmDefinition.spec);
+            const accessible = computed(() => previewApi.vmDefinition.consoleAccessible);
             const busy = computed(() => previewApi.vmDefinition.spec
                 && (previewApi.vmDefinition.spec.vm.state === 'Running'
-                        && (previewApi.poolName
-                            ? !previewApi.vmDefinition.vmopAgent
-                            : !previewApi.vmDefinition.running)
+                        && (!previewApi.vmDefinition.consoleAccessible)
                     || previewApi.vmDefinition.spec.vm.state === 'Stopped' 
                         && previewApi.vmDefinition.running));
             const startable = computed(() => previewApi.vmDefinition.spec
@@ -87,7 +86,6 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
                 previewApi.vmDefinition.spec.vm.state !== 'Stopped' 
                 && previewApi.vmDefinition.running);
             const running = computed(() => previewApi.vmDefinition.running);
-            const vmopAgent = computed(() => previewApi.vmDefinition.vmopAgent);
             const inUse = computed(() => previewApi.vmDefinition.usedBy != '');
             const permissions = computed(() => previewApi.permissions);
             const osicon = computed(() => {
@@ -123,7 +121,7 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
             };
         
             return { localize, resourceBase, vmAction, poolName, vmName, 
-                configured, busy, startable, stoppable, running, vmopAgent,
+                configured, accessible, busy, startable, stoppable, running, 
                 inUse, permissions, osicon };
         },
         template: `
@@ -132,9 +130,7 @@ window.orgJDrupesVmOperatorVmAccess.initPreview = (previewDom: HTMLElement,
               <tr>
                 <td rowspan="2" style="position: relative"><span
                   style="position: absolute;" :class="{ busy: busy }"
-                  ><img role=button :aria-disabled="(poolName 
-                      ? !vmopAgent : !running)
-                      || !permissions.includes('accessConsole')" 
+                  ><img role=button :aria-disabled="!accessible" 
                     v-on:click="vmAction('openConsole')"
                     :src="resourceBase + (running
                       ? (inUse ? 'computer-in-use.svg' : 'computer.svg') 
@@ -210,14 +206,11 @@ JGConsole.registerConletFunction("org.jdrupes.vmoperator.vmaccess.VmAccess",
             vmDefinition.currentCpus = vmDefinition.status.cpus;
             vmDefinition.currentRam = Number(vmDefinition.status.ram);
             vmDefinition.usedBy = vmDefinition.status.consoleClient || "";
+            // safety fallbacks
             vmDefinition.status.conditions.forEach((condition: any) => {
                 if (condition.type === "Running") {
                     vmDefinition.running = condition.status === "True";
                     vmDefinition.runningConditionSince 
-                        = new Date(condition.lastTransitionTime);
-                } else if (condition.type === "VmopAgentConnected") {
-                    vmDefinition.vmopAgent = condition.status === "True";
-                    vmDefinition.vmopAgentConditionSince 
                         = new Date(condition.lastTransitionTime);
                 }
             })

@@ -232,7 +232,7 @@ public class Controller extends Component {
             if (vmStub.updateStatus(vmDef, from -> {
                 JsonObject status = from.statusJson();
                 var assignment = GsonPtr.to(status).to(Status.ASSIGNMENT);
-                assignment.set("pool", event.usedPool());
+                assignment.set("pool", event.fromPool().name());
                 assignment.set("user", event.toUser());
                 assignment.set("lastUsed", Instant.now().toString());
                 return status;

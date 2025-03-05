@@ -35,6 +35,8 @@ import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import org.jdrupes.vmoperator.common.Constants.Crd;
 import org.jdrupes.vmoperator.common.Constants.Status;
+import org.jdrupes.vmoperator.common.Constants.Status.Condition;
+import org.jdrupes.vmoperator.common.Constants.Status.Condition.Reason;
 import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
@@ -72,6 +74,7 @@ public class StatusUpdater extends VmDefUpdater {
     private boolean guestShutdownStops;
     private boolean shutdownByGuest;
     private VmDefinitionStub vmStub;
+    private String loggedInUser;
 
     /**
      * Instantiates a new status updater.
@@ -143,6 +146,7 @@ public class StatusUpdater extends VmDefUpdater {
     public void onConfigureQemu(ConfigureQemu event)
             throws ApiException {
         guestShutdownStops = event.configuration().guestShutdownStops;
+        loggedInUser = event.configuration().vm.display.loggedInUser;
 
         // Remainder applies only if we have a connection to k8s.
         if (vmStub == null) {
@@ -169,10 +173,12 @@ public class StatusUpdater extends VmDefUpdater {
                 status.addProperty(Status.DISPLAY_PASSWORD_SERIAL, -1);
             }
             status.getAsJsonArray("conditions").asList().stream()
-                .map(cond -> (JsonObject) cond).filter(cond -> "Running"
+                .map(cond -> (JsonObject) cond)
+                .filter(cond -> Condition.RUNNING
                     .equals(cond.get("type").getAsString()))
                 .forEach(cond -> cond.addProperty("observedGeneration",
                     from.getMetadata().getGeneration()));
+            updateUserLoggedIn(from);
             return status;
         }, vmDef);
     }
@@ -194,9 +200,9 @@ public class StatusUpdater extends VmDefUpdater {
         }
         vmStub.updateStatus(from -> {
             boolean running = event.runState().vmRunning();
-            updateCondition(vmDef, "Running", running, event.reason(),
+            updateCondition(vmDef, Condition.RUNNING, running, event.reason(),
                 event.message());
-            JsonObject status = updateCondition(vmDef, "Booted",
+            JsonObject status = updateCondition(vmDef, Condition.BOOTED,
                 event.runState() == RunState.BOOTED, event.reason(),
                 event.message());
             if (event.runState() == RunState.STARTING) {
@@ -212,10 +218,13 @@ public class StatusUpdater extends VmDefUpdater {
             if (!running) {
                 // In case console connection was still present
                 status.addProperty(Status.CONSOLE_CLIENT, "");
-                updateCondition(from, "ConsoleConnected", false, "VmStopped",
+                updateCondition(from, Condition.CONSOLE_CONNECTED, false,
+                    "VmStopped",
                     "The VM is not running");
 
                 // In case we had an irregular shutdown
+                updateCondition(from, Condition.USER_LOGGED_IN, false,
+                    "VmStopped", "The VM is not running");
                 status.remove(Status.OSINFO);
                 updateCondition(vmDef, "VmopAgentConnected", false, "VmStopped",
                     "The VM is not running");
@@ -243,6 +252,26 @@ public class StatusUpdater extends VmDefUpdater {
             .action("StatusUpdate").reason(event.reason())
             .note(event.message());
         K8s.createEvent(apiClient, vmDef, evt);
+    }
+
+    private void updateUserLoggedIn(VmDefinition from) {
+        if (loggedInUser == null) {
+            updateCondition(from, Condition.USER_LOGGED_IN, false,
+                Reason.NOT_REQUESTED, "No user to be logged in");
+            return;
+        }
+        if (!from.conditionStatus(Condition.VMOP_AGENT).orElse(false)) {
+            updateCondition(from, Condition.USER_LOGGED_IN, false,
+                "VmopAgentDisconnected", "Waiting for VMOP agent to connect");
+            return;
+        }
+        if (!from.fromStatus(Status.LOGGED_IN_USER).map(loggedInUser::equals)
+            .orElse(false)) {
+            updateCondition(from, Condition.USER_LOGGED_IN, false,
+                "Processing", "Waiting for user to be logged in");
+        }
+        updateCondition(from, Condition.USER_LOGGED_IN, true,
+            Reason.LOGGED_IN, "User is logged in");
     }
 
     /**
@@ -348,8 +377,10 @@ public class StatusUpdater extends VmDefUpdater {
             return;
         }
         vmStub.updateStatus(from -> {
-            return updateCondition(vmDef, "VmopAgentConnected",
+            var status = updateCondition(vmDef, "VmopAgentConnected",
                 true, "VmopAgentStarted", "The VM operator agent is running");
+            updateUserLoggedIn(from);
+            return status;
         }, vmDef);
     }
 
@@ -365,6 +396,7 @@ public class StatusUpdater extends VmDefUpdater {
             JsonObject status = from.statusJson();
             status.addProperty(Status.LOGGED_IN_USER,
                 event.triggering().user());
+            updateUserLoggedIn(from);
             return status;
         });
     }
@@ -380,6 +412,7 @@ public class StatusUpdater extends VmDefUpdater {
         vmStub.updateStatus(from -> {
             JsonObject status = from.statusJson();
             status.remove(Status.LOGGED_IN_USER);
+            updateUserLoggedIn(from);
             return status;
         });
     }

@@ -201,8 +201,8 @@ data:
           <#if spec.vm.display.outputs?? >
           outputs: ${ spec.vm.display.outputs?c }
           </#if>
-          <#if spec.vm.display.loggedInUser?? >
-          loggedInUser: "${ spec.vm.display.loggedInUser }"
+          <#if loginRequestedFor?? >
+          loggedInUser: "${ loginRequestedFor }"
           </#if>
           <#if spec.vm.display.spice??>
           spice:

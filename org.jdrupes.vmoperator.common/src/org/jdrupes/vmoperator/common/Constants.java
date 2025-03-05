@@ -74,6 +74,37 @@ public class Constants {
 
         /** The Constant ASSIGNMENT. */
         public static final String ASSIGNMENT = "assignment";
+
+        /**
+         * Conditions used in Status.
+         */
+        public static class Condition {
+            /** The Constant COND_RUNNING. */
+            public static final String RUNNING = "Running";
+
+            /** The Constant COND_BOOTED. */
+            public static final String BOOTED = "Booted";
+
+            /** The Constant COND_VMOP_AGENT. */
+            public static final String VMOP_AGENT = "VmopAgentConnected";
+
+            /** The Constant COND_USER_LOGGED_IN. */
+            public static final String USER_LOGGED_IN = "UserLoggedIn";
+
+            /** The Constant COND_CONSOLE. */
+            public static final String CONSOLE_CONNECTED = "ConsoleConnected";
+
+            /**
+             * Reasons used in conditions.
+             */
+            public static class Reason {
+                /** The Constant NOT_REQUESTED. */
+                public static final String NOT_REQUESTED = "NotRequested";
+
+                /** The Constant USER_LOGGED_IN. */
+                public static final String LOGGED_IN = "LoggedIn";
+            }
+        }
     }
 
     /**

@@ -36,6 +36,7 @@ import org.jdrupes.vmoperator.common.K8sDynamicModel;
 import org.jdrupes.vmoperator.common.K8sDynamicModels;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
 import org.jdrupes.vmoperator.common.K8sObserver.ResponseType;
+import org.jdrupes.vmoperator.common.VmDefinition.Assignment;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
 import org.jdrupes.vmoperator.common.VmPool;
 import org.jdrupes.vmoperator.manager.events.GetPools;
@@ -105,7 +106,7 @@ public class PoolMonitor extends
         // When pool is deleted, save VMs in pending
         if (type == ResponseType.DELETED) {
             Optional.ofNullable(pools.get(poolName)).ifPresent(pool -> {
-                pool.setDefined(false);
+                pool.setUndefined();
                 if (pool.vms().isEmpty()) {
                     pools.remove(poolName);
                 }
@@ -129,11 +130,8 @@ public class PoolMonitor extends
 
         // Get pool and merge changes
         var vmPool = pools.computeIfAbsent(poolName, k -> new VmPool(poolName));
-        var newData = client().getJSON().getGson().fromJson(
-            GsonPtr.to(poolModel.data()).to("spec").get(), VmPool.class);
-        vmPool.setRetention(newData.retention());
-        vmPool.setPermissions(newData.permissions());
-        vmPool.setDefined(true);
+        vmPool.defineFrom(client().getJSON().getGson().fromJson(
+            GsonPtr.to(poolModel.data()).to("spec").get(), VmPool.class));
         poolPipeline.fire(new VmPoolChanged(vmPool));
     }
 
@@ -168,7 +166,7 @@ public class PoolMonitor extends
         }
 
         // Sync last usage to console state change if user matches
-        if (vmDef.assignedTo()
+        if (vmDef.assignment().map(Assignment::user)
             .map(at -> at.equals(vmDef.consoleUser().orElse(null)))
             .orElse(true)) {
             return;
@@ -177,8 +175,8 @@ public class PoolMonitor extends
         var ccChange = vmDef.condition("ConsoleConnected")
             .map(cc -> cc.getLastTransitionTime().toInstant());
         if (ccChange
-            .map(tt -> vmDef.assignmentLastUsed().map(alu -> alu.isAfter(tt))
-                .orElse(true))
+            .map(tt -> vmDef.assignment().map(Assignment::lastUsed)
+                .map(alu -> alu.isAfter(tt)).orElse(true))
             .orElse(true)) {
             return;
         }
