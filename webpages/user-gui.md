@@ -15,7 +15,7 @@ The idea of the user view is to provide an intuitive widget that
 allows the users to access their own VMs and to optionally start
 and stop them.
 
-![VM-Viewer](VmAccess-preview.png)
+![VM Access](VmAccess-preview.png)
 
 The configuration options resulting from this seemingly simple
 requirement are unexpectedly complex.
@@ -77,7 +77,8 @@ objects that either specify a role or a user.
 ## Console access
 
 Access to the VM's console is implemented by generating a
-[connection file](https://manpages.debian.org/testing/virt-viewer/remote-viewer.1.en.html#CONNECTION_FILE) for virt-viewer when the user clicks on
+[connection file](https://manpages.debian.org/testing/virt-viewer/remote-viewer.1.en.html#CONNECTION_FILE)
+for virt-viewer when the user clicks on
 the console icon. If automatic open is enabled for this kind of
 files in the browser, the console opens without further user action.
 

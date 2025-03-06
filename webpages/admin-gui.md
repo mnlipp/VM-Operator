@@ -19,4 +19,3 @@ the VMs and adjust the CPU and RAM usages (modifies the definition
 in kubernetes).
 
 ![VM-Operator GUI](VM-Operator-GUI-view.png)
-

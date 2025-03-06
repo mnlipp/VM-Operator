@@ -27,6 +27,7 @@ If you just want to try out things, you can skip the remainder of this
 page and proceed to "[the manager](manager.html)".
 
 ## Motivation
+
 The project was triggered by a remark in the discussion about RedHat
 [dropping SPICE support](https://bugzilla.redhat.com/show_bug.cgi?id=2030592)
 from the RHEL packages. Which means that you have to run Qemu in a
@@ -55,9 +56,11 @@ close to simply deploying the pod (you get the restart and some PVC
 management "for free").
 
 A second look, however, reveals that Kubernetes has more to offer.
-* It has a well defined API for managing resources.
-* It provides access to different kinds of managed storage for the VMs.
-* Its managing features *are* useful for running the component that
+
+  * It has a well defined API for managing resources.
+  * It provides access to different kinds of managed storage for the VMs.
+  * Its managing features *are* useful for running the component that
+  
 manages the pods with the VMs.
 
 And if you use Kubernetes anyway, well then the VMs within Kubernetes

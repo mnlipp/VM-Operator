@@ -192,7 +192,7 @@ import org.jgrapes.util.events.WatchFile;
  */
 @SuppressWarnings({ "PMD.ExcessiveImports", "PMD.AvoidPrintStackTrace",
     "PMD.DataflowAnomalyAnalysis", "PMD.TooManyMethods",
-    "PMD.CouplingBetweenObjects" })
+    "PMD.CouplingBetweenObjects", "PMD.TooManyFields" })
 public class Runner extends Component {
 
     private static final String QEMU = "qemu";
