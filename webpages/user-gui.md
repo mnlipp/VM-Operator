@@ -77,7 +77,8 @@ objects that either specify a role or a user.
 ## Console access
 
 Access to the VM's console is implemented by generating a
-[connection file](https://manpages.debian.org/testing/virt-viewer/remote-viewer.1.en.html#CONNECTION_FILE) for virt-viewer when the user clicks on
+[connection file](https://manpages.debian.org/testing/virt-viewer/remote-viewer.1.en.html#CONNECTION_FILE)
+for virt-viewer when the user clicks on
 the console icon. If automatic open is enabled for this kind of
 files in the browser, the console opens without further user action.
 

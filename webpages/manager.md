@@ -40,7 +40,8 @@ default files for creating these resources using the default namespace
 can be found in the
 [deploy](https://github.com/mnlipp/VM-Operator/tree/main/deploy)
 directory. I recommend to use
-[kustomize](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/) to create your own configuration.
+[kustomize](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/)
+to create your own configuration.
 
 ## Initial Configuration
 
