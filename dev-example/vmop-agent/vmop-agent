@@ -101,6 +101,7 @@ doLogin() {
     -p PAMName=login -p StandardInput=tty -p StandardOutput=journal \
     -p Conflicts="gdm.service getty@tty1.service" \
     -E XDG_RUNTIME_DIR="/run/user/$uid" \
+    -E XDG_CURRENT_DESKTOP=GNOME \
     -p ExecStartPre="/usr/bin/chvt 1" \
     dbus-run-session -- gnome-shell --display-server --wayland
   if [ $? -eq 0 ]; then
