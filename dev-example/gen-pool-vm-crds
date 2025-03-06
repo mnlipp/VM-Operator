@@ -41,7 +41,7 @@ for number in $(seq 1 $count); do
   if [ -z "$prefix" ]; then
     prefix=$(basename $template .tpl.yaml)
   fi
-  name="$prefix$number"
+  name="$prefix$(printf %03d $number)"
   index=$(($number - 1))
   esh -o $destination/$name.yaml $template number=$number index=$index
 done
