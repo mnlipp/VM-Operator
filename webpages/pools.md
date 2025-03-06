@@ -7,12 +7,17 @@ layout: vm-operator
 
 *Since 4.0.0*
 
-Not all VMs are replacements for carefully maintained individual PCs.
-In many workplaces, a standard configuration can be used where 
-user-specific data is kept in each user's home directory on a shared
-file system. In such cases, an alternative to providing individual
-PCs is to offer a pool of VMs and allocate them from the pool to users
-as needed.
+Not all VMs are defined as replacements for carefully maintained
+individual PCs. In many workplaces, a standardardized VM configuration
+can be used where all user-specific data is stored in each user's home
+directory. By using a shared file system for home directories, users
+can login on any VM and find themselves in their personal
+environment.
+
+If only a subset of users require access simultaneously, this makes it
+possible to define a pool of standardardized VMs and dynamically assign
+them to users as needed, eliminating the need to define a dedicated VM
+for each user.
 
 ## Pool definitions
 
@@ -39,18 +44,18 @@ spec:
 ```
 
 The `retention` specifies how long the assignment of a VM from the pool to
-a user is retained after the user closes the console. This allows a user
-to interrupt his work for this period of time without risking that
-another user takes over the VM. The time is specified as
+a user remains valid after the user closes the console. This ensures that
+a user can resume work within this timeframe without the risk of another
+user taking over the VM. The time is specified as
 [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations).
 
 Setting `loginOnAssignment` to `true` triggers automatic login of the
 user (as described in [section auto login](auto-login.html)) when
-the VM is assigned. The `permissions` property defines what a user can
-do with a VM assigned to him.
+the VM is assigned. The `permissions` property specifies the actions
+that users or roles can perform on assigned VMs.
 
 VMs become members of one (or more) pools by adding the pool name to
-property `spec.pools` (an array of strings), e.g.:
+the `spec.pools` array, as shown below:
 
 ```yaml
 apiVersion: "vmoperator.jdrupes.org/v1"
@@ -69,26 +74,26 @@ provide access to a pool instead of to a specific VM.
 
 ![VM Access configuration](ConfigAccess-preview.png){: width="500"}
 
-Assignment happens when the "start" icon is pushed. If the assigned VM
-is not running, it will also be started. The assigned VM's name is
-shown in the widget above the action icons. 
+Assignment happens when the "Start" icon is clicked. If the assigned VM
+is not already running, it will be started automatically. The assigned
+VM's name apears in the widget above the action icons. 
 
 ![VM Access via pool](PoolAccess-preview.png)
 
 Apart from showing the assigned VM, the widget behaves in the same way
-as it does when configured to access a specific VM.
+as when configured for accessing a specific VM.
 
-## Requirements on the guest
+## Guest OS Requirements
 
-Some provisions must be made on the guest to ensure that VMs from
-pools work as expected.
+To ensure proper functionality when using VM pools, certain requirements
+must be met on the guest OS.
 
 ### Shared file system
 
-Mount a shared file system as home file system on all VMs in the pool.
+All VMs in the pool must mount a shared file system as the home directory.
 When using the
 [sample agent](https://github.com/mnlipp/VM-Operator/tree/main/dev-example/vmop-agent),
-the filesystem must support POSIX file access control lists (ACLs).
+the file system must support POSIX file access control lists (ACLs).
 
 ### User management
 
