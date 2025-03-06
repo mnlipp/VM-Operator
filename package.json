@@ -7,6 +7,7 @@
         "documentation": "^14.0.1",
         "install": "^0.13.0",
         "jsdoc": "^4.0.2",
+        "markdownlint": "^0.37.4",
         "node-sass": "^9.0.0",
         "npm": "^8.11.0",
         "rollup": "^4.1.5",
@@ -22,8 +23,8 @@
         "typescript": "^5.2.2"
     },
     "overrides": {
-      "node-gyp": "^10.1.0",
-      "glob": "^9.0.0"
+        "node-gyp": "^10.1.0",
+        "glob": "^9.0.0"
     },
     "eslintConfig": {
         "root": true,
@@ -34,5 +35,8 @@
     },
     "eslintIgnore": [
         "node_modules/**"
-    ]
+    ],
+    "dependencies": {
+        "markdownlint-cli": "^0.44.0"
+    }
 }

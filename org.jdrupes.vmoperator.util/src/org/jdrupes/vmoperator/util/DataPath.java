@@ -18,6 +18,7 @@
 
 package org.jdrupes.vmoperator.util;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -157,11 +158,12 @@ public final class DataPath {
             return (T) copy;
         }
         if (object.getClass().isArray()) {
-            var copy = new ArrayList<>();
-            for (var item : (Object[]) object) {
-                copy.add(deepCopy(item));
+            var copy = Array.newInstance(object.getClass().getComponentType(),
+                Array.getLength(object));
+            for (int i = 0; i < Array.getLength(object); i++) {
+                Array.set(copy, i, deepCopy(Array.get(object, i)));
             }
-            return (T) copy.toArray();
+            return (T) copy;
         }
         if (object instanceof Cloneable) {
             try {

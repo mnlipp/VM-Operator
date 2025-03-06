@@ -44,9 +44,9 @@ A sample configuration file with annotated options can be found
 As the runner implementation uses the
 [JGrapes](https://jgrapes.org/) framework, the file
 follows the framework's
-[conventions](https://jgrapes.org/latest-release/javadoc/org/jgrapes/util/YamlConfigurationStore.html). The top level "`/Runner`" selects
-the component to be configured. Nested within is the information
-to be applied to the component.
+[conventions](https://jgrapes.org/latest-release/javadoc/org/jgrapes/util/YamlConfigurationStore.html).
+The top level "`/Runner`" selects the component to be configured. Nested
+within is the information to be applied to the component.
 
 The main entries in the configuration file are the "template" and
 the "vm" information. The runner processes the
@@ -58,8 +58,8 @@ defines a particular VM type, i.e. it contains the "nasty details"
 that do not need to be modified for some given set of VM instances.
 
 The templates provided with the runner can be found
-[here](https://github.com/mnlipp/VM-Operator/tree/main/org.jdrupes.vmoperator.runner.qemu/templates). When details
-of the VM configuration need modification, a new VM type
+[here](https://github.com/mnlipp/VM-Operator/tree/main/org.jdrupes.vmoperator.runner.qemu/templates).
+When details of the VM configuration need modification, a new VM type
 (i.e. a new template) has to be defined. Authoring a new
 template requires some knowledge about the
 [qemu invocation](https://www.qemu.org/docs/master/system/invocation.html).
@@ -92,7 +92,8 @@ which may be used in a stand-alone development configuration.
 The runner supports adaption to changes of the RAM size (using the
 balloon device) and to changes of the number of CPUs. Note that
 in order to get new CPUs online on Linux guests, you need a
-[udev rule](https://docs.kernel.org/core-api/cpu_hotplug.html#user-space-notification) which is not installed by default[^simplest].
+[udev rule](https://docs.kernel.org/core-api/cpu_hotplug.html#user-space-notification)
+which is not installed by default[^simplest].
 
 The runner also changes the images loaded in CDROM drives. If the
 drive is locked, i.e. if it doesn't respond to the "open tray" command
@@ -101,7 +102,8 @@ the change will be suspended until the VM opens the tray.
 Finally, `powerdownTimeout` can be changed while the qemu process runs.
 
 [^simplest]: The simplest form of the rule is probably:
-    ```
+
+    ```txt
     ACTION=="add", SUBSYSTEM=="cpu", ATTR{online}="1"
     ```
 

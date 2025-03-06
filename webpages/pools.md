@@ -76,7 +76,7 @@ provide access to a pool instead of to a specific VM.
 
 Assignment happens when the "Start" icon is clicked. If the assigned VM
 is not already running, it will be started automatically. The assigned
-VM's name apears in the widget above the action icons. 
+VM's name apears in the widget above the action icons.
 
 ![VM Access via pool](PoolAccess-preview.png)
 

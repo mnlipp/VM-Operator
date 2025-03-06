@@ -1,4 +1,4 @@
-# See https://github.com/DavidAnson/markdownlint/blob/main/schema/.markdownlint.yaml
+# See [rules](https://github.com/DavidAnson/markdownlint/blob/main/schema/.markdownlint.yaml)
 
 # Default state for all rules
 default: true
@@ -27,12 +27,4 @@ MD036: false
   
 # MD043/required-headings : Required heading structure : 
 # https://github.com/DavidAnson/markdownlint/blob/v0.37.4/doc/md043.md
-MD043:
-  # List of headings
-  headings:   [
-      "# Head",
-      "## Item",
-      "### Detail"
-  ]
-  # Match case of headings
-  match_case: false
+MD043: false
