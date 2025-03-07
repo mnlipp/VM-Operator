@@ -209,7 +209,7 @@ data:
 If such a secret for the VM is found, the VM is configured to use
 the display password specified. The display password in the secret
 can be updated while the VM runs[^delay]. Activating/deactivating
-the display password while a VM runs is not supported by Qemu and
+the display password while a VM runs is not supported by QEMU and
 therefore requires stopping the VM, adding/removing the secret and
 restarting the VM.
 
@@ -220,7 +220,7 @@ restarting the VM.
 
 The secret's `data` can have an additional property `data.password-expiry` which
 specifies a (base64 encoded) expiry date for the password. Supported
-values are those defined by qemu (`+n` seconds from now, `n` Unix
+values are those defined by QEMU (`+n` seconds from now, `n` Unix
 timestamp, `never` and `now`).
 
 Unless `spec.vm.display.spice.generateSecret` is set to `false` in the VM
