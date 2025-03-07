@@ -9,19 +9,19 @@ layout: vm-operator
 
 # The Runner
 
-For most use cases, Qemu needs to be started and controlled by another
-program that manages the Qemu process. This program is called the
+For most use cases, QEMU needs to be started and controlled by another
+program that manages the QEMU process. This program is called the
 runner in this context.
 
 The most prominent reason for this second program is that it allows
-a VM to be shutdown cleanly in response to a TERM signal. Qemu handles
+a VM to be shutdown cleanly in response to a TERM signal. QEMU handles
 the TERM signal by flushing all buffers and stopping, leaving the disks in
 a [crash consistent state](https://gitlab.com/qemu-project/qemu/-/issues/148).
 For a graceful shutdown, a parent process must handle the TERM signal, send
 the `system_powerdown` command to the qemu process and wait for its completion.
 
 Another reason for having the runner is that another process needs to be started
-before qemu if the VM is supposed to include a TPM (software TPM).
+before QEMU if the VM is supposed to include a TPM (software TPM).
 
 Finally, we want some kind of higher level interface for applying runtime
 changes to the VM such as changing the CD or configuring the number of

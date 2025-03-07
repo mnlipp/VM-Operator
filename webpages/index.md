@@ -12,10 +12,10 @@ layout: vm-operator
 ![Overview picture](index-pic.svg)
 
 This project provides an easy to use and flexible solution
-for running Qemu/KVM based VMs in Kubernetes pods.
+for running QEMU/KVM based VMs in Kubernetes pods.
 
-The image used for the VM pods combines Qemu and a control program
-for starting and managing the Qemu process. This application is called
+The image used for the VM pods combines QEMU and a control program
+for starting and managing the QEMU process. This application is called
 "[the runner](runner.html)".
 
 While you can deploy a runner manually (or with the help of some
@@ -30,7 +30,7 @@ page and proceed to "[the manager](manager.html)".
 
 The project was triggered by a remark in the discussion about RedHat
 [dropping SPICE support](https://bugzilla.redhat.com/show_bug.cgi?id=2030592)
-from the RHEL packages. Which means that you have to run Qemu in a
+from the RHEL packages. Which means that you have to run QEMU in a
 container on RHEL and derivatives if you want to continue using Spice.
 So KubeVirt comes to mind. But
 [one comment](https://bugzilla.redhat.com/show_bug.cgi?id=2030592#c4)
@@ -38,10 +38,10 @@ mentioned that the [KubeVirt](https://kubevirt.io/) project isn't
 interested in supporting SPICE either.
 
 Time to have a look at alternatives. Libvirt has become a common
-tool to configure and run Qemu. But some of its functionality, notably
+tool to configure and run QEMU. But some of its functionality, notably
 the management of storage for the VMs and networking is already provided
 by Kubernetes. Therefore this project takes a fresh approach of
-running Qemu in a pod using a simple, lightweight manager called "runner".
+running QEMU in a pod using a simple, lightweight manager called "runner".
 Providing resources to the VM is left to Kubernetes mechanisms as
 much as possible.
 
@@ -50,7 +50,7 @@ much as possible.
 VMs are not the typical workload managed by Kubernetes. You can neither
 have replicas nor can the containers simply be restarted without a major
 impact on the "application". So there are many features for managing
-pods that we cannot make use of. Qemu in its container can only be
+pods that we cannot make use of. QEMU in its container can only be
 deployed as a pod or using a stateful set with replica 1, which is rather
 close to simply deploying the pod (you get the restart and some PVC
 management "for free").
