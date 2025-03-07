@@ -29,7 +29,7 @@ layout: vm-operator
     but should be updated.
 
   * The standard [template](./runner.html#stand-alone-configuration) used
-    to generate the QEMU command has been updated. Unless you have enabled
+    to generate the qemu command has been updated. Unless you have enabled
     automatic updates of the template in the VM definition, you have to
     update the template manually. If you're using your own template, you
     have to add a virtual serial port (see the git history of the standard
