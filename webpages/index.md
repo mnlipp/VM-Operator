@@ -1,5 +1,5 @@
 ---
-title: "Run VMs on Kubernetes using QEMU/KVM and SPICE"
+title: "VM-Operator: Easy to use kubernetes operator for QEM/KVM VMs"
 description: >-
   A solution for running VMs on Kubernetes with a web interface for
   admins and users. Focuses on running QEMU/KVM virtual machines and
