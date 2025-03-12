@@ -199,28 +199,31 @@ public class QemuMonitor extends QemuConnector {
     @Handler(priority = 100)
     @SuppressWarnings("PMD.AvoidSynchronizedStatement")
     public void onStop(Stop event) {
-        if (qemuChannel() != null) {
-            // We have a connection to Qemu, attempt ACPI shutdown.
-            event.suspendHandling();
-            suspendedStop = event;
-
-            // Attempt powerdown command. If not confirmed, assume
-            // "hanging" qemu process.
-            powerdownTimer = Components.schedule(t -> {
-                // Powerdown not confirmed
-                logger.fine(() -> "QMP powerdown command has not effect.");
-                synchronized (this) {
-                    powerdownTimer = null;
-                    if (suspendedStop != null) {
-                        suspendedStop.resumeHandling();
-                        suspendedStop = null;
-                    }
-                }
-            }, Duration.ofSeconds(1));
-            logger.fine(() -> "Attempting QMP powerdown.");
-            powerdownStartedAt = Instant.now();
-            fire(new MonitorCommand(new QmpPowerdown()));
+        if (!monitorReady) {
+            logger.fine(() -> "No QMP connection,"
+                + " cannot send powerdown command");
+            return;
         }
+        // We have a connection to Qemu, attempt ACPI shutdown.
+        event.suspendHandling();
+        suspendedStop = event;
+
+        // Attempt powerdown command. If not confirmed, assume
+        // "hanging" qemu process.
+        powerdownTimer = Components.schedule(t -> {
+            // Powerdown not confirmed
+            logger.fine(() -> "QMP powerdown command not confirmed");
+            synchronized (this) {
+                powerdownTimer = null;
+                if (suspendedStop != null) {
+                    suspendedStop.resumeHandling();
+                    suspendedStop = null;
+                }
+            }
+        }, Duration.ofSeconds(1));
+        logger.fine(() -> "Attempting QMP powerdown.");
+        powerdownStartedAt = Instant.now();
+        fire(new MonitorCommand(new QmpPowerdown()));
     }
 
     /**
@@ -238,7 +241,9 @@ public class QemuMonitor extends QemuConnector {
             }
 
             // (Re-)schedule timer as fallback
-            logger.fine(() -> "QMP powerdown confirmed, waiting...");
+            var waitUntil = powerdownStartedAt.plusSeconds(powerdownTimeout);
+            logger.fine(() -> "QMP powerdown confirmed, waiting for"
+                + " termination until " + waitUntil);
             powerdownTimer = Components.schedule(t -> {
                 logger.fine(() -> "Powerdown timeout reached.");
                 synchronized (this) {
@@ -247,7 +252,7 @@ public class QemuMonitor extends QemuConnector {
                         suspendedStop = null;
                     }
                 }
-            }, powerdownStartedAt.plusSeconds(powerdownTimeout));
+            }, waitUntil);
             powerdownConfirmed = true;
         }
     }
