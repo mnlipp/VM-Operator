@@ -139,8 +139,9 @@ public class QemuMonitor extends QemuConnector {
     @SuppressWarnings({ "PMD.AvoidSynchronizedStatement",
         "PMD.AvoidDuplicateLiterals" })
     public void onClosed(Closed<?> event, SocketIOChannel channel) {
-        logger.finer(() -> "Closing QMP socket.");
         super.onClosed(event, channel);
+        logger.finer(() -> "QMP socket closed.");
+        monitorReady = false;
         channel.associated(this, getClass()).ifPresent(qm -> {
             synchronized (this) {
                 if (powerdownTimer != null) {
