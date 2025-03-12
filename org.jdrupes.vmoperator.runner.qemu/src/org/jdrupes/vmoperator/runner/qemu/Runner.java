@@ -192,7 +192,7 @@ import org.jgrapes.util.events.WatchFile;
  */
 @SuppressWarnings({ "PMD.ExcessiveImports", "PMD.AvoidPrintStackTrace",
     "PMD.DataflowAnomalyAnalysis", "PMD.TooManyMethods",
-    "PMD.CouplingBetweenObjects", "PMD.TooManyFields", "PMD.GodClass" })
+    "PMD.CouplingBetweenObjects", "PMD.TooManyFields" })
 public class Runner extends Component {
 
     private static final String QEMU = "qemu";
@@ -362,8 +362,10 @@ public class Runner extends Component {
             // Forward some values to child components
             qemuMonitor.configure(initialConfig.monitorSocket,
                 initialConfig.vm.powerdownTimeout);
-            configureAgentClient(guestAgentClient, "guest-agent-socket");
-            configureAgentClient(vmopAgentClient, "vmop-agent-socket");
+            guestAgentClient.configure(qemuDefinition.command,
+                "guest-agent-socket");
+            vmopAgentClient.configure(qemuDefinition.command,
+                "vmop-agent-socket");
         } catch (IllegalArgumentException | IOException | TemplateException e) {
             logger.log(Level.SEVERE, e, () -> "Invalid configuration: "
                 + e.getMessage());
@@ -484,36 +486,6 @@ public class Runner extends Component {
                 () -> "Cannot start runner: " + e.getMessage());
             fire(new Stop());
         }
-    }
-
-    @SuppressWarnings("PMD.CognitiveComplexity")
-    private void configureAgentClient(AgentConnector client, String chardev) {
-        String id = null;
-        Path path = null;
-        for (var arg : qemuDefinition.command) {
-            if (arg.startsWith("virtserialport,")
-                && arg.contains("chardev=" + chardev)) {
-                for (var prop : arg.split(",")) {
-                    if (prop.startsWith("id=")) {
-                        id = prop.substring(3);
-                    }
-                }
-            }
-            if (arg.startsWith("socket,")
-                && arg.contains("id=" + chardev)) {
-                for (var prop : arg.split(",")) {
-                    if (prop.startsWith("path=")) {
-                        path = Path.of(prop.substring(5));
-                    }
-                }
-            }
-        }
-        if (id == null || path == null) {
-            logger.warning(() -> "Definition of chardev " + chardev
-                + " missing in runner template.");
-            return;
-        }
-        client.configure(id, path);
     }
 
     /**

@@ -20,6 +20,7 @@ package org.jdrupes.vmoperator.runner.qemu;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import org.jdrupes.vmoperator.runner.qemu.events.VserportChangeEvent;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.annotation.Handler;
@@ -52,12 +53,36 @@ public abstract class AgentConnector extends QemuConnector {
      * for the {@link ConfigurationUpdate} event. The values are 
      * forwarded from the {@link Runner} instead.
      *
-     * @param channelId the channel id
-     * @param socketPath the socket path
+     * @param command the command
+     * @param chardev the chardev
      */
-    /* default */ void configure(String channelId, Path socketPath) {
+    @SuppressWarnings("PMD.CognitiveComplexity")
+    protected void configure(List<String> command, String chardev) {
+        Path socketPath = null;
+        for (var arg : command) {
+            if (arg.startsWith("virtserialport,")
+                && arg.contains("chardev=" + chardev)) {
+                for (var prop : arg.split(",")) {
+                    if (prop.startsWith("id=")) {
+                        channelId = prop.substring(3);
+                    }
+                }
+            }
+            if (arg.startsWith("socket,")
+                && arg.contains("id=" + chardev)) {
+                for (var prop : arg.split(",")) {
+                    if (prop.startsWith("path=")) {
+                        socketPath = Path.of(prop.substring(5));
+                    }
+                }
+            }
+        }
+        if (channelId == null || socketPath == null) {
+            logger.warning(() -> "Definition of chardev " + chardev
+                + " missing in runner template.");
+            return;
+        }
         super.configure(socketPath);
-        this.channelId = channelId;
         logger.fine(() -> getClass().getSimpleName() + " configured with"
             + " channelId=" + channelId);
     }
