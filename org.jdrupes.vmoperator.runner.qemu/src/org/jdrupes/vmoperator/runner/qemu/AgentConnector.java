@@ -24,7 +24,6 @@ import java.util.List;
 import org.jdrupes.vmoperator.runner.qemu.events.VserportChangeEvent;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.annotation.Handler;
-import org.jgrapes.util.events.ConfigurationUpdate;
 
 /**
  * A component that handles the communication with an agent
@@ -48,16 +47,14 @@ public abstract class AgentConnector extends QemuConnector {
     }
 
     /**
-     * As the initial configuration of this component depends on the 
-     * configuration of the {@link Runner}, it doesn't have a handler 
-     * for the {@link ConfigurationUpdate} event. The values are 
-     * forwarded from the {@link Runner} instead.
+     * Extracts the channel id and the socket path from the QEMU
+     * command line.
      *
      * @param command the command
      * @param chardev the chardev
      */
     @SuppressWarnings("PMD.CognitiveComplexity")
-    protected void configure(List<String> command, String chardev) {
+    protected void configureConnection(List<String> command, String chardev) {
         Path socketPath = null;
         for (var arg : command) {
             if (arg.startsWith("virtserialport,")
@@ -82,9 +79,9 @@ public abstract class AgentConnector extends QemuConnector {
                 + " missing in runner template.");
             return;
         }
-        super.configure(socketPath);
         logger.fine(() -> getClass().getSimpleName() + " configured with"
             + " channelId=" + channelId);
+        super.configure(socketPath);
     }
 
     /**

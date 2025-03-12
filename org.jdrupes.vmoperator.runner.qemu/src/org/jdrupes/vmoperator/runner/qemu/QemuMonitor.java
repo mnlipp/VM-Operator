@@ -164,12 +164,15 @@ public class QemuMonitor extends QemuConnector {
     @Handler
     @SuppressWarnings("PMD.AvoidSynchronizedStatement")
     public void onMonitorCommand(MonitorCommand event) throws IOException {
-        if (!monitorReady) {
+        // Check prerequisites
+        if (!monitorReady && !(event.command() instanceof QmpCapabilities)) {
             logger.severe(() -> "Premature monitor command (not ready): "
                 + event.command());
             rep().fire(new Stop());
             return;
         }
+
+        // Send the command
         var command = event.command();
         logger.fine(() -> "monitor(out): " + command.toString());
         String asText;

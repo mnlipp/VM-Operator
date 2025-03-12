@@ -29,7 +29,6 @@ import org.jdrupes.vmoperator.runner.qemu.commands.QmpSetDisplayPassword;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpSetPasswordExpiry;
 import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
-import org.jdrupes.vmoperator.runner.qemu.events.QmpConfigured;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.RunState;
 import org.jdrupes.vmoperator.runner.qemu.events.VmopAgentConnected;
 import org.jdrupes.vmoperator.runner.qemu.events.VmopAgentLogIn;
@@ -50,6 +49,7 @@ public class DisplayController extends Component {
     private String currentPassword;
     private String protocol;
     private final Path configDir;
+    private boolean canBeUpdated;
     private boolean vmopAgentConnected;
     private String loggedInUser;
 
@@ -84,19 +84,7 @@ public class DisplayController extends Component {
         if (event.runState() == RunState.STARTING) {
             configurePassword();
         }
-    }
-
-    /**
-     * When the monitor is ready, send QEMU its initial configuration.  
-     * 
-     * @param event the event
-     */
-    @Handler
-    public void onQmpConfigured(QmpConfigured event) {
-        if (pendingConfig != null) {
-            rep.fire(new ConfigureQemu(pendingConfig, state));
-            pendingConfig = null;
-        }
+        canBeUpdated = true;
     }
 
     /**
@@ -128,7 +116,8 @@ public class DisplayController extends Component {
     @Handler
     @SuppressWarnings("PMD.EmptyCatchBlock")
     public void onFileChanged(FileChanged event) {
-        if (event.path().equals(configDir.resolve(DisplaySecret.PASSWORD))) {
+        if (event.path().equals(configDir.resolve(DisplaySecret.PASSWORD))
+            && canBeUpdated) {
             configurePassword();
         }
     }

@@ -303,7 +303,10 @@ public class Runner extends Component {
     }
 
     /**
-     * On configuration update.
+     * Process the initial configuration. The initial configuration
+     * and any subsequent updates will be forwarded to other components
+     * only when the QMP connection is ready
+     * (see @link #onQmpConfigured(QmpConfigured)).
      *
      * @param event the event
      */
@@ -362,9 +365,9 @@ public class Runner extends Component {
             // Forward some values to child components
             qemuMonitor.configure(initialConfig.monitorSocket,
                 initialConfig.vm.powerdownTimeout);
-            guestAgentClient.configure(qemuDefinition.command,
+            guestAgentClient.configureConnection(qemuDefinition.command,
                 "guest-agent-socket");
-            vmopAgentClient.configure(qemuDefinition.command,
+            vmopAgentClient.configureConnection(qemuDefinition.command,
                 "vmop-agent-socket");
         } catch (IllegalArgumentException | IOException | TemplateException e) {
             logger.log(Level.SEVERE, e, () -> "Invalid configuration: "
@@ -441,6 +444,21 @@ public class Runner extends Component {
         fmTemplate.process(model, out);
         logger.finest(() -> "Result of processing template: " + out);
         return yamlMapper.readValue(out.toString(), JsonNode.class);
+    }
+
+    /**
+     * Note ready state and send a {@link ConfigureQemu} event for
+     * any pending configuration (initial or change).  
+     * 
+     * @param event the event
+     */
+    @Handler
+    public void onQmpConfigured(QmpConfigured event) {
+        qmpConfigured = true;
+        if (pendingConfig != null) {
+            rep.fire(new ConfigureQemu(pendingConfig, state));
+            pendingConfig = null;
+        }
     }
 
     /**
@@ -628,19 +646,6 @@ public class Runner extends Component {
         event.associated(FileDescriptor.class, Integer.class).ifPresent(
             fd -> TypedIdKey.associated(channel, LineCollector.class, fd)
                 .ifPresent(lc -> lc.feed(event)));
-    }
-
-    /**
-     * When the monitor is ready, send QEMU its initial configuration.  
-     * 
-     * @param event the event
-     */
-    @Handler
-    public void onQmpConfigured(QmpConfigured event) {
-        if (pendingConfig != null) {
-            rep.fire(new ConfigureQemu(pendingConfig, state));
-            pendingConfig = null;
-        }
     }
 
     /**

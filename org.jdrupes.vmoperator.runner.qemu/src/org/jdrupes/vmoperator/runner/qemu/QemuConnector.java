@@ -202,10 +202,9 @@ public abstract class QemuConnector extends Component {
      * Called when a connection attempt fails.
      *
      * @param event the event
-     * @param channel the channel
      */
     @Handler
-    public void onConnectError(ConnectError event, SocketIOChannel channel) {
+    public void onConnectError(ConnectError event) {
         event.event().associated(this, getClass()).ifPresent(qc -> {
             rep.fire(new Stop());
         });
