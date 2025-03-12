@@ -56,7 +56,7 @@ public class GuestAgentClient extends AgentConnector {
      */
     @Override
     protected void agentConnected() {
-        fire(new GuestAgentCommand(new QmpGuestGetOsinfo()));
+        rep().fire(new GuestAgentCommand(new QmpGuestGetOsinfo()));
     }
 
     /**

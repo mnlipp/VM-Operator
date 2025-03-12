@@ -1,5 +1,5 @@
 ---
-title: "Run VMs on Kubernetes using QEMU/KVM and SPICE"
+title: "VM-Operator: Easy to use kubernetes operator for QEM/KVM VMs"
 description: >-
   A solution for running VMs on Kubernetes with a web interface for
   admins and users. Focuses on running QEMU/KVM virtual machines and
@@ -59,9 +59,8 @@ A second look, however, reveals that Kubernetes has more to offer.
 
   * It has a well defined API for managing resources.
   * It provides access to different kinds of managed storage for the VMs.
-  * Its managing features *are* useful for running the component that
-  
-manages the pods with the VMs.
+  * Its managing features *are* useful for running the component that  
+    manages the pods with the VMs.
 
 And if you use Kubernetes anyway, well then the VMs within Kubernetes
 provide you with a unified view of all (or most of) your workloads,
