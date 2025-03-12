@@ -29,6 +29,7 @@ import org.jdrupes.vmoperator.runner.qemu.commands.QmpSetDisplayPassword;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpSetPasswordExpiry;
 import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
 import org.jdrupes.vmoperator.runner.qemu.events.MonitorCommand;
+import org.jdrupes.vmoperator.runner.qemu.events.QmpConfigured;
 import org.jdrupes.vmoperator.runner.qemu.events.RunnerStateChange.RunState;
 import org.jdrupes.vmoperator.runner.qemu.events.VmopAgentConnected;
 import org.jdrupes.vmoperator.runner.qemu.events.VmopAgentLogIn;
@@ -82,6 +83,19 @@ public class DisplayController extends Component {
         configureLogin();
         if (event.runState() == RunState.STARTING) {
             configurePassword();
+        }
+    }
+
+    /**
+     * When the monitor is ready, send QEMU its initial configuration.  
+     * 
+     * @param event the event
+     */
+    @Handler
+    public void onQmpConfigured(QmpConfigured event) {
+        if (pendingConfig != null) {
+            rep.fire(new ConfigureQemu(pendingConfig, state));
+            pendingConfig = null;
         }
     }
 

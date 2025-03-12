@@ -121,7 +121,7 @@ public abstract class QemuConnector extends Component {
             // qemu running, open socket
             fire(new OpenSocketConnection(
                 UnixDomainSocketAddress.of(socketPath))
-                    .setAssociated(getClass(), this));
+                    .setAssociated(this, this));
         }
     }
 
@@ -137,21 +137,21 @@ public abstract class QemuConnector extends Component {
     @Handler
     public void onClientConnected(ClientConnected event,
             SocketIOChannel channel) {
-        event.openEvent().associated(getClass()).ifPresent(qm -> {
+        event.openEvent().associated(this, getClass()).ifPresent(qc -> {
             qemuChannel = channel;
-            channel.setAssociated(getClass(), this);
+            channel.setAssociated(this, this);
             channel.setAssociated(Writer.class, new ByteBufferWriter(
                 channel).nativeCharset());
             channel.setAssociated(LineCollector.class,
                 new LineCollector()
                     .consumer(line -> {
                         try {
-                            processInput(line);
+                            qc.processInput(line);
                         } catch (IOException e) {
                             throw new UndeclaredThrowableException(e);
                         }
                     }));
-            socketConnected();
+            qc.socketConnected();
         });
     }
 
@@ -206,7 +206,7 @@ public abstract class QemuConnector extends Component {
      */
     @Handler
     public void onConnectError(ConnectError event, SocketIOChannel channel) {
-        event.event().associated(getClass()).ifPresent(qm -> {
+        event.event().associated(this, getClass()).ifPresent(qc -> {
             rep.fire(new Stop());
         });
     }
@@ -219,7 +219,7 @@ public abstract class QemuConnector extends Component {
      */
     @Handler
     public void onInput(Input<?> event, SocketIOChannel channel) {
-        if (channel.associated(getClass()).isEmpty()) {
+        if (channel.associated(this, getClass()).isEmpty()) {
             return;
         }
         channel.associated(LineCollector.class).ifPresent(collector -> {
@@ -243,7 +243,7 @@ public abstract class QemuConnector extends Component {
      */
     @Handler
     public void onClosed(Closed<?> event, SocketIOChannel channel) {
-        channel.associated(getClass()).ifPresent(qm -> {
+        channel.associated(this, getClass()).ifPresent(qm -> {
             qemuChannel = null;
         });
     }

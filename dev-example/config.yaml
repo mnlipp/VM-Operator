@@ -21,8 +21,8 @@
         # Defaults for namespace (VM domain)
         handlers=java.util.logging.ConsoleHandler
         
-        #org.jgrapes.level=FINE
-        #org.jgrapes.core.handlerTracking.level=FINER
+        org.jgrapes.level=FINE
+        org.jgrapes.core.handlerTracking.level=FINER
         
         org.jdrupes.vmoperator.runner.qemu.level=FINEST
         

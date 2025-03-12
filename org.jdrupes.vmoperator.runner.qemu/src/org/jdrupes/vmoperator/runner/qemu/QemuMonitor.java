@@ -61,6 +61,7 @@ public class QemuMonitor extends QemuConnector {
     private Stop suspendedStop;
     private Timer powerdownTimer;
     private boolean powerdownConfirmed;
+    private boolean monitorReady;
 
     /**
      * Instantiates a new QEMU monitor.
@@ -99,7 +100,7 @@ public class QemuMonitor extends QemuConnector {
      */
     @Override
     protected void socketConnected() {
-        fire(new MonitorCommand(new QmpCapabilities()));
+        rep().fire(new MonitorCommand(new QmpCapabilities()));
     }
 
     @Override
@@ -109,6 +110,7 @@ public class QemuMonitor extends QemuConnector {
         try {
             var response = mapper.readValue(line, ObjectNode.class);
             if (response.has("QMP")) {
+                monitorReady = true;
                 rep().fire(new MonitorReady());
                 return;
             }
@@ -137,8 +139,9 @@ public class QemuMonitor extends QemuConnector {
     @SuppressWarnings({ "PMD.AvoidSynchronizedStatement",
         "PMD.AvoidDuplicateLiterals" })
     public void onClosed(Closed<?> event, SocketIOChannel channel) {
+        logger.finer(() -> "Closing QMP socket.");
         super.onClosed(event, channel);
-        channel.associated(QemuMonitor.class).ifPresent(qm -> {
+        channel.associated(this, getClass()).ifPresent(qm -> {
             synchronized (this) {
                 if (powerdownTimer != null) {
                     powerdownTimer.cancel();
@@ -149,6 +152,7 @@ public class QemuMonitor extends QemuConnector {
                 }
             }
         });
+        logger.finer(() -> "QMP socket closed.");
     }
 
     /**
@@ -158,9 +162,14 @@ public class QemuMonitor extends QemuConnector {
      * @throws IOException 
      */
     @Handler
-    @SuppressWarnings({ "PMD.AvoidLiteralsInIfCondition",
-        "PMD.AvoidSynchronizedStatement" })
-    public void onExecQmpCommand(MonitorCommand event) throws IOException {
+    @SuppressWarnings("PMD.AvoidSynchronizedStatement")
+    public void onMonitorCommand(MonitorCommand event) throws IOException {
+        if (!monitorReady) {
+            logger.severe(() -> "Premature monitor command (not ready): "
+                + event.command());
+            rep().fire(new Stop());
+            return;
+        }
         var command = event.command();
         logger.fine(() -> "monitor(out): " + command.toString());
         String asText;

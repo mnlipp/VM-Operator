@@ -192,7 +192,7 @@ import org.jgrapes.util.events.WatchFile;
  */
 @SuppressWarnings({ "PMD.ExcessiveImports", "PMD.AvoidPrintStackTrace",
     "PMD.DataflowAnomalyAnalysis", "PMD.TooManyMethods",
-    "PMD.CouplingBetweenObjects", "PMD.TooManyFields" })
+    "PMD.CouplingBetweenObjects", "PMD.TooManyFields", "PMD.GodClass" })
 public class Runner extends Component {
 
     private static final String QEMU = "qemu";
@@ -214,12 +214,14 @@ public class Runner extends Component {
     @SuppressWarnings("PMD.UseConcurrentHashMap")
     private final File configFile;
     private final Path configDir;
-    private Configuration config = new Configuration();
+    private Configuration initialConfig;
+    private Configuration pendingConfig;
     private final freemarker.template.Configuration fmConfig;
     private CommandDefinition swtpmDefinition;
     private CommandDefinition cloudInitImgDefinition;
     private CommandDefinition qemuDefinition;
     private final QemuMonitor qemuMonitor;
+    private boolean qmpConfigured;
     private final GuestAgentClient guestAgentClient;
     private final VmopAgentClient vmopAgentClient;
     private Integer resetCounter;
@@ -318,27 +320,33 @@ public class Runner extends Component {
             // Special actions for initial configuration (startup)
             if (event instanceof InitialConfiguration) {
                 processInitialConfiguration(newConf);
-                return;
             }
-            logger.fine(() -> "Updating configuration");
-            rep.fire(new ConfigureQemu(newConf, state));
+
+            // Check if to be sent immediately or later
+            if (qmpConfigured) {
+                rep.fire(new ConfigureQemu(newConf, state));
+            } else {
+                pendingConfig = newConf;
+            }
         });
     }
 
     @SuppressWarnings("PMD.LambdaCanBeMethodReference")
     private void processInitialConfiguration(Configuration newConfig) {
         try {
-            config = newConfig;
-            if (!config.check()) {
+            if (!newConfig.check()) {
                 // Invalid configuration, not used, problems already logged.
-                config = null;
+                return;
             }
 
             // Prepare firmware files and add to config
-            setFirmwarePaths();
+            setFirmwarePaths(newConfig);
 
             // Obtain more context data from template
-            var tplData = dataFromTemplate();
+            var tplData = dataFromTemplate(newConfig);
+            initialConfig = newConfig;
+
+            // Configure
             swtpmDefinition = Optional.ofNullable(tplData.get(SWTPM))
                 .map(d -> new CommandDefinition(SWTPM, d)).orElse(null);
             logger.finest(() -> swtpmDefinition.toString());
@@ -352,21 +360,19 @@ public class Runner extends Component {
             logger.finest(() -> cloudInitImgDefinition.toString());
 
             // Forward some values to child components
-            qemuMonitor.configure(config.monitorSocket,
-                config.vm.powerdownTimeout);
+            qemuMonitor.configure(initialConfig.monitorSocket,
+                initialConfig.vm.powerdownTimeout);
             configureAgentClient(guestAgentClient, "guest-agent-socket");
             configureAgentClient(vmopAgentClient, "vmop-agent-socket");
         } catch (IllegalArgumentException | IOException | TemplateException e) {
             logger.log(Level.SEVERE, e, () -> "Invalid configuration: "
                 + e.getMessage());
-            // Don't use default configuration
-            config = null;
         }
     }
 
     @SuppressWarnings({ "PMD.CognitiveComplexity",
         "PMD.DataflowAnomalyAnalysis" })
-    private void setFirmwarePaths() throws IOException {
+    private void setFirmwarePaths(Configuration config) throws IOException {
         JsonNode firmware = defaults.path("firmware").path(config.vm.firmware);
         // Get file for firmware ROM
         JsonNode codePaths = firmware.path("rom");
@@ -396,7 +402,7 @@ public class Runner extends Component {
         }
     }
 
-    private JsonNode dataFromTemplate()
+    private JsonNode dataFromTemplate(Configuration config)
             throws IOException, TemplateNotFoundException,
             MalformedTemplateNameException, ParseException, TemplateException,
             JsonProcessingException, JsonMappingException {
@@ -442,7 +448,7 @@ public class Runner extends Component {
      */
     @Handler(priority = 100)
     public void onStart(Start event) {
-        if (config == null) {
+        if (initialConfig == null) {
             // Missing configuration, fail
             event.cancel(true);
             fire(new Stop());
@@ -458,19 +464,19 @@ public class Runner extends Component {
         try {
             // Store process id
             try (var pidFile = Files.newBufferedWriter(
-                config.runtimeDir.resolve("runner.pid"))) {
+                initialConfig.runtimeDir.resolve("runner.pid"))) {
                 pidFile.write(ProcessHandle.current().pid() + "\n");
             }
 
             // Files to watch for
-            Files.deleteIfExists(config.swtpmSocket);
-            fire(new WatchFile(config.swtpmSocket));
+            Files.deleteIfExists(initialConfig.swtpmSocket);
+            fire(new WatchFile(initialConfig.swtpmSocket));
 
             // Helper files
-            var ticket = Optional.ofNullable(config.vm.display)
+            var ticket = Optional.ofNullable(initialConfig.vm.display)
                 .map(d -> d.spice).map(s -> s.ticket);
             if (ticket.isPresent()) {
-                Files.write(config.runtimeDir.resolve("ticket.txt"),
+                Files.write(initialConfig.runtimeDir.resolve("ticket.txt"),
                     ticket.get().getBytes());
             }
         } catch (IOException e) {
@@ -522,12 +528,12 @@ public class Runner extends Component {
             "Runner has been started"));
         // Start first process(es)
         qemuLatch.add(QemuPreps.Config);
-        if (config.vm.useTpm && swtpmDefinition != null) {
+        if (initialConfig.vm.useTpm && swtpmDefinition != null) {
             startProcess(swtpmDefinition);
             qemuLatch.add(QemuPreps.Tpm);
         }
-        if (config.cloudInit != null) {
-            generateCloudInitImg();
+        if (initialConfig.cloudInit != null) {
+            generateCloudInitImg(initialConfig);
             qemuLatch.add(QemuPreps.CloudInit);
         }
         mayBeStartQemu(QemuPreps.Config);
@@ -546,7 +552,7 @@ public class Runner extends Component {
         }
     }
 
-    private void generateCloudInitImg() {
+    private void generateCloudInitImg(Configuration config) {
         try {
             var cloudInitDir = config.dataDir.resolve("cloud-init");
             cloudInitDir.toFile().mkdir();
@@ -583,7 +589,7 @@ public class Runner extends Component {
     private boolean startProcess(CommandDefinition toStart) {
         logger.info(
             () -> "Starting process: " + String.join(" ", toStart.command));
-        fire(new StartProcess(toStart.command)
+        rep.fire(new StartProcess(toStart.command)
             .setAssociated(CommandDefinition.class, toStart));
         return true;
     }
@@ -597,7 +603,7 @@ public class Runner extends Component {
     @Handler
     public void onFileChanged(FileChanged event) {
         if (event.change() == Kind.CREATED
-            && event.path().equals(config.swtpmSocket)) {
+            && event.path().equals(initialConfig.swtpmSocket)) {
             // swtpm running, maybe start qemu
             mayBeStartQemu(QemuPreps.Tpm);
         }
@@ -620,7 +626,7 @@ public class Runner extends Component {
             .ifPresent(procDef -> {
                 channel.setAssociated(CommandDefinition.class, procDef);
                 try (var pidFile = Files.newBufferedWriter(
-                    config.runtimeDir.resolve(procDef.name + ".pid"))) {
+                    initialConfig.runtimeDir.resolve(procDef.name + ".pid"))) {
                     pidFile.write(channel.process().toHandle().pid() + "\n");
                 } catch (IOException e) {
                     throw new UndeclaredThrowableException(e);
@@ -659,7 +665,10 @@ public class Runner extends Component {
      */
     @Handler
     public void onQmpConfigured(QmpConfigured event) {
-        rep.fire(new ConfigureQemu(config, state));
+        if (pendingConfig != null) {
+            rep.fire(new ConfigureQemu(pendingConfig, state));
+            pendingConfig = null;
+        }
     }
 
     /**
@@ -791,7 +800,7 @@ public class Runner extends Component {
             logger.log(Level.WARNING, e, () -> "Proper shutdown failed.");
         }
 
-        Optional.ofNullable(config).map(c -> c.runtimeDir)
+        Optional.ofNullable(initialConfig).map(c -> c.runtimeDir)
             .ifPresent(runtimeDir -> {
                 try {
                     Files.walk(runtimeDir).sorted(Comparator.reverseOrder())
