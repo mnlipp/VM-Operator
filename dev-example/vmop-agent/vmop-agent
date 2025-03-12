@@ -1,5 +1,8 @@
 #!/usr/bin/bash
 
+# Note that this script requires "jq" to be installed and a version
+# of loginctl that accepts the "-j" option.
+
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --path) shift; ttyPath="$1";;

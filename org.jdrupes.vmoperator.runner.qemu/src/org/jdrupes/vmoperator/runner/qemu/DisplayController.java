@@ -49,6 +49,7 @@ public class DisplayController extends Component {
     private String currentPassword;
     private String protocol;
     private final Path configDir;
+    private boolean canBeUpdated;
     private boolean vmopAgentConnected;
     private String loggedInUser;
 
@@ -83,6 +84,7 @@ public class DisplayController extends Component {
         if (event.runState() == RunState.STARTING) {
             configurePassword();
         }
+        canBeUpdated = true;
     }
 
     /**
@@ -114,7 +116,8 @@ public class DisplayController extends Component {
     @Handler
     @SuppressWarnings("PMD.EmptyCatchBlock")
     public void onFileChanged(FileChanged event) {
-        if (event.path().equals(configDir.resolve(DisplaySecret.PASSWORD))) {
+        if (event.path().equals(configDir.resolve(DisplaySecret.PASSWORD))
+            && canBeUpdated) {
             configurePassword();
         }
     }

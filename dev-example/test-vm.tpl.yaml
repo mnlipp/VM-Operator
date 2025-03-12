@@ -8,9 +8,9 @@ metadata:
   
 spec:
   image:
-    repository: ghcr.io
-    path: mnlipp/org.jdrupes.vmoperator.runner.qemu-alpine
-    version: latest
+#    source: ghcr.io/mnlipp/org.jdrupes.vmoperator.runner.qemu-arch:3.3.1
+#    source: registry.mnl.de/org/jdrupes/vm-operator/org.jdrupes.vmoperator.runner.qemu-arch:testing
+    source: docker-registry.lan.mnl.de/vmoperator/org.jdrupes.vmoperator.runner.qemu-arch:feature-pools
     pullPolicy: Always
 
   permissions:
@@ -31,8 +31,8 @@ spec:
     bootMenu: true
     maximumCpus: 4
     currentCpus: 2
-    maximumRam: 4Gi
-    currentRam: 3Gi
+    maximumRam: 6Gi
+    currentRam: 4Gi
   
     networks:
     # No bridge on TC1
