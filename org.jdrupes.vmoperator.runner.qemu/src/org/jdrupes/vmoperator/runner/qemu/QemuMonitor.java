@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.logging.Level;
+import org.jdrupes.vmoperator.runner.qemu.Constants.ProcessName;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCapabilities;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCommand;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpPowerdown;
@@ -259,7 +260,7 @@ public class QemuMonitor extends QemuConnector {
     @SuppressWarnings("PMD.AvoidSynchronizedStatement")
     public void onProcessExited(ProcessExited event) {
         if (!event.startedBy().associated(CommandDefinition.class)
-            .map(cd -> Runner.QEMU.equals(cd.name())).orElse(false)) {
+            .map(cd -> ProcessName.QEMU.equals(cd.name())).orElse(false)) {
             return;
         }
         synchronized (this) {
