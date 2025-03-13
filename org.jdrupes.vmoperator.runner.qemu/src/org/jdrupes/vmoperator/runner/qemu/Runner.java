@@ -1,6 +1,6 @@
 /*
  * VM-Operator
- * Copyright (C) 2023,2024 Michael N. Lipp
+ * Copyright (C) 2023,2025 Michael N. Lipp
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -57,6 +57,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import org.jdrupes.vmoperator.common.Constants.DisplaySecret;
+import org.jdrupes.vmoperator.runner.qemu.Constants.ProcessName;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCont;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpReset;
 import org.jdrupes.vmoperator.runner.qemu.events.ConfigureQemu;
@@ -195,9 +196,6 @@ import org.jgrapes.util.events.WatchFile;
     "PMD.CouplingBetweenObjects", "PMD.TooManyFields" })
 public class Runner extends Component {
 
-    private static final String QEMU = "qemu";
-    private static final String SWTPM = "swtpm";
-    private static final String CLOUD_INIT_IMG = "cloudInitImg";
     private static final String TEMPLATE_DIR
         = "/opt/" + APP_NAME.replace("-", "") + "/templates";
     private static final String DEFAULT_TEMPLATE
@@ -313,6 +311,7 @@ public class Runner extends Component {
     @Handler
     public void onConfigurationUpdate(ConfigurationUpdate event) {
         event.structured(componentPath()).ifPresent(c -> {
+            logger.fine(() -> "Runner configuratation updated");
             var newConf = yamlMapper.convertValue(c, Configuration.class);
 
             // Add some values from other sources to configuration
@@ -350,15 +349,19 @@ public class Runner extends Component {
             initialConfig = newConfig;
 
             // Configure
-            swtpmDefinition = Optional.ofNullable(tplData.get(SWTPM))
-                .map(d -> new CommandDefinition(SWTPM, d)).orElse(null);
+            swtpmDefinition
+                = Optional.ofNullable(tplData.get(ProcessName.SWTPM))
+                    .map(d -> new CommandDefinition(ProcessName.SWTPM, d))
+                    .orElse(null);
             logger.finest(() -> swtpmDefinition.toString());
-            qemuDefinition = Optional.ofNullable(tplData.get(QEMU))
-                .map(d -> new CommandDefinition(QEMU, d)).orElse(null);
+            qemuDefinition = Optional.ofNullable(tplData.get(ProcessName.QEMU))
+                .map(d -> new CommandDefinition(ProcessName.QEMU, d))
+                .orElse(null);
             logger.finest(() -> qemuDefinition.toString());
             cloudInitImgDefinition
-                = Optional.ofNullable(tplData.get(CLOUD_INIT_IMG))
-                    .map(d -> new CommandDefinition(CLOUD_INIT_IMG, d))
+                = Optional.ofNullable(tplData.get(ProcessName.CLOUD_INIT_IMG))
+                    .map(d -> new CommandDefinition(ProcessName.CLOUD_INIT_IMG,
+                        d))
                     .orElse(null);
             logger.finest(() -> cloudInitImgDefinition.toString());
 

@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.logging.Level;
+import org.jdrupes.vmoperator.runner.qemu.Constants.ProcessName;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCapabilities;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpCommand;
 import org.jdrupes.vmoperator.runner.qemu.commands.QmpPowerdown;
@@ -42,6 +43,7 @@ import org.jgrapes.core.Components.Timer;
 import org.jgrapes.core.annotation.Handler;
 import org.jgrapes.core.events.Stop;
 import org.jgrapes.io.events.Closed;
+import org.jgrapes.io.events.ProcessExited;
 import org.jgrapes.net.SocketIOChannel;
 import org.jgrapes.util.events.ConfigurationUpdate;
 
@@ -136,24 +138,12 @@ public class QemuMonitor extends QemuConnector {
      * @param event the event
      */
     @Handler
-    @SuppressWarnings({ "PMD.AvoidSynchronizedStatement",
-        "PMD.AvoidDuplicateLiterals" })
     public void onClosed(Closed<?> event, SocketIOChannel channel) {
-        super.onClosed(event, channel);
-        logger.finer(() -> "QMP socket closed.");
-        monitorReady = false;
         channel.associated(this, getClass()).ifPresent(qm -> {
-            synchronized (this) {
-                if (powerdownTimer != null) {
-                    powerdownTimer.cancel();
-                }
-                if (suspendedStop != null) {
-                    suspendedStop.resumeHandling();
-                    suspendedStop = null;
-                }
-            }
+            super.onClosed(event, channel);
+            logger.finer(() -> "QMP socket closed.");
+            monitorReady = false;
         });
-        logger.finer(() -> "QMP socket closed.");
     }
 
     /**
@@ -163,7 +153,8 @@ public class QemuMonitor extends QemuConnector {
      * @throws IOException 
      */
     @Handler
-    @SuppressWarnings("PMD.AvoidSynchronizedStatement")
+    @SuppressWarnings({ "PMD.AvoidSynchronizedStatement",
+        "PMD.AvoidDuplicateLiterals" })
     public void onMonitorCommand(MonitorCommand event) throws IOException {
         // Check prerequisites
         if (!monitorReady && !(event.command() instanceof QmpCapabilities)) {
@@ -205,14 +196,22 @@ public class QemuMonitor extends QemuConnector {
                 + " cannot send powerdown command");
             return;
         }
-        // We have a connection to Qemu, attempt ACPI shutdown.
+
+        // We have a connection to Qemu, attempt ACPI shutdown if time left
+        powerdownStartedAt = event.associated(Instant.class).orElseGet(() -> {
+            var now = Instant.now();
+            event.setAssociated(Instant.class, now);
+            return now;
+        });
+        if (powerdownStartedAt.plusSeconds(powerdownTimeout)
+            .isBefore(Instant.now())) {
+            return;
+        }
         event.suspendHandling();
         suspendedStop = event;
 
-        // Attempt powerdown command. If not confirmed, assume
-        // "hanging" qemu process.
+        // Send command. If not confirmed, assume "hanging" qemu process.
         powerdownTimer = Components.schedule(t -> {
-            // Powerdown not confirmed
             logger.fine(() -> "QMP powerdown command not confirmed");
             synchronized (this) {
                 powerdownTimer = null;
@@ -221,14 +220,15 @@ public class QemuMonitor extends QemuConnector {
                     suspendedStop = null;
                 }
             }
-        }, Duration.ofSeconds(1));
-        logger.fine(() -> "Attempting QMP powerdown.");
-        powerdownStartedAt = Instant.now();
-        fire(new MonitorCommand(new QmpPowerdown()));
+        }, Duration.ofSeconds(5));
+        logger.fine(() -> "Attempting QMP (ACPI) powerdown.");
+        rep().fire(new MonitorCommand(new QmpPowerdown()));
     }
 
     /**
-     * On powerdown event.
+     * When the powerdown event is confirmed, wait for termination
+     * or timeout. Termination is detected by the qemu process exiting
+     * (see {@link #onProcessExited(ProcessExited)}).
      *
      * @param event the event
      */
@@ -248,6 +248,7 @@ public class QemuMonitor extends QemuConnector {
             powerdownTimer = Components.schedule(t -> {
                 logger.fine(() -> "Powerdown timeout reached.");
                 synchronized (this) {
+                    powerdownTimer = null;
                     if (suspendedStop != null) {
                         suspendedStop.resumeHandling();
                         suspendedStop = null;
@@ -255,6 +256,29 @@ public class QemuMonitor extends QemuConnector {
                 }
             }, waitUntil);
             powerdownConfirmed = true;
+        }
+    }
+
+    /**
+     * On process exited.
+     *
+     * @param event the event
+     */
+    @Handler
+    @SuppressWarnings("PMD.AvoidSynchronizedStatement")
+    public void onProcessExited(ProcessExited event) {
+        if (!event.startedBy().associated(CommandDefinition.class)
+            .map(cd -> ProcessName.QEMU.equals(cd.name())).orElse(false)) {
+            return;
+        }
+        synchronized (this) {
+            if (powerdownTimer != null) {
+                powerdownTimer.cancel();
+            }
+            if (suspendedStop != null) {
+                suspendedStop.resumeHandling();
+                suspendedStop = null;
+            }
         }
     }
 
