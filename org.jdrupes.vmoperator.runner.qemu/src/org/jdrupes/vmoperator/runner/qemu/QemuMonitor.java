@@ -197,12 +197,20 @@ public class QemuMonitor extends QemuConnector {
             return;
         }
 
-        // We have a connection to Qemu, attempt ACPI shutdown.
+        // We have a connection to Qemu, attempt ACPI shutdown if time left
+        powerdownStartedAt = event.associated(Instant.class).orElseGet(() -> {
+            var now = Instant.now();
+            event.setAssociated(Instant.class, now);
+            return now;
+        });
+        if (powerdownStartedAt.plusSeconds(powerdownTimeout)
+            .isBefore(Instant.now())) {
+            return;
+        }
         event.suspendHandling();
         suspendedStop = event;
 
-        // Attempt powerdown command. If not confirmed, assume
-        // "hanging" qemu process.
+        // Send command. If not confirmed, assume "hanging" qemu process.
         powerdownTimer = Components.schedule(t -> {
             logger.fine(() -> "QMP powerdown command not confirmed");
             synchronized (this) {
@@ -213,9 +221,8 @@ public class QemuMonitor extends QemuConnector {
                 }
             }
         }, Duration.ofSeconds(5));
-        logger.fine(() -> "Attempting QMP powerdown.");
-        powerdownStartedAt = Instant.now();
-        fire(new MonitorCommand(new QmpPowerdown()));
+        logger.fine(() -> "Attempting QMP (ACPI) powerdown.");
+        rep().fire(new MonitorCommand(new QmpPowerdown()));
     }
 
     /**
@@ -241,6 +248,7 @@ public class QemuMonitor extends QemuConnector {
             powerdownTimer = Components.schedule(t -> {
                 logger.fine(() -> "Powerdown timeout reached.");
                 synchronized (this) {
+                    powerdownTimer = null;
                     if (suspendedStop != null) {
                         suspendedStop.resumeHandling();
                         suspendedStop = null;
