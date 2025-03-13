@@ -195,9 +195,9 @@ import org.jgrapes.util.events.WatchFile;
     "PMD.CouplingBetweenObjects", "PMD.TooManyFields" })
 public class Runner extends Component {
 
-    private static final String QEMU = "qemu";
-    private static final String SWTPM = "swtpm";
-    private static final String CLOUD_INIT_IMG = "cloudInitImg";
+    public static final String QEMU = "qemu";
+    public static final String SWTPM = "swtpm";
+    public static final String CLOUD_INIT_IMG = "cloudInitImg";
     private static final String TEMPLATE_DIR
         = "/opt/" + APP_NAME.replace("-", "") + "/templates";
     private static final String DEFAULT_TEMPLATE
