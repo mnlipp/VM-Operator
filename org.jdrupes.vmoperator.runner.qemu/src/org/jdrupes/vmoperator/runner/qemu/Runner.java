@@ -311,6 +311,7 @@ public class Runner extends Component {
     @Handler
     public void onConfigurationUpdate(ConfigurationUpdate event) {
         event.structured(componentPath()).ifPresent(c -> {
+            logger.fine(() -> "Runner configuratation updated");
             var newConf = yamlMapper.convertValue(c, Configuration.class);
 
             // Add some values from other sources to configuration
