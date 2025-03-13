@@ -196,6 +196,7 @@ public class QemuMonitor extends QemuConnector {
                 + " cannot send powerdown command");
             return;
         }
+
         // We have a connection to Qemu, attempt ACPI shutdown.
         event.suspendHandling();
         suspendedStop = event;
@@ -203,7 +204,6 @@ public class QemuMonitor extends QemuConnector {
         // Attempt powerdown command. If not confirmed, assume
         // "hanging" qemu process.
         powerdownTimer = Components.schedule(t -> {
-            // Powerdown not confirmed
             logger.fine(() -> "QMP powerdown command not confirmed");
             synchronized (this) {
                 powerdownTimer = null;
@@ -212,7 +212,7 @@ public class QemuMonitor extends QemuConnector {
                     suspendedStop = null;
                 }
             }
-        }, Duration.ofSeconds(1));
+        }, Duration.ofSeconds(5));
         logger.fine(() -> "Attempting QMP powerdown.");
         powerdownStartedAt = Instant.now();
         fire(new MonitorCommand(new QmpPowerdown()));
