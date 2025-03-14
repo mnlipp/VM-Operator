@@ -2,7 +2,7 @@ apiVersion: "vmoperator.jdrupes.org/v1"
 kind: VirtualMachine
 metadata:
   namespace: vmop-dev
-  name: test-vm<%= ${number} %>
+  name: test-vm<%= $(printf "%02d" ${number}) %>
   annotations:
     argocd.argoproj.io/sync-wave: "20"
   
