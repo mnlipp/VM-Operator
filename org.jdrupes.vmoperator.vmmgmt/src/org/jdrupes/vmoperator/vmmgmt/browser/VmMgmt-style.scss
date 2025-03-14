@@ -82,7 +82,7 @@
     padding-left: 0;
 
     table {
-      display: inline;
+      display: inline-block;
       
       td:nth-child(2) {
         min-width: 7em;
@@ -96,6 +96,12 @@
         margin-left: 0.5em;
         color: var(--danger);
       }
+    }
+    
+    p {
+      display: inline-block;
+      margin: 0.25rem 0.5rem 0.25rem 0.5rem;
+      vertical-align: top;
     }
   }
 }
