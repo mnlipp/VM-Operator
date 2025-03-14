@@ -220,6 +220,9 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
         new K8sObserver<>(objectClass, objectListClass, client,
             K8s.preferred(context, version), namespace, options)
                 .handler((c, r) -> {
+                    logger.fine(() -> "Resource " + context.getKind()
+                        + "/" + r.object.getMetadata().getName() + " "
+                        + r.type);
                     handleChange(c, r);
                 }).onTerminated((o, t) -> {
                     if (observerCounter.decrementAndGet() == 0) {
