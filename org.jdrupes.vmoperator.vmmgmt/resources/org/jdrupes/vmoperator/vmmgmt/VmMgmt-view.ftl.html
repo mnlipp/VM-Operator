@@ -127,15 +127,16 @@
                   ><span>{{ cic.error }}</span></form></td>
               </tr>
             </table>
-            <table class="table--basic table--basic--autoStriped">
-              <tr>
-                <td colspan="2">{{ entry.status?.osinfo?.["pretty-name"] || "" }}</td>
-              </tr>
-              <tr>
-                <td>{{ localize("usedFrom") }}</td>
-                <td>{{ entry.usedFrom }}</td>
-              </tr>
-            </table>
+            <p>
+              <template v-if="entry.status?.runnerVersion">
+                {{ localize("runnerVersion") }}:
+                {{ entry.status.runnerVersion }}<br></template>
+              <template v-if="entry.status?.osinfo">
+                {{ localize("guestOs") }}:
+                {{ entry.status?.osinfo?.["pretty-name"] || "" }}<br></template>
+              <template v-if="entry.usedFrom">{{ localize("usedFrom") }}:
+                {{ entry.usedFrom }}<br></template>
+            </p>
           </td>
         </tr>
       </template>

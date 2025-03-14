@@ -215,8 +215,6 @@ public class Reconciler extends Component {
             throws ApiException, TemplateException, IOException {
         // Ownership relationships takes care of deletions
         if (event.type() == K8sObserver.ResponseType.DELETED) {
-            logger.fine(
-                () -> "VM \"" + event.vmDefinition().name() + "\" deleted");
             return;
         }
 

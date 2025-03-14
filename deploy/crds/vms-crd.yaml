@@ -1470,6 +1470,10 @@ spec:
               type: object
               default: {}
               properties:
+                runnerVersion:
+                  description: >-
+                    The version string of the runner.
+                  type: string
                 cpus:
                   description: >-
                     Number of CPUs currently in use.

@@ -205,13 +205,13 @@ public class VmMonitor extends
                 = K8sV1PodStub.list(client, namespace(), podSearch);
             for (var podStub : podList) {
                 var nodeName = podStub.model().get().getSpec().getNodeName();
-                logger.fine(() -> "Adding node name " + nodeName
+                logger.finer(() -> "Adding node name " + nodeName
                     + " to VM info for " + vmDef.name());
                 @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
                 var addrs = new ArrayList<String>();
                 podStub.model().get().getStatus().getPodIPs().stream()
                     .map(ip -> ip.getIp()).forEach(addrs::add);
-                logger.fine(() -> "Adding node addresses " + addrs
+                logger.finer(() -> "Adding node addresses " + addrs
                     + " to VM info for " + vmDef.name());
                 extra.nodeInfo(nodeName, addrs);
             }

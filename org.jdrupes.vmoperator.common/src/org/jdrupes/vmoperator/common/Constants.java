@@ -50,6 +50,9 @@ public class Constants {
      * Status related constants.
      */
     public static class Status {
+        /** The Constant RUNNER_VERSION. */
+        public static final String RUNNER_VERSION = "runnerVersion";
+
         /** The Constant CPUS. */
         public static final String CPUS = "cpus";
 

@@ -91,6 +91,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         }
 
         // Create pod. First combine template and data and parse result
+        logger.fine(() -> "Create/update pod " + podStub.name());
         var fmTemplate = fmConfig.getTemplate("runnerPod.ftl.yaml");
         StringWriter out = new StringWriter();
         fmTemplate.process(model, out);
