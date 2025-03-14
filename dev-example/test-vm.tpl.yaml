@@ -13,6 +13,9 @@ spec:
 #    source: docker-registry.lan.mnl.de/vmoperator/org.jdrupes.vmoperator.runner.qemu-arch:latest
     pullPolicy: Always
 
+  runnerTemplate:
+    update: true
+    
   permissions:
   - role: admin
     may: 
