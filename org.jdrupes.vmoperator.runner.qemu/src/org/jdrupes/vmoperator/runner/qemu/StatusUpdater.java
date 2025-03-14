@@ -31,6 +31,7 @@ import io.kubernetes.client.openapi.JSON;
 import io.kubernetes.client.openapi.models.EventsV1Event;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Optional;
 import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import org.jdrupes.vmoperator.common.Constants.Crd;
@@ -124,6 +125,9 @@ public class StatusUpdater extends VmDefUpdater {
             observedGeneration = vmDef.getMetadata().getGeneration();
             vmStub.updateStatus(from -> {
                 JsonObject status = from.statusJson();
+                status.addProperty(Status.RUNNER_VERSION, Optional.ofNullable(
+                    Runner.class.getPackage().getImplementationVersion())
+                    .orElse("(unknown)"));
                 status.remove(Status.LOGGED_IN_USER);
                 return status;
             });
