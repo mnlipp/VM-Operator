@@ -8,9 +8,9 @@ metadata:
   
 spec:
   image:
-    source: ghcr.io/mnlipp/org.jdrupes.vmoperator.runner.qemu-arch:latest
+#    source: ghcr.io/mnlipp/org.jdrupes.vmoperator.runner.qemu-arch:latest
 #    source: registry.mnl.de/org/jdrupes/vm-operator/org.jdrupes.vmoperator.runner.qemu-arch:testing
-#    source: docker-registry.lan.mnl.de/vmoperator/org.jdrupes.vmoperator.runner.qemu-arch:latest
+    source: docker-registry.lan.mnl.de/vmoperator/org.jdrupes.vmoperator.runner.qemu-arch:feature-auto-login
     pullPolicy: Always
 
   permissions:

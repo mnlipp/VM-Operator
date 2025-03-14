@@ -27,12 +27,9 @@ import freemarker.template.SimpleScalar;
 import freemarker.template.TemplateException;
 import freemarker.template.TemplateExceptionHandler;
 import freemarker.template.TemplateMethodModelEx;
-import freemarker.template.TemplateModel;
 import freemarker.template.TemplateModelException;
-import freemarker.template.utility.DeepUnwrap;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
@@ -226,13 +223,12 @@ public class Reconciler extends Component {
         // Create model for processing templates
         Map<String, Object> model
             = prepareModel(channel.client(), event.vmDefinition());
-        var configMap = cmReconciler.reconcile(model, channel);
+        cmReconciler.reconcile(model, channel);
 
         // The remaining reconcilers depend only on changes of the spec part.
         if (!event.specChanged()) {
             return;
         }
-        model.put("cm", configMap);
         dsReconciler.reconcile(event, model, channel);
         // Manage (eventual) removal of stateful set.
         stsReconciler.reconcile(event, model, channel);
@@ -279,7 +275,6 @@ public class Reconciler extends Component {
         model.put("parseQuantity", parseQuantityModel);
         model.put("formatMemory", formatMemoryModel);
         model.put("imageLocation", imgageLocationModel);
-        model.put("adjustCloudInitMeta", adjustCloudInitMetaModel);
         model.put("toJson", toJsonModel);
         return model;
     }
@@ -419,30 +414,6 @@ public class Reconciler extends Component {
                     logger.warning(() -> "Invalid CDROM image: " + image);
                 }
                 return image;
-            }
-        };
-
-    private final TemplateMethodModelEx adjustCloudInitMetaModel
-        = new TemplateMethodModelEx() {
-            @Override
-            @SuppressWarnings("PMD.PreserveStackTrace")
-            public Object exec(@SuppressWarnings("rawtypes") List arguments)
-                    throws TemplateModelException {
-                @SuppressWarnings("unchecked")
-                var res = new HashMap<>((Map<String, Object>) DeepUnwrap
-                    .unwrap((TemplateModel) arguments.get(0)));
-                var metadata
-                    = (V1ObjectMeta) ((AdapterTemplateModel) arguments.get(1))
-                        .getAdaptedObject(Object.class);
-                if (!res.containsKey("instance-id")) {
-                    res.put("instance-id",
-                        Optional.ofNullable(metadata.getResourceVersion())
-                            .map(s -> "v" + s).orElse("v1"));
-                }
-                if (!res.containsKey("local-hostname")) {
-                    res.put("local-hostname", metadata.getName());
-                }
-                return res;
             }
         };
 

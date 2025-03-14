@@ -19,11 +19,17 @@
 package org.jdrupes.vmoperator.manager;
 
 import com.google.gson.JsonObject;
+import freemarker.template.AdapterTemplateModel;
 import freemarker.template.Configuration;
 import freemarker.template.TemplateException;
+import freemarker.template.TemplateMethodModelEx;
+import freemarker.template.TemplateModel;
+import freemarker.template.TemplateModelException;
+import freemarker.template.utility.DeepUnwrap;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesApi;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import io.kubernetes.client.util.generic.dynamic.Dynamics;
@@ -31,7 +37,11 @@ import io.kubernetes.client.util.generic.options.ListOptions;
 import io.kubernetes.client.util.generic.options.PatchOptions;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.logging.Logger;
 import org.jdrupes.vmoperator.common.K8s;
 import static org.jdrupes.vmoperator.manager.Constants.APP_NAME;
@@ -66,48 +76,59 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
      *
      * @param model the model
      * @param channel the channel
-     * @return the dynamic kubernetes object
      * @throws IOException Signals that an I/O exception has occurred.
      * @throws TemplateException the template exception
      * @throws ApiException the api exception
      */
-    public Map<String, Object> reconcile(Map<String, Object> model,
-            VmChannel channel)
+    @SuppressWarnings("PMD.AvoidDuplicateLiterals")
+    public void reconcile(Map<String, Object> model, VmChannel channel)
             throws IOException, TemplateException, ApiException {
         // Combine template and data and parse result
+        model.put("adjustCloudInitMeta", adjustCloudInitMetaModel);
         var fmTemplate = fmConfig.getTemplate("runnerConfig.ftl.yaml");
         StringWriter out = new StringWriter();
         fmTemplate.process(model, out);
         // Avoid Yaml.load due to
         // https://github.com/kubernetes-client/java/issues/2741
-        var mapDef = Dynamics.newFromYaml(
+        var newCm = Dynamics.newFromYaml(
             new Yaml(new SafeConstructor(new LoaderOptions())), out.toString());
 
         // Maybe override logging.properties from reconciler configuration.
         DataPath.<String> get(model, "reconciler", "loggingProperties")
             .ifPresent(props -> {
-                GsonPtr.to(mapDef.getRaw()).getAs(JsonObject.class, "data")
+                GsonPtr.to(newCm.getRaw()).getAs(JsonObject.class, "data")
                     .get().addProperty("logging.properties", props);
             });
 
         // Maybe override logging.properties from VM definition.
         DataPath.<String> get(model, "cr", "spec", "loggingProperties")
             .ifPresent(props -> {
-                GsonPtr.to(mapDef.getRaw()).getAs(JsonObject.class, "data")
+                GsonPtr.to(newCm.getRaw()).getAs(JsonObject.class, "data")
                     .get().addProperty("logging.properties", props);
             });
 
-        // Get API
+        // Look for changes
+        var oldCm = channel
+            .associated(getClass(), DynamicKubernetesObject.class).orElse(null);
+        channel.setAssociated(getClass(), newCm);
+        if (oldCm != null && Objects.equals(oldCm.getRaw().get("data"),
+            newCm.getRaw().get("data"))) {
+            logger.finer(() -> "No changes in config map for "
+                + DataPath.<String> get(model, "cr", "name").get());
+            model.put("configMapResourceVersion",
+                oldCm.getMetadata().getResourceVersion());
+            return;
+        }
+
+        // Get API and update
         DynamicKubernetesApi cmApi = new DynamicKubernetesApi("", "v1",
             "configmaps", channel.client());
 
         // Apply and maybe force pod update
-        var newState = K8s.apply(cmApi, mapDef, mapDef.getRaw().toString());
-        maybeForceUpdate(channel.client(), newState);
-        @SuppressWarnings("unchecked")
-        var res = (Map<String, Object>) channel.client().getJSON().getGson()
-            .fromJson(newState.getRaw(), Map.class);
-        return res;
+        var updatedCm = K8s.apply(cmApi, newCm, newCm.getRaw().toString());
+        maybeForceUpdate(channel.client(), updatedCm);
+        model.put("configMapResourceVersion",
+            updatedCm.getMetadata().getResourceVersion());
     }
 
     /**
@@ -152,5 +173,29 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
                 () -> "Cannot patch pod annotations: " + res.getStatus());
         }
     }
+
+    private final TemplateMethodModelEx adjustCloudInitMetaModel
+        = new TemplateMethodModelEx() {
+            @Override
+            @SuppressWarnings("PMD.PreserveStackTrace")
+            public Object exec(@SuppressWarnings("rawtypes") List arguments)
+                    throws TemplateModelException {
+                @SuppressWarnings("unchecked")
+                var res = new HashMap<>((Map<String, Object>) DeepUnwrap
+                    .unwrap((TemplateModel) arguments.get(0)));
+                var metadata
+                    = (V1ObjectMeta) ((AdapterTemplateModel) arguments.get(1))
+                        .getAdaptedObject(Object.class);
+                if (!res.containsKey("instance-id")) {
+                    res.put("instance-id",
+                        Optional.ofNullable(metadata.getGeneration())
+                            .map(s -> "v" + s).orElse("v1"));
+                }
+                if (!res.containsKey("local-hostname")) {
+                    res.put("local-hostname", metadata.getName());
+                }
+                return res;
+            }
+        };
 
 }
