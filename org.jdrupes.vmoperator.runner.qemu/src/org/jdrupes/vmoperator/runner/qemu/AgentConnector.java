@@ -92,8 +92,12 @@ public abstract class AgentConnector extends QemuConnector {
      */
     @Handler
     public void onVserportChanged(VserportChangeEvent event) {
-        if (event.id().equals(channelId) && event.isOpen()) {
-            agentConnected();
+        if (event.id().equals(channelId)) {
+            if (event.isOpen()) {
+                agentConnected();
+            } else {
+                agentDisconnected();
+            }
         }
     }
 
@@ -105,4 +109,14 @@ public abstract class AgentConnector extends QemuConnector {
     protected void agentConnected() {
         // Default is to do nothing.
     }
+
+    /**
+     * Called when the agent in the VM closes the connection. The
+     * default implementation does nothing.
+     */
+    @SuppressWarnings("PMD.EmptyMethodInAbstractClassShouldBeAbstract")
+    protected void agentDisconnected() {
+        // Default is to do nothing.
+    }
+
 }

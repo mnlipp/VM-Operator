@@ -116,9 +116,11 @@ public class DisplayController extends Component {
     @Handler
     @SuppressWarnings("PMD.EmptyCatchBlock")
     public void onFileChanged(FileChanged event) {
-        if (event.path().equals(configDir.resolve(DisplaySecret.PASSWORD))
-            && canBeUpdated) {
-            configurePassword();
+        if (event.path().equals(configDir.resolve(DisplaySecret.PASSWORD))) {
+            logger.fine(() -> "Display password updated");
+            if (canBeUpdated) {
+                configurePassword();
+            }
         }
     }
 

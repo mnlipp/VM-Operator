@@ -242,7 +242,7 @@ public abstract class QemuConnector extends Component {
      */
     @Handler
     public void onClosed(Closed<?> event, SocketIOChannel channel) {
-        channel.associated(this, getClass()).ifPresent(qm -> {
+        channel.associated(this, getClass()).ifPresent(qc -> {
             qemuChannel = null;
         });
     }
