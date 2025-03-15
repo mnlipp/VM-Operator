@@ -125,16 +125,19 @@ public class VmDefUpdater extends Component {
     protected JsonObject updateCondition(VmDefinition from, String type,
             boolean state, String reason, String message) {
         JsonObject status = from.statusJson();
-        // Optimize, as we can get this several times
+        // Avoid redundant updates, as this may be called several times
         var current = status.getAsJsonArray("conditions").asList().stream()
             .map(cond -> (JsonObject) cond)
             .filter(cond -> type.equals(cond.get("type").getAsString()))
             .findFirst();
-        if (current.isPresent()
-            && current.map(c -> c.get("status").getAsString())
-                .map("True"::equals).map(s -> s == state).orElse(false)
+        var stateUnchanged = current.map(c -> c.get("status").getAsString())
+            .map("True"::equals).map(s -> s == state).orElse(false);
+        if (stateUnchanged
             && current.map(c -> c.get("reason").getAsString())
-                .map(reason::equals).orElse(false)) {
+                .map(reason::equals).orElse(false)
+            && current.map(c -> c.get("observedGeneration").getAsLong())
+                .map(from.getMetadata().getGeneration()::equals)
+                .orElse(false)) {
             return status;
         }
 
@@ -143,7 +146,9 @@ public class VmDefUpdater extends Component {
             "status", state ? "True" : "False",
             "observedGeneration", from.getMetadata().getGeneration(),
             "reason", reason,
-            "lastTransitionTime", Instant.now().toString()));
+            "lastTransitionTime", stateUnchanged
+                ? current.get().get("lastTransitionTime").getAsString()
+                : Instant.now().toString()));
         if (message != null) {
             condition.put("message", message);
         }
