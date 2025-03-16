@@ -22,12 +22,18 @@ import freemarker.template.Configuration;
 import freemarker.template.TemplateException;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.generic.dynamic.Dynamics;
+import io.kubernetes.client.util.generic.options.ListOptions;
 import io.kubernetes.client.util.generic.options.PatchOptions;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
 import java.util.logging.Logger;
+import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
+import org.jdrupes.vmoperator.common.Constants.DisplaySecret;
+import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sV1PodStub;
+import org.jdrupes.vmoperator.common.K8sV1SecretStub;
+import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinition.RequestedVmState;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
@@ -92,6 +98,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 
         // Create pod. First combine template and data and parse result
         logger.fine(() -> "Create/update pod " + podStub.name());
+        addDisplaySecret(channel.client(), model, vmDef);
         var fmTemplate = fmConfig.getTemplate("runnerPod.ftl.yaml");
         StringWriter out = new StringWriter();
         fmTemplate.process(model, out);
@@ -107,6 +114,21 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         if (podStub.apply(podDef).isEmpty()) {
             logger.warning(
                 () -> "Could not patch pod for " + podStub.name());
+        }
+    }
+
+    private void addDisplaySecret(K8sClient client, Map<String, Object> model,
+            VmDefinition vmDef) throws ApiException {
+        ListOptions options = new ListOptions();
+        options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
+            + "app.kubernetes.io/component=" + DisplaySecret.NAME + ","
+            + "app.kubernetes.io/instance=" + vmDef.name());
+        var dsStub = K8sV1SecretStub
+            .list(client, vmDef.namespace(), options).stream().findFirst();
+        if (dsStub.isPresent()) {
+            dsStub.get().model().ifPresent(m -> {
+                model.put("displaySecret", m.getMetadata().getName());
+            });
         }
     }
 
