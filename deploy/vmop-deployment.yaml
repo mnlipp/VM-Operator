@@ -21,12 +21,12 @@ spec:
         - name: vm-operator
           image: >-
             ghcr.io/mnlipp/org.jdrupes.vmoperator.manager:latest
+          imagePullPolicy: Always
           volumeMounts:
             - name: config
               mountPath: /etc/opt/vmoperator
             - name: vmop-image-repository
               mountPath: /var/local/vmop-image-repository
-          imagePullPolicy: Always
           securityContext:
             capabilities:
               drop:
