@@ -199,8 +199,6 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
             assert client != null;
             assert context != null;
             assert namespace != null;
-            logger.fine(() -> "Observing " + K8s.toString(context)
-                + " objects in " + namespace);
 
             // Monitor all versions
             for (var version : context.getVersions()) {
@@ -219,12 +217,7 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
         observerCounter.incrementAndGet();
         new K8sObserver<>(objectClass, objectListClass, client,
             K8s.preferred(context, version), namespace, options)
-                .handler((c, r) -> {
-                    logger.fine(() -> "Resource " + context.getKind()
-                        + "/" + r.object.getMetadata().getName() + " "
-                        + r.type);
-                    handleChange(c, r);
-                }).onTerminated((o, t) -> {
+                .handler(this::handleChange).onTerminated((o, t) -> {
                     if (observerCounter.decrementAndGet() == 0) {
                         unregisterAsGenerator();
                     }
