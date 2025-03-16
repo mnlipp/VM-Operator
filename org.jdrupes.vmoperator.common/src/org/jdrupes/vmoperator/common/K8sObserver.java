@@ -27,6 +27,7 @@ import io.kubernetes.client.util.generic.GenericKubernetesApi;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -89,10 +90,11 @@ public class K8sObserver<O extends KubernetesObject,
         thread = (Components.useVirtualThreads() ? Thread.ofVirtual()
             : Thread.ofPlatform()).unstarted(() -> {
                 try {
-                    logger
-                        .config(() -> "Watching " + context.getResourcePlural()
-                            + " (" + context.getPreferredVersion() + ")"
-                            + " in " + namespace);
+                    logger.fine(() -> "Observing " + context.getResourcePlural()
+                        + " (" + context.getPreferredVersion() + ")"
+                        + Optional.ofNullable(options.getLabelSelector())
+                            .map(ls -> " with labels " + ls).orElse("")
+                        + " in " + namespace);
 
                     // Watch sometimes terminates without apparent reason.
                     while (!Thread.currentThread().isInterrupted()) {
@@ -102,7 +104,12 @@ public class K8sObserver<O extends KubernetesObject,
                             var changed
                                 = api.watch(namespace, options).iterator();
                             while (changed.hasNext()) {
-                                handler.accept(client, changed.next());
+                                var response = changed.next();
+                                logger.fine(() -> "Resource "
+                                    + context.getKind() + "/"
+                                    + response.object.getMetadata().getName()
+                                    + " " + response.type);
+                                handler.accept(client, response);
                             }
                         } catch (ApiException | RuntimeException e) {
                             logger.log(Level.FINE, e, () -> "Problem watching"
