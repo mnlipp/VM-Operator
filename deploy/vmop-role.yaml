@@ -38,6 +38,7 @@ rules:
   - persistentvolumeclaims
   - pods
   verbs:
+  - watch
   - list
   - get
   - create
