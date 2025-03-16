@@ -113,6 +113,7 @@ public class K8sObserver<O extends KubernetesObject,
                             }
                         } catch (ApiException | RuntimeException e) {
                             logger.log(Level.FINE, e, () -> "Problem watching"
+                                + " resource " + context.getKind()
                                 + " (will retry): " + e.getMessage());
                             delayRestart(startedAt);
                         }
