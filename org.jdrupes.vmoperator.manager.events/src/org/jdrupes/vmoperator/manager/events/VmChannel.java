@@ -21,6 +21,7 @@ package org.jdrupes.vmoperator.manager.events;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jgrapes.core.Channel;
+import org.jgrapes.core.Event;
 import org.jgrapes.core.EventPipeline;
 import org.jgrapes.core.Subchannel.DefaultSubchannel;
 
@@ -102,6 +103,19 @@ public class VmChannel extends DefaultSubchannel {
      */
     public EventPipeline pipeline() {
         return pipeline;
+    }
+
+    /**
+     * Fire the given event on this channel, using the associated
+     * {@link #pipeline()}.
+     *
+     * @param <T> the generic type
+     * @param event the event
+     * @return the t
+     */
+    public <T extends Event<?>> T fire(T event) {
+        pipeline.fire(event, this);
+        return event;
     }
 
     /**

@@ -25,11 +25,12 @@ import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
 import java.util.stream.Collectors;
 import org.jdrupes.vmoperator.common.Constants.Crd;
 import org.jdrupes.vmoperator.common.K8s;
@@ -37,7 +38,6 @@ import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
 import org.jdrupes.vmoperator.common.K8sObserver.ResponseType;
 import org.jdrupes.vmoperator.common.K8sV1ConfigMapStub;
-import org.jdrupes.vmoperator.common.K8sV1PodStub;
 import org.jdrupes.vmoperator.common.K8sV1StatefulSetStub;
 import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinition.Assignment;
@@ -53,6 +53,7 @@ import org.jdrupes.vmoperator.manager.events.GetPools;
 import org.jdrupes.vmoperator.manager.events.GetVms;
 import org.jdrupes.vmoperator.manager.events.GetVms.VmData;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
+import org.jdrupes.vmoperator.manager.events.PodChanged;
 import org.jdrupes.vmoperator.manager.events.UpdateAssignment;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
@@ -140,7 +141,7 @@ public class VmMonitor extends
         }
         if (vmDef.data() != null) {
             // New data, augment and save
-            addExtraData(channel.client(), vmDef, channel.vmDefinition());
+            addExtraData(vmDef, channel.vmDefinition());
             channel.setVmDefinition(vmDef);
         } else {
             // Reuse cached (e.g. if deleted)
@@ -166,7 +167,7 @@ public class VmMonitor extends
             chgEvt = Event.onCompletion(chgEvt,
                 e -> channelManager.remove(e.vmDefinition().name()));
         }
-        channel.pipeline().fire(chgEvt, channel);
+        channel.fire(chgEvt);
     }
 
     private VmDefinition getModel(K8sClient client, VmDefinition vmDef) {
@@ -179,46 +180,56 @@ public class VmMonitor extends
     }
 
     @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-    private void addExtraData(K8sClient client, VmDefinition vmDef,
-            VmDefinition prevState) {
+    private void addExtraData(VmDefinition vmDef, VmDefinition prevState) {
         var extra = new VmExtraData(vmDef);
+        var prevExtra
+            = Optional.ofNullable(prevState).flatMap(VmDefinition::extra);
 
         // Maintain (or initialize) the resetCount
-        extra.resetCount(
-            Optional.ofNullable(prevState).flatMap(VmDefinition::extra)
-                .map(VmExtraData::resetCount).orElse(0L));
+        extra.resetCount(prevExtra.map(VmExtraData::resetCount).orElse(0L));
 
-        // VM definition status changes before the pod terminates.
-        // This results in pod information being shown for a stopped
-        // VM which is irritating. So check condition first.
-        if (!vmDef.conditionStatus("Running").orElse(false)) {
+        // Maintain node info
+        prevExtra
+            .ifPresent(e -> extra.nodeInfo(e.nodeName(), e.nodeAddresses()));
+    }
+
+    /**
+     * On pod changed.
+     *
+     * @param event the event
+     * @param channel the channel
+     */
+    @Handler
+    public void onPodChanged(PodChanged event, VmChannel channel) {
+        if (channel.vmDefinition().extra().isEmpty()) {
             return;
         }
-
-        // Get pod and extract node information.
-        var podSearch = new ListOptions();
-        podSearch.setLabelSelector("app.kubernetes.io/name=" + APP_NAME
-            + ",app.kubernetes.io/component=" + APP_NAME
-            + ",app.kubernetes.io/instance=" + vmDef.name());
-        try {
-            var podList
-                = K8sV1PodStub.list(client, namespace(), podSearch);
-            for (var podStub : podList) {
-                var nodeName = podStub.model().get().getSpec().getNodeName();
-                logger.finer(() -> "Adding node name " + nodeName
-                    + " to VM info for " + vmDef.name());
-                @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
-                var addrs = new ArrayList<String>();
-                podStub.model().get().getStatus().getPodIPs().stream()
-                    .map(ip -> ip.getIp()).forEach(addrs::add);
-                logger.finer(() -> "Adding node addresses " + addrs
-                    + " to VM info for " + vmDef.name());
-                extra.nodeInfo(nodeName, addrs);
+        var extra = channel.vmDefinition().extra().get();
+        var pod = event.pod();
+        if (event.type() == ResponseType.DELETED) {
+            // The status of a deleted pod is the status before deletion,
+            // i.e. the node info is still there.
+            extra.nodeInfo("", Collections.emptyList());
+        } else {
+            var nodeName = Optional
+                .ofNullable(pod.getSpec().getNodeName()).orElse("");
+            logger.finer(() -> "Adding node name " + nodeName
+                + " to VM info for " + channel.vmDefinition().name());
+            @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+            var addrs = new ArrayList<String>();
+            Optional.ofNullable(pod.getStatus().getPodIPs())
+                .orElse(Collections.emptyList()).stream()
+                .map(ip -> ip.getIp()).forEach(addrs::add);
+            logger.finer(() -> "Adding node addresses " + addrs
+                + " to VM info for " + channel.vmDefinition().name());
+            if (Objects.equals(nodeName, extra.nodeName())
+                && Objects.equals(addrs, extra.nodeAddresses())) {
+                return;
             }
-        } catch (ApiException e) {
-            logger.log(Level.WARNING, e,
-                () -> "Cannot access node information: " + e.getMessage());
+            extra.nodeInfo(nodeName, addrs);
         }
+        channel.fire(new VmDefChanged(ResponseType.MODIFIED, false,
+            channel.vmDefinition()));
     }
 
     /**
@@ -293,10 +304,8 @@ public class VmMonitor extends
 
             // Assign to user
             var chosenVm = vmQuery.get();
-            var vmPipeline = chosenVm.pipeline();
-            if (Optional.ofNullable(vmPipeline.fire(new UpdateAssignment(
-                vmPool, event.toUser()), chosenVm).get())
-                .orElse(false)) {
+            if (Optional.ofNullable(chosenVm.fire(new UpdateAssignment(
+                vmPool, event.toUser())).get()).orElse(false)) {
                 var vmDef = chosenVm.vmDefinition();
                 event.setResult(new VmData(vmDef, chosenVm));
 
