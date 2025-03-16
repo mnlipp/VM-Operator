@@ -18,7 +18,6 @@
 
 package org.jdrupes.vmoperator.common;
 
-// TODO: Auto-generated Javadoc
 /**
  * Some constants.
  */

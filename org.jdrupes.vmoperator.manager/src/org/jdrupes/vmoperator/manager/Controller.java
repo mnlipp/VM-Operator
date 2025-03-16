@@ -113,6 +113,7 @@ public class Controller extends Component {
         // attach(new ServiceMonitor(channel()).channelManager(chanMgr));
         attach(new Reconciler(channel()));
         attach(new PoolMonitor(channel()));
+        attach(new PodMonitor(channel(), chanMgr));
     }
 
     /**

@@ -236,7 +236,10 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
             String user, List<String> roles) {
         // Convert RAM sizes to unitless numbers
         var spec = DataPath.deepCopy(vmDef.spec());
+        spec.remove("cloudInit");
         var vmSpec = DataPath.<Map<String, Object>> get(spec, "vm").get();
+        vmSpec.remove("networks");
+        vmSpec.remove("disks");
         vmSpec.put("maximumRam", Quantity.fromString(
             DataPath.<String> get(vmSpec, "maximumRam").orElse("0")).getNumber()
             .toBigInteger());
