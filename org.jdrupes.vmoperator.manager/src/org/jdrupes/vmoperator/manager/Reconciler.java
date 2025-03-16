@@ -30,7 +30,6 @@ import freemarker.template.TemplateMethodModelEx;
 import freemarker.template.TemplateModelException;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
@@ -43,12 +42,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
-import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
-import org.jdrupes.vmoperator.common.Constants.DisplaySecret;
 import org.jdrupes.vmoperator.common.Convertions;
-import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sObserver;
-import org.jdrupes.vmoperator.common.K8sV1SecretStub;
 import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinition.Assignment;
 import org.jdrupes.vmoperator.common.VmPool;
@@ -220,7 +215,7 @@ public class Reconciler extends Component {
 
         // Create model for processing templates
         Map<String, Object> model
-            = prepareModel(channel.client(), event.vmDefinition());
+            = prepareModel(event.vmDefinition());
         cmReconciler.reconcile(model, channel);
 
         // The remaining reconcilers depend only on changes of the spec part.
@@ -251,13 +246,12 @@ public class Reconciler extends Component {
         var vmDef = channel.vmDefinition();
         vmDef.extra().ifPresent(e -> e.resetCount(e.resetCount() + 1));
         Map<String, Object> model
-            = prepareModel(channel.client(), channel.vmDefinition());
+            = prepareModel(channel.vmDefinition());
         cmReconciler.reconcile(model, channel);
     }
 
-    @SuppressWarnings({ "PMD.CognitiveComplexity", "PMD.NPathComplexity" })
-    private Map<String, Object> prepareModel(K8sClient client,
-            VmDefinition vmDef) throws TemplateModelException, ApiException {
+    private Map<String, Object> prepareModel(VmDefinition vmDef)
+            throws TemplateModelException, ApiException {
         @SuppressWarnings("PMD.UseConcurrentHashMap")
         Map<String, Object> model = new HashMap<>();
         model.put("managerVersion",
@@ -267,7 +261,6 @@ public class Reconciler extends Component {
         model.put("reconciler", config);
         model.put("constants", constantsMap(Constants.class));
         addLoginRequestedFor(model, vmDef);
-        addDisplaySecret(client, model, vmDef);
 
         // Methods
         model.put("parseQuantity", parseQuantityModel);
@@ -323,21 +316,6 @@ public class Reconciler extends Component {
         }).map(Assignment::user)
             .or(() -> vmDef.fromSpec("vm", "display", "loggedInUser"))
             .ifPresent(u -> model.put("loginRequestedFor", u));
-    }
-
-    private void addDisplaySecret(K8sClient client, Map<String, Object> model,
-            VmDefinition vmDef) throws ApiException {
-        ListOptions options = new ListOptions();
-        options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
-            + "app.kubernetes.io/component=" + DisplaySecret.NAME + ","
-            + "app.kubernetes.io/instance=" + vmDef.name());
-        var dsStub = K8sV1SecretStub
-            .list(client, vmDef.namespace(), options).stream().findFirst();
-        if (dsStub.isPresent()) {
-            dsStub.get().model().ifPresent(m -> {
-                model.put("displaySecret", m.getMetadata().getName());
-            });
-        }
     }
 
     private final TemplateMethodModelEx parseQuantityModel

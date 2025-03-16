@@ -76,6 +76,15 @@ public class VmExtraData {
     }
 
     /**
+     * Gets the node addresses.
+     *
+     * @return the nodeAddresses
+     */
+    public List<String> nodeAddresses() {
+        return nodeAddresses;
+    }
+
+    /**
      * Sets the reset count.
      *
      * @param resetCount the reset count
