@@ -31,6 +31,8 @@ import io.kubernetes.client.openapi.JSON;
 import io.kubernetes.client.openapi.models.EventsV1Event;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.logging.Level;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
@@ -55,6 +57,8 @@ import org.jdrupes.vmoperator.runner.qemu.events.VmopAgentLoggedIn;
 import org.jdrupes.vmoperator.runner.qemu.events.VmopAgentLoggedOut;
 import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
+import org.jgrapes.core.Components;
+import org.jgrapes.core.Components.Timer;
 import org.jgrapes.core.annotation.Handler;
 import org.jgrapes.core.events.HandlingError;
 import org.jgrapes.core.events.Start;
@@ -62,7 +66,8 @@ import org.jgrapes.core.events.Start;
 /**
  * Updates the CR status.
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
+@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",
+    "PMD.CouplingBetweenObjects" })
 public class StatusUpdater extends VmDefUpdater {
 
     @SuppressWarnings("PMD.FieldNamingConventions")
@@ -76,6 +81,10 @@ public class StatusUpdater extends VmDefUpdater {
     private boolean shutdownByGuest;
     private VmDefinitionStub vmStub;
     private String loggedInUser;
+    private BigInteger lastRamValue;
+    private Instant lastRamChange;
+    private Timer balloonTimer;
+    private BigInteger targetRamValue;
 
     /**
      * Instantiates a new status updater.
@@ -151,6 +160,7 @@ public class StatusUpdater extends VmDefUpdater {
             throws ApiException {
         guestShutdownStops = event.configuration().guestShutdownStops;
         loggedInUser = event.configuration().vm.display.loggedInUser;
+        targetRamValue = event.configuration().vm.currentRam;
 
         // Remainder applies only if we have a connection to k8s.
         if (vmStub == null) {
@@ -279,7 +289,11 @@ public class StatusUpdater extends VmDefUpdater {
     }
 
     /**
-     * On ballon change.
+     * Update the current RAM size in the status. Balloon changes happen
+     * more than once every second during changes. While this is nice
+     * to watch, this puts a heavy load on the system. Therefore we
+     * only update the status once every 15 seconds or when the target
+     * value is reached.
      *
      * @param event the event
      * @throws ApiException 
@@ -289,10 +303,44 @@ public class StatusUpdater extends VmDefUpdater {
         if (vmStub == null) {
             return;
         }
+        Instant now = Instant.now();
+        if (lastRamChange == null
+            || lastRamChange.isBefore(now.minusSeconds(15))
+            || event.size().equals(targetRamValue)) {
+            if (balloonTimer != null) {
+                balloonTimer.cancel();
+                balloonTimer = null;
+            }
+            lastRamChange = now;
+            lastRamValue = event.size();
+            updateRam(lastRamValue);
+            return;
+        }
+
+        // Save for later processing and maybe start timer
+        lastRamChange = now;
+        lastRamValue = event.size();
+        if (balloonTimer != null) {
+            return;
+        }
+        balloonTimer = Components.schedule(t -> {
+            activeEventPipeline().submit("Update RAM size", () -> {
+                try {
+                    updateRam(lastRamValue);
+                } catch (ApiException e) {
+                    logger.log(Level.WARNING, e,
+                        () -> "Failed to update ram size: " + e.getMessage());
+                }
+                balloonTimer = null;
+            });
+        }, now.plusSeconds(15));
+    }
+
+    private void updateRam(BigInteger size) throws ApiException {
         vmStub.updateStatus(from -> {
             JsonObject status = from.statusJson();
             status.addProperty(Status.RAM,
-                new Quantity(new BigDecimal(event.size()), Format.BINARY_SI)
+                new Quantity(new BigDecimal(size), Format.BINARY_SI)
                     .toSuffixedString());
             return status;
         });
