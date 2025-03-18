@@ -313,7 +313,7 @@ public class StatusUpdater extends VmDefUpdater {
             }
             lastRamChange = now;
             lastRamValue = event.size();
-            updateRam(lastRamValue);
+            updateRam();
             return;
         }
 
@@ -323,10 +323,11 @@ public class StatusUpdater extends VmDefUpdater {
         if (balloonTimer != null) {
             return;
         }
+        final var pipeline = activeEventPipeline();
         balloonTimer = Components.schedule(t -> {
-            activeEventPipeline().submit("Update RAM size", () -> {
+            pipeline.submit("Update RAM size", () -> {
                 try {
-                    updateRam(lastRamValue);
+                    updateRam();
                 } catch (ApiException e) {
                     logger.log(Level.WARNING, e,
                         () -> "Failed to update ram size: " + e.getMessage());
@@ -336,11 +337,11 @@ public class StatusUpdater extends VmDefUpdater {
         }, now.plusSeconds(15));
     }
 
-    private void updateRam(BigInteger size) throws ApiException {
+    private void updateRam() throws ApiException {
         vmStub.updateStatus(from -> {
             JsonObject status = from.statusJson();
             status.addProperty(Status.RAM,
-                new Quantity(new BigDecimal(size), Format.BINARY_SI)
+                new Quantity(new BigDecimal(lastRamValue), Format.BINARY_SI)
                     .toSuffixedString());
             return status;
         });
