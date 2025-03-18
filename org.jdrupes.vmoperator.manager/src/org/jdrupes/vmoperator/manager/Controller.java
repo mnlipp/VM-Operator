@@ -33,10 +33,12 @@ import org.jdrupes.vmoperator.common.Constants.Crd;
 import org.jdrupes.vmoperator.common.Constants.Status;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
+import org.jdrupes.vmoperator.common.K8sObserver.ResponseType;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
 import org.jdrupes.vmoperator.manager.events.ChannelManager;
 import org.jdrupes.vmoperator.manager.events.Exit;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
+import org.jdrupes.vmoperator.manager.events.PodChanged;
 import org.jdrupes.vmoperator.manager.events.UpdateAssignment;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
@@ -247,5 +249,29 @@ public class Controller extends Component {
             }
         }
         event.setResult(false);
+    }
+
+    /**
+     * Remove runner version from status when pod is deleted
+     *
+     * @param event the event
+     * @param channel the channel
+     * @throws ApiException the api exception
+     */
+    @Handler
+    public void onPodChange(PodChanged event, VmChannel channel)
+            throws ApiException {
+        if (event.type() == ResponseType.DELETED) {
+            // Remove runner info from status
+            var vmDef = channel.vmDefinition();
+            var vmStub = VmDefinitionStub.get(channel.client(),
+                new GroupVersionKind(Crd.GROUP, "", Crd.KIND_VM),
+                vmDef.namespace(), vmDef.name());
+            vmStub.updateStatus(from -> {
+                JsonObject status = from.statusJson();
+                status.remove(Status.RUNNER_VERSION);
+                return status;
+            });
+        }
     }
 }
