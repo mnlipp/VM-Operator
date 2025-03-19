@@ -214,9 +214,8 @@ public class Reconciler extends Component {
         }
 
         // Create model for processing templates
-        Map<String, Object> model
-            = prepareModel(event.vmDefinition());
-        cmReconciler.reconcile(model, channel);
+        Map<String, Object> model = prepareModel(event.vmDefinition());
+        cmReconciler.reconcile(model, channel, event.specChanged());
 
         // The remaining reconcilers depend only on changes of the spec part.
         if (!event.specChanged()) {
@@ -247,7 +246,7 @@ public class Reconciler extends Component {
         vmDef.extra().ifPresent(e -> e.resetCount(e.resetCount() + 1));
         Map<String, Object> model
             = prepareModel(channel.vmDefinition());
-        cmReconciler.reconcile(model, channel);
+        cmReconciler.reconcile(model, channel, true);
     }
 
     private Map<String, Object> prepareModel(VmDefinition vmDef)

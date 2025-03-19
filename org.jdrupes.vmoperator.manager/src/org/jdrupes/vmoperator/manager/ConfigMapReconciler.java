@@ -76,13 +76,24 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
      *
      * @param model the model
      * @param channel the channel
+     * @param modelChanged the model has changed
      * @throws IOException Signals that an I/O exception has occurred.
      * @throws TemplateException the template exception
-     * @throws ApiException the api exception
+     * @throws ApiException the API exception
      */
     @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-    public void reconcile(Map<String, Object> model, VmChannel channel)
+    public void reconcile(Map<String, Object> model, VmChannel channel,
+            boolean modelChanged)
             throws IOException, TemplateException, ApiException {
+        // Check if an update is needed
+        Object prevInputs
+            = channel.associated(PrevData.class, Object.class).orElse(null);
+        Object newInputs = model.get("loginRequestedFor");
+        if (!modelChanged && Objects.equals(prevInputs, newInputs)) {
+            return;
+        }
+        channel.setAssociated(PrevData.class, newInputs);
+
         // Combine template and data and parse result
         model.put("adjustCloudInitMeta", adjustCloudInitMetaModel);
         var fmTemplate = fmConfig.getTemplate("runnerConfig.ftl.yaml");
@@ -107,19 +118,6 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
                     .get().addProperty("logging.properties", props);
             });
 
-        // Look for changes
-        var oldCm = channel
-            .associated(getClass(), DynamicKubernetesObject.class).orElse(null);
-        channel.setAssociated(getClass(), newCm);
-        if (oldCm != null && Objects.equals(oldCm.getRaw().get("data"),
-            newCm.getRaw().get("data"))) {
-            logger.finer(() -> "No changes in config map for "
-                + DataPath.<String> get(model, "cr", "name").get());
-            model.put("configMapResourceVersion",
-                oldCm.getMetadata().getResourceVersion());
-            return;
-        }
-
         // Get API and update
         DynamicKubernetesApi cmApi = new DynamicKubernetesApi("", "v1",
             "configmaps", channel.client());
@@ -129,6 +127,12 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         maybeForceUpdate(channel.client(), updatedCm);
         model.put("configMapResourceVersion",
             updatedCm.getMetadata().getResourceVersion());
+    }
+
+    /**
+     * Key for association.
+     */
+    private final class PrevData {
     }
 
     /**
