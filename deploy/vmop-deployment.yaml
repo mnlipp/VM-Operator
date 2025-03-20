@@ -22,6 +22,19 @@ spec:
           image: >-
             ghcr.io/mnlipp/org.jdrupes.vmoperator.manager:latest
           imagePullPolicy: Always
+          env:
+          - name: JAVA_OPTS
+            # The VM operator needs about 25 MB of memory, plus 1 MB for
+            # each VM. The reason is that for the sake of effeciency, we
+            # have to keep a parsed representation of the CRD in memory,
+            # which requires about 512 KB per VM. While handling updates,
+            # we temporarily have the old and the new version of the CRD
+            # in memory, so we need another 512 KB per VM.
+            value: "-Xmx128m"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
           volumeMounts:
             - name: config
               mountPath: /etc/opt/vmoperator
@@ -33,16 +46,6 @@ spec:
                 - ALL
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
-          resources:
-            requests:
-              cpu: 100m
-              # The VM operator needs about 25 MB of memory, plus 1 MB for
-              # each VM. The reason is that for the sake of effeciency, we
-              # have to keep a parsed representation of the CRD in memory,
-              # which requires about 512 KB per VM. While handling updates,
-              # we temporarily have the old and the new version of the CRD
-              # in memory, so we need another 512 KB per VM.  
-              memory: 256Mi
       volumes:
       - name: config
         configMap:
