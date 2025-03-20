@@ -47,6 +47,7 @@ import org.jdrupes.vmoperator.manager.events.PodChanged;
 import org.jdrupes.vmoperator.manager.events.UpdateAssignment;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
+import org.jdrupes.vmoperator.manager.events.VmPoolChanged;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.annotation.Handler;
@@ -280,6 +281,25 @@ public class Controller extends Component {
                 return 0;
             }
         };
+
+    /**
+     * When s pool is deleted, remove all related assignments.
+     *
+     * @param event the event
+     * @throws InterruptedException 
+     */
+    @Handler
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+    public void onPoolChanged(VmPoolChanged event) throws InterruptedException {
+        if (!event.deleted()) {
+            return;
+        }
+        var vms = newEventPipeline()
+            .fire(new GetVms().assignedFrom(event.vmPool().name())).get();
+        for (var vm : vms) {
+            vm.channel().fire(new UpdateAssignment(event.vmPool(), null));
+        }
+    }
 
     /**
      * Remove runner version from status when pod is deleted
