@@ -423,12 +423,12 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
         switch (event.method()) {
         case "start":
             if (perms.contains(VmDefinition.Permission.START)) {
-                fire(new ModifyVm(vmName, "state", "Running", vmChannel));
+                vmChannel.fire(new ModifyVm(vmName, "state", "Running"));
             }
             break;
         case "stop":
             if (perms.contains(VmDefinition.Permission.STOP)) {
-                fire(new ModifyVm(vmName, "state", "Stopped", vmChannel));
+                vmChannel.fire(new ModifyVm(vmName, "state", "Stopped"));
             }
             break;
         case "reset":
@@ -438,22 +438,20 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
             break;
         case "resetConfirmed":
             if (perms.contains(VmDefinition.Permission.RESET)) {
-                fire(new ResetVm(vmName), vmChannel);
+                vmChannel.fire(new ResetVm(vmName));
             }
             break;
         case "openConsole":
             openConsole(channel, model, vmChannel, vmDef, user, perms);
             break;
         case "cpus":
-            fire(new ModifyVm(vmName, "currentCpus",
-                new BigDecimal(event.param(1).toString()).toBigInteger(),
-                vmChannel));
+            vmChannel.fire(new ModifyVm(vmName, "currentCpus",
+                new BigDecimal(event.param(1).toString()).toBigInteger()));
             break;
         case "ram":
-            fire(new ModifyVm(vmName, "currentRam",
+            vmChannel.fire(new ModifyVm(vmName, "currentRam",
                 new Quantity(new BigDecimal(event.param(1).toString()),
-                    Format.BINARY_SI).toSuffixedString(),
-                vmChannel));
+                    Format.BINARY_SI).toSuffixedString()));
             break;
         default:// ignore
             break;
@@ -488,7 +486,7 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
         }
         var pwQuery = Event.onCompletion(new GetDisplaySecret(vmDef, user),
             e -> gotPassword(channel, model, vmDef, e));
-        fire(pwQuery, vmChannel);
+        vmChannel.fire(pwQuery);
     }
 
     private void gotPassword(ConsoleConnection channel, VmsModel model,

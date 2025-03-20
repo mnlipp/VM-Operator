@@ -310,8 +310,7 @@ public class VmMonitor extends
                 event.setResult(new VmData(vmDef, chosenVm));
 
                 // Make sure that a newly assigned VM is running.
-                chosenVm.pipeline().fire(new ModifyVm(vmDef.name(),
-                    "state", "Running", chosenVm));
+                chosenVm.fire(new ModifyVm(vmDef.name(), "state", "Running"));
                 return;
             }
         }

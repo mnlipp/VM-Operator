@@ -129,6 +129,7 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
     private EventPipeline appPipeline;
     private static ObjectMapper objectMapper
         = new ObjectMapper().registerModule(new JavaTimeModule());
+
     private Class<?> preferredIpVersion = Inet4Address.class;
     private Set<String> syncUsers = Collections.emptySet();
     private Set<String> syncRoles = Collections.emptySet();
@@ -785,12 +786,12 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
         switch (event.method()) {
         case "start":
             if (perms.contains(VmDefinition.Permission.START)) {
-                fire(new ModifyVm(vmName, "state", "Running", vmChannel));
+                vmChannel.fire(new ModifyVm(vmName, "state", "Running"));
             }
             break;
         case "stop":
             if (perms.contains(VmDefinition.Permission.STOP)) {
-                fire(new ModifyVm(vmName, "state", "Stopped", vmChannel));
+                vmChannel.fire(new ModifyVm(vmName, "state", "Stopped"));
             }
             break;
         case "reset":
@@ -800,7 +801,7 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
             break;
         case "resetConfirmed":
             if (perms.contains(VmDefinition.Permission.RESET)) {
-                fire(new ResetVm(vmName), vmChannel);
+                vmChannel.fire(new ResetVm(vmName));
             }
             break;
         case "openConsole":
@@ -838,7 +839,7 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
         }
         var pwQuery = Event.onCompletion(new GetDisplaySecret(vmDef, user),
             e -> gotPassword(channel, model, vmDef, e));
-        fire(pwQuery, vmChannel);
+        vmChannel.fire(pwQuery);
     }
 
     private void gotPassword(ConsoleConnection channel, ResourceModel model,
