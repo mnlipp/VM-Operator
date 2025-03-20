@@ -20,29 +20,34 @@ package org.jdrupes.vmoperator.manager;
 
 import com.google.gson.JsonObject;
 import io.kubernetes.client.apimachinery.GroupVersionKind;
-import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
 import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Comparator;
+import java.util.Optional;
 import java.util.logging.Level;
 import org.jdrupes.vmoperator.common.Constants.Crd;
 import org.jdrupes.vmoperator.common.Constants.Status;
 import org.jdrupes.vmoperator.common.K8sClient;
-import org.jdrupes.vmoperator.common.K8sDynamicStub;
 import org.jdrupes.vmoperator.common.K8sObserver.ResponseType;
+import org.jdrupes.vmoperator.common.VmDefinition.Assignment;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
+import org.jdrupes.vmoperator.common.VmPool;
+import org.jdrupes.vmoperator.manager.events.AssignVm;
 import org.jdrupes.vmoperator.manager.events.ChannelManager;
 import org.jdrupes.vmoperator.manager.events.Exit;
+import org.jdrupes.vmoperator.manager.events.GetPools;
+import org.jdrupes.vmoperator.manager.events.GetVms;
+import org.jdrupes.vmoperator.manager.events.GetVms.VmData;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.PodChanged;
 import org.jdrupes.vmoperator.manager.events.UpdateAssignment;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
-import org.jdrupes.vmoperator.util.GsonPtr;
+import org.jdrupes.vmoperator.manager.events.VmPoolChanged;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.annotation.Handler;
@@ -89,6 +94,7 @@ import org.jgrapes.util.events.ConfigurationUpdate;
 public class Controller extends Component {
 
     private String namespace;
+    private final ChannelManager<String, VmChannel, ?> chanMgr;
 
     /**
      * Creates a new instance.
@@ -97,17 +103,16 @@ public class Controller extends Component {
     public Controller(Channel componentChannel) {
         super(componentChannel);
         // Prepare component tree
-        ChannelManager<String, VmChannel, ?> chanMgr
-            = new ChannelManager<>(name -> {
-                try {
-                    return new VmChannel(channel(), newEventPipeline(),
-                        new K8sClient());
-                } catch (IOException e) {
-                    logger.log(Level.SEVERE, e, () -> "Failed to create client"
-                        + " for handling changes: " + e.getMessage());
-                    return null;
-                }
-            });
+        chanMgr = new ChannelManager<>(name -> {
+            try {
+                return new VmChannel(channel(), newEventPipeline(),
+                    new K8sClient());
+            } catch (IOException e) {
+                logger.log(Level.SEVERE, e, () -> "Failed to create client"
+                    + " for handling changes: " + e.getMessage());
+                return null;
+            }
+        });
         attach(new VmMonitor(channel(), chanMgr));
         attach(new DisplaySecretMonitor(channel(), chanMgr));
         // Currently, we don't use the IP assigned by the load balancer
@@ -181,74 +186,119 @@ public class Controller extends Component {
     }
 
     /**
-     * On modify vm.
+     * Returns the VM data.
      *
      * @param event the event
-     * @throws ApiException the api exception
-     * @throws IOException Signals that an I/O exception has occurred.
      */
     @Handler
-    public void onModifyVm(ModifyVm event, VmChannel channel)
-            throws ApiException, IOException {
-        patchVmDef(channel.client(), event.name(), "spec/vm/" + event.path(),
-            event.value());
-    }
-
-    private void patchVmDef(K8sClient client, String name, String path,
-            Object value) throws ApiException, IOException {
-        var vmStub = K8sDynamicStub.get(client,
-            new GroupVersionKind(Crd.GROUP, "", Crd.KIND_VM), namespace,
-            name);
-
-        // Patch running
-        String valueAsText = value instanceof String
-            ? "\"" + value + "\""
-            : value.toString();
-        var res = vmStub.patch(V1Patch.PATCH_FORMAT_JSON_PATCH,
-            new V1Patch("[{\"op\": \"replace\", \"path\": \"/"
-                + path + "\", \"value\": " + valueAsText + "}]"),
-            client.defaultPatchOptions());
-        if (!res.isPresent()) {
-            logger.warning(
-                () -> "Cannot patch definition for Vm " + vmStub.name());
-        }
+    public void onGetVms(GetVms event) {
+        event.setResult(chanMgr.channels().stream()
+            .filter(c -> event.name().isEmpty()
+                || c.vmDefinition().name().equals(event.name().get()))
+            .filter(c -> event.user().isEmpty() && event.roles().isEmpty()
+                || !c.vmDefinition().permissionsFor(event.user().orElse(null),
+                    event.roles()).isEmpty())
+            .filter(c -> event.fromPool().isEmpty()
+                || c.vmDefinition().assignment().map(Assignment::pool)
+                    .map(p -> p.equals(event.fromPool().get())).orElse(false))
+            .filter(c -> event.toUser().isEmpty()
+                || c.vmDefinition().assignment().map(Assignment::user)
+                    .map(u -> u.equals(event.toUser().get())).orElse(false))
+            .map(c -> new VmData(c.vmDefinition(), c))
+            .toList());
     }
 
     /**
-     * Attempt to Update the assignment information in the status of the
-     * VM CR. Returns true if successful. The handler does not attempt
-     * retries, because in case of failure it will be necessary to
-     * re-evaluate the chosen VM.
+     * Assign a VM if not already assigned.
      *
      * @param event the event
-     * @param channel the channel
      * @throws ApiException the api exception
+     * @throws InterruptedException 
      */
     @Handler
-    public void onUpdatedAssignment(UpdateAssignment event, VmChannel channel)
-            throws ApiException {
-        try {
-            var vmDef = channel.vmDefinition();
-            var vmStub = VmDefinitionStub.get(channel.client(),
-                new GroupVersionKind(Crd.GROUP, "", Crd.KIND_VM),
-                vmDef.namespace(), vmDef.name());
-            if (vmStub.updateStatus(vmDef, from -> {
-                JsonObject status = from.statusJson();
-                var assignment = GsonPtr.to(status).to(Status.ASSIGNMENT);
-                assignment.set("pool", event.fromPool().name());
-                assignment.set("user", event.toUser());
-                assignment.set("lastUsed", Instant.now().toString());
-                return status;
-            }).isPresent()) {
-                event.setResult(true);
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+    public void onAssignVm(AssignVm event)
+            throws ApiException, InterruptedException {
+        while (true) {
+            // Search for existing assignment.
+            var vmQuery = chanMgr.channels().stream()
+                .filter(c -> c.vmDefinition().assignment().map(Assignment::pool)
+                    .map(p -> p.equals(event.fromPool())).orElse(false))
+                .filter(c -> c.vmDefinition().assignment().map(Assignment::user)
+                    .map(u -> u.equals(event.toUser())).orElse(false))
+                .findFirst();
+            if (vmQuery.isPresent()) {
+                var vmDef = vmQuery.get().vmDefinition();
+                event.setResult(new VmData(vmDef, vmQuery.get()));
+                return;
             }
-        } catch (ApiException e) {
-            // Log exceptions except for conflict, which can be expected
-            if (HttpURLConnection.HTTP_CONFLICT != e.getCode()) {
-                throw e;
+
+            // Get the pool definition for checking possible assignment
+            VmPool vmPool = newEventPipeline().fire(new GetPools()
+                .withName(event.fromPool())).get().stream().findFirst()
+                .orElse(null);
+            if (vmPool == null) {
+                return;
+            }
+
+            // Find available VM.
+            vmQuery = chanMgr.channels().stream()
+                .filter(c -> vmPool.isAssignable(c.vmDefinition()))
+                .sorted(Comparator.comparing((VmChannel c) -> c.vmDefinition()
+                    .assignment().map(Assignment::lastUsed)
+                    .orElse(Instant.ofEpochSecond(0)))
+                    .thenComparing(preferRunning))
+                .findFirst();
+
+            // None found
+            if (vmQuery.isEmpty()) {
+                return;
+            }
+
+            // Assign to user
+            var chosenVm = vmQuery.get();
+            if (Optional.ofNullable(chosenVm.fire(new UpdateAssignment(
+                vmPool, event.toUser())).get()).orElse(false)) {
+                var vmDef = chosenVm.vmDefinition();
+                event.setResult(new VmData(vmDef, chosenVm));
+
+                // Make sure that a newly assigned VM is running.
+                chosenVm.fire(new ModifyVm(vmDef.name(), "state", "Running"));
+                return;
             }
         }
-        event.setResult(false);
+    }
+
+    private static Comparator<VmChannel> preferRunning
+        = new Comparator<>() {
+            @Override
+            public int compare(VmChannel ch1, VmChannel ch2) {
+                if (ch1.vmDefinition().conditionStatus("Running").orElse(false)
+                    && !ch2.vmDefinition().conditionStatus("Running")
+                        .orElse(false)) {
+                    return -1;
+                }
+                return 0;
+            }
+        };
+
+    /**
+     * When s pool is deleted, remove all related assignments.
+     *
+     * @param event the event
+     * @throws InterruptedException 
+     */
+    @Handler
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+    public void onPoolChanged(VmPoolChanged event) throws InterruptedException {
+        if (!event.deleted()) {
+            return;
+        }
+        var vms = newEventPipeline()
+            .fire(new GetVms().assignedFrom(event.vmPool().name())).get();
+        for (var vm : vms) {
+            vm.channel().fire(new UpdateAssignment(event.vmPool(), null));
+        }
     }
 
     /**
