@@ -11,8 +11,8 @@ layout: vm-operator
 
 ![Overview picture](index-pic.svg)
 
-This project provides an easy to use and flexible solution
-for running QEMU/KVM based VMs in Kubernetes pods.
+This project provides an easy to use and flexible solution for
+running QEMU/KVM based virtual machines (VMs) in Kubernetes pods.
 
 The image used for the VM pods combines QEMU and a control program
 for starting and managing the QEMU process. This application is called
