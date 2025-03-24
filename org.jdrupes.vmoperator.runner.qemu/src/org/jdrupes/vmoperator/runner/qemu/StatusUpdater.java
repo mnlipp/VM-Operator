@@ -76,7 +76,6 @@ public class StatusUpdater extends VmDefUpdater {
     private static final ObjectMapper objectMapper
         = new ObjectMapper().registerModule(new JavaTimeModule());
 
-    private long observedGeneration;
     private boolean guestShutdownStops;
     private boolean shutdownByGuest;
     private VmDefinitionStub vmStub;
@@ -131,7 +130,6 @@ public class StatusUpdater extends VmDefUpdater {
             if (vmDef == null) {
                 return;
             }
-            observedGeneration = vmDef.getMetadata().getGeneration();
             vmStub.updateStatus(from -> {
                 JsonObject status = from.statusJson();
                 status.addProperty(Status.RUNNER_VERSION, Optional.ofNullable(
@@ -166,21 +164,6 @@ public class StatusUpdater extends VmDefUpdater {
         if (vmStub == null) {
             return;
         }
-
-        // A change of the runner configuration is typically caused
-        // by a new version of the CR. So we update only if we have
-        // a new version of the CR. There's one exception: the display
-        // password is configured by a file, not by the CR.
-        var vmDef = vmStub.model().orElse(null);
-        if (vmDef == null) {
-            return;
-        }
-        if (vmDef.metadata().getGeneration() == observedGeneration
-            && (event.configuration().hasDisplayPassword
-                || vmDef.statusJson().getAsJsonPrimitive(
-                    Status.DISPLAY_PASSWORD_SERIAL).getAsInt() == -1)) {
-            return;
-        }
         vmStub.updateStatus(from -> {
             JsonObject status = from.statusJson();
             if (!event.configuration().hasDisplayPassword) {
@@ -194,7 +177,7 @@ public class StatusUpdater extends VmDefUpdater {
                     from.getMetadata().getGeneration()));
             updateUserLoggedIn(from);
             return status;
-        }, vmDef);
+        });
     }
 
     /**
