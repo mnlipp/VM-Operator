@@ -86,16 +86,20 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
             boolean modelChanged)
             throws IOException, TemplateException, ApiException {
         // Check if an update is needed
-        Object prevInputs
-            = channel.associated(PrevData.class, Object.class).orElse(null);
+        var prevData = channel.associated(PrevData.class)
+            .orElseGet(() -> new PrevData(null, new HashMap<>()));
         Object newInputs = model.get("loginRequestedFor");
-        if (!modelChanged && Objects.equals(prevInputs, newInputs)) {
+        if (!modelChanged && Objects.equals(prevData.inputs, newInputs)) {
+            // Make added data available in new model
+            model.putAll(prevData.added);
             return;
         }
-        channel.setAssociated(PrevData.class, newInputs);
+        prevData = new PrevData(newInputs, prevData.added);
+        channel.setAssociated(PrevData.class, prevData);
 
         // Combine template and data and parse result
         model.put("adjustCloudInitMeta", adjustCloudInitMetaModel);
+        prevData.added.put("adjustCloudInitMeta", adjustCloudInitMetaModel);
         var fmTemplate = fmConfig.getTemplate("runnerConfig.ftl.yaml");
         StringWriter out = new StringWriter();
         fmTemplate.process(model, out);
@@ -127,12 +131,14 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         maybeForceUpdate(channel.client(), updatedCm);
         model.put("configMapResourceVersion",
             updatedCm.getMetadata().getResourceVersion());
+        prevData.added.put("configMapResourceVersion",
+            updatedCm.getMetadata().getResourceVersion());
     }
 
     /**
      * Key for association.
      */
-    private final class PrevData {
+    private record PrevData(Object inputs, Map<String, Object> added) {
     }
 
     /**

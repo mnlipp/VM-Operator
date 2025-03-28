@@ -36,7 +36,6 @@ import org.jdrupes.vmoperator.common.K8sV1SecretStub;
 import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinition.RequestedVmState;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
-import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
@@ -62,14 +61,14 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
     /**
      * Reconcile the pod.
      *
-     * @param event the event
+     * @param vmDef the vm def
      * @param model the model
      * @param channel the channel
      * @throws IOException Signals that an I/O exception has occurred.
      * @throws TemplateException the template exception
      * @throws ApiException the api exception
      */
-    public void reconcile(VmDefChanged event, Map<String, Object> model,
+    public void reconcile(VmDefinition vmDef, Map<String, Object> model,
             VmChannel channel)
             throws IOException, TemplateException, ApiException {
         // Don't do anything if stateful set is still in use (pre v3.4)
@@ -78,7 +77,6 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         }
 
         // Get pod stub.
-        var vmDef = event.vmDefinition();
         var podStub = K8sV1PodStub.get(channel.client(), vmDef.namespace(),
             vmDef.name());
 
