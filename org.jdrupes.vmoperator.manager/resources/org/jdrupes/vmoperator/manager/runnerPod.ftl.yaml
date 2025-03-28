@@ -133,4 +133,3 @@ spec:
   affinity: ${ toJson(spec.affinity) }
   </#if>
   serviceAccountName: vm-runner
-  restartPolicy: Never
