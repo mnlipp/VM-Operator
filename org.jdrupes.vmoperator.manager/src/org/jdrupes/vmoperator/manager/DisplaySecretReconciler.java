@@ -120,25 +120,24 @@ public class DisplaySecretReconciler extends Component {
      * secret with a random password and immediate expiration, thus
      * preventing access to the display.
      *
-     * @param event the event
+     * @param vmDef the VM definition
      * @param model the model
      * @param channel the channel
      * @throws IOException Signals that an I/O exception has occurred.
      * @throws TemplateException the template exception
      * @throws ApiException the api exception
      */
-    public void reconcile(VmDefChanged event,
-            Map<String, Object> model, VmChannel channel)
+    public void reconcile(VmDefinition vmDef, Map<String, Object> model,
+            VmChannel channel)
             throws IOException, TemplateException, ApiException {
         // Secret needed at all?
-        var display = event.vmDefinition().fromVm("display").get();
+        var display = vmDef.fromVm("display").get();
         if (!DataPath.<Boolean> get(display, "spice", "generateSecret")
             .orElse(true)) {
             return;
         }
 
         // Check if exists
-        var vmDef = event.vmDefinition();
         ListOptions options = new ListOptions();
         options.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
             + "app.kubernetes.io/component=" + DisplaySecret.NAME + ","

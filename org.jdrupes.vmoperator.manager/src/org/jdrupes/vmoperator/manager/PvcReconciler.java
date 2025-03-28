@@ -38,8 +38,8 @@ import java.util.stream.Collectors;
 import static org.jdrupes.vmoperator.common.Constants.APP_NAME;
 import static org.jdrupes.vmoperator.common.Constants.VM_OP_NAME;
 import org.jdrupes.vmoperator.common.K8sV1PvcStub;
+import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
-import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.util.DataPath;
 import org.jdrupes.vmoperator.util.GsonPtr;
 import org.yaml.snakeyaml.LoaderOptions;
@@ -67,7 +67,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
     /**
      * Reconcile the PVCs.
      *
-     * @param event the event
+     * @param vmDef the vm def
      * @param model the model
      * @param channel the channel
      * @throws IOException Signals that an I/O exception has occurred.
@@ -75,11 +75,9 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
      * @throws ApiException the api exception
      */
     @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-    public void reconcile(VmDefChanged event, Map<String, Object> model,
+    public void reconcile(VmDefinition vmDef, Map<String, Object> model,
             VmChannel channel)
             throws IOException, TemplateException, ApiException {
-        var vmDef = event.vmDefinition();
-
         // Existing disks
         ListOptions listOpts = new ListOptions();
         listOpts.setLabelSelector(
@@ -92,7 +90,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
             .collect(Collectors.toSet());
 
         // Reconcile runner data pvc
-        reconcileRunnerDataPvc(event, model, channel, knownPvcs);
+        reconcileRunnerDataPvc(vmDef, model, channel, knownPvcs);
 
         // Reconcile pvcs for defined disks
         var diskDefs = vmDef.<List<Map<String, Object>>> fromVm("disks")
@@ -117,17 +115,16 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 
             // Update PVC
             model.put("disk", diskDef);
-            reconcileRunnerDiskPvc(event, model, channel);
+            reconcileRunnerDiskPvc(vmDef, model, channel);
         }
         model.remove("disk");
     }
 
-    private void reconcileRunnerDataPvc(VmDefChanged event,
+    private void reconcileRunnerDataPvc(VmDefinition vmDef,
             Map<String, Object> model, VmChannel channel,
             Set<String> knownPvcs)
             throws TemplateNotFoundException, MalformedTemplateNameException,
             ParseException, IOException, TemplateException, ApiException {
-        var vmDef = event.vmDefinition();
 
         // Look for old (sts generated) name.
         var stsRunnerDataPvcName
@@ -161,12 +158,10 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         }
     }
 
-    private void reconcileRunnerDiskPvc(VmDefChanged event,
+    private void reconcileRunnerDiskPvc(VmDefinition vmDef,
             Map<String, Object> model, VmChannel channel)
             throws TemplateNotFoundException, MalformedTemplateNameException,
             ParseException, IOException, TemplateException, ApiException {
-        var vmDef = event.vmDefinition();
-
         // Generate PVC
         @SuppressWarnings("unchecked")
         var diskDef = (Map<String, Object>) model.get("disk");

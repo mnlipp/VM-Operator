@@ -27,9 +27,9 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.logging.Logger;
 import org.jdrupes.vmoperator.common.K8sV1StatefulSetStub;
+import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinition.RequestedVmState;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
-import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 
 /**
  * Before version 3.4, the pod running the VM was created by a stateful set.
@@ -54,7 +54,7 @@ import org.jdrupes.vmoperator.manager.events.VmDefChanged;
     /**
      * Reconcile stateful set.
      *
-     * @param event the event
+     * @param vmDef the VM definition
      * @param model the model
      * @param channel the channel
      * @throws IOException Signals that an I/O exception has occurred.
@@ -62,14 +62,14 @@ import org.jdrupes.vmoperator.manager.events.VmDefChanged;
      * @throws ApiException the api exception
      */
     @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
-    public void reconcile(VmDefChanged event, Map<String, Object> model,
+    public void reconcile(VmDefinition vmDef, Map<String, Object> model,
             VmChannel channel)
             throws IOException, TemplateException, ApiException {
         model.put("usingSts", false);
 
         // If exists, delete when not running or supposed to be not running.
         var stsStub = K8sV1StatefulSetStub.get(channel.client(),
-            event.vmDefinition().namespace(), event.vmDefinition().name());
+            vmDef.namespace(), vmDef.name());
         if (stsStub.model().isEmpty()) {
             return;
         }
@@ -88,7 +88,7 @@ import org.jdrupes.vmoperator.manager.events.VmDefChanged;
         // Check if VM is supposed to be stopped. If so,
         // set replicas to 0. This is the first step of the transition,
         // the stateful set will be deleted when the VM is restarted.
-        if (event.vmDefinition().vmState() == RequestedVmState.RUNNING) {
+        if (vmDef.vmState() == RequestedVmState.RUNNING) {
             return;
         }
 
