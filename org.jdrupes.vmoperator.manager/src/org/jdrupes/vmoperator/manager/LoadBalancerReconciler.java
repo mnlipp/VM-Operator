@@ -36,7 +36,6 @@ import java.util.logging.Logger;
 import org.jdrupes.vmoperator.common.K8sV1ServiceStub;
 import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
-import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.util.GsonPtr;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -69,14 +68,14 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
     /**
      * Reconcile.
      *
-     * @param event the event
+     * @param vmDef the VM definition
      * @param model the model
      * @param channel the channel
      * @throws IOException Signals that an I/O exception has occurred.
      * @throws TemplateException the template exception
      * @throws ApiException the api exception
      */
-    public void reconcile(VmDefChanged event,
+    public void reconcile(VmDefinition vmDef,
             Map<String, Object> model, VmChannel channel)
             throws IOException, TemplateException, ApiException {
         // Check if to be generated
@@ -95,7 +94,6 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         }
 
         // Load balancer can also be turned off for VM
-        var vmDef = event.vmDefinition();
         if (vmDef
             .<Map<String, Map<String, String>>> fromSpec(LOAD_BALANCER_SERVICE)
             .map(m -> m.isEmpty()).orElse(false)) {

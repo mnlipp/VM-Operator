@@ -44,10 +44,12 @@ import java.util.Optional;
 import java.util.logging.Level;
 import org.jdrupes.vmoperator.common.Convertions;
 import org.jdrupes.vmoperator.common.K8sObserver;
+import org.jdrupes.vmoperator.common.K8sObserver.ResponseType;
 import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinition.Assignment;
 import org.jdrupes.vmoperator.common.VmPool;
 import org.jdrupes.vmoperator.manager.events.GetPools;
+import org.jdrupes.vmoperator.manager.events.PodChanged;
 import org.jdrupes.vmoperator.manager.events.ResetVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.jdrupes.vmoperator.manager.events.VmDefChanged;
@@ -213,20 +215,57 @@ public class Reconciler extends Component {
             return;
         }
 
+        // Reconcile
+        reconcile(event, channel);
+    }
+
+    private void reconcile(VmDefChanged event, VmChannel channel)
+            throws TemplateModelException, ApiException, IOException,
+            TemplateException {
         // Create model for processing templates
-        Map<String, Object> model = prepareModel(event.vmDefinition());
+        var vmDef = event.vmDefinition();
+        Map<String, Object> model = prepareModel(vmDef);
         cmReconciler.reconcile(model, channel, event.specChanged());
 
         // The remaining reconcilers depend only on changes of the spec part.
         if (!event.specChanged()) {
             return;
         }
-        dsReconciler.reconcile(event, model, channel);
+        dsReconciler.reconcile(vmDef, model, channel);
         // Manage (eventual) removal of stateful set.
-        stsReconciler.reconcile(event, model, channel);
-        pvcReconciler.reconcile(event, model, channel);
-        podReconciler.reconcile(event, model, channel);
-        lbReconciler.reconcile(event, model, channel);
+        stsReconciler.reconcile(vmDef, model, channel);
+        pvcReconciler.reconcile(vmDef, model, channel);
+        podReconciler.reconcile(vmDef, model, channel);
+        lbReconciler.reconcile(vmDef, model, channel);
+    }
+
+    /**
+     * On pod changed.
+     *
+     * @param event the event
+     * @param channel the channel
+     * @throws ApiException the api exception
+     * @throws IOException Signals that an I/O exception has occurred.
+     * @throws TemplateException the template exception
+     */
+    @Handler
+    public void onPodChanged(PodChanged event, VmChannel channel)
+            throws ApiException, IOException, TemplateException {
+        if (event.type() != ResponseType.DELETED) {
+            // Nothing to reconcile
+            return;
+        }
+
+        // If the pod was deleted, it may be necessary to recreate it
+        var vmDef = channel.vmDefinition();
+        Map<String, Object> model = prepareModel(vmDef);
+
+        // Call all steps because they may augment the model
+        cmReconciler.reconcile(model, channel, false);
+        dsReconciler.reconcile(vmDef, model, channel);
+        stsReconciler.reconcile(vmDef, model, channel);
+        pvcReconciler.reconcile(vmDef, model, channel);
+        podReconciler.reconcile(vmDef, model, channel);
     }
 
     /**
