@@ -98,6 +98,8 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         channel.setAssociated(PrevData.class, prevData);
 
         // Combine template and data and parse result
+        logger.fine(() -> "Create/update configmap "
+            + DataPath.<String> get(model, "cr", "name").orElse("unknown"));
         model.put("adjustCloudInitMeta", adjustCloudInitMetaModel);
         prevData.added.put("adjustCloudInitMeta", adjustCloudInitMetaModel);
         var fmTemplate = fmConfig.getTemplate("runnerConfig.ftl.yaml");

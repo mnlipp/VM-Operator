@@ -36,6 +36,7 @@ import java.util.logging.Logger;
 import org.jdrupes.vmoperator.common.K8sV1ServiceStub;
 import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
+import org.jdrupes.vmoperator.util.DataPath;
 import org.jdrupes.vmoperator.util.GsonPtr;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -107,6 +108,8 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         }
 
         // Combine template and data and parse result
+        logger.fine(() -> "Create/update load balancer service for "
+            + DataPath.<String> get(model, "cr", "name").orElse("unknown"));
         var fmTemplate = fmConfig.getTemplate("runnerLoadBalancer.ftl.yaml");
         StringWriter out = new StringWriter();
         fmTemplate.process(model, out);

@@ -139,6 +139,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 
         // Generate PVC
         var runnerDataPvcName = vmDef.name() + "-runner-data";
+        logger.fine(() -> "Create/update pvc " + runnerDataPvcName);
         model.put("runnerDataPvcName", runnerDataPvcName);
         if (!specChanged) {
             // Augmenting the model is all we have to do
@@ -180,6 +181,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         }
 
         // Generate PVC
+        logger.fine(() -> "Create/update pvc " + pvcName);
         model.put("disk", diskDef);
         var fmTemplate = fmConfig.getTemplate("runnerDiskPvc.ftl.yaml");
         StringWriter out = new StringWriter();

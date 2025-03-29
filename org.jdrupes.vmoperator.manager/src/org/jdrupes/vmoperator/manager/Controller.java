@@ -182,7 +182,7 @@ public class Controller extends Component {
             fire(new Exit(2));
             return;
         }
-        logger.fine(() -> "Controlling namespace \"" + namespace + "\".");
+        logger.config(() -> "Controlling namespace \"" + namespace + "\".");
     }
 
     /**
