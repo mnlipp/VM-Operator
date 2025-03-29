@@ -40,8 +40,8 @@ import org.jdrupes.vmoperator.common.VmDefinition.Assignment;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
 import org.jdrupes.vmoperator.common.VmPool;
 import org.jdrupes.vmoperator.manager.events.GetPools;
-import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.manager.events.VmPoolChanged;
+import org.jdrupes.vmoperator.manager.events.VmResourceChanged;
 import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.EventPipeline;
@@ -142,7 +142,8 @@ public class PoolMonitor extends
      * @throws ApiException 
      */
     @Handler
-    public void onVmDefChanged(VmDefChanged event) throws ApiException {
+    public void onVmResourceChanged(VmResourceChanged event)
+            throws ApiException {
         final var vmDef = event.vmDefinition();
         final String vmName = vmDef.name();
         switch (event.type()) {

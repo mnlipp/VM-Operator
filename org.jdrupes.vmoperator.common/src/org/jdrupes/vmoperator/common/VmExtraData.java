@@ -112,7 +112,7 @@ public class VmExtraData {
      * @param deleteConnectionFile the delete connection file
      * @return the string
      */
-    public String connectionFile(String password,
+    public Optional<String> connectionFile(String password,
             Class<?> preferredIpVersion, boolean deleteConnectionFile) {
         var addr = displayIp(preferredIpVersion);
         if (addr.isEmpty()) {
@@ -144,7 +144,7 @@ public class VmExtraData {
         if (deleteConnectionFile) {
             data.append("delete-this-file=1\n");
         }
-        return data.toString();
+        return Optional.of(data.toString());
     }
 
     private Optional<InetAddress> displayIp(Class<?> preferredIpVersion) {

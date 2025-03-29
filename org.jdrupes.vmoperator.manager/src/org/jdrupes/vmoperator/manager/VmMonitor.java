@@ -30,7 +30,6 @@ import java.net.HttpURLConnection;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -54,7 +53,7 @@ import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.PodChanged;
 import org.jdrupes.vmoperator.manager.events.UpdateAssignment;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
-import org.jdrupes.vmoperator.manager.events.VmDefChanged;
+import org.jdrupes.vmoperator.manager.events.VmResourceChanged;
 import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Event;
@@ -157,11 +156,11 @@ public class VmMonitor extends
 
         // Create and fire changed event. Remove channel from channel
         // manager on completion.
-        VmDefChanged chgEvt
-            = new VmDefChanged(ResponseType.valueOf(response.type),
+        VmResourceChanged chgEvt
+            = new VmResourceChanged(ResponseType.valueOf(response.type), vmDef,
                 channel.setGeneration(response.object.getMetadata()
                     .getGeneration()),
-                vmDef);
+                false);
         if (ResponseType.valueOf(response.type) == ResponseType.DELETED) {
             chgEvt = Event.onCompletion(chgEvt,
                 e -> channelManager.remove(e.vmDefinition().name()));
@@ -181,8 +180,7 @@ public class VmMonitor extends
     @SuppressWarnings("PMD.AvoidDuplicateLiterals")
     private void addExtraData(VmDefinition vmDef, VmDefinition prevState) {
         var extra = new VmExtraData(vmDef);
-        var prevExtra
-            = Optional.ofNullable(prevState).flatMap(VmDefinition::extra);
+        var prevExtra = Optional.ofNullable(prevState).map(VmDefinition::extra);
 
         // Maintain (or initialize) the resetCount
         extra.resetCount(prevExtra.map(VmExtraData::resetCount).orElse(0L));
@@ -200,35 +198,35 @@ public class VmMonitor extends
      */
     @Handler
     public void onPodChanged(PodChanged event, VmChannel channel) {
-        if (channel.vmDefinition().extra().isEmpty()) {
-            return;
-        }
-        var extra = channel.vmDefinition().extra().get();
-        var pod = event.pod();
+        var vmDef = channel.vmDefinition();
+        updateNodeInfo(event, vmDef);
+        channel
+            .fire(new VmResourceChanged(ResponseType.MODIFIED, vmDef, false, true));
+    }
+
+    private void updateNodeInfo(PodChanged event, VmDefinition vmDef) {
+        var extra = vmDef.extra();
         if (event.type() == ResponseType.DELETED) {
             // The status of a deleted pod is the status before deletion,
-            // i.e. the node info is still there.
+            // i.e. the node info is still cached and must be removed.
             extra.nodeInfo("", Collections.emptyList());
-        } else {
-            var nodeName = Optional
-                .ofNullable(pod.getSpec().getNodeName()).orElse("");
-            logger.finer(() -> "Adding node name " + nodeName
-                + " to VM info for " + channel.vmDefinition().name());
-            @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
-            var addrs = new ArrayList<String>();
-            Optional.ofNullable(pod.getStatus().getPodIPs())
-                .orElse(Collections.emptyList()).stream()
-                .map(ip -> ip.getIp()).forEach(addrs::add);
-            logger.finer(() -> "Adding node addresses " + addrs
-                + " to VM info for " + channel.vmDefinition().name());
-            if (Objects.equals(nodeName, extra.nodeName())
-                && Objects.equals(addrs, extra.nodeAddresses())) {
-                return;
-            }
-            extra.nodeInfo(nodeName, addrs);
+            return;
         }
-        channel.fire(new VmDefChanged(ResponseType.MODIFIED, false,
-            channel.vmDefinition()));
+
+        // Get current node info from pod
+        var pod = event.pod();
+        var nodeName = Optional
+            .ofNullable(pod.getSpec().getNodeName()).orElse("");
+        logger.finer(() -> "Adding node name " + nodeName
+            + " to VM info for " + vmDef.name());
+        @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+        var addrs = new ArrayList<String>();
+        Optional.ofNullable(pod.getStatus().getPodIPs())
+            .orElse(Collections.emptyList()).stream()
+            .map(ip -> ip.getIp()).forEach(addrs::add);
+        logger.finer(() -> "Adding node addresses " + addrs
+            + " to VM info for " + vmDef.name());
+        extra.nodeInfo(nodeName, addrs);
     }
 
     /**

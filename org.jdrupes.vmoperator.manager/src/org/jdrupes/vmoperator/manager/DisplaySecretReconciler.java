@@ -45,7 +45,7 @@ import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinitionStub;
 import org.jdrupes.vmoperator.manager.events.GetDisplaySecret;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
-import org.jdrupes.vmoperator.manager.events.VmDefChanged;
+import org.jdrupes.vmoperator.manager.events.VmResourceChanged;
 import org.jdrupes.vmoperator.util.DataPath;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.CompletionLock;
@@ -123,13 +123,19 @@ public class DisplaySecretReconciler extends Component {
      * @param vmDef the VM definition
      * @param model the model
      * @param channel the channel
+     * @param specChanged the spec changed
      * @throws IOException Signals that an I/O exception has occurred.
      * @throws TemplateException the template exception
      * @throws ApiException the api exception
      */
     public void reconcile(VmDefinition vmDef, Map<String, Object> model,
-            VmChannel channel)
+            VmChannel channel, boolean specChanged)
             throws IOException, TemplateException, ApiException {
+        // Nothing to do unless spec changed
+        if (!specChanged) {
+            return;
+        }
+
         // Secret needed at all?
         var display = vmDef.fromVm("display").get();
         if (!DataPath.<Boolean> get(display, "spice", "generateSecret")
@@ -292,7 +298,7 @@ public class DisplaySecretReconciler extends Component {
      */
     @Handler
     @SuppressWarnings("PMD.AvoidSynchronizedStatement")
-    public void onVmDefChanged(VmDefChanged event, Channel channel) {
+    public void onVmResourceChanged(VmResourceChanged event, Channel channel) {
         synchronized (pendingPrepares) {
             String vmName = event.vmDefinition().name();
             for (var pending : pendingPrepares) {

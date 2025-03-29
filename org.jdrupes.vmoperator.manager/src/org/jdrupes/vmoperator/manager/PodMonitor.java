@@ -38,7 +38,7 @@ import org.jdrupes.vmoperator.common.K8sV1PodStub;
 import org.jdrupes.vmoperator.manager.events.ChannelDictionary;
 import org.jdrupes.vmoperator.manager.events.PodChanged;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
-import org.jdrupes.vmoperator.manager.events.VmDefChanged;
+import org.jdrupes.vmoperator.manager.events.VmResourceChanged;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.annotation.Handler;
 
@@ -118,7 +118,8 @@ public class PodMonitor extends AbstractMonitor<V1Pod, V1PodList, VmChannel> {
      * @param channel the channel
      */
     @Handler
-    public void onVmDefChanged(VmDefChanged event, VmChannel channel) {
+    public void onVmResourceChanged(VmResourceChanged event,
+            VmChannel channel) {
         Optional.ofNullable(pendingChanges.remove(event.vmDefinition().name()))
             .map(PendingChange::change).ifPresent(change -> {
                 logger.finer(() -> "Firing pending pod change for "

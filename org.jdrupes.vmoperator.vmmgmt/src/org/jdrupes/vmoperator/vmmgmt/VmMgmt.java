@@ -42,13 +42,12 @@ import org.jdrupes.vmoperator.common.Constants.Status;
 import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinition.Permission;
-import org.jdrupes.vmoperator.common.VmExtraData;
 import org.jdrupes.vmoperator.manager.events.ChannelTracker;
 import org.jdrupes.vmoperator.manager.events.GetDisplaySecret;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.ResetVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
-import org.jdrupes.vmoperator.manager.events.VmDefChanged;
+import org.jdrupes.vmoperator.manager.events.VmResourceChanged;
 import org.jdrupes.vmoperator.util.DataPath;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Event;
@@ -258,7 +257,7 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
                 "name", vmDef.name()),
             "spec", spec,
             "status", status,
-            "nodeName", vmDef.extra().map(VmExtraData::nodeName).orElse(""),
+            "nodeName", vmDef.extra().nodeName(),
             "consoleAccessible", vmDef.consoleAccessible(user, perms),
             "permissions", perms);
     }
@@ -274,7 +273,7 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
     @SuppressWarnings({ "PMD.ConfusingTernary", "PMD.CognitiveComplexity",
         "PMD.AvoidInstantiatingObjectsInLoops", "PMD.AvoidDuplicateLiterals",
         "PMD.ConfusingArgumentToVarargsMethod" })
-    public void onVmDefChanged(VmDefChanged event, VmChannel channel)
+    public void onVmResourceChanged(VmResourceChanged event, VmChannel channel)
             throws IOException {
         var vmName = event.vmDefinition().name();
         if (event.type() == K8sObserver.ResponseType.DELETED) {
@@ -494,8 +493,8 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
         if (!event.secretAvailable()) {
             return;
         }
-        vmDef.extra().map(xtra -> xtra.connectionFile(event.secret(),
-            preferredIpVersion, deleteConnectionFile)).ifPresent(
+        vmDef.extra().connectionFile(event.secret(),
+            preferredIpVersion, deleteConnectionFile).ifPresent(
                 cf -> channel.respond(new NotifyConletView(type(),
                     model.getConletId(), "openConsole", cf)));
     }
