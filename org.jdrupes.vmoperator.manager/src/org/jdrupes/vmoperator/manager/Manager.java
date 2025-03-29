@@ -264,7 +264,7 @@ public class Manager extends Component {
      */
     @Handler(priority = -1000)
     public void onStop(Stop event) {
-        logger.fine(() -> "Application stopped.");
+        logger.info(() -> "Application stopped.");
     }
 
     static {

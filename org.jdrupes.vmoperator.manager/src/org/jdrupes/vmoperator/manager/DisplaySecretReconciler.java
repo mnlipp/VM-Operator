@@ -155,9 +155,11 @@ public class DisplaySecretReconciler extends Component {
         }
 
         // Create secret
+        var secretName = vmDef.name() + "-" + DisplaySecret.NAME;
+        logger.fine(() -> "Create/update secret " + secretName);
         var secret = new V1Secret();
         secret.setMetadata(new V1ObjectMeta().namespace(vmDef.namespace())
-            .name(vmDef.name() + "-" + DisplaySecret.NAME)
+            .name(secretName)
             .putLabelsItem("app.kubernetes.io/name", APP_NAME)
             .putLabelsItem("app.kubernetes.io/component", DisplaySecret.NAME)
             .putLabelsItem("app.kubernetes.io/instance", vmDef.name()));
