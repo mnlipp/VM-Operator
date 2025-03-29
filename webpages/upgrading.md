@@ -34,7 +34,7 @@ layout: vm-operator
     update the template manually. If you're using your own template, you
     have to add a virtual serial port (see the git history of the standard
     template for the required addition).
-    
+
   * Stateful sets from pre 3.4.0 versions are no longer removed automatically
     (see notes below). However, PVCs with the old naming scheme are still
     reused.
