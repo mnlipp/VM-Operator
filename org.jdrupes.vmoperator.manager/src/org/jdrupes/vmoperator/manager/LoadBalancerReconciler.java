@@ -71,13 +71,19 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
      * @param vmDef the VM definition
      * @param model the model
      * @param channel the channel
+     * @param specChanged the spec changed
      * @throws IOException Signals that an I/O exception has occurred.
      * @throws TemplateException the template exception
      * @throws ApiException the api exception
      */
-    public void reconcile(VmDefinition vmDef,
-            Map<String, Object> model, VmChannel channel)
+    public void reconcile(VmDefinition vmDef, Map<String, Object> model,
+            VmChannel channel, boolean specChanged)
             throws IOException, TemplateException, ApiException {
+        // Nothing to do unless spec changed
+        if (!specChanged) {
+            return;
+        }
+
         // Check if to be generated
         @SuppressWarnings({ "PMD.AvoidDuplicateLiterals", "unchecked" })
         var lbsDef = Optional.of(model)
