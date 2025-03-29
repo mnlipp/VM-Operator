@@ -57,8 +57,8 @@ import org.jdrupes.vmoperator.manager.events.GetVms.VmData;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.ResetVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
-import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.manager.events.VmPoolChanged;
+import org.jdrupes.vmoperator.manager.events.VmResourceChanged;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Components;
 import org.jgrapes.core.Event;
@@ -658,7 +658,7 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
     @SuppressWarnings({ "PMD.ConfusingTernary", "PMD.CognitiveComplexity",
         "PMD.AvoidInstantiatingObjectsInLoops", "PMD.AvoidDuplicateLiterals",
         "PMD.ConfusingArgumentToVarargsMethod" })
-    public void onVmDefChanged(VmDefChanged event, VmChannel channel)
+    public void onVmResourceChanged(VmResourceChanged event, VmChannel channel)
             throws IOException, InterruptedException {
         var vmDef = event.vmDefinition();
 
@@ -847,8 +847,8 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
         if (!event.secretAvailable()) {
             return;
         }
-        vmDef.extra().map(xtra -> xtra.connectionFile(event.secret(),
-            preferredIpVersion, deleteConnectionFile))
+        vmDef.extra().connectionFile(event.secret(),
+            preferredIpVersion, deleteConnectionFile)
             .ifPresent(cf -> channel.respond(new NotifyConletView(type(),
                 model.getConletId(), "openConsole", cf)));
     }

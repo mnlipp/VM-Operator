@@ -177,7 +177,7 @@ public class VmPool {
         }
 
         // Additional check in case lastUsed has not been updated
-        // by PoolMonitor#onVmDefChanged() yet ("race condition")
+        // by PoolMonitor#onVmResourceChanged() yet ("race condition")
         if (vmDef.condition("ConsoleConnected")
             .map(cc -> cc.getLastTransitionTime().toInstant())
             .map(this::retainUntil)

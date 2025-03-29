@@ -25,31 +25,35 @@ import org.jgrapes.core.Components;
 import org.jgrapes.core.Event;
 
 /**
- * Indicates a change in a VM definition. Note that the definition
- * consists of the metadata (mostly immutable), the "spec" and the 
- * "status" parts. Consumers that are only interested in "spec" 
- * changes should check {@link #specChanged()} before processing 
- * the event any further. 
+ * Indicates a change in a VM "resource". Note that the resource
+ * combines the VM CR's metadata (mostly immutable), the VM CR's
+ * "spec" part, the VM CR's "status" subresource and state information
+ * from the pod. Consumers that are only interested in "spec" changes
+ * should check {@link #specChanged()} before processing the event any
+ * further. 
  */
 @SuppressWarnings("PMD.DataClass")
-public class VmDefChanged extends Event<Void> {
+public class VmResourceChanged extends Event<Void> {
 
     private final K8sObserver.ResponseType type;
-    private final boolean specChanged;
     private final VmDefinition vmDefinition;
+    private final boolean specChanged;
+    private final boolean podChanged;
 
     /**
      * Instantiates a new VM changed event.
      *
      * @param type the type
-     * @param specChanged the spec part changed
      * @param vmDefinition the VM definition
+     * @param specChanged the spec part changed
      */
-    public VmDefChanged(K8sObserver.ResponseType type, boolean specChanged,
-            VmDefinition vmDefinition) {
+    public VmResourceChanged(K8sObserver.ResponseType type,
+            VmDefinition vmDefinition, boolean specChanged,
+            boolean podChanged) {
         this.type = type;
-        this.specChanged = specChanged;
         this.vmDefinition = vmDefinition;
+        this.specChanged = specChanged;
+        this.podChanged = podChanged;
     }
 
     /**
@@ -62,6 +66,15 @@ public class VmDefChanged extends Event<Void> {
     }
 
     /**
+     * Return the VM definition.
+     *
+     * @return the VM definition
+     */
+    public VmDefinition vmDefinition() {
+        return vmDefinition;
+    }
+
+    /**
      * Indicates if the "spec" part changed.
      */
     public boolean specChanged() {
@@ -69,12 +82,10 @@ public class VmDefChanged extends Event<Void> {
     }
 
     /**
-     * Return the VM definition.
-     *
-     * @return the VM definition
+     * Indicates if the pod status changed.
      */
-    public VmDefinition vmDefinition() {
-        return vmDefinition;
+    public boolean podChanged() {
+        return podChanged;
     }
 
     @Override

@@ -1,6 +1,6 @@
 /*
  * VM-Operator
- * Copyright (C) 2023 Michael N. Lipp
+ * Copyright (C) 2023, 2025 Michael N. Lipp
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -46,8 +46,8 @@ import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.PodChanged;
 import org.jdrupes.vmoperator.manager.events.UpdateAssignment;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
-import org.jdrupes.vmoperator.manager.events.VmDefChanged;
 import org.jdrupes.vmoperator.manager.events.VmPoolChanged;
+import org.jdrupes.vmoperator.manager.events.VmResourceChanged;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
 import org.jgrapes.core.annotation.Handler;
@@ -61,7 +61,7 @@ import org.jgrapes.util.events.ConfigurationUpdate;
  * 
  * The implementation splits the controller in two components. The
  * {@link VmMonitor} and the {@link Reconciler}. The former watches
- * the VM definitions (CRs) and generates {@link VmDefChanged} events
+ * the VM definitions (CRs) and generates {@link VmResourceChanged} events
  * when they change. The latter handles the changes and reconciles the
  * resources in the cluster.
  * 

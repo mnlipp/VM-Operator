@@ -64,18 +64,14 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
      * @param vmDef the vm def
      * @param model the model
      * @param channel the channel
+     * @param specChanged the spec changed
      * @throws IOException Signals that an I/O exception has occurred.
      * @throws TemplateException the template exception
      * @throws ApiException the api exception
      */
     public void reconcile(VmDefinition vmDef, Map<String, Object> model,
-            VmChannel channel)
+            VmChannel channel, boolean specChanged)
             throws IOException, TemplateException, ApiException {
-        // Don't do anything if stateful set is still in use (pre v3.4)
-        if ((Boolean) model.get("usingSts")) {
-            return;
-        }
-
         // Get pod stub.
         var podStub = K8sV1PodStub.get(channel.client(), vmDef.namespace(),
             vmDef.name());

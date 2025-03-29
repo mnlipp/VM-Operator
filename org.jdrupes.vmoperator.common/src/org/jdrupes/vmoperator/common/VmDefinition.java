@@ -300,8 +300,8 @@ public class VmDefinition extends K8sDynamicModel {
      *
      * @return the data
      */
-    public Optional<VmExtraData> extra() {
-        return Optional.ofNullable(extraData);
+    public VmExtraData extra() {
+        return extraData;
     }
 
     /**

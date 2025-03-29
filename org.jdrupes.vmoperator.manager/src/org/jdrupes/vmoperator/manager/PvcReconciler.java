@@ -67,30 +67,35 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
     /**
      * Reconcile the PVCs.
      *
-     * @param vmDef the vm def
+     * @param vmDef the VM definition
      * @param model the model
      * @param channel the channel
+     * @param specChanged the spec changed
      * @throws IOException Signals that an I/O exception has occurred.
      * @throws TemplateException the template exception
      * @throws ApiException the api exception
      */
-    @SuppressWarnings("PMD.AvoidDuplicateLiterals")
+    @SuppressWarnings({ "PMD.AvoidDuplicateLiterals", "unchecked" })
     public void reconcile(VmDefinition vmDef, Map<String, Object> model,
-            VmChannel channel)
+            VmChannel channel, boolean specChanged)
             throws IOException, TemplateException, ApiException {
-        // Existing disks
-        ListOptions listOpts = new ListOptions();
-        listOpts.setLabelSelector(
-            "app.kubernetes.io/managed-by=" + VM_OP_NAME + ","
-                + "app.kubernetes.io/name=" + APP_NAME + ","
-                + "app.kubernetes.io/instance=" + vmDef.name());
-        var knownDisks = K8sV1PvcStub.list(channel.client(),
-            vmDef.namespace(), listOpts);
-        var knownPvcs = knownDisks.stream().map(K8sV1PvcStub::name)
-            .collect(Collectors.toSet());
+        Set<String> knownPvcs;
+        if (!specChanged && channel.associated(this, Set.class).isPresent()) {
+            knownPvcs = (Set<String>) channel.associated(this, Set.class).get();
+        } else {
+            ListOptions listOpts = new ListOptions();
+            listOpts.setLabelSelector(
+                "app.kubernetes.io/managed-by=" + VM_OP_NAME + ","
+                    + "app.kubernetes.io/name=" + APP_NAME + ","
+                    + "app.kubernetes.io/instance=" + vmDef.name());
+            knownPvcs = K8sV1PvcStub.list(channel.client(),
+                vmDef.namespace(), listOpts).stream().map(K8sV1PvcStub::name)
+                .collect(Collectors.toSet());
+            channel.setAssociated(this, knownPvcs);
+        }
 
         // Reconcile runner data pvc
-        reconcileRunnerDataPvc(vmDef, model, channel, knownPvcs);
+        reconcileRunnerDataPvc(vmDef, model, channel, knownPvcs, specChanged);
 
         // Reconcile pvcs for defined disks
         var diskDefs = vmDef.<List<Map<String, Object>>> fromVm("disks")
@@ -114,15 +119,13 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
             }
 
             // Update PVC
-            model.put("disk", diskDef);
-            reconcileRunnerDiskPvc(vmDef, model, channel);
+            reconcileRunnerDiskPvc(vmDef, model, channel, specChanged, diskDef);
         }
-        model.remove("disk");
     }
 
     private void reconcileRunnerDataPvc(VmDefinition vmDef,
             Map<String, Object> model, VmChannel channel,
-            Set<String> knownPvcs)
+            Set<String> knownPvcs, boolean specChanged)
             throws TemplateNotFoundException, MalformedTemplateNameException,
             ParseException, IOException, TemplateException, ApiException {
 
@@ -135,7 +138,12 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         }
 
         // Generate PVC
-        model.put("runnerDataPvcName", vmDef.name() + "-runner-data");
+        var runnerDataPvcName = vmDef.name() + "-runner-data";
+        model.put("runnerDataPvcName", runnerDataPvcName);
+        if (!specChanged) {
+            // Augmenting the model is all we have to do
+            return;
+        }
         var fmTemplate = fmConfig.getTemplate("runnerDataPvc.ftl.yaml");
         StringWriter out = new StringWriter();
         fmTemplate.process(model, out);
@@ -159,17 +167,24 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
     }
 
     private void reconcileRunnerDiskPvc(VmDefinition vmDef,
-            Map<String, Object> model, VmChannel channel)
+            Map<String, Object> model, VmChannel channel, boolean specChanged,
+            Map<String, Object> diskDef)
             throws TemplateNotFoundException, MalformedTemplateNameException,
             ParseException, IOException, TemplateException, ApiException {
         // Generate PVC
-        @SuppressWarnings("unchecked")
-        var diskDef = (Map<String, Object>) model.get("disk");
         var pvcName = vmDef.name() + "-" + diskDef.get("generatedDiskName");
         diskDef.put("generatedPvcName", pvcName);
+        if (!specChanged) {
+            // Augmenting the model is all we have to do
+            return;
+        }
+
+        // Generate PVC
+        model.put("disk", diskDef);
         var fmTemplate = fmConfig.getTemplate("runnerDiskPvc.ftl.yaml");
         StringWriter out = new StringWriter();
         fmTemplate.process(model, out);
+        model.remove("disk");
         // Avoid Yaml.load due to
         // https://github.com/kubernetes-client/java/issues/2741
         var pvcDef = Dynamics.newFromYaml(
