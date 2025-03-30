@@ -48,17 +48,18 @@ a user remains valid after the user closes the console. This ensures that
 a user can resume work within this timeframe without the risk of another
 user taking over the VM. The time is specified as an
 [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations).
-Specifying an ISO 8601 time is also supported, but if you consider to
+Specifying an ISO 8601 time is also supported, but if you consider
 using an absolute time, check again whether a dedicated VM for the user
-is more appropriate.
+isn't the more appropriate choice.
 
-Setting `loginOnAssignment` to `true` triggers automatic login of the
-user (as described in [section auto login](auto-login.html)) when
-the VM is assigned. The `permissions` property specifies the actions
-that users or roles can perform on assigned VMs.
+Setting `loginOnAssignment` to `true` (defaults to `false`) triggers automatic
+login of the user (as described in [section auto login](auto-login.html))
+when the VM is assigned. The `permissions` property specifies the actions
+that users or roles can perform on assigned VMs. The `may` property defaults
+to `[accessConsole]` if not specified.
 
 VMs become members of one (or more) pools by adding the pool name to
-the `spec.pools` array, as shown below:
+the `spec.pools` array in the VM definition, as shown below:
 
 ```yaml
 apiVersion: "vmoperator.jdrupes.org/v1"
