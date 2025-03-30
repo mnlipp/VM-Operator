@@ -157,6 +157,15 @@ import org.jgrapes.util.events.WatchFile;
  * 
  * success --> Running
  * 
+ * state Running {
+ *     state Booting
+ *     state Booted
+ *     
+ *     [*] -right-> Booting
+ *     Booting -down-> Booting: VserportChanged[guest agent connected]/fire GetOsinfo
+ *     Booting --> Booted: Osinfo
+ * }
+ * 
  * state Terminating {
  *     state terminate <<entryPoint>>
  *     state qemuRunning <<choice>>
