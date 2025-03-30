@@ -46,8 +46,11 @@ spec:
 The `retention` specifies how long the assignment of a VM from the pool to
 a user remains valid after the user closes the console. This ensures that
 a user can resume work within this timeframe without the risk of another
-user taking over the VM. The time is specified as
+user taking over the VM. The time is specified as an
 [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations).
+Specifying an ISO 8601 time is also supported, but if you consider to
+using an absolute time, check again whether a dedicated VM for the user
+is more appropriate.
 
 Setting `loginOnAssignment` to `true` triggers automatic login of the
 user (as described in [section auto login](auto-login.html)) when

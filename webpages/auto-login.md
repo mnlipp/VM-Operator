@@ -9,7 +9,7 @@ layout: vm-operator
 
 When users log into the web GUI, they have already authenticated with the
 VM-Operator. In some environments, requiring an additional login on the
-guest OS can be cumbersome. To enhance the user experience, the VM-Operator
+guest OS can be annoying. To enhance the user experience, the VM-Operator
 supports automatic login on the guest operating system, thus eliminating
 the need for multiple logins. However, this feature requires specific
 support from the guest OS.
@@ -18,9 +18,9 @@ support from the guest OS.
 
 Automatic login requires an agent running inside the guest OS. Similar
 to QEMU's standard guest agent, the VM-Operator agent communicates with
-the host via a tty device (`/dev/virtio-ports/org.jdrupes.vmop_agent.0`). On
-modern Linux systems, `udev` can detect this device and trigger the start
-of an associated systemd service.
+the host via a tty device (provided in the guest as 
+`/dev/virtio-ports/org.jdrupes.vmop_agent.0`). On modern Linux systems, `udev` can
+detect this device and trigger the start of an associated systemd service.
 
 Sample configuration files for a VM-Operator agent are available
 [here](https://github.com/mnlipp/VM-Operator/tree/main/dev-example/vmop-agent).
