@@ -41,7 +41,7 @@ class BasicTests {
     private static APIResource vmsContext;
     private static K8sV1DeploymentStub mgrDeployment;
     private static K8sDynamicStub vmStub;
-    private static final String VM_NAME = "unittest-vm";
+    private static final String VM_NAME = "test-vm";
     private static final Object EXISTS = new Object();
 
     @BeforeAll
@@ -54,7 +54,7 @@ class BasicTests {
 
         // Update manager pod by scaling deployment
         mgrDeployment
-            = K8sV1DeploymentStub.get(client, "vmop-dev", "vm-operator");
+            = K8sV1DeploymentStub.get(client, "vmop-test", "vm-operator");
         mgrDeployment.scale(0);
         mgrDeployment.scale(1);
         waitForManager();
@@ -65,13 +65,13 @@ class BasicTests {
         vmsContext = apiRes.get();
 
         // Cleanup existing VM
-        K8sDynamicStub.get(client, vmsContext, "vmop-dev", VM_NAME)
+        K8sDynamicStub.get(client, vmsContext, "vmop-test", VM_NAME)
             .delete();
         ListOptions listOpts = new ListOptions();
         listOpts.setLabelSelector("app.kubernetes.io/name=" + APP_NAME + ","
             + "app.kubernetes.io/instance=" + VM_NAME + ","
             + "app.kubernetes.io/component=" + DisplaySecret.NAME);
-        var secrets = K8sV1SecretStub.list(client, "vmop-dev", listOpts);
+        var secrets = K8sV1SecretStub.list(client, "vmop-test", listOpts);
         for (var secret : secrets) {
             secret.delete();
         }
@@ -103,7 +103,7 @@ class BasicTests {
             "app.kubernetes.io/managed-by=" + VM_OP_NAME + ","
                 + "app.kubernetes.io/name=" + APP_NAME + ","
                 + "app.kubernetes.io/instance=" + VM_NAME);
-        var knownPvcs = K8sV1PvcStub.list(client, "vmop-dev", listOpts);
+        var knownPvcs = K8sV1PvcStub.list(client, "vmop-test", listOpts);
         for (var pvc : knownPvcs) {
             pvc.delete();
         }
@@ -112,7 +112,7 @@ class BasicTests {
     @AfterAll
     static void tearDownAfterClass() throws Exception {
         // Cleanup
-        K8sDynamicStub.get(client, vmsContext, "vmop-dev", VM_NAME)
+        K8sDynamicStub.get(client, vmsContext, "vmop-test", VM_NAME)
             .delete();
         deletePvcs();
 
@@ -124,7 +124,7 @@ class BasicTests {
     void testConfigMap()
             throws IOException, InterruptedException, ApiException {
         K8sV1ConfigMapStub stub
-            = K8sV1ConfigMapStub.get(client, "vmop-dev", VM_NAME);
+            = K8sV1ConfigMapStub.get(client, "vmop-test", VM_NAME);
         for (int i = 0; i < 10; i++) {
             if (stub.model().isPresent()) {
                 break;
@@ -134,7 +134,7 @@ class BasicTests {
         // Check config map
         var config = stub.model().get();
         Map<List<? extends Object>, Object> toCheck = Map.of(
-            List.of("namespace"), "vmop-dev",
+            List.of("namespace"), "vmop-test",
             List.of("name"), VM_NAME,
             List.of("labels", "app.kubernetes.io/name"), Constants.APP_NAME,
             List.of("labels", "app.kubernetes.io/instance"), VM_NAME,
@@ -191,7 +191,7 @@ class BasicTests {
             + "app.kubernetes.io/component=" + DisplaySecret.NAME);
         Collection<K8sV1SecretStub> secrets = null;
         for (int i = 0; i < 10; i++) {
-            secrets = K8sV1SecretStub.list(client, "vmop-dev", listOpts);
+            secrets = K8sV1SecretStub.list(client, "vmop-test", listOpts);
             if (secrets.size() > 0) {
                 break;
             }
@@ -207,7 +207,7 @@ class BasicTests {
     @Test
     void testRunnerPvc() throws ApiException, InterruptedException {
         var stub
-            = K8sV1PvcStub.get(client, "vmop-dev", VM_NAME + "-runner-data");
+            = K8sV1PvcStub.get(client, "vmop-test", VM_NAME + "-runner-data");
         for (int i = 0; i < 10; i++) {
             if (stub.model().isPresent()) {
                 break;
@@ -227,7 +227,7 @@ class BasicTests {
     @Test
     void testSystemDiskPvc() throws ApiException, InterruptedException {
         var stub
-            = K8sV1PvcStub.get(client, "vmop-dev", VM_NAME + "-system-disk");
+            = K8sV1PvcStub.get(client, "vmop-test", VM_NAME + "-system-disk");
         for (int i = 0; i < 10; i++) {
             if (stub.model().isPresent()) {
                 break;
@@ -248,7 +248,7 @@ class BasicTests {
     @Test
     void testDisk1Pvc() throws ApiException, InterruptedException {
         var stub
-            = K8sV1PvcStub.get(client, "vmop-dev", VM_NAME + "-disk-1");
+            = K8sV1PvcStub.get(client, "vmop-test", VM_NAME + "-disk-1");
         for (int i = 0; i < 10; i++) {
             if (stub.model().isPresent()) {
                 break;
@@ -274,7 +274,7 @@ class BasicTests {
             new V1Patch("[{\"op\": \"replace\", \"path\": \"/spec/vm/state"
                 + "\", \"value\": \"Running\"}]"),
             client.defaultPatchOptions()).isPresent());
-        var stub = K8sV1PodStub.get(client, "vmop-dev", VM_NAME);
+        var stub = K8sV1PodStub.get(client, "vmop-test", VM_NAME);
         for (int i = 0; i < 20; i++) {
             if (stub.model().isPresent()) {
                 break;
@@ -303,7 +303,7 @@ class BasicTests {
 
     @Test
     public void testLoadBalancer() throws ApiException, InterruptedException {
-        var stub = K8sV1ServiceStub.get(client, "vmop-dev", VM_NAME);
+        var stub = K8sV1ServiceStub.get(client, "vmop-test", VM_NAME);
         for (int i = 0; i < 10; i++) {
             if (stub.model().isPresent()) {
                 break;

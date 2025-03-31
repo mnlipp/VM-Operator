@@ -1,6 +1,6 @@
 /*
  * VM-Operator
- * Copyright (C) 2023 Michael N. Lipp
+ * Copyright (C) 2023,2025 Michael N. Lipp
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -83,8 +83,18 @@
  * [YamlConfigurationStore] *-right[hidden]- [Controller]
  *
  * [Manager] *-- [Controller]
- * [Controller] *-- [VmWatcher]
- * [Controller] *-- [Reconciler]
+ * Component VmMonitor as VmMonitor <<internal>>
+ * [Controller] *-- [VmMonitor]
+ * [VmMonitor] -right[hidden]- [PoolMonitor]
+ * Component PoolMonitor as PoolMonitor <<internal>>
+ * [Controller] *-- [PoolMonitor]
+ * Component PodMonitor as PodMonitor <<internal>>
+ * [Controller] *-- [PodMonitor]
+ * [PodMonitor] -up[hidden]- VmMonitor
+ * Component DisplaySecretMonitor as DisplaySecretMonitor <<internal>>
+ * [Controller] *-- [DisplaySecretMonitor]
+ * [DisplaySecretMonitor] -up[hidden]- VmMonitor
+ * [Controller] *-left- [Reconciler]
  * [Controller] -right[hidden]- [GuiHttpServer]
  * 
  * [Manager] *-down- [GuiSocketServer:8080]

@@ -1,0 +1,111 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- ../../deploy
+
+namespace: vmop-test
+
+patches:
+- patch: |-
+    kind: PersistentVolumeClaim
+    apiVersion: v1
+    metadata:
+      name: vmop-image-repository
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
+      storageClassName: local-path
+
+- patch: |-
+    kind: ConfigMap
+    apiVersion: v1
+    metadata:
+      name: vm-operator
+    data:
+      # Keep in sync with config.yaml
+      config.yaml: |
+        "/Manager":
+          # clusterName: "test"
+          "/Controller":
+            "/Reconciler":
+              runnerData:
+                storageClassName: null
+              loadBalancerService:
+                labels:
+                  label1: label1
+                  label2: toBeReplaced
+                annotations:
+                  metallb.universe.tf/loadBalancerIPs: 192.168.168.1
+                  metallb.universe.tf/ip-allocated-from-pool: single-common
+                  metallb.universe.tf/allow-shared-ip: single-common
+          "/GuiSocketServer":
+            port: 8888
+          "/GuiHttpServer":
+            # This configures the GUI
+            "/ConsoleWeblet":
+              "/WebConsole":
+                "/LoginConlet":
+                  users:
+                  - name: admin
+                    fullName: Administrator
+                    password: "$2b$05$NiBd74ZGdplLC63ePZf1f.UtjMKkbQ23cQoO2OKOFalDBHWAOy21."
+                  - name: test1
+                    fullName: Test Account
+                    password: "$2b$05$hZaI/jToXf/d3BctZdT38Or7H7h6Pn2W3WiB49p5AyhDHFkkYCvo2"
+                  - name: test2
+                    fullName: Test Account
+                    password: "$2b$05$hZaI/jToXf/d3BctZdT38Or7H7h6Pn2W3WiB49p5AyhDHFkkYCvo2"
+                  - name: test3
+                    fullName: Test Account
+                    password: "$2b$05$hZaI/jToXf/d3BctZdT38Or7H7h6Pn2W3WiB49p5AyhDHFkkYCvo2"
+                "/RoleConfigurator":
+                  rolesByUser:
+                    # User admin has role admin
+                    admin:
+                    - admin
+                    test1:
+                    - user
+                    test2:
+                    - user
+                    test3:
+                    - user
+                    # All users have role other
+                    "*":
+                    - other
+                  replace: false
+                "/RoleConletFilter":
+                  conletTypesByRole:
+                    # Admins can use all conlets
+                    admin:
+                    - "*"
+                    user:
+                    - org.jdrupes.vmoperator.vmviewer.VmViewer
+                    # Others cannot use any conlet (except login conlet to log out)
+                    other:
+                    - org.jgrapes.webconlet.locallogin.LoginConlet
+                "/ComponentCollector":
+                  "/VmAccess":
+                    displayResource:
+                      preferredIpVersion: ipv4
+                    syncPreviewsFor:
+                    - role: user
+- target:
+    group: apps
+    version: v1
+    kind: Deployment
+    name: vm-operator
+  patch: |-
+    - op: replace
+      path: /spec/template/spec/containers/0/image
+      value: docker-registry.lan.mnl.de/vmoperator/org.jdrupes.vmoperator.manager:test
+    - op: replace
+      path: /spec/template/spec/containers/0/imagePullPolicy
+      value: Always
+    - op: replace
+      path: /spec/replicas
+      value: 0
+      

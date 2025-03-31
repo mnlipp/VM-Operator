@@ -9,7 +9,7 @@ layout: vm-operator
 
 # Welcome to VM-Operator
 
-![Overview picture](index-pic.svg)
+![VM-Operator summary picture](index-pic.svg)
 
 This project provides an easy to use and flexible solution for
 running QEMU/KVM based virtual machines (VMs) in Kubernetes pods.
