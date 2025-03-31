@@ -20,8 +20,7 @@ spec:
       containers:
         - name: vm-operator
           image: >-
-            ghcr.io/mnlipp/org.jdrupes.vmoperator.manager:latest
-          imagePullPolicy: Always
+            ghcr.io/mnlipp/org.jdrupes.vmoperator.manager:4.0.0
           env:
           - name: JAVA_OPTS
             # The VM operator needs about 25 MB of memory, plus 1 MB for
