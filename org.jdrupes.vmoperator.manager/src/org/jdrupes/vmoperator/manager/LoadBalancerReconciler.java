@@ -22,6 +22,7 @@ import com.google.gson.Gson;
 import freemarker.template.Configuration;
 import freemarker.template.TemplateException;
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.JSON;
 import io.kubernetes.client.openapi.models.V1APIService;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
@@ -122,7 +123,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
             ? (Map<String, Map<String, String>>) lbsDef
             : null;
         var client = channel.client();
-        mergeMetadata(client.getJSON().getGson(), svcDef, defaults, vmDef);
+        mergeMetadata(JSON.getGson(), svcDef, defaults, vmDef);
 
         // Apply
         var svcStub = K8sV1ServiceStub

@@ -22,7 +22,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.kubernetes.client.common.KubernetesListObject;
-import io.kubernetes.client.openapi.Configuration;
+import io.kubernetes.client.openapi.JSON;
 import io.kubernetes.client.openapi.models.V1ListMeta;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -147,9 +147,7 @@ public class K8sDynamicModelsBase<T extends K8sDynamicModel>
      * @param objectMeta the new metadata
      */
     public void setMetadata(V1ListMeta objectMeta) {
-        data.add("metadata",
-            Configuration.getDefaultApiClient().getJSON().getGson()
-                .toJsonTree(objectMeta));
+        data.add("metadata", JSON.getGson().toJsonTree(objectMeta));
     }
 
     @Override

@@ -46,6 +46,6 @@ public abstract class K8sDynamicStubBase<O extends K8sDynamicModel,
             K8sClient client, APIResource context, String namespace,
             String name) {
         super(objectClass, objectListClass, client, context, namespace, name);
-        taf.register(client);
+        taf.register();
     }
 }

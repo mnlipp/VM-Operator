@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
+import java.net.URI;
 import java.text.DateFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
@@ -804,6 +805,7 @@ public class K8sClient extends ApiClient {
     /**
      * Builds the call.
      *
+     * @param baseUrl the base url
      * @param path the path
      * @param method the method
      * @param queryParams the query params
@@ -820,12 +822,13 @@ public class K8sClient extends ApiClient {
      */
     @SuppressWarnings({ "rawtypes", "PMD.ExcessiveParameterList" })
     @Override
-    public Call buildCall(String path, String method, List<Pair> queryParams,
-            List<Pair> collectionQueryParams, Object body,
-            Map<String, String> headerParams, Map<String, String> cookieParams,
-            Map<String, Object> formParams, String[] authNames,
+    public Call buildCall(String baseUrl, String path, String method,
+            List<Pair> queryParams, List<Pair> collectionQueryParams,
+            Object body, Map<String, String> headerParams,
+            Map<String, String> cookieParams, Map<String, Object> formParams,
+            String[] authNames,
             ApiCallback callback) throws ApiException {
-        return apiClient().buildCall(path, method, queryParams,
+        return apiClient().buildCall(baseUrl, path, method, queryParams,
             collectionQueryParams, body, headerParams, cookieParams, formParams,
             authNames, callback);
     }
@@ -833,6 +836,7 @@ public class K8sClient extends ApiClient {
     /**
      * Builds the request.
      *
+     * @param baseUrl the base url
      * @param path the path
      * @param method the method
      * @param queryParams the query params
@@ -849,12 +853,12 @@ public class K8sClient extends ApiClient {
      */
     @SuppressWarnings({ "rawtypes", "PMD.ExcessiveParameterList" })
     @Override
-    public Request buildRequest(String path, String method,
+    public Request buildRequest(String baseUrl, String path, String method,
             List<Pair> queryParams, List<Pair> collectionQueryParams,
             Object body, Map<String, String> headerParams,
             Map<String, String> cookieParams, Map<String, Object> formParams,
             String[] authNames, ApiCallback callback) throws ApiException {
-        return apiClient().buildRequest(path, method, queryParams,
+        return apiClient().buildRequest(baseUrl, path, method, queryParams,
             collectionQueryParams, body, headerParams, cookieParams, formParams,
             authNames, callback);
     }
@@ -862,6 +866,7 @@ public class K8sClient extends ApiClient {
     /**
      * Builds the url.
      *
+     * @param baseUrl the base url
      * @param path the path
      * @param queryParams the query params
      * @param collectionQueryParams the collection query params
@@ -869,9 +874,10 @@ public class K8sClient extends ApiClient {
      * @see ApiClient#buildUrl(java.lang.String, java.util.List, java.util.List)
      */
     @Override
-    public String buildUrl(String path, List<Pair> queryParams,
+    public String buildUrl(String baseUrl, String path, List<Pair> queryParams,
             List<Pair> collectionQueryParams) {
-        return apiClient().buildUrl(path, queryParams, collectionQueryParams);
+        return apiClient().buildUrl(baseUrl, path, queryParams,
+            collectionQueryParams);
     }
 
     /**
@@ -907,14 +913,15 @@ public class K8sClient extends ApiClient {
      * @param queryParams the query params
      * @param headerParams the header params
      * @param cookieParams the cookie params
+     * @throws ApiException 
      * @see ApiClient#updateParamsForAuth(java.lang.String[], java.util.List, java.util.Map, java.util.Map)
      */
     @Override
     public void updateParamsForAuth(String[] authNames, List<Pair> queryParams,
-            Map<String, String> headerParams,
-            Map<String, String> cookieParams) {
+            Map<String, String> headerParams, Map<String, String> cookieParams,
+            String payload, String method, URI uri) throws ApiException {
         apiClient().updateParamsForAuth(authNames, queryParams, headerParams,
-            cookieParams);
+            cookieParams, payload, method, uri);
     }
 
     /**

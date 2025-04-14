@@ -71,7 +71,7 @@ import org.jgrapes.core.events.Start;
 public class StatusUpdater extends VmDefUpdater {
 
     @SuppressWarnings("PMD.FieldNamingConventions")
-    private static final Gson gson = new JSON().getGson();
+    private static final Gson gson = JSON.getGson();
     @SuppressWarnings("PMD.FieldNamingConventions")
     private static final ObjectMapper objectMapper
         = new ObjectMapper().registerModule(new JavaTimeModule());

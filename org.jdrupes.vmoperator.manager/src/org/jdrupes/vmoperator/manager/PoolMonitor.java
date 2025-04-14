@@ -21,6 +21,7 @@ package org.jdrupes.vmoperator.manager;
 import com.google.gson.JsonObject;
 import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.JSON;
 import io.kubernetes.client.util.Watch;
 import java.io.IOException;
 import java.util.Collections;
@@ -130,7 +131,7 @@ public class PoolMonitor extends
 
         // Get pool and merge changes
         var vmPool = pools.computeIfAbsent(poolName, k -> new VmPool(poolName));
-        vmPool.defineFrom(client().getJSON().getGson().fromJson(
+        vmPool.defineFrom(JSON.getGson().fromJson(
             GsonPtr.to(poolModel.data()).to("spec").get(), VmPool.class));
         poolPipeline.fire(new VmPoolChanged(vmPool));
     }

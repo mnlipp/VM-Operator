@@ -21,6 +21,7 @@ package org.jdrupes.vmoperator.common;
 import io.kubernetes.client.Discovery.APIResource;
 import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.JSON;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.Reader;
 import java.util.Collection;
@@ -101,8 +102,8 @@ public class K8sDynamicStub
      */
     public static K8sDynamicStub createFromYaml(K8sClient client,
             APIResource context, Reader yaml) throws ApiException {
-        var model = new K8sDynamicModel(client.getJSON().getGson(),
-            K8s.yamlToJson(client, yaml));
+        var model
+            = new K8sDynamicModel(JSON.getGson(), K8s.yamlToJson(client, yaml));
         return K8sGenericStub.create(K8sDynamicModel.class,
             K8sDynamicModels.class, client, context, model,
             (c, ns, n) -> new K8sDynamicStub(c, context, ns, n));

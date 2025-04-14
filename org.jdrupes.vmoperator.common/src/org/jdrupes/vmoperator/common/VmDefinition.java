@@ -54,7 +54,7 @@ public class VmDefinition extends K8sDynamicModel {
     private static final Logger logger
         = Logger.getLogger(VmDefinition.class.getName());
     @SuppressWarnings("PMD.FieldNamingConventions")
-    private static final Gson gson = new JSON().getGson();
+    private static final Gson gson = JSON.getGson();
     @SuppressWarnings("PMD.FieldNamingConventions")
     private static final ObjectMapper objectMapper
         = new ObjectMapper().registerModule(new JavaTimeModule());

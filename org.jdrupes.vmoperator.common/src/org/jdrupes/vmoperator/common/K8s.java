@@ -27,6 +27,7 @@ import io.kubernetes.client.common.KubernetesType;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.JSON;
 import io.kubernetes.client.openapi.apis.EventsV1Api;
 import io.kubernetes.client.openapi.models.EventsV1Event;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
@@ -118,7 +119,7 @@ public class K8s {
             = new Yaml(new SafeConstructor(new LoaderOptions())).load(yaml);
 
         // There's no short-cut from Java (collections) to Gson
-        var gson = client.getJSON().getGson();
+        var gson = JSON.getGson();
         var jsonText = gson.toJson(yamlData);
         return gson.fromJson(jsonText, JsonObject.class);
     }
@@ -245,7 +246,7 @@ public class K8s {
         if (event.getRegarding() == null) {
             event.regarding(objectReference(object));
         }
-        new EventsV1Api(client).createNamespacedEvent(
-            object.getMetadata().getNamespace(), event, null, null, null, null);
+        new EventsV1Api(client)
+            .createNamespacedEvent(object.getMetadata().getNamespace(), event);
     }
 }

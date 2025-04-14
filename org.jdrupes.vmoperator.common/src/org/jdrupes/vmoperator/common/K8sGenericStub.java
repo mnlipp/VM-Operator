@@ -24,6 +24,7 @@ import io.kubernetes.client.common.KubernetesListObject;
 import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.JSON;
 import io.kubernetes.client.util.Strings;
 import io.kubernetes.client.util.generic.GenericKubernetesApi;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
@@ -325,7 +326,7 @@ public class K8sGenericStub<O extends KubernetesObject,
         opts.setForce(true);
         opts.setFieldManager("kubernetes-java-kubectl-apply");
         return patch(V1Patch.PATCH_FORMAT_APPLY_YAML,
-            new V1Patch(client.getJSON().serialize(def)), opts);
+            new V1Patch(JSON.serialize(def)), opts);
     }
 
     /**
@@ -359,6 +360,7 @@ public class K8sGenericStub<O extends KubernetesObject,
      * @param <L> the object list type
      * @param <R> the result type
      */
+    @FunctionalInterface
     public interface GenericSupplier<O extends KubernetesObject,
             L extends KubernetesListObject, R extends K8sGenericStub<O, L>> {
 

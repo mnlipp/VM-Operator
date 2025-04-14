@@ -19,6 +19,7 @@
 package org.jdrupes.vmoperator.runner.qemu;
 
 import com.google.gson.JsonObject;
+import io.kubernetes.client.openapi.JSON;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -161,8 +162,7 @@ public class VmDefUpdater extends Component {
                     : cond)
                 .collect(Collectors.toCollection(() -> new ArrayList<>()));
         newConds.addAll(toReplace);
-        status.add("conditions",
-            apiClient.getJSON().getGson().toJsonTree(newConds));
+        status.add("conditions", JSON.getGson().toJsonTree(newConds));
         return status;
     }
 }

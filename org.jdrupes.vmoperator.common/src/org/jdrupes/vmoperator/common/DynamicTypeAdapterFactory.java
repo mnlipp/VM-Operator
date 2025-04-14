@@ -26,7 +26,7 @@ import com.google.gson.TypeAdapterFactory;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.kubernetes.client.openapi.ApiClient;
+import io.kubernetes.client.openapi.JSON;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
@@ -45,18 +45,15 @@ public class DynamicTypeAdapterFactory<O extends K8sDynamicModel,
 
     /**
      * Make sure that this adapter is registered.
-     *
-     * @param client the client
      */
-    public void register(ApiClient client) {
+    public void register() {
         if (!ModelCreator.class
-            .equals(client.getJSON().getGson().getAdapter(objectClass)
-                .getClass())
-            || !ModelsCreator.class.equals(client.getJSON().getGson()
+            .equals(JSON.getGson().getAdapter(objectClass).getClass())
+            || !ModelsCreator.class.equals(JSON.getGson()
                 .getAdapter(objectListClass).getClass())) {
-            Gson gson = client.getJSON().getGson();
-            client.getJSON().setGson(gson.newBuilder()
-                .registerTypeAdapterFactory(this).create());
+            Gson gson = JSON.getGson();
+            JSON.setGson(
+                gson.newBuilder().registerTypeAdapterFactory(this).create());
         }
     }
 
