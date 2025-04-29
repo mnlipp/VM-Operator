@@ -108,24 +108,30 @@ public class QemuMonitor extends QemuConnector {
     @Override
     protected void processInput(String line)
             throws IOException {
-        logger.fine(() -> "monitor(in): " + line);
+        logger.finer(() -> "monitor(in): " + line);
         try {
             var response = mapper.readValue(line, ObjectNode.class);
             if (response.has("QMP")) {
                 monitorReady = true;
+                logger.fine(() -> "QMP connection ready");
                 rep().fire(new MonitorReady());
                 return;
             }
             if (response.has("return") || response.has("error")) {
                 QmpCommand executed = executing.poll();
-                logger.fine(
+                logger.finer(
                     () -> String.format("(Previous \"monitor(in)\" is result "
                         + "from executing %s)", executed));
-                rep().fire(MonitorResult.from(executed, response));
+                var monRes = MonitorResult.from(executed, response);
+                logger.fine(() -> "QMP triggers: " + monRes);
+                rep().fire(monRes);
                 return;
             }
             if (response.has("event")) {
-                MonitorEvent.from(response).ifPresent(rep()::fire);
+                MonitorEvent.from(response).ifPresent(me -> {
+                    logger.fine(() -> "QMP triggers: " + me);
+                    rep().fire(me);
+                });
             }
         } catch (JsonProcessingException e) {
             throw new IOException(e);
@@ -141,7 +147,7 @@ public class QemuMonitor extends QemuConnector {
     public void onClosed(Closed<?> event, SocketIOChannel channel) {
         channel.associated(this, getClass()).ifPresent(qm -> {
             super.onClosed(event, channel);
-            logger.finer(() -> "QMP socket closed.");
+            logger.fine(() -> "QMP connection closed.");
             monitorReady = false;
         });
     }
@@ -158,7 +164,7 @@ public class QemuMonitor extends QemuConnector {
     public void onMonitorCommand(MonitorCommand event) throws IOException {
         // Check prerequisites
         if (!monitorReady && !(event.command() instanceof QmpCapabilities)) {
-            logger.severe(() -> "Premature monitor command (not ready): "
+            logger.severe(() -> "Premature QMP command (not ready): "
                 + event.command());
             rep().fire(new Stop());
             return;
@@ -166,10 +172,11 @@ public class QemuMonitor extends QemuConnector {
 
         // Send the command
         var command = event.command();
-        logger.fine(() -> "monitor(out): " + command.toString());
+        logger.fine(() -> "QMP handles: " + event.toString());
         String asText;
         try {
             asText = command.asText();
+            logger.finer(() -> "monitor(out): " + asText);
         } catch (JsonProcessingException e) {
             logger.log(Level.SEVERE, e,
                 () -> "Cannot serialize Json: " + e.getMessage());
@@ -192,8 +199,8 @@ public class QemuMonitor extends QemuConnector {
     @SuppressWarnings("PMD.AvoidSynchronizedStatement")
     public void onStop(Stop event) {
         if (!monitorReady) {
-            logger.fine(() -> "No QMP connection,"
-                + " cannot send powerdown command");
+            logger.fine(() -> "Not sending QMP powerdown command"
+                + " because QMP connection is closed");
             return;
         }
 
