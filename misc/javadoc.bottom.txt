@@ -32,4 +32,5 @@
     <noscript><p><img referrerpolicy="no-referrer-when-downgrade"
       src="//piwik.mnl.de/matomo.php?idsite=17&amp;rec=1&amp;action_name=VM-Operator" style="border:0;" alt="" /></p></noscript>
     <!-- End Matomo Code -->
+    <script defer src="https://gotit.mnl.de/script.js" data-website-id="14b277ad-d330-4a54-82f1-a77d111240ac"></script>
 </div>

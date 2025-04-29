@@ -69,14 +69,14 @@ public class GuestAgentClient extends AgentConnector {
      */
     @Override
     protected void agentConnected() {
-        logger.fine(() -> "guest agent connected");
+        logger.fine(() -> "Guest agent connected");
         connected = true;
         rep().fire(new GuestAgentCommand(new QmpGuestGetOsinfo()));
     }
 
     @Override
     protected void agentDisconnected() {
-        logger.fine(() -> "guest agent disconnected");
+        logger.fine(() -> "Guest agent disconnected");
         connected = false;
     }
 
@@ -88,15 +88,16 @@ public class GuestAgentClient extends AgentConnector {
      */
     @Override
     protected void processInput(String line) throws IOException {
-        logger.fine(() -> "guest agent(in): " + line);
+        logger.finer(() -> "guest agent(in): " + line);
         try {
             var response = mapper.readValue(line, ObjectNode.class);
             if (response.has("return") || response.has("error")) {
                 QmpCommand executed = executing.poll();
-                logger.fine(() -> String.format("(Previous \"guest agent(in)\""
+                logger.finer(() -> String.format("(Previous \"guest agent(in)\""
                     + " is result from executing %s)", executed));
                 if (executed instanceof QmpGuestGetOsinfo) {
                     var osInfo = new OsinfoEvent(response.get("return"));
+                    logger.fine(() -> "Guest agent triggers: " + osInfo);
                     rep().fire(osInfo);
                 }
             }
@@ -120,10 +121,11 @@ public class GuestAgentClient extends AgentConnector {
             return;
         }
         var command = event.command();
-        logger.fine(() -> "guest agent(out): " + command.toString());
+        logger.fine(() -> "Guest handles: " + event);
         String asText;
         try {
             asText = command.asText();
+            logger.finer(() -> "guest agent(out): " + asText);
         } catch (JsonProcessingException e) {
             logger.log(Level.SEVERE, e,
                 () -> "Cannot serialize Json: " + e.getMessage());
@@ -163,8 +165,8 @@ public class GuestAgentClient extends AgentConnector {
         }
         event.suspendHandling();
         suspendedStop = event;
-        logger.fine(() -> "Sending powerdown command, waiting for"
-            + " termination until " + waitUntil);
+        logger.fine(() -> "Attempting shutdown through guest agent,"
+            + " waiting for termination until " + waitUntil);
         powerdownTimer = Components.schedule(t -> {
             logger.fine(() -> "Powerdown timeout reached.");
             synchronized (this) {

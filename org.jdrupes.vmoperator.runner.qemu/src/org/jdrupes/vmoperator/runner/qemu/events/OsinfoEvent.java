@@ -19,6 +19,8 @@
 package org.jdrupes.vmoperator.runner.qemu.events;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.jgrapes.core.Channel;
+import org.jgrapes.core.Components;
 import org.jgrapes.core.Event;
 
 /**
@@ -39,5 +41,22 @@ public class OsinfoEvent extends Event<Void> {
 
     public JsonNode osinfo() {
         return osinfo;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append(Components.objectName(this)).append(" [")
+            .append(osinfo);
+        if (channels() != null) {
+            builder.append(", channels=").append(Channel.toString(channels()));
+        }
+        builder.append(']');
+        return builder.toString();
     }
 }

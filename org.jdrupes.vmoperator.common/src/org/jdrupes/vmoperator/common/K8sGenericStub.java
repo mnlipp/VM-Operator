@@ -359,6 +359,7 @@ public class K8sGenericStub<O extends KubernetesObject,
      * @param <L> the object list type
      * @param <R> the result type
      */
+    @FunctionalInterface
     public interface GenericSupplier<O extends KubernetesObject,
             L extends KubernetesListObject, R extends K8sGenericStub<O, L>> {
 

@@ -59,10 +59,14 @@ public class VmopAgentClient extends AgentConnector {
      */
     @Handler
     public void onVmopAgentLogIn(VmopAgentLogIn event) throws IOException {
-        logger.fine(() -> "vmop agent(out): login " + event.user());
         if (writer().isPresent()) {
+            logger.fine(() -> "Vmop agent handles:" + event);
             executing.add(event);
+            logger.finer(() -> "vmop agent(out): login " + event.user());
             sendCommand("login " + event.user());
+        } else {
+            logger
+                .warning(() -> "No vmop agent connection for sending " + event);
         }
     }
 
@@ -74,9 +78,10 @@ public class VmopAgentClient extends AgentConnector {
      */
     @Handler
     public void onVmopAgentLogout(VmopAgentLogOut event) throws IOException {
-        logger.fine(() -> "vmop agent(out): logout");
         if (writer().isPresent()) {
+            logger.fine(() -> "Vmop agent handles:" + event);
             executing.add(event);
+            logger.finer(() -> "vmop agent(out): logout");
             sendCommand("logout");
         }
     }
@@ -85,23 +90,27 @@ public class VmopAgentClient extends AgentConnector {
     @SuppressWarnings({ "PMD.UnnecessaryReturn",
         "PMD.AvoidLiteralsInIfCondition" })
     protected void processInput(String line) throws IOException {
-        logger.fine(() -> "vmop agent(in): " + line);
+        logger.finer(() -> "vmop agent(in): " + line);
 
         // Check validity
         if (line.isEmpty() || !Character.isDigit(line.charAt(0))) {
-            logger.warning(() -> "Illegal response: " + line);
+            logger.warning(() -> "Illegal vmop agent response: " + line);
             return;
         }
 
         // Check positive responses
         if (line.startsWith("220 ")) {
-            rep().fire(new VmopAgentConnected());
+            var evt = new VmopAgentConnected();
+            logger.fine(() -> "Vmop agent triggers " + evt);
+            rep().fire(evt);
             return;
         }
         if (line.startsWith("201 ")) {
             Event<?> cmd = executing.pop();
             if (cmd instanceof VmopAgentLogIn login) {
-                rep().fire(new VmopAgentLoggedIn(login));
+                var evt = new VmopAgentLoggedIn(login);
+                logger.fine(() -> "Vmop agent triggers " + evt);
+                rep().fire(evt);
             } else {
                 logger.severe(() -> "Response " + line
                     + " does not match executing command " + cmd);
@@ -111,7 +120,9 @@ public class VmopAgentClient extends AgentConnector {
         if (line.startsWith("202 ")) {
             Event<?> cmd = executing.pop();
             if (cmd instanceof VmopAgentLogOut logout) {
-                rep().fire(new VmopAgentLoggedOut(logout));
+                var evt = new VmopAgentLoggedOut(logout);
+                logger.fine(() -> "Vmop agent triggers " + evt);
+                rep().fire(evt);
             } else {
                 logger.severe(() -> "Response " + line
                     + "does not match executing command " + cmd);
@@ -125,7 +136,7 @@ public class VmopAgentClient extends AgentConnector {
         }
 
         // Error
-        logger.warning(() -> "Error response: " + line);
+        logger.warning(() -> "Error response from vmop agent: " + line);
         executing.pop();
     }
 

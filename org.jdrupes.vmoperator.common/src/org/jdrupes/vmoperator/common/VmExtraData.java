@@ -118,14 +118,14 @@ public class VmExtraData {
         if (addr.isEmpty()) {
             logger
                 .severe(() -> "Failed to find display IP for " + vmDef.name());
-            return null;
+            return Optional.empty();
         }
         var port = vmDef.<Number> fromVm("display", "spice", "port")
             .map(Number::longValue);
         if (port.isEmpty()) {
             logger
                 .severe(() -> "No port defined for display of " + vmDef.name());
-            return null;
+            return Optional.empty();
         }
         StringBuffer data = new StringBuffer(100)
             .append("[virt-viewer]\ntype=spice\nhost=")
