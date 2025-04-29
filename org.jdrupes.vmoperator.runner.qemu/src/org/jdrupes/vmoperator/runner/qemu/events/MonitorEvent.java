@@ -20,6 +20,8 @@ package org.jdrupes.vmoperator.runner.qemu.events;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Optional;
+import org.jgrapes.core.Channel;
+import org.jgrapes.core.Components;
 import org.jgrapes.core.Event;
 
 /**
@@ -111,5 +113,21 @@ public class MonitorEvent extends Event<Void> {
      */
     public JsonNode data() {
         return data;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append(Components.objectName(this)).append(" [").append(data);
+        if (channels() != null) {
+            builder.append(", channels=").append(Channel.toString(channels()));
+        }
+        builder.append(']');
+        return builder.toString();
     }
 }
