@@ -22,7 +22,6 @@ import com.google.gson.JsonObject;
 import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
@@ -32,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.jdrupes.vmoperator.common.Constants.Crd;
 import org.jdrupes.vmoperator.common.Constants.Status;
@@ -57,16 +55,28 @@ import org.jdrupes.vmoperator.manager.events.VmResourceChanged;
 import org.jdrupes.vmoperator.util.GsonPtr;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Event;
+import org.jgrapes.core.EventPipeline;
 import org.jgrapes.core.annotation.Handler;
 
 /**
- * Watches for changes of VM definitions.
+ * Watches for changes of VM definitions. When a VM definition (CR)
+ * becomes known, is is registered with a {@link ChannelManager} and thus
+ * gets an associated {@link VmChannel} and an associated
+ * {@link EventPipeline}.
+ * 
+ * The {@link EventPipeline} is used for submitting an action that processes
+ * the change data from kubernetes, eventually transforming it to a
+ * {@link VmResourceChanged} event that is handled by another
+ * {@link EventPipeline} associated with the {@link VmChannel}. This
+ * event pipeline should be used for all events related to changes of
+ * a particular VM.
  */
 @SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.ExcessiveImports" })
 public class VmMonitor extends
         AbstractMonitor<VmDefinition, VmDefinitions, VmChannel> {
 
-    private final ChannelManager<String, VmChannel, ?> channelManager;
+    private final ChannelManager<String, VmChannel,
+            EventPipeline> channelManager;
 
     /**
      * Instantiates a new VM definition watcher.
@@ -75,7 +85,7 @@ public class VmMonitor extends
      * @param channelManager the channel manager
      */
     public VmMonitor(Channel componentChannel,
-            ChannelManager<String, VmChannel, ?> channelManager) {
+            ChannelManager<String, VmChannel, EventPipeline> channelManager) {
         super(componentChannel, VmDefinition.class,
             VmDefinitions.class);
         this.channelManager = channelManager;
@@ -122,14 +132,18 @@ public class VmMonitor extends
     @Override
     protected void handleChange(K8sClient client,
             Watch.Response<VmDefinition> response) {
-        V1ObjectMeta metadata = response.object.getMetadata();
-        AtomicBoolean toBeAdded = new AtomicBoolean(false);
-        VmChannel channel = channelManager.channel(metadata.getName())
-            .orElseGet(() -> {
-                toBeAdded.set(true);
-                return channelManager.createChannel(metadata.getName());
-            });
+        var name = response.object.getMetadata().getName();
 
+        // Process the response data on a VM specific pipeline to
+        // increase concurrency when e.g. starting many VMs.
+        var preparing = channelManager.associated(name)
+            .orElseGet(() -> newEventPipeline());
+        preparing.submit("VmChange[" + name + "]",
+            () -> processChange(client, response, preparing));
+    }
+
+    private void processChange(K8sClient client,
+            Watch.Response<VmDefinition> response, EventPipeline preparing) {
         // Get full definition and associate with channel as backup
         var vmDef = response.object;
         if (vmDef.data() == null) {
@@ -137,6 +151,9 @@ public class VmMonitor extends
             // https://github.com/kubernetes-client/java/issues/3215
             vmDef = getModel(client, vmDef);
         }
+        var name = response.object.getMetadata().getName();
+        var channel = channelManager.channel(name)
+            .orElseGet(() -> channelManager.createChannel(name));
         if (vmDef.data() != null) {
             // New data, augment and save
             addExtraData(vmDef, channel.vmDefinition());
@@ -150,9 +167,7 @@ public class VmMonitor extends
                 + response.object.getMetadata());
             return;
         }
-        if (toBeAdded.get()) {
-            channelManager.put(vmDef.name(), channel);
-        }
+        channelManager.put(name, channel, preparing);
 
         // Create and fire changed event. Remove channel from channel
         // manager on completion.
@@ -199,9 +214,16 @@ public class VmMonitor extends
     @Handler
     public void onPodChanged(PodChanged event, VmChannel channel) {
         var vmDef = channel.vmDefinition();
-        updateNodeInfo(event, vmDef);
-        channel
-            .fire(new VmResourceChanged(ResponseType.MODIFIED, vmDef, false, true));
+
+        // Make sure that this is properly sync'd with VM CR changes.
+        channelManager.associated(vmDef.name())
+            .orElseGet(() -> activeEventPipeline())
+            .submit("NodeInfo[" + vmDef.name() + "]",
+                () -> {
+                    updateNodeInfo(event, vmDef);
+                    channel.fire(new VmResourceChanged(ResponseType.MODIFIED,
+                        vmDef, false, true));
+                });
     }
 
     private void updateNodeInfo(PodChanged event, VmDefinition vmDef) {
