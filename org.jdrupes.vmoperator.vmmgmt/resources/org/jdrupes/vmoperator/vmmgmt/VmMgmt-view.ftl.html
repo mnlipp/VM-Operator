@@ -30,7 +30,7 @@
       </tr>
     </thead>
     <tbody>
-      <template v-for="(entry, rowIndex) in filteredData">
+      <template v-for="(entry, rowIndex) in filteredData" :key="entry.name">
         <tr :class="[(rowIndex % 2) ? 'odd' : 'even']"
           :aria-expanded="(entry.name in detailsByName) ? 'true' : 'false'">
           <td v-for="key in controller.keys" 
