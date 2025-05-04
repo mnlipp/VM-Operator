@@ -4,6 +4,10 @@
 # Ignore Gradle build output directory
 build
 
+# Ignore SBT output directories
+**/target
+**/.bsp
+
 # Eclipse
 bin
 .classpath
