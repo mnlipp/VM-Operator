@@ -24,7 +24,6 @@ import org.jgrapes.core.Event;
 /**
  * Gets the current display secret and optionally updates it.
  */
-@SuppressWarnings("PMD.DataClass")
 public class GetDisplaySecret extends Event<String> {
 
     private final VmDefinition vmDef;

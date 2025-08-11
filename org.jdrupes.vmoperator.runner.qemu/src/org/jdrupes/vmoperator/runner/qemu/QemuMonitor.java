@@ -54,7 +54,6 @@ import org.jgrapes.util.events.ConfigurationUpdate;
  * If the log level for this class is set to fine, the messages 
  * exchanged on the monitor socket are logged.
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class QemuMonitor extends QemuConnector {
 
     private int powerdownTimeout;
@@ -72,8 +71,6 @@ public class QemuMonitor extends QemuConnector {
      * @param configDir the config dir
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    @SuppressWarnings({ "PMD.AssignmentToNonFinalStatic",
-        "PMD.ConstructorCallsOverridableMethod" })
     public QemuMonitor(Channel componentChannel, Path configDir)
             throws IOException {
         super(componentChannel);

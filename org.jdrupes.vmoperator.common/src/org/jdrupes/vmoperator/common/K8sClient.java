@@ -48,8 +48,7 @@ import okhttp3.Response;
  * A client with some additional properties.
  */
 @SuppressWarnings({ "PMD.ExcessivePublicCount", "PMD.TooManyMethods",
-    "PMD.LinguisticNaming", "checkstyle:LineLength",
-    "PMD.CouplingBetweenObjects", "PMD.GodClass" })
+    "checkstyle:LineLength", "PMD.CouplingBetweenObjects", "PMD.GodClass" })
 public class K8sClient extends ApiClient {
 
     private ApiClient apiClient;
@@ -231,7 +230,6 @@ public class K8sClient extends ApiClient {
      * @return the api client
      * @see ApiClient#setKeyManagers(javax.net.ssl.KeyManager[])
      */
-    @SuppressWarnings("PMD.UseVarargs")
     @Override
     public ApiClient setKeyManagers(KeyManager[] managers) {
         return apiClient().setKeyManagers(managers);
@@ -638,7 +636,6 @@ public class K8sClient extends ApiClient {
      * @return the string
      * @see ApiClient#selectHeaderAccept(java.lang.String[])
      */
-    @SuppressWarnings("PMD.UseVarargs")
     @Override
     public String selectHeaderAccept(String[] accepts) {
         return apiClient().selectHeaderAccept(accepts);
@@ -651,7 +648,6 @@ public class K8sClient extends ApiClient {
      * @return the string
      * @see ApiClient#selectHeaderContentType(java.lang.String[])
      */
-    @SuppressWarnings("PMD.UseVarargs")
     @Override
     public String selectHeaderContentType(String[] contentTypes) {
         return apiClient().selectHeaderContentType(contentTypes);
@@ -818,7 +814,7 @@ public class K8sClient extends ApiClient {
      * @throws ApiException the api exception
      * @see ApiClient#buildCall(java.lang.String, java.lang.String, java.util.List, java.util.List, java.lang.Object, java.util.Map, java.util.Map, java.util.Map, java.lang.String[], io.kubernetes.client.openapi.ApiCallback)
      */
-    @SuppressWarnings({ "rawtypes", "PMD.ExcessiveParameterList" })
+    @SuppressWarnings({ "rawtypes" })
     @Override
     public Call buildCall(String path, String method, List<Pair> queryParams,
             List<Pair> collectionQueryParams, Object body,
@@ -847,7 +843,7 @@ public class K8sClient extends ApiClient {
      * @throws ApiException the api exception
      * @see ApiClient#buildRequest(java.lang.String, java.lang.String, java.util.List, java.util.List, java.lang.Object, java.util.Map, java.util.Map, java.util.Map, java.lang.String[], io.kubernetes.client.openapi.ApiCallback)
      */
-    @SuppressWarnings({ "rawtypes", "PMD.ExcessiveParameterList" })
+    @SuppressWarnings({ "rawtypes" })
     @Override
     public Request buildRequest(String path, String method,
             List<Pair> queryParams, List<Pair> collectionQueryParams,

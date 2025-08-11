@@ -26,7 +26,6 @@ import org.jgrapes.core.Event;
 /**
  * Indicates a change in a pool configuration. 
  */
-@SuppressWarnings("PMD.DataClass")
 public class VmPoolChanged extends Event<Void> {
 
     private final VmPool vmPool;

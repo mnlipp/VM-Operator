@@ -31,7 +31,6 @@ import java.util.Collection;
  * state and can therefore be used for any kind of object, especially
  * custom objects.
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class K8sDynamicStub
         extends K8sDynamicStubBase<K8sDynamicModel, K8sDynamicModels> {
 
@@ -64,8 +63,6 @@ public class K8sDynamicStub
      * @return the stub if the object exists
      * @throws ApiException the api exception
      */
-    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
-        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })
     public static K8sDynamicStub get(K8sClient client,
             GroupVersionKind gvk, String namespace, String name)
             throws ApiException {
@@ -83,8 +80,6 @@ public class K8sDynamicStub
      * @return the stub if the object exists
      * @throws ApiException the api exception
      */
-    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
-        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })
     public static K8sDynamicStub get(K8sClient client,
             APIResource context, String namespace, String name) {
         return new K8sDynamicStub(client, context, namespace, name);

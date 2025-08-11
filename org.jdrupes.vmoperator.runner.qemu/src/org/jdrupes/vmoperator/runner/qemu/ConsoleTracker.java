@@ -41,7 +41,6 @@ import org.jgrapes.core.events.Start;
  * A (sub)component that updates the console status in the CR status.
  * Created as child of {@link StatusUpdater}.
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class ConsoleTracker extends VmDefUpdater {
 
     private VmDefinitionStub vmStub;
@@ -53,7 +52,6 @@ public class ConsoleTracker extends VmDefUpdater {
      *
      * @param componentChannel the component channel
      */
-    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public ConsoleTracker(Channel componentChannel) {
         super(componentChannel);
         apiClient = (K8sClient) io.kubernetes.client.openapi.Configuration
@@ -91,8 +89,7 @@ public class ConsoleTracker extends VmDefUpdater {
      * @throws ApiException the api exception
      */
     @Handler
-    @SuppressWarnings({ "PMD.AvoidLiteralsInIfCondition",
-        "PMD.AvoidDuplicateLiterals" })
+    @SuppressWarnings({ "PMD.AvoidLiteralsInIfCondition" })
     public void onSpiceInitialized(SpiceInitializedEvent event)
             throws ApiException {
         if (vmStub == null) {
@@ -127,7 +124,6 @@ public class ConsoleTracker extends VmDefUpdater {
      * @throws ApiException the api exception
      */
     @Handler
-    @SuppressWarnings("PMD.AvoidDuplicateLiterals")
     public void onSpiceDisconnected(SpiceDisconnectedEvent event)
             throws ApiException {
         if (vmStub == null) {

@@ -45,7 +45,6 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 /**
  * Delegee for reconciling the service
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 /* default */ class LoadBalancerReconciler {
 
     private static final String LOAD_BALANCER_SERVICE = "loadBalancerService";
@@ -86,7 +85,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         }
 
         // Check if to be generated
-        @SuppressWarnings({ "PMD.AvoidDuplicateLiterals", "unchecked" })
+        @SuppressWarnings({ "unchecked" })
         var lbsDef = Optional.of(model)
             .map(m -> (Map<String, Object>) m.get("reconciler"))
             .map(c -> c.get(LOAD_BALANCER_SERVICE)).orElse(Boolean.FALSE);

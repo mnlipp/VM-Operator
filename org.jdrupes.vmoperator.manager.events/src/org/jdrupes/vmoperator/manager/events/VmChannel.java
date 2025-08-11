@@ -28,7 +28,6 @@ import org.jgrapes.core.Subchannel.DefaultSubchannel;
 /**
  * A subchannel used to send the events related to a specific VM.
  */
-@SuppressWarnings("PMD.DataClass")
 public class VmChannel extends DefaultSubchannel {
 
     private final EventPipeline pipeline;
@@ -56,7 +55,6 @@ public class VmChannel extends DefaultSubchannel {
      * @param definition the definition
      * @return the watch channel
      */
-    @SuppressWarnings("PMD.LinguisticNaming")
     public VmChannel setVmDefinition(VmDefinition definition) {
         this.definition = definition;
         return this;
@@ -87,7 +85,6 @@ public class VmChannel extends DefaultSubchannel {
      * @param generation the generation to set
      * @return true if value has changed
      */
-    @SuppressWarnings("PMD.LinguisticNaming")
     public boolean setGeneration(long generation) {
         if (this.generation == generation) {
             return false;

@@ -66,8 +66,7 @@ import org.jgrapes.core.events.Start;
 /**
  * Updates the CR status.
  */
-@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",
-    "PMD.CouplingBetweenObjects" })
+@SuppressWarnings({ "PMD.CouplingBetweenObjects" })
 public class StatusUpdater extends VmDefUpdater {
 
     @SuppressWarnings("PMD.FieldNamingConventions")
@@ -90,7 +89,6 @@ public class StatusUpdater extends VmDefUpdater {
      *
      * @param componentChannel the component channel
      */
-    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public StatusUpdater(Channel componentChannel) {
         super(componentChannel);
         attach(new ConsoleTracker(componentChannel));
@@ -153,7 +151,6 @@ public class StatusUpdater extends VmDefUpdater {
      * @throws ApiException 
      */
     @Handler
-    @SuppressWarnings("PMD.AvoidDuplicateLiterals")
     public void onConfigureQemu(ConfigureQemu event)
             throws ApiException {
         guestShutdownStops = event.configuration().guestShutdownStops;
@@ -187,8 +184,7 @@ public class StatusUpdater extends VmDefUpdater {
      * @throws ApiException 
      */
     @Handler
-    @SuppressWarnings({ "PMD.AvoidLiteralsInIfCondition",
-        "PMD.AssignmentInOperand", "PMD.AvoidDuplicateLiterals" })
+    @SuppressWarnings({ "PMD.AssignmentInOperand" })
     public void onRunnerStateChanged(RunnerStateChange event)
             throws ApiException {
         VmDefinition vmDef;
@@ -425,7 +421,6 @@ public class StatusUpdater extends VmDefUpdater {
      * @throws ApiException 
      */
     @Handler
-    @SuppressWarnings("PMD.AssignmentInOperand")
     public void onVmopAgentLoggedIn(VmopAgentLoggedIn event)
             throws ApiException {
         vmStub.updateStatus(from -> {
@@ -442,7 +437,6 @@ public class StatusUpdater extends VmDefUpdater {
      * @throws ApiException 
      */
     @Handler
-    @SuppressWarnings("PMD.AssignmentInOperand")
     public void onVmopAgentLoggedOut(VmopAgentLoggedOut event)
             throws ApiException {
         vmStub.updateStatus(from -> {

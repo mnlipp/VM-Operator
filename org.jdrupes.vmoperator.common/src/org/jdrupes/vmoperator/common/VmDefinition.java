@@ -46,11 +46,10 @@ import org.jdrupes.vmoperator.util.DataPath;
 /**
  * Represents a VM definition.
  */
-@SuppressWarnings({ "PMD.DataClass", "PMD.TooManyMethods",
-    "PMD.CouplingBetweenObjects" })
+@SuppressWarnings({ "PMD.DataClass", "PMD.TooManyMethods" })
 public class VmDefinition extends K8sDynamicModel {
 
-    @SuppressWarnings({ "PMD.FieldNamingConventions", "unused" })
+    @SuppressWarnings({ "unused" })
     private static final Logger logger
         = Logger.getLogger(VmDefinition.class.getName());
     @SuppressWarnings("PMD.FieldNamingConventions")

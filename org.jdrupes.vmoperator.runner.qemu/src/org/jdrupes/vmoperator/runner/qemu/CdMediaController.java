@@ -36,7 +36,6 @@ import org.jgrapes.core.annotation.Handler;
 /**
  * The Class CdMediaController.
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class CdMediaController extends Component {
 
     /**
@@ -55,7 +54,6 @@ public class CdMediaController extends Component {
      *
      * @param componentChannel the component channel
      */
-    @SuppressWarnings("PMD.AssignmentToNonFinalStatic")
     public CdMediaController(Channel componentChannel) {
         super(componentChannel);
     }
@@ -66,8 +64,7 @@ public class CdMediaController extends Component {
      * @param event the event
      */
     @Handler
-    @SuppressWarnings({ "PMD.AvoidLiteralsInIfCondition",
-        "PMD.AvoidInstantiatingObjectsInLoops" })
+    @SuppressWarnings({ "PMD.AvoidInstantiatingObjectsInLoops" })
     public void onConfigureQemu(ConfigureQemu event) {
         if (event.runState() == RunState.TERMINATING) {
             return;

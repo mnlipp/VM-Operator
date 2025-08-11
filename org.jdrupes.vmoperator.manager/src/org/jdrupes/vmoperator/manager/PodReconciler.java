@@ -43,7 +43,6 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 /**
  * Delegee for reconciling the pod.
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 /* default */ class PodReconciler {
 
     protected final Logger logger = Logger.getLogger(getClass().getName());

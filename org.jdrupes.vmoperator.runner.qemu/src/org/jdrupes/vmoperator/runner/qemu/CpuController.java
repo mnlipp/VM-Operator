@@ -41,7 +41,6 @@ import org.jgrapes.core.annotation.Handler;
 /**
  * The Class CpuController.
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class CpuController extends Component {
 
     private Integer currentCpus;

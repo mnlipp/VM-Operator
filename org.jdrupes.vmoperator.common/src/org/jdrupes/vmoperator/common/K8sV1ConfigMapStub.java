@@ -26,7 +26,6 @@ import java.util.List;
 /**
  * A stub for config maps (v1).
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class K8sV1ConfigMapStub
         extends K8sGenericStub<V1ConfigMap, V1ConfigMapList> {
 

@@ -43,7 +43,6 @@ public interface ChannelDictionary<K, C extends Channel, A> {
      * @param channel the channel
      * @param associated the associated
      */
-    @SuppressWarnings("PMD.ShortClassName")
     public record Value<C extends Channel, A>(C channel, A associated) {
     }
 

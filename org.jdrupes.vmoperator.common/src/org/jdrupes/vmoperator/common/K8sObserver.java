@@ -50,7 +50,6 @@ public class K8sObserver<O extends KubernetesObject,
         ADDED, MODIFIED, DELETED
     }
 
-    @SuppressWarnings("PMD.FieldNamingConventions")
     protected final Logger logger = Logger.getLogger(getClass().getName());
 
     protected final K8sClient client;
@@ -73,8 +72,7 @@ public class K8sObserver<O extends KubernetesObject,
      * @param namespace the namespace
      * @param options the options
      */
-    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
-        "PMD.UseObjectForClearerAPI", "PMD.AvoidCatchingThrowable",
+    @SuppressWarnings({ "PMD.AvoidCatchingThrowable",
         "PMD.CognitiveComplexity", "PMD.AvoidCatchingGenericException" })
     public K8sObserver(Class<O> objectClass, Class<L> objectListClass,
             K8sClient client, APIResource context, String namespace,
@@ -100,7 +98,6 @@ public class K8sObserver<O extends KubernetesObject,
                     while (!Thread.currentThread().isInterrupted()) {
                         Instant startedAt = Instant.now();
                         try {
-                            @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
                             var changed
                                 = api.watch(namespace, options).iterator();
                             while (changed.hasNext()) {
@@ -233,7 +230,6 @@ public class K8sObserver<O extends KubernetesObject,
     }
 
     @Override
-    @SuppressWarnings("PMD.UseLocaleWithCaseConversions")
     public String toString() {
         return "Observer for " + K8s.toString(context) + " " + namespace;
     }

@@ -49,7 +49,6 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 /**
  * Delegee for reconciling the stateful set (effectively the pod).
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 /* default */ class PvcReconciler {
 
     protected final Logger logger = Logger.getLogger(getClass().getName());
@@ -75,7 +74,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
      * @throws TemplateException the template exception
      * @throws ApiException the api exception
      */
-    @SuppressWarnings({ "PMD.AvoidDuplicateLiterals", "unchecked" })
+    @SuppressWarnings({ "unchecked" })
     public void reconcile(VmDefinition vmDef, Map<String, Object> model,
             VmChannel channel, boolean specChanged)
             throws IOException, TemplateException, ApiException {

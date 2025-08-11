@@ -71,7 +71,6 @@ import org.jgrapes.core.annotation.Handler;
  * event pipeline should be used for all events related to changes of
  * a particular VM.
  */
-@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.ExcessiveImports" })
 public class VmMonitor extends
         AbstractMonitor<VmDefinition, VmDefinitions, VmChannel> {
 
@@ -107,7 +106,6 @@ public class VmMonitor extends
         purge();
     }
 
-    @SuppressWarnings("PMD.CognitiveComplexity")
     private void purge() throws ApiException {
         // Get existing CRs (VMs)
         var known = K8sDynamicStub.list(client(), context(), namespace())
@@ -192,7 +190,6 @@ public class VmMonitor extends
         }
     }
 
-    @SuppressWarnings("PMD.AvoidDuplicateLiterals")
     private void addExtraData(VmDefinition vmDef, VmDefinition prevState) {
         var extra = new VmExtraData(vmDef);
         var prevExtra = Optional.ofNullable(prevState).map(VmDefinition::extra);
@@ -241,7 +238,6 @@ public class VmMonitor extends
             .ofNullable(pod.getSpec().getNodeName()).orElse("");
         logger.finer(() -> "Adding node name " + nodeName
             + " to VM info for " + vmDef.name());
-        @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
         var addrs = new ArrayList<String>();
         Optional.ofNullable(pod.getStatus().getPodIPs())
             .orElse(Collections.emptyList()).stream()

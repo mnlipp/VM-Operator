@@ -149,8 +149,6 @@ public class ChannelManager<K, C extends Channel, A>
      * @param supplier the supplier
      * @return the channel
      */
-    @SuppressWarnings({ "PMD.AssignmentInOperand",
-        "PMD.DataflowAnomalyAnalysis" })
     public C computeIfAbsent(K key, Function<K, C> supplier) {
         return entries.computeIfAbsent(key,
             k -> new Value<>(supplier.apply(k), null)).channel();

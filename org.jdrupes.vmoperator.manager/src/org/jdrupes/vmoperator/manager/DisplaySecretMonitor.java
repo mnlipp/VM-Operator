@@ -42,7 +42,6 @@ import org.jgrapes.core.Channel;
  * of the pod running the VM in response to force an update of the files 
  * in the pod that reflect the information from the secret.
  */
-@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.TooManyStaticImports" })
 public class DisplaySecretMonitor
         extends AbstractMonitor<V1Secret, V1SecretList, VmChannel> {
 

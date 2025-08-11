@@ -47,8 +47,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 /**
  * Helpers for K8s API.
  */
-@SuppressWarnings({ "PMD.ShortClassName", "PMD.UseUtilityClass",
-    "PMD.DataflowAnomalyAnalysis" })
+@SuppressWarnings({ "PMD.ShortClassName", "PMD.UseUtilityClass" })
 public class K8s {
 
     /**
@@ -113,7 +112,6 @@ public class K8s {
     public static JsonObject yamlToJson(ApiClient client, Reader yaml) {
         // Avoid Yaml.load due to
         // https://github.com/kubernetes-client/java/issues/2741
-        @SuppressWarnings("PMD.UseConcurrentHashMap")
         Map<String, Object> yamlData
             = new Yaml(new SafeConstructor(new LoaderOptions())).load(yaml);
 

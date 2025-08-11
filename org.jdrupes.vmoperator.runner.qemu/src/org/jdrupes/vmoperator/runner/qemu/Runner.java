@@ -201,8 +201,7 @@ import org.jgrapes.util.events.WatchFile;
  * 
  */
 @SuppressWarnings({ "PMD.ExcessiveImports", "PMD.AvoidPrintStackTrace",
-    "PMD.DataflowAnomalyAnalysis", "PMD.TooManyMethods",
-    "PMD.CouplingBetweenObjects", "PMD.TooManyFields" })
+    "PMD.TooManyMethods", "PMD.CouplingBetweenObjects" })
 public class Runner extends Component {
 
     private static final String TEMPLATE_DIR
@@ -218,7 +217,6 @@ public class Runner extends Component {
         .builder().disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER)
         .build());
     private final JsonNode defaults;
-    @SuppressWarnings("PMD.UseConcurrentHashMap")
     private final File configFile;
     private final Path configDir;
     private Configuration initialConfig;
@@ -250,8 +248,7 @@ public class Runner extends Component {
      * @param cmdLine the cmd line
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    @SuppressWarnings({ "PMD.SystemPrintln",
-        "PMD.ConstructorCallsOverridableMethod" })
+    @SuppressWarnings({ "PMD.ConstructorCallsOverridableMethod" })
     public Runner(CommandLine cmdLine) throws IOException {
         yamlMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
             false);
@@ -387,8 +384,6 @@ public class Runner extends Component {
         }
     }
 
-    @SuppressWarnings({ "PMD.CognitiveComplexity",
-        "PMD.DataflowAnomalyAnalysis" })
     private void setFirmwarePaths(Configuration config) throws IOException {
         JsonNode firmware = defaults.path("firmware").path(config.vm.firmware);
         // Get file for firmware ROM
@@ -620,8 +615,6 @@ public class Runner extends Component {
      * @throws InterruptedException the interrupted exception
      */
     @Handler
-    @SuppressWarnings({ "PMD.SwitchStmtsShouldHaveDefault",
-        "PMD.TooFewBranchesForASwitchStatement" })
     public void onProcessStarted(ProcessStarted event, ProcessChannel channel)
             throws InterruptedException {
         event.startEvent().associated(CommandDefinition.class)
@@ -778,7 +771,6 @@ public class Runner extends Component {
             "The VM has been shut down"));
     }
 
-    @SuppressWarnings("PMD.ConfusingArgumentToVarargsMethod")
     private void shutdown() {
         if (!Set.of(RunState.TERMINATING, RunState.STOPPED).contains(state)) {
             fire(new Stop());

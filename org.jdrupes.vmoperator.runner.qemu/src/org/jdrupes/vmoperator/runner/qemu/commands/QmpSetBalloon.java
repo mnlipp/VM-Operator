@@ -28,8 +28,7 @@ import java.math.BigInteger;
  */
 public class QmpSetBalloon extends QmpCommand {
 
-    @SuppressWarnings({ "PMD.FieldNamingConventions",
-        "PMD.VariableNamingConventions" })
+    @SuppressWarnings({ "PMD.FieldNamingConventions" })
     private static final JsonNode jsonTemplate
         = parseJson("{ \"execute\": \"balloon\", "
             + "\"arguments\": " + "{ \"value\": 0 } }");
