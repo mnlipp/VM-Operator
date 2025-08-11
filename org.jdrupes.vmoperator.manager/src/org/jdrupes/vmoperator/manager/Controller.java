@@ -50,6 +50,7 @@ import org.jdrupes.vmoperator.manager.events.VmPoolChanged;
 import org.jdrupes.vmoperator.manager.events.VmResourceChanged;
 import org.jgrapes.core.Channel;
 import org.jgrapes.core.Component;
+import org.jgrapes.core.EventPipeline;
 import org.jgrapes.core.annotation.Handler;
 import org.jgrapes.core.events.HandlingError;
 import org.jgrapes.core.events.Start;
@@ -94,7 +95,7 @@ import org.jgrapes.util.events.ConfigurationUpdate;
 public class Controller extends Component {
 
     private String namespace;
-    private final ChannelManager<String, VmChannel, ?> chanMgr;
+    private final ChannelManager<String, VmChannel, EventPipeline> chanMgr;
 
     /**
      * Creates a new instance.

@@ -66,7 +66,6 @@ import org.jose4j.base64url.Base64;
  *   * `passwordValidity`: the validity of the random password in seconds.
  *     Used to calculate the password expiry time in the generated secret.
  */
-@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.TooManyStaticImports" })
 public class DisplaySecretReconciler extends Component {
 
     protected final Logger logger = Logger.getLogger(getClass().getName());
@@ -104,12 +103,15 @@ public class DisplaySecretReconciler extends Component {
                 return oldConfig;
             }).ifPresent(c -> {
                 try {
-                    if (c.containsKey("passwordValidity")) {
-                        passwordValidity = Integer
-                            .parseInt((String) c.get("passwordValidity"));
-                    }
-                } catch (ClassCastException e) {
-                    logger.config("Malformed configuration: " + e.getMessage());
+                    Optional.ofNullable(c.get("passwordValidity"))
+                        .map(p -> p instanceof Integer ? (Integer) p
+                            : Integer.valueOf((String) p))
+                        .ifPresent(p -> {
+                            passwordValidity = p;
+                        });
+                } catch (NumberFormatException e) {
+                    logger.warning(
+                        () -> "Malformed configuration: " + e.getMessage());
                 }
             });
     }
@@ -190,7 +192,6 @@ public class DisplaySecretReconciler extends Component {
      * @throws ApiException the api exception
      */
     @Handler
-    @SuppressWarnings("PMD.StringInstantiation")
     public void onGetDisplaySecret(GetDisplaySecret event, VmChannel channel)
             throws ApiException {
         // Get VM definition and check if running
@@ -319,7 +320,6 @@ public class DisplaySecretReconciler extends Component {
     /**
      * The Class PendingGet.
      */
-    @SuppressWarnings("PMD.DataClass")
     private static class PendingRequest {
         public final GetDisplaySecret event;
         public final long expectedSerial;
