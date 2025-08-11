@@ -1,0 +1,38 @@
+when:
+- event: push
+  evaluate: 'CI_SYSTEM_HOST == "woodpecker.mnl.de"'
+
+clone:
+- name: git
+  image: woodpeckerci/plugin-git
+  settings:
+    partial: false
+    tags: true
+    depth: 0
+
+steps:
+- name: prepare
+  image: alpine
+  commands:
+    # Because we run the next step as user 1000 to make podman work:
+    - mkdir /woodpecker/workflow
+    - chown 1000:1000 /woodpecker/workflow
+    - chown -R 1000:1000 $CI_WORKSPACE
+
+- name: build-jars
+  image: registry.mnl.de/mnl/jdk21-builder:v4
+  environment:
+    HOME: /woodpecker/workflow
+    REGISTRY: registry.mnl.de
+    REGISTRY_USER: mnl
+    REGISTRY_TOKEN:
+      from_secret: REGISTRY_TOKEN
+  commands:
+    - echo $REGISTRY_TOKEN | podman login -u $REGISTRY_USER --password-stdin $REGISTRY
+    - ./gradlew -Pdocker.registry=$REGISTRY/$REGISTRY_USER build apidocs publishImage
+  backend_options:
+    kubernetes:
+      securityContext:
+        privileged: true
+        runAsUser: 1000
+        runAsGroup: 1000
