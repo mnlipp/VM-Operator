@@ -37,7 +37,7 @@ data:
       # The template to use. Resolved relative to /usr/share/vmrunner/templates.
       # template: "Standard-VM-latest.ftl.yaml"
       <#if spec.runnerTemplate?? && spec.runnerTemplate.source?? >
-      template: ${ cm.spec().runnerTemplate.source }
+      template: ${ spec.runnerTemplate.source }
       </#if>
     
       # The template is copied to the data diretory when the VM starts for
