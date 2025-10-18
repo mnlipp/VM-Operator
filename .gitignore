@@ -13,3 +13,6 @@ org.eclipse.jdt.core.prefs
 
 # Node
 **/node_modules/
+
+# VSCode
+.vscode
