@@ -1,4 +1,4 @@
-arguments=--init-script /home/mnl/.config/Code/User/globalStorage/redhat.java/1.24.0/config_linux/org.eclipse.osgi/55/0/.cp/gradle/init/init.gradle --init-script /home/mnl/.config/Code/User/globalStorage/redhat.java/1.24.0/config_linux/org.eclipse.osgi/55/0/.cp/gradle/protobuf/init.gradle
+arguments=
 auto.sync=false
 build.scans.enabled=false
 connection.gradle.distribution=GRADLE_DISTRIBUTION(WRAPPER)
@@ -8,6 +8,6 @@ gradle.user.home=
 java.home=
 jvm.arguments=
 offline.mode=false
-override.workspace.settings=true
-show.console.view=true
-show.executions.view=true
+override.workspace.settings=false
+show.console.view=false
+show.executions.view=false

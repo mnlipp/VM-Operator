@@ -9,7 +9,7 @@
 **/test-bin
 **/.classpath
 **/.project
-org.eclipse.jdt.core.prefs
+**/.settings/
 **/.externalToolBuilders/
 */.checkstyle
 */.eclipse-pmd
@@ -17,8 +17,8 @@ org.eclipse.jdt.core.prefs
 !_jdbld/.classpath
 !_jdbld/.settings/
 
-# Node
-**/node_modules/
-
-# VSCode
+# Others
 .vscode
+.recommenders/
+**/node_modules/
+/jdbld.log
