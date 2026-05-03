@@ -22,134 +22,49 @@ import static java.util.jar.Attributes.Name.IMPLEMENTATION_TITLE;
 import static java.util.jar.Attributes.Name.IMPLEMENTATION_VENDOR;
 import static java.util.jar.Attributes.Name.IMPLEMENTATION_VERSION;
 import static jdbld.ExtProps.GitApi;
-import static org.jdrupes.builder.api.Intend.Supply;
+import static org.jdrupes.builder.api.Intent.Consume;
+import static org.jdrupes.builder.api.Intent.Supply;
 import static org.jdrupes.builder.api.Project.Properties.Version;
+import static org.jdrupes.builder.api.ResourceType.ExecResultType;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Map;
-import org.eclipse.aether.util.version.GenericVersionScheme;
-import org.eclipse.aether.version.InvalidVersionSpecificationException;
-import org.eclipse.aether.version.Version;
+import java.util.jar.Attributes;
+
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.errors.InvalidPatternException;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.ObjectReader;
-import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevTree;
-import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.treewalk.AbstractTreeIterator;
-import org.eclipse.jgit.treewalk.CanonicalTreeParser;
-import org.eclipse.jgit.treewalk.FileTreeIterator;
+import org.eclipse.jgit.errors.RevisionSyntaxException;
 import org.jdrupes.builder.api.BuildException;
 import org.jdrupes.builder.api.Project;
 import org.jdrupes.builder.api.RootProject;
 import org.jdrupes.builder.eclipse.EclipseConfigurator;
+import org.jdrupes.builder.ext.nodejs.NpmExecutor;
 import org.jdrupes.builder.java.JavaCompiler;
 import org.jdrupes.builder.java.JavaLibraryProject;
 import org.jdrupes.builder.java.JavaProject;
 import org.jdrupes.builder.java.JavaResourceCollector;
-import org.jdrupes.builder.java.LibraryGenerator;
+import org.jdrupes.builder.java.LibraryBuilder;
+import org.jdrupes.gitversioning.api.VersionEvaluator;
+import org.jdrupes.gitversioning.core.DefaultTagFilter;
+import org.jdrupes.gitversioning.core.MavenStyleTagProcessor;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
+
 import static org.jdrupes.builder.mvnrepo.MvnProperties.*;
 
 /// The Class ProjectPreparation.
 ///
 public class ProjectPreparation {
 
-    private static GenericVersionScheme gvs = new GenericVersionScheme();
-
-    public static String getLatestVersion(String prefix, Git git)
-            throws IOException, GitAPIException {
-        var tags = new HashMap<ObjectId, Ref>();
-        git.tagList().call().forEach(ref -> {
-            tags.put(ref.getPeeledObjectId(), ref);
-        });
-
-        var logIter = git.log().add(git.getRepository().resolve(Constants.HEAD))
-            .call().iterator();
-        int additional;
-
-        git.log().add(git.getRepository().resolve(Constants.HEAD)).call()
-            .forEach(commit -> {
-                var ref = tags.get(commit.getId());
-                if (ref != null) {
-                    System.out.println(commit + " " + ref.getName());
-                }
-            });
-
-        return git.tagList().call().stream()
-            .map(c -> c.getName().substring("refs/tags/".length()))
-            .filter(tn -> tn.startsWith(prefix))
-            .map(tn -> tn.substring(prefix.length()))
-            .sorted(new Comparator<String>() {
-                @Override
-                public int compare(String o1, String o2) {
-                    try {
-                        Version v1 = gvs.parseVersion(o1);
-                        Version v2 = gvs.parseVersion(o2);
-                        return v2.compareTo(v1);
-                    } catch (InvalidVersionSpecificationException e) {
-                        return 0;
-                    }
-                }
-            }).findFirst().orElse("0.0.0");
-    }
-
-    private static AbstractTreeIterator prepareTreeParser(Repository repository,
-            String ref) throws IOException {
-        // from the commit we can build the tree which allows us to construct
-        // the TreeParser
-        Ref head = repository.exactRef(ref);
-        try (RevWalk walk = new RevWalk(repository)) {
-            RevCommit commit = walk.parseCommit(head.getObjectId());
-            RevTree tree = walk.parseTree(commit.getTree().getId());
-
-            CanonicalTreeParser treeParser = new CanonicalTreeParser();
-            try (ObjectReader reader = repository.newObjectReader()) {
-                treeParser.reset(reader, tree.getId());
-            }
-
-            walk.dispose();
-
-            return treeParser;
-        }
-    }
-
-    public static boolean hasFileChangedSinceLastCommit(Git git)
-            throws IOException, GitAPIException {
-        Repository repositoryObject = git.getRepository();
-        Iterable<DiffEntry> diff
-            = git.diff().setOldTree(prepareTreeParser(repositoryObject, "HEAD"))
-                .setNewTree(new FileTreeIterator(repositoryObject)).call();
-//            for (DiffEntry entry : diff) {
-//                if (entry.getChangeType() == DiffEntry.ChangeType.MODIFIED
-//                    || entry.getChangeType() == DiffEntry.ChangeType.ADDED) {
-//                    return true;
-//                }
-//            }
-        diff.forEach(d -> {
-            System.out.println(d);
-        });
-        return false;
-
-    }
-
     public static void setupVersion(Project project)
             throws IOException, GitAPIException, InvalidPatternException {
         if (project instanceof RootProject) {
             project.set(GitApi, Git.open(project.directory().toFile()));
         }
-        project.set(GroupId, "org.jdrupes.vmoperator");
 
         // Use shortened project name for tags
         var shortened = project.name().startsWith(project.get(GroupId) + ".")
@@ -160,28 +75,13 @@ public class ProjectPreparation {
             shortened = "manager-app";
         }
         var tagPrefix = shortened.replace('.', '-') + "-";
-//        if (grgit.branch.current.name != "main"
-//            && grgit.branch.current.name != "HEAD"
-//            && !grgit.branch.current.name.startsWith("testing")
-//            && !grgit.branch.current.name.startsWith("release")
-//            && !grgit.branch.current.name.startsWith("develop")) {
-//            tagName = tagName + grgit.branch.current.name.replace('/', '-') + "-"
-//        }
-//        project.ext.tagName = tagName
 
-        System.out.println("vvv");
-        System.out.println(tagPrefix);
-        System.out
-            .println(getLatestVersion(tagPrefix, project.<Git> get(GitApi)));
-
-        var obj = project.<Git> get(GitApi).getRepository().exactRef("HEAD")
-            .getTarget().getName();
-        Repository.shortenRefName(obj);
-        System.out.println(obj);
-        hasFileChangedSinceLastCommit(project.<Git> get(GitApi));
-        System.out.println("^^^");
-
-        project.set(Version, "0.0.2");
+        var evaluator = VersionEvaluator
+            .forRepository(project.<Git> get(GitApi).getRepository())
+            .tagFilter(new DefaultTagFilter().prepend(tagPrefix))
+            .tagProcessor(new MavenStyleTagProcessor()
+                .ignoreBranches("testing/.*", "release/.*", "develop/.*"));
+        project.set(Version, evaluator.version());
     }
 
     public static void setupCommonGenerators(Project project) {
@@ -193,16 +93,26 @@ public class ProjectPreparation {
                 .add(Path.of("resources"), "**/*");
         }
         if (project instanceof JavaLibraryProject) {
-            project.generator(LibraryGenerator::new)
-                .from(project.providers(Supply))
-                .attributes(Map.of(
-                    IMPLEMENTATION_TITLE, project.name(),
-                    IMPLEMENTATION_VERSION, project.get(Version),
-                    IMPLEMENTATION_VENDOR, "Michael N. Lipp (mnl@mnl.de)")
-                    .entrySet().stream());
-//          Git-Descriptor: c6c635842
-//          Git-SHA: c6c6358426287c0258edd9869adf3db3d9bbec17
-
+            var gen = project.generator(LibraryBuilder::new)
+                .addFrom(project.providers().select(Supply))
+                .attributes(Map.entry(
+                    IMPLEMENTATION_TITLE, project.name()),
+                    Map.entry(IMPLEMENTATION_VERSION, project.get(Version)),
+                    Map.entry(IMPLEMENTATION_VENDOR,
+                        "Michael N. Lipp (mnl@mnl.de)"));
+            var git = project.<Git> get(GitApi);
+            try {
+                gen.attributes(
+                    Map.entry(new Attributes.Name("Git-Descriptor"),
+                        git.describe().setAll(true).call()
+                            + (git.status().call().getUncommittedChanges()
+                                .isEmpty() ? "" : "-dirty")),
+                    Map.entry(new Attributes.Name("Git-SHA"),
+                        git.getRepository().resolve("HEAD").getName()));
+            } catch (GitAPIException | RevisionSyntaxException
+                    | IOException e) {
+                throw new BuildException().cause(e);
+            }
         }
     }
 
@@ -247,8 +157,19 @@ public class ProjectPreparation {
                         project.directory().resolve(".eclipse-pmd"),
                         StandardCopyOption.REPLACE_EXISTING);
                 } catch (IOException e) {
-                    throw new BuildException(e);
+                    throw new BuildException().cause(e);
                 }
             }));
+    }
+
+    public static NpmExecutor prepareNpm(NpmExecutor executor) {
+        executor.nodeJsVersion("25.7.0").name("npmInstall");
+        var project = executor.project();
+        if (!(project instanceof RootProject)) {
+            executor.required(project.rootProject()
+                .resources(project.of(ExecResultType).using(Consume)
+                    .withName("npmInstall")));
+        }
+        return executor;
     }
 }
