@@ -1,15 +1,21 @@
 # Ignore Gradle project-specific cache directory
 .gradle
 
-# Ignore Gradle build output directory
-build
+# Ignore build output directory
+**/build
 
 # Eclipse
-bin
-.classpath
-.project
+**/bin
+**/test-bin
+**/.classpath
+**/.project
 org.eclipse.jdt.core.prefs
 **/.externalToolBuilders/
+*/.checkstyle
+*/.eclipse-pmd
+!_jdbld/.project
+!_jdbld/.classpath
+!_jdbld/.settings/
 
 # Node
 **/node_modules/
