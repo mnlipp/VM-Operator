@@ -10,7 +10,7 @@
 	<classpathentry kind="lib" path="/home/mnl/.m2/repository/org/eclipse/jgit/org.eclipse.jgit/7.3.0.202506031305-r/org.eclipse.jgit-7.3.0.202506031305-r.jar"/>
 	<classpathentry kind="lib" path="/home/mnl/.m2/repository/org/jdrupes/gitversioning/api/0.1.0/api-0.1.0.jar"/>
 	<classpathentry kind="lib" path="/home/mnl/.m2/repository/org/jdrupes/gitversioning/core/0.1.0/core-0.1.0.jar"/>
-	<classpathentry kind="lib" path="/home/mnl/.m2/repository/org/jdrupes/jdbld-ext-nodejs/0.0.27/jdbld-ext-nodejs-0.0.27.jar"/>
-	<classpathentry kind="lib" path="/home/mnl/devel/JDrupes-Builder/build/app/jdrupes-builder-current.jar"/>
+	<classpathentry kind="lib" path="/home/mnl/.m2/repository/org/jdrupes/jdbld-ext-nodejs/0.0.28/jdbld-ext-nodejs-0.0.28.jar"/>
+	<classpathentry kind="lib" path="/home/mnl/devel/JDrupes-Builder/build/app/jdrupes-builder-current.jar" sourcepath="/home/mnl/devel/JDrupes-Builder/"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

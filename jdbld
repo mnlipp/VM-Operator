@@ -1,0 +1,95 @@
+#!/usr/bin/bash
+
+releaseVersion="0.0.28"
+propertiesFile=".jdbld.properties"
+
+if [ ! -r "$propertiesFile" ]; then
+  cd `dirname $0`
+fi
+
+if [ ! -r "$propertiesFile" ]; then
+  echo >&2 "File $propertiesFile must exist in root directory of build."
+  exit 1
+fi
+
+getProperty() {
+  cat "$propertiesFile" | while read line; do
+    if expr match "$line" "^ *$1[ \t]*=" > /dev/null; then
+      echo $line \
+        | sed -E 's/^[[:space:]]*'$1'[[:space:]]*=[[:space:]]*(.*\S)[[:space:]]*$/\1/'
+      return 1
+    fi
+  done
+  if [ $? != 1 ]; then
+    echo "$2"
+  fi
+}
+
+# Define some properties. Note that the defaults must match those used
+# in the definition of the Java class implementing BuilderContext.
+jdbldDirectory=$(getProperty "jdbldDirectory" "_jdbld")
+jdbldVersion=$(getProperty "jdbldVersion" "$releaseVersion")
+jdbldCommon=$(getProperty "jdbldCommonDirectory" "$HOME/.jdbld")
+
+# Get the executable jar
+
+if [ -n "$JDBLD_JAR" ]; then
+  builderJar="$JDBLD_JAR"
+elif ! expr >/dev/null "$jdbldVersion" : '.*-SNAPSHOT$'; then
+  # Releases can easily be found
+  repositoryBaseUrl="https://repo1.maven.org/maven2/org/jdrupes/jdrupes-builder"
+  builderJar="$jdbldCommon/versions/jdrupes-builder-$jdbldVersion.jar"
+  # Get if not already there
+  if [ ! -r "$builderJar" ]; then
+    mkdir -p "$jdbldCommon/versions"
+    # Get version
+    curl "$repositoryBaseUrl/$jdbldVersion/jdrupes-builder-$jdbldVersion.jar" \
+      -o "$builderJar"
+  fi
+else
+  # Snaphost are more difficult because they have no "guessable" file name.
+  xmlstarlet=$(command -v "xmlstarlet")
+  if [ $? -ne 0 ]; then
+    echo >&2 "Need xmlstarlet to download a snapshot version"
+    exit 1
+  fi
+  snapshotBaseUrl="https://central.sonatype.com/repository/maven-snapshots/org/jdrupes/jdrupes-builder"
+  snapshotVersion=$(curl -s $snapshotBaseUrl/$jdbldVersion/maven-metadata.xml \
+    | xmlstarlet sel -t -v "/metadata/versioning/snapshotVersions/snapshotVersion[extension='jar' and not(classifier)]/value")
+  builderJar="$jdbldCommon/versions/jdrupes-builder-$snapshotVersion.jar"
+  # Get if not already there
+  if [ ! -r "$builderJar" ]; then
+    mkdir -p "$jdbldCommon/versions"
+    # Cleanup old snapshots
+    snapBase=$(echo -n "$jdbldVersion" | sed 's/-SNAPSHOT$//')
+    rm -f "$jdbldCommon/versions/jdrupes-builder-$snapBase-*.jar"
+    # Get latest
+    curl "$snapshotBaseUrl/$jdbldVersion/jdrupes-builder-$snapshotVersion.jar" \
+      -o "$builderJar"
+  fi
+fi
+
+if [ ! -r "$builderJar" ]; then
+  echo >&2 "JDrupes Builder's executable jar not found."
+  exit 1
+fi
+
+# Remember last used
+mkdir -p "$jdbldDirectory/lib"
+if [ ! -r "$jdbldDirectory/lib/.gitignore" ]; then
+  echo "jdrupes-builder-last-used.jar" > "$jdbldDirectory/lib/.gitignore"
+fi
+ln -sf "$builderJar" "$jdbldDirectory/lib/jdrupes-builder-last-used.jar"
+
+# Handle java related options
+
+javaCmd=java
+if [ -z "$JAVA_HOME" ]; then
+  JAVA_HOME=$(getProperty "javaHome" "")
+fi
+if [ ! -z "$JAVA_HOME" ]; then
+  javaCmd="$JAVA_HOME/bin/java"
+fi
+
+$javaCmd -Duser.language=en_US --enable-native-access=ALL-UNNAMED \
+    $JAVA_OPTS -jar "$builderJar" "$@"

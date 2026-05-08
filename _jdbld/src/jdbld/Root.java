@@ -48,6 +48,7 @@ public class Root extends AbstractRootProject {
         dependency(Expose, project(Common.class));
         dependency(Expose, project(RunnerQemu.class));
         dependency(Expose, project(ManagerEvents.class));
+        dependency(Expose, project(Manager.class));
         dependency(Expose, project(VmMgmt.class));
         dependency(Expose, project(VmAccess.class));
 
@@ -85,7 +86,7 @@ public class Root extends AbstractRootProject {
 
         // Commands
         commandAlias("build").projects("**")
-            .resources(of(LibraryJarFileType).using(Supply));
+            .resources(of(ApplicationTarFileType));
         commandAlias("javadoc").resources(of(JavadocDirectoryType));
         commandAlias("eclipse").projects("**")
             .resources(of(new ResourceType<EclipseConfiguration>() {}));
