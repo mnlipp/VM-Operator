@@ -18,19 +18,26 @@
 
 package jdbld;
 
+import static jdbld.ExtProps.GitApi;
+import org.eclipse.jgit.api.Git;
 import static org.jdrupes.builder.api.Intent.*;
+import org.jdrupes.builder.api.ResourceType;
 import org.jdrupes.builder.core.AbstractProject;
+import org.jdrupes.builder.core.ScriptExecutor;
 import org.jdrupes.builder.java.ApplicationBuilder;
 import org.jdrupes.builder.java.JavaLibraryProject;
 import static org.jdrupes.builder.java.JavaTypes.*;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.jdrupes.builder.mvnrepo.MvnRepoLookup;
 
 public class Manager extends AbstractProject implements JavaLibraryProject {
 
-    public Manager() {
+    public Manager() throws IOException {
         super(name("org.jdrupes.vmoperator.manager"));
         dependency(Expose, project(ManagerEvents.class));
         dependency(Expose, new MvnRepoLookup().resolve(
@@ -52,7 +59,7 @@ public class Manager extends AbstractProject implements JavaLibraryProject {
             "org.apache.logging.log4j:log4j-to-jul:2.20.0"));
         dependency(Reveal, project(VmMgmt.class));
         dependency(Reveal, project(VmAccess.class));
-        dependency(Forward, ApplicationBuilder::new)
+        dependency(Supply, ApplicationBuilder::new)
             .executableName("vm-manager")
             .applicationJvmOpts(l -> l.addAll(List.of(
                 "-Xmx128m",
@@ -61,6 +68,35 @@ public class Manager extends AbstractProject implements JavaLibraryProject {
             .mainClassName("org.jdrupes.vmoperator.manager.Manager")
             .add(resources(
                 of(LibraryJarFileType).using(Supply, Expose, Reveal)));
+        var branch = ((Git) get(GitApi)).getRepository().getBranch();
+        dependency(Supply, ScriptExecutor::new)
+            .name("VM-Operator-container-builder")
+            .required(resources(of(ApplicationTarFileType).using(Supply)))
+            .required(Path.of(
+                "src/org/jdrupes/vmoperator/manager/Containerfile"))
+            .script("""
+                    mkdir -p build/install/vm-manager
+                    tar -C build/install/vm-manager -xf $1
+                    podman build --pull=always -t $2 \
+                        -f src/org/jdrupes/vmoperator/manager/Containerfile .
+                    mkdir -p build/generated
+                    touch build/generated/ContainerImage.tstamp
+                    """)
+            .args(resources(of(ApplicationTarFileType).using(Supply)).limit(1)
+                .map(f -> f.path().toString()))
+            .args(name() + ":" + branch.replace('/', '-'))
+            .provideResources(of(new ResourceType<ContainerImage>() {}),
+                _ -> Stream.of(ContainerImage.of(buildDirectory()
+                    .resolve("generated/ContainerImage.tstamp"))));
+        var registry = context().property("docker.registry", "");
+        dependency(Supply, ScriptExecutor::new)
+            .name("VM-Operator-publisher")
+            .required(resources(
+                of(new ResourceType<ContainerImage>() {}).using(Supply)))
+            .script("""
+                    podman push --tls-verify=false $2 $1/$2
+                    """)
+            .args(registry, name() + ":" + branch.replace('/', '-'));
     }
 }
 

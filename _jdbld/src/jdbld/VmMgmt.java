@@ -60,8 +60,8 @@ public class VmMgmt extends AbstractProject
             .required(Path.of("tsconfig.json"))
             .required(Path.of("rollup.config.mjs"))
             .required(resources(of(BaseFileTreeType).using(Consume)))
-            .output(p -> Stream.of(JavaResourceTree.of(p,
-                p.buildDirectory().resolve("generated/resources"), "**/*")))
-            .provideResources(of(JavaResourceTreeType));
+            .provideResources(of(JavaResourceTreeType),
+                p -> Stream.of(JavaResourceTree.of(p, p.buildDirectory()
+                    .resolve("generated/resources"), "**/*")));
     }
 }

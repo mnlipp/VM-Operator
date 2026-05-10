@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.stream.Stream;
 import static org.jdrupes.builder.api.Intent.*;
 import org.jdrupes.builder.api.Project;
+import static org.jdrupes.builder.api.ResourceType.*;
 import org.jdrupes.builder.api.ResourceType;
 import org.jdrupes.builder.core.AbstractRootProject;
 import org.jdrupes.builder.eclipse.EclipseConfiguration;
@@ -86,9 +87,11 @@ public class Root extends AbstractRootProject {
 
         // Commands
         commandAlias("build").projects("**")
-            .resources(of(ApplicationTarFileType));
+            .resources(of(new ResourceType<ContainerImage>() {}).usingAll());
         commandAlias("javadoc").resources(of(JavadocDirectoryType));
         commandAlias("eclipse").projects("**")
             .resources(of(new ResourceType<EclipseConfiguration>() {}));
+        commandAlias("publish").projects("**")
+            .resources(of(ExecResultType).withName("VM-Operator-publisher"));
     }
 }
