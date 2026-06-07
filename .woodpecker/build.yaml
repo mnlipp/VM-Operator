@@ -20,7 +20,7 @@ steps:
     - chown -R 1000:1000 $CI_WORKSPACE
 
 - name: build-jars
-  image: registry.mnl.de/mnl/jdk21-builder:v4
+  image: registry.mnl.de/mnl/jdk21-builder:v5
   environment:
     HOME: /woodpecker/workflow
     REGISTRY: registry.mnl.de
