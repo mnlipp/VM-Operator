@@ -54,6 +54,7 @@ public class Root extends AbstractRootProject {
         dependency(Expose, project(Manager.class));
         dependency(Expose, project(VmMgmt.class));
         dependency(Expose, project(VmAccess.class));
+        dependency(Expose, project(SpiceSquid.class));
 
         // For npm init
         dependency(Consume,
