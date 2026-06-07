@@ -21,9 +21,11 @@ package jdbld;
 import java.io.IOException;
 import java.util.stream.Stream;
 import static org.jdrupes.builder.api.Intent.*;
+
+import org.jdrupes.builder.api.ExecResult;
 import org.jdrupes.builder.api.Project;
-import static org.jdrupes.builder.api.ResourceType.*;
 import org.jdrupes.builder.api.ResourceType;
+import static org.jdrupes.builder.api.ResourceType.*;
 import org.jdrupes.builder.core.AbstractRootProject;
 import org.jdrupes.builder.eclipse.EclipseConfiguration;
 import org.jdrupes.builder.ext.nodejs.NpmExecutor;
@@ -88,10 +90,14 @@ public class Root extends AbstractRootProject {
         // Commands
         commandAlias("build").projects("**")
             .resources(of(new ResourceType<ContainerImage>() {}).usingAll());
+        commandAlias("test").projects("**")
+            .resources(of(TestResultType).using(Supply));
         commandAlias("javadoc").resources(of(JavadocDirectoryType));
         commandAlias("eclipse").projects("**")
             .resources(of(new ResourceType<EclipseConfiguration>() {}));
         commandAlias("publish").projects("**")
-            .resources(of(ExecResultType).withName("VM-Operator-publisher"));
+            .resources(of(new ResourceType<ContainerPublication>() {}));
+        commandAlias("test-publication").projects("**").resources(of(
+            new ResourceType<ExecResult<?>>() {}).withName("test-publisher"));
     }
 }

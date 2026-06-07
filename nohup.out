@@ -1,0 +1,144 @@
+Forwarding from 127.0.0.1:8888 -> 8080
+Forwarding from [::1]:8888 -> 8080
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+E0604 21:06:24.892142   38912 portforward.go:409] an error occurred forwarding 8888 -> 8080: error forwarding port 8080 to pod f7723f5229777c252c9d1f9699f0e49cd5304f3fe61cabd590a42f5c163802e3, uid : failed to execute portforward in network namespace "/var/run/netns/cni-2e4dc7ab-2515-a420-13b1-43841ebe714f": failed to connect to localhost:8080 inside namespace "f7723f5229777c252c9d1f9699f0e49cd5304f3fe61cabd590a42f5c163802e3", IPv4: dial tcp4 127.0.0.1:8080: connect: connection refused IPv6 dial tcp6 [::1]:8080: connect: connection refused 
+error: lost connection to pod
+Forwarding from 127.0.0.1:8888 -> 8080
+Forwarding from [::1]:8888 -> 8080
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+E0604 21:24:12.153465  240093 portforward.go:409] an error occurred forwarding 8888 -> 8080: error forwarding port 8080 to pod 20732f155489585458f365743f75cd1effc736f2d233d9f527560568f3066b7d, uid : failed to execute portforward in network namespace "/var/run/netns/cni-d44169df-9aa3-718b-8925-c5a968632979": failed to connect to localhost:8080 inside namespace "20732f155489585458f365743f75cd1effc736f2d233d9f527560568f3066b7d", IPv4: dial tcp4 127.0.0.1:8080: connect: connection refused IPv6 dial tcp6 [::1]:8080: connect: connection refused 
+error: lost connection to pod
+Forwarding from 127.0.0.1:8888 -> 8080
+Forwarding from [::1]:8888 -> 8080
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+[?2004h[?1049h[22;0;0t[1;24r(B[m[4l[?7h[39;49m[?1h=[?1h=[?25l[39;49m(B[m[H[2J[22;35H(B[0;7m[ Lesen … ](B[m[22;30H(B[0;7m[ 98 Zeilen gelesen ](B[m[?12l[?25h[24;1H[?1049l[23;0;0t[?1l>[?2004lStandardeingabe ist kein Terminal
+error: there was a problem with the editor "/usr/bin/nano"
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+E0604 22:14:05.063604  241874 portforward.go:409] an error occurred forwarding 8888 -> 8080: error forwarding port 8080 to pod 0aa39ab656a2354b00170e04f54780d84f3a738772299057cd039fce2a2fc9cb, uid : failed to execute portforward in network namespace "/var/run/netns/cni-cc98cdcc-d178-6e66-54bc-05339a858dc2": failed to connect to localhost:8080 inside namespace "0aa39ab656a2354b00170e04f54780d84f3a738772299057cd039fce2a2fc9cb", IPv4: dial tcp4 127.0.0.1:8080: connect: connection refused IPv6 dial tcp6 [::1]:8080: connect: connection refused 
+error: lost connection to pod
+Forwarding from 127.0.0.1:8888 -> 8080
+Forwarding from [::1]:8888 -> 8080
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+NAME              READY   STATUS    RESTARTS   AGE
+pod/unittest-vm   0/1     Pending   0          32d
+
+NAME                  TYPE           CLUSTER-IP     EXTERNAL-IP      PORT(S)          AGE
+service/unittest-vm   LoadBalancer   10.43.164.42   192.168.179.10   5812:32010/TCP   32d
+service/vm-operator   ClusterIP      10.43.233.96   <none>           8080/TCP         2y92d
+Forwarding from 127.0.0.1:8888 -> 8888
+Forwarding from [::1]:8888 -> 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+E0607 15:14:32.713694  763600 portforward.go:409] an error occurred forwarding 8888 -> 8888: error forwarding port 8888 to pod 8ca1a619561b3d8fe2f099bfd55894b723ff64c331a7c2dff2f6f0d187b15458, uid : failed to execute portforward in network namespace "/var/run/netns/cni-b54c62f0-3fc0-8a28-1aa5-919fa88154aa": failed to connect to localhost:8888 inside namespace "8ca1a619561b3d8fe2f099bfd55894b723ff64c331a7c2dff2f6f0d187b15458", IPv4: dial tcp4 127.0.0.1:8888: connect: connection refused IPv6 dial tcp6 [::1]:8888: connect: connection refused 
+error: lost connection to pod
+Forwarding from 127.0.0.1:8888 -> 8888
+Forwarding from [::1]:8888 -> 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888
+Handling connection for 8888

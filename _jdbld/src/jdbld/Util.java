@@ -19,8 +19,11 @@
 package jdbld;
 
 import static org.jdrupes.builder.api.Intent.*;
+
+import org.jdrupes.builder.api.MergedTestProject;
 import org.jdrupes.builder.core.AbstractProject;
 import org.jdrupes.builder.java.JavaLibraryProject;
+import org.jdrupes.builder.java.JavaProject;
 import org.jdrupes.builder.mvnrepo.MvnRepoLookup;
 
 public class Util extends AbstractProject implements JavaLibraryProject {
@@ -30,5 +33,14 @@ public class Util extends AbstractProject implements JavaLibraryProject {
         dependency(Expose, new MvnRepoLookup().resolve(
             "org.freemarker:freemarker:[2.3.32,2.4)",
             "com.google.code.gson:gson:2.10.1"));
+    }
+
+    public static class UtilTest extends AbstractProject
+            implements JavaProject, MergedTestProject {
+
+        public UtilTest() {
+            super(parent(Util.class));
+            dependency(Consume, project(Util.class));
+        }
     }
 }

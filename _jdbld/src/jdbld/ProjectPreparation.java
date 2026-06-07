@@ -24,7 +24,7 @@ import static java.util.jar.Attributes.Name.IMPLEMENTATION_VERSION;
 import static jdbld.ExtProps.GitApi;
 import static org.jdrupes.builder.api.Intent.Consume;
 import static org.jdrupes.builder.api.Intent.Supply;
-import static org.jdrupes.builder.api.Project.Properties.Version;
+import static org.jdrupes.builder.api.CoreProperties.*;
 import static org.jdrupes.builder.api.ResourceType.ExecResultType;
 
 import java.io.IOException;
@@ -39,6 +39,7 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.InvalidPatternException;
 import org.eclipse.jgit.errors.RevisionSyntaxException;
 import org.jdrupes.builder.api.BuildException;
+import org.jdrupes.builder.api.MergedTestProject;
 import org.jdrupes.builder.api.Project;
 import org.jdrupes.builder.api.RootProject;
 import org.jdrupes.builder.eclipse.EclipseConfigurator;
@@ -48,6 +49,8 @@ import org.jdrupes.builder.java.JavaLibraryProject;
 import org.jdrupes.builder.java.JavaProject;
 import org.jdrupes.builder.java.JavaResourceCollector;
 import org.jdrupes.builder.java.LibraryBuilder;
+import org.jdrupes.builder.junit.JUnitTestRunner;
+import org.jdrupes.builder.mvnrepo.MvnRepoLookup;
 import org.jdrupes.gitversioning.api.VersionEvaluator;
 import org.jdrupes.gitversioning.core.DefaultTagFilter;
 import org.jdrupes.gitversioning.core.MavenStyleTagProcessor;
@@ -86,11 +89,27 @@ public class ProjectPreparation {
 
     public static void setupCommonGenerators(Project project) {
         if (project instanceof JavaProject) {
-            project.generator(JavaCompiler::new)
-                .addSources(Path.of("src"), "**/*.java")
-                .options("--release", "21");
-            project.generator(JavaResourceCollector::new)
-                .add(Path.of("resources"), "**/*");
+            if (!(project instanceof MergedTestProject)) {
+                project.generator(JavaCompiler::new)
+                    .addSources(Path.of("src"), "**/*.java")
+                    .options("--release", "21");
+                project.generator(JavaResourceCollector::new)
+                    .add(Path.of("resources"), "**/*");
+            } else {
+                project.generator(JavaCompiler::new).addSources(Path.of("test"),
+                    "**/*.java").options("--release", "21");
+                project.generator(JavaResourceCollector::new).add(Path.of(
+                    "test-resources"), "**/*");
+                project.dependency(Consume, new MvnRepoLookup()
+                    .resolve("junit:junit:4.13.2")
+                    .bom("org.junit:junit-bom:5.14.2")
+                    .resolve("org.junit.jupiter:junit-jupiter-api")
+                    .resolve("org.junit.jupiter:junit-jupiter-params")
+                    .resolve("org.junit.jupiter:junit-jupiter-engine",
+                        "org.junit.vintage:junit-vintage-engine",
+                        "net.jodah:concurrentunit:0.4.2"));
+                project.dependency(Supply, JUnitTestRunner::new);
+            }
         }
         if (project instanceof JavaLibraryProject) {
             var gen = project.generator(LibraryBuilder::new)
