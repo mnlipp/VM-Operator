@@ -28,6 +28,7 @@ steps:
     REGISTRY_TOKEN:
       from_secret: REGISTRY_TOKEN
   commands:
+    - dnf install -y java-25-openjdk-headless
     - echo $REGISTRY_TOKEN | podman login -u $REGISTRY_USER --password-stdin $REGISTRY
     - ./jdbld -Pdocker.registry=$REGISTRY/$REGISTRY_USER build javadoc publish
   backend_options:
