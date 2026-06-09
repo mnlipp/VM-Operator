@@ -19,9 +19,7 @@
 package jdbld;
 
 import java.io.IOException;
-import java.util.stream.Stream;
 import static org.jdrupes.builder.api.Intent.*;
-
 import org.jdrupes.builder.api.ExecResult;
 import org.jdrupes.builder.api.Project;
 import org.jdrupes.builder.api.ResourceType;
@@ -29,8 +27,6 @@ import static org.jdrupes.builder.api.ResourceType.*;
 import org.jdrupes.builder.core.AbstractRootProject;
 import org.jdrupes.builder.eclipse.EclipseConfiguration;
 import org.jdrupes.builder.ext.nodejs.NpmExecutor;
-import org.jdrupes.builder.mvnrepo.MvnRepoLookup;
-import org.jdrupes.builder.java.Javadoc;
 import static org.jdrupes.builder.java.JavaTypes.*;
 import static org.jdrupes.builder.mvnrepo.MvnProperties.GroupId;
 
@@ -61,32 +57,7 @@ public class Root extends AbstractRootProject {
             ProjectPreparation.prepareNpm(new NpmExecutor(this)));
 
         // Build javadoc
-        generator(Javadoc::new)
-            .destination(rootProject().directory().resolve("webpages/javadoc"))
-            .tagletpath(new MvnRepoLookup()
-                .resolve("org.jdrupes.taglets:plantuml-taglet:3.1.0",
-                    "net.sourceforge.plantuml:plantuml:1.2023.11")
-                .resources(of(ClasspathElementType).using(Supply, Expose)))
-            .taglets(Stream.of("org.jdrupes.taglets.plantUml.PlantUml",
-                "org.jdrupes.taglets.plantUml.StartUml",
-                "org.jdrupes.taglets.plantUml.EndUml"))
-            .addSources(resources(of(JavaSourceTreeType)))
-            .options("-overview", directory().resolve("overview.md").toString())
-            .options("--add-stylesheet",
-                directory().resolve("misc/javadoc-overwrites.css").toString())
-            .options("--add-script",
-                directory().resolve("misc/highlight.min.js").toString())
-            .options("--add-script",
-                directory().resolve("misc/highlight-all.js").toString())
-            .options("--add-stylesheet",
-                directory().resolve("misc/highlight-default.css").toString())
-            .options("-bottom",
-                readString(directory().resolve("misc/javadoc.bottom.txt")))
-            .options("--allow-script-in-comments")
-            .options("-linksource")
-            .options("-link",
-                "https://docs.oracle.com/en/java/javase/21/docs/api/")
-            .options("-quiet");
+        generator(VmOpJavadoc::new);
 
         // Commands
         commandAlias("build").projects("**")
