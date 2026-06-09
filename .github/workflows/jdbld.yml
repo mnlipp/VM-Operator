@@ -1,4 +1,4 @@
-name: Java CI with Gradle
+name: Java CI with Jdbld
 
 on:
   push: {}
@@ -20,8 +20,9 @@ jobs:
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
-    - name: Install graphviz
-      run: sudo apt-get install graphviz
+    # jdk 25 and xmlstarlet for jdbld, and graphviz for javadoc, 
+    - name: Install required packages
+      run: sudo apt-get update && sudo apt-get install openjdk-25-jdk xmlstarlet graphviz
     - name: Set up JDK 21
       uses: actions/setup-java@v3
       with:
@@ -29,3 +30,7 @@ jobs:
         distribution: 'temurin'
     - name: Build with Gradle
       run: ./gradlew -Pwebsite.push.token=${{ secrets.WEBSITE_PUSH_TOKEN }} stage
+    - name: Build with jdbld
+      run: >
+        JAVA_HOME=/usr/lib/jvm/java-25-openjdk-amd64/
+        ./jdbld build javadoc
