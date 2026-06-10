@@ -20,7 +20,7 @@ steps:
     - chown -R 1000:1000 $CI_WORKSPACE
 
 - name: build-jars
-  image: registry.mnl.de/mnl/jdk21-builder:v4
+  image: registry.mnl.de/mnl/jdk21-builder:v5
   environment:
     HOME: /woodpecker/workflow
     REGISTRY: registry.mnl.de
@@ -29,7 +29,7 @@ steps:
       from_secret: REGISTRY_TOKEN
   commands:
     - echo $REGISTRY_TOKEN | podman login -u $REGISTRY_USER --password-stdin $REGISTRY
-    - ./gradlew -Pdocker.registry=$REGISTRY/$REGISTRY_USER build apidocs publishImage
+    - ./jdbld -Pdocker.registry=$REGISTRY/$REGISTRY_USER build javadoc publish
   backend_options:
     kubernetes:
       securityContext:
