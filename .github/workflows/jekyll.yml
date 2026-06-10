@@ -61,7 +61,9 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
       - name: Build javadoc
-        run: ./jdbld javadoc
+        run: >
+          JAVA_HOME=/usr/lib/jvm/java-25-openjdk-amd64/
+          ./jdbld javadoc
       - name: Copy javadoc
         run: cp -a build/javadoc webpages/_site/
       - name: Generate the sitemap
