@@ -70,14 +70,14 @@ public class RunnerQemu extends AbstractProject implements JavaLibraryProject {
                         podman build --pull=always -t $2 \
                           -f src/org/jdrupes/vmoperator/runner/qemu/Containerfile.arch . && \
                         mkdir -p build/generated && \
-                        touch build/generated/ContainerImage.tstamp
+                        touch build/generated/ContainerImage-arch.tstamp
                         """)
             .args(resources(of(ApplicationTarFileType).using(Supply)).limit(1)
                 .map(f -> f.path().toString()))
-            .args(name() + ":" + branch.replace('/', '-'))
+            .args(name() + "-arch:" + branch.replace('/', '-'))
             .provideResources(of(new ResourceType<ContainerImage>() {}),
                 _ -> Stream.of(ContainerImage.of(buildDirectory()
-                    .resolve("generated/ContainerImage.tstamp"))));
+                    .resolve("generated/ContainerImage-arch.tstamp"))));
         var registry = context().property("docker.registry", "");
         dependency(Supply, ScriptExecutor::new)
             .name("VM-Runner.qemu-publisher")
@@ -87,7 +87,7 @@ public class RunnerQemu extends AbstractProject implements JavaLibraryProject {
                     podman push --tls-verify=false $2 $1/$2 && \
                     touch build/generated/ContainerPublication.tstamp
                     """)
-            .args(registry, name() + ":" + branch.replace('/', '-'))
+            .args(registry, name() + "-arch:" + branch.replace('/', '-'))
             .provideResources(of(new ResourceType<ContainerPublication>() {}),
                 _ -> Stream.of(ContainerImage.of(buildDirectory()
                     .resolve("generated/ContainerPublication.tstamp"))));
@@ -96,7 +96,7 @@ public class RunnerQemu extends AbstractProject implements JavaLibraryProject {
             .required(resources(
                 of(new ResourceType<ContainerImage>() {}).using(Supply)))
             .script("podman push --tls-verify=false $1 $2/$3")
-            .args(name() + ":" + branch.replace('/', '-'), registry,
+            .args(name() + "-arch:" + branch.replace('/', '-'), registry,
                 name() + ":test");
     }
 }
