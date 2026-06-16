@@ -29,7 +29,7 @@ steps:
       from_secret: REGISTRY_TOKEN
   commands:
     - echo $REGISTRY_TOKEN | podman login -u $REGISTRY_USER --password-stdin $REGISTRY
-    - ./jdbld -Pdocker.registry=$REGISTRY/$REGISTRY_USER build javadoc publish
+    - ./jdbld -Pdocker.registry=$REGISTRY/$REGISTRY_USER build javadoc publication
   backend_options:
     kubernetes:
       securityContext:

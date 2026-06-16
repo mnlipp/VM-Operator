@@ -67,7 +67,7 @@ public class Root extends AbstractRootProject {
         commandAlias("javadoc").resources(of(JavadocDirectoryType));
         commandAlias("eclipse").projects("**")
             .resources(of(new ResourceType<EclipseConfiguration>() {}));
-        commandAlias("publish").projects("**")
+        commandAlias("publication").projects("**")
             .resources(of(new ResourceType<ContainerPublication>() {}));
         commandAlias("test-publication").projects("**").resources(of(
             new ResourceType<ExecResult<?>>() {}).withName("test-publisher"));
