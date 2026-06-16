@@ -57,46 +57,54 @@ public class RunnerQemu extends AbstractProject implements JavaLibraryProject {
             .addFrom(this);
 
         // Container image build
+        containerBuild("arch");
+        containerBuild("alpine");
+    }
+
+    private void containerBuild(String base) throws IOException {
         var branch = ((Git) get(GitApi)).getRepository().getBranch();
+        var imageName = name() + "-" + base;
         dependency(Supply, ScriptExecutor::new)
-            .name("VM-Runner.qemu-container-builder")
+            .name("VM-Runner.qemu-" + base + "-container-builder")
             .required(resources(of(ApplicationTarFileType).using(Supply)))
             .required(Path.of(
-                "src/org/jdrupes/vmoperator/runner/qemu/Containerfile.arch"))
+                "src/org/jdrupes/vmoperator/runner/qemu/Containerfile." + base))
             .script(
                 """
                         mkdir -p build/install/vm-runner.qemu && \
-                        tar -C build/install/vm-runner.qemu -xf $1 && \
-                        podman build --pull=always -t $2 \
-                          -f src/org/jdrupes/vmoperator/runner/qemu/Containerfile.arch . && \
+                        tar -C build/install/vm-runner.qemu -xf $2 && \
+                        podman build --pull=always -t $3 \
+                          -f src/org/jdrupes/vmoperator/runner/qemu/Containerfile.$1 . && \
                         mkdir -p build/generated && \
-                        touch build/generated/ContainerImage-arch.tstamp
+                        touch build/generated/ContainerImage-$1.tstamp
                         """)
+            .args(base)
             .args(resources(of(ApplicationTarFileType).using(Supply)).limit(1)
                 .map(f -> f.path().toString()))
-            .args(name() + "-arch:" + branch.replace('/', '-'))
+            .args(imageName + ":" + branch.replace('/', '-'))
             .provideResources(of(new ResourceType<ContainerImage>() {}),
                 _ -> Stream.of(ContainerImage.of(buildDirectory()
-                    .resolve("generated/ContainerImage-arch.tstamp"))));
+                    .resolve("generated/ContainerImage-" + base + ".tstamp"))));
         var registry = context().property("docker.registry", "");
         dependency(Supply, ScriptExecutor::new)
-            .name("VM-Runner.qemu-publisher")
+            .name("VM-Runner.qemu-" + base + "-publisher")
             .required(resources(
                 of(new ResourceType<ContainerImage>() {}).using(Supply)))
             .script("""
                     podman push --tls-verify=false $2 $1/$2 && \
                     touch build/generated/ContainerPublication.tstamp
                     """)
-            .args(registry, name() + "-arch:" + branch.replace('/', '-'))
+            .args(registry, imageName + ":" + branch.replace('/', '-'))
             .provideResources(of(new ResourceType<ContainerPublication>() {}),
                 _ -> Stream.of(ContainerImage.of(buildDirectory()
-                    .resolve("generated/ContainerPublication.tstamp"))));
+                    .resolve("generated/ContainerPublication-" + base
+                        + ".tstamp"))));
         dependency(Supply, ScriptExecutor::new)
             .name("test-publisher")
             .required(resources(
                 of(new ResourceType<ContainerImage>() {}).using(Supply)))
             .script("podman push --tls-verify=false $1 $2/$3")
-            .args(name() + "-arch:" + branch.replace('/', '-'), registry,
-                name() + ":test");
+            .args(imageName + ":" + branch.replace('/', '-'),
+                registry, imageName + ":test");
     }
 }
