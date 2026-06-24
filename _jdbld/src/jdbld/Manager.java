@@ -41,8 +41,8 @@ public class Manager extends AbstractProject implements JavaLibraryProject {
 
     public Manager() throws IOException {
         super(name("org.jdrupes.vmoperator.manager"));
-        dependency(Consume, project(ManagerEvents.class));
-        dependency(Consume, new MvnRepoLookup().resolve(
+        dependency(Expose, project(ManagerEvents.class));
+        dependency(Expose, new MvnRepoLookup().resolve(
             "commons-cli:commons-cli:1.5.0",
             "org.jgrapes:org.jgrapes.util:[1.38.1,2)",
             "org.jgrapes:org.jgrapes.io:[2.12.1,3)",
