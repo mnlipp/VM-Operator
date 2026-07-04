@@ -159,6 +159,16 @@ public class ProjectPreparation {
                         .appendChild(doc.createTextNode(
                             "ch.acanda.eclipse.pmd.builder.PMDNature"));
                 }
+            }).adaptJdtCorePrefs(props -> {
+                var formatterPrefs = new java.util.Properties();
+                try {
+                    formatterPrefs.load(Root.class.getResourceAsStream(
+                        "org.eclipse.jdt.core.formatter.prefs"));
+                    formatterPrefs.entrySet().stream()
+                        .forEach(e -> props.put(e.getKey(), e.getValue()));
+                } catch (IOException e) {
+                    throw new BuildException().from(project).cause(e);
+                }
             }).adaptConfiguration(() -> {
                 if (!(project instanceof JavaProject)) {
                     return;
