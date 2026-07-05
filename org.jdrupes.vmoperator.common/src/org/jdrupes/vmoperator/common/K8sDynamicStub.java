@@ -98,7 +98,7 @@ public class K8sDynamicStub
             APIResource context, Reader yaml) throws ApiException {
         var model = new K8sDynamicModel(client.getJSON().getGson(),
             K8s.yamlToJson(client, yaml));
-        return K8sGenericStub.create(K8sDynamicModel.class,
+        return create(K8sDynamicModel.class,
             K8sDynamicModels.class, client, context, model,
             (c, ns, n) -> new K8sDynamicStub(c, context, ns, n));
     }

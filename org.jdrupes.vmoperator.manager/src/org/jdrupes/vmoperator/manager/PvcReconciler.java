@@ -59,7 +59,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
      *
      * @param fmConfig the fm config
      */
-    public PvcReconciler(Configuration fmConfig) {
+    /* default */ PvcReconciler(Configuration fmConfig) {
         this.fmConfig = fmConfig;
     }
 
@@ -75,7 +75,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
      * @throws ApiException the api exception
      */
     @SuppressWarnings({ "unchecked" })
-    public void reconcile(VmDefinition vmDef, Map<String, Object> model,
+    /* default */ void reconcile(VmDefinition vmDef, Map<String, Object> model,
             VmChannel channel, boolean specChanged)
             throws IOException, TemplateException, ApiException {
         Set<String> knownPvcs;

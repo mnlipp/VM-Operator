@@ -71,6 +71,7 @@ public class QemuMonitor extends QemuConnector {
      * @param configDir the config dir
      * @throws IOException Signals that an I/O exception has occurred.
      */
+    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public QemuMonitor(Channel componentChannel, Path configDir)
             throws IOException {
         super(componentChannel);
@@ -141,6 +142,7 @@ public class QemuMonitor extends QemuConnector {
      * @param event the event
      */
     @Handler
+    @Override
     public void onClosed(Closed<?> event, SocketIOChannel channel) {
         channel.associated(this, getClass()).ifPresent(qm -> {
             super.onClosed(event, channel);

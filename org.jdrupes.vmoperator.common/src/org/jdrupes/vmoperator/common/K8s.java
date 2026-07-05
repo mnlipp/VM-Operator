@@ -166,7 +166,7 @@ public class K8s {
      * @return the t
      * @throws ApiException the api exception
      */
-    @SuppressWarnings("PMD.GenericsNaming")
+    @SuppressWarnings("PMD.TypeParameterNamingConventions")
     public static <T extends KubernetesObject, LT extends KubernetesListObject>
             T apply(GenericKubernetesApi<T, LT> api, T existing, String update)
                     throws ApiException {

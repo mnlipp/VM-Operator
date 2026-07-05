@@ -22,6 +22,7 @@ import com.google.gson.JsonObject;
 import io.kubernetes.client.apimachinery.GroupVersionKind;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.models.V1PodIP;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
@@ -37,6 +38,7 @@ import org.jdrupes.vmoperator.common.Constants.Status;
 import org.jdrupes.vmoperator.common.K8s;
 import org.jdrupes.vmoperator.common.K8sClient;
 import org.jdrupes.vmoperator.common.K8sDynamicStub;
+import org.jdrupes.vmoperator.common.K8sGenericStub;
 import org.jdrupes.vmoperator.common.K8sObserver.ResponseType;
 import org.jdrupes.vmoperator.common.K8sV1ConfigMapStub;
 import org.jdrupes.vmoperator.common.K8sV1StatefulSetStub;
@@ -109,7 +111,7 @@ public class VmMonitor extends
     private void purge() throws ApiException {
         // Get existing CRs (VMs)
         var known = K8sDynamicStub.list(client(), context(), namespace())
-            .stream().map(stub -> stub.name()).collect(Collectors.toSet());
+            .stream().map(K8sGenericStub::name).collect(Collectors.toSet());
         ListOptions opts = new ListOptions();
         opts.setLabelSelector(
             "app.kubernetes.io/managed-by=" + VM_OP_NAME + ","
@@ -135,7 +137,7 @@ public class VmMonitor extends
         // Process the response data on a VM specific pipeline to
         // increase concurrency when e.g. starting many VMs.
         var preparing = channelManager.associated(name)
-            .orElseGet(() -> newEventPipeline());
+            .orElseGet(this::newEventPipeline);
         preparing.submit("VmChange[" + name + "]",
             () -> processChange(client, response, preparing));
     }
@@ -214,7 +216,7 @@ public class VmMonitor extends
 
         // Make sure that this is properly sync'd with VM CR changes.
         channelManager.associated(vmDef.name())
-            .orElseGet(() -> activeEventPipeline())
+            .orElseGet(this::activeEventPipeline)
             .submit("NodeInfo[" + vmDef.name() + "]",
                 () -> {
                     updateNodeInfo(event, vmDef);
@@ -241,7 +243,7 @@ public class VmMonitor extends
         var addrs = new ArrayList<String>();
         Optional.ofNullable(pod.getStatus().getPodIPs())
             .orElse(Collections.emptyList()).stream()
-            .map(ip -> ip.getIp()).forEach(addrs::add);
+            .map(V1PodIP::getIp).forEach(addrs::add);
         logger.finer(() -> "Adding node addresses " + addrs
             + " to VM info for " + vmDef.name());
         extra.nodeInfo(nodeName, addrs);

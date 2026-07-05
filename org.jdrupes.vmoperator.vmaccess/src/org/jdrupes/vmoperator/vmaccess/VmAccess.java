@@ -741,7 +741,7 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
     }
 
     @SuppressWarnings({ "PMD.NcssCount", "PMD.CognitiveComplexity",
-        "PMD.AvoidLiteralsInIfCondition" })
+        "PMD.AvoidLiteralsInIfCondition", "PMD.AvoidDeeplyNestedIfStmts" })
     @Override
     protected void doUpdateConletState(NotifyConletModel event,
             ConsoleConnection channel, ResourceModel model) throws Exception {

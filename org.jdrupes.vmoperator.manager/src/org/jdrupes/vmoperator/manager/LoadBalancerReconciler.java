@@ -61,7 +61,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
      *
      * @param fmConfig the fm config
      */
-    public LoadBalancerReconciler(Configuration fmConfig) {
+    /* default */ LoadBalancerReconciler(Configuration fmConfig) {
         this.fmConfig = fmConfig;
     }
 
@@ -76,7 +76,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
      * @throws TemplateException the template exception
      * @throws ApiException the api exception
      */
-    public void reconcile(VmDefinition vmDef, Map<String, Object> model,
+    /* default */ void reconcile(VmDefinition vmDef, Map<String, Object> model,
             VmChannel channel, boolean specChanged)
             throws IOException, TemplateException, ApiException {
         // Nothing to do unless spec changed
@@ -102,7 +102,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         // Load balancer can also be turned off for VM
         if (vmDef
             .<Map<String, Map<String, String>>> fromSpec(LOAD_BALANCER_SERVICE)
-            .map(m -> m.isEmpty()).orElse(false)) {
+            .map(Map::isEmpty).orElse(false)) {
             return;
         }
 

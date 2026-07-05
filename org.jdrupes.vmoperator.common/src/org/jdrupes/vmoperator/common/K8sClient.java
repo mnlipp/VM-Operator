@@ -814,7 +814,7 @@ public class K8sClient extends ApiClient {
      * @throws ApiException the api exception
      * @see ApiClient#buildCall(java.lang.String, java.lang.String, java.util.List, java.util.List, java.lang.Object, java.util.Map, java.util.Map, java.util.Map, java.lang.String[], io.kubernetes.client.openapi.ApiCallback)
      */
-    @SuppressWarnings({ "rawtypes" })
+    @SuppressWarnings({ "rawtypes", "PMD.ExcessiveParameterList" })
     @Override
     public Call buildCall(String path, String method, List<Pair> queryParams,
             List<Pair> collectionQueryParams, Object body,
@@ -843,7 +843,7 @@ public class K8sClient extends ApiClient {
      * @throws ApiException the api exception
      * @see ApiClient#buildRequest(java.lang.String, java.lang.String, java.util.List, java.util.List, java.lang.Object, java.util.Map, java.util.Map, java.util.Map, java.lang.String[], io.kubernetes.client.openapi.ApiCallback)
      */
-    @SuppressWarnings({ "rawtypes" })
+    @SuppressWarnings({ "rawtypes", "PMD.ExcessiveParameterList" })
     @Override
     public Request buildRequest(String path, String method,
             List<Pair> queryParams, List<Pair> collectionQueryParams,

@@ -26,6 +26,7 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Secret;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -253,12 +254,13 @@ public class DisplaySecretReconciler extends Component {
 
     private boolean updatePassword(V1Secret secret, GetDisplaySecret event) {
         var expiry = Optional.ofNullable(secret.getData()
-            .get(DisplaySecret.EXPIRY)).map(b -> new String(b)).orElse(null);
+            .get(DisplaySecret.EXPIRY))
+            .map(b -> new String(b, StandardCharsets.UTF_8)).orElse(null);
         if (secret.getData().get(DisplaySecret.PASSWORD) != null
             && stillValid(expiry)) {
             // Fixed secret, don't touch
-            event.setResult(
-                new String(secret.getData().get(DisplaySecret.PASSWORD)));
+            event.setResult(new String(secret.getData()
+                .get(DisplaySecret.PASSWORD), StandardCharsets.UTF_8));
             return false;
         }
 
@@ -317,26 +319,7 @@ public class DisplaySecretReconciler extends Component {
         }
     }
 
-    /**
-     * The Class PendingGet.
-     */
-    private static class PendingRequest {
-        public final GetDisplaySecret event;
-        public final long expectedSerial;
-        public final CompletionLock lock;
-
-        /**
-         * Instantiates a new pending get.
-         *
-         * @param event the event
-         * @param expectedSerial the expected serial
-         */
-        public PendingRequest(GetDisplaySecret event, long expectedSerial,
-                CompletionLock lock) {
-            super();
-            this.event = event;
-            this.expectedSerial = expectedSerial;
-            this.lock = lock;
-        }
+    private record PendingRequest(GetDisplaySecret event, long expectedSerial,
+            CompletionLock lock) {
     }
 }

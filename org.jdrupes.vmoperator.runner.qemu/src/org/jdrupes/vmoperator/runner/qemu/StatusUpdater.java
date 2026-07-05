@@ -89,6 +89,7 @@ public class StatusUpdater extends VmDefUpdater {
      *
      * @param componentChannel the component channel
      */
+    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public StatusUpdater(Channel componentChannel) {
         super(componentChannel);
         attach(new ConsoleTracker(componentChannel));

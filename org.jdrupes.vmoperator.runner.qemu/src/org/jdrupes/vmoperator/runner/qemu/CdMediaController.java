@@ -64,7 +64,8 @@ public class CdMediaController extends Component {
      * @param event the event
      */
     @Handler
-    @SuppressWarnings({ "PMD.AvoidInstantiatingObjectsInLoops" })
+    @SuppressWarnings({ "PMD.AvoidInstantiatingObjectsInLoops",
+        "PMD.ForLoopCanBeForeach" })
     public void onConfigureQemu(ConfigureQemu event) {
         if (event.runState() == RunState.TERMINATING) {
             return;
@@ -77,6 +78,7 @@ public class CdMediaController extends Component {
             if (!"ide-cd".equals(drives[i].type)) {
                 continue;
             }
+            @SuppressWarnings("PMD.AssignmentInOperand")
             var driveId = "cd" + cdCounter++;
             var newFile = Optional.ofNullable(drives[i].file).orElse("");
             if (event.runState() == RunState.STARTING) {

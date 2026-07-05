@@ -98,7 +98,7 @@ public class VmDefinitionStub
             APIResource context, Reader yaml) throws ApiException {
         var model = new VmDefinition(client.getJSON().getGson(),
             K8s.yamlToJson(client, yaml));
-        return K8sGenericStub.create(VmDefinition.class,
+        return create(VmDefinition.class,
             VmDefinitions.class, client, context, model,
             (c, ns, n) -> new VmDefinitionStub(c, context, ns, n));
     }

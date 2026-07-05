@@ -105,7 +105,8 @@ public class CpuController extends Component {
         fire(new MonitorCommand(new QmpQueryHotpluggableCpus()));
     }
 
-    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+    @SuppressWarnings({ "PMD.AvoidInstantiatingObjectsInLoops",
+        "PMD.AssignmentInOperand" })
     private int addCpus(List<ObjectNode> used, List<ObjectNode> unused,
             int diff) {
         Set<String> usedIds = new HashSet<>();

@@ -72,8 +72,8 @@ public class K8sObserver<O extends KubernetesObject,
      * @param namespace the namespace
      * @param options the options
      */
-    @SuppressWarnings({ "PMD.AvoidCatchingThrowable",
-        "PMD.CognitiveComplexity", "PMD.AvoidCatchingGenericException" })
+    @SuppressWarnings({ "PMD.CognitiveComplexity",
+        "PMD.AvoidCatchingGenericException" })
     public K8sObserver(Class<O> objectClass, Class<L> objectListClass,
             K8sClient client, APIResource context, String namespace,
             ListOptions options) {

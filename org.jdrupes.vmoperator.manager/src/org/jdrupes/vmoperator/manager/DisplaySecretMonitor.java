@@ -53,6 +53,7 @@ public class DisplaySecretMonitor
      * @param componentChannel the component channel
      * @param channelDictionary the channel dictionary
      */
+    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public DisplaySecretMonitor(Channel componentChannel,
             ChannelDictionary<String, VmChannel, ?> channelDictionary) {
         super(componentChannel, V1Secret.class, V1SecretList.class);

@@ -89,6 +89,7 @@ public class ChannelManager<K, C extends Channel, A>
      * @param key the key
      * @return the result
      */
+    @Override
     public Optional<Value<C, A>> value(K key) {
         return Optional.ofNullable(entries.get(key));
     }
@@ -173,7 +174,7 @@ public class ChannelManager<K, C extends Channel, A>
      *
      * @param name the name
      */
-    public void remove(String name) {
+    public void remove(K name) {
         entries.remove(name);
     }
 }

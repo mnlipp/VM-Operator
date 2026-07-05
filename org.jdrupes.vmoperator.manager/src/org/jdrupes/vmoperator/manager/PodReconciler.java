@@ -53,7 +53,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
      *
      * @param fmConfig the fm config
      */
-    public PodReconciler(Configuration fmConfig) {
+    /* default */ PodReconciler(Configuration fmConfig) {
         this.fmConfig = fmConfig;
     }
 
@@ -68,7 +68,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
      * @throws TemplateException the template exception
      * @throws ApiException the api exception
      */
-    public void reconcile(VmDefinition vmDef, Map<String, Object> model,
+    /* default */ void reconcile(VmDefinition vmDef, Map<String, Object> model,
             VmChannel channel, boolean specChanged)
             throws IOException, TemplateException, ApiException {
         // Get pod stub.

@@ -401,7 +401,7 @@ public class VmDefinition extends K8sDynamicModel {
 
         // If no login is requested, allow access, else check if user matches
         if (condition(Condition.USER_LOGGED_IN).map(V1Condition::getReason)
-            .map(r -> Reason.NOT_REQUESTED.equals(r)).orElse(false)) {
+            .map(Reason.NOT_REQUESTED::equals).orElse(false)) {
             return true;
         }
         return user.equals(status().get(Status.LOGGED_IN_USER));

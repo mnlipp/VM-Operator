@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.lang.reflect.UndeclaredThrowableException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -248,7 +249,8 @@ public class Runner extends Component {
      * @param cmdLine the cmd line
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    @SuppressWarnings({ "PMD.ConstructorCallsOverridableMethod" })
+    @SuppressWarnings({ "PMD.ConstructorCallsOverridableMethod",
+        "PMD.AssignmentInOperand" })
     public Runner(CommandLine cmdLine) throws IOException {
         yamlMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
             false);
@@ -499,12 +501,12 @@ public class Runner extends Component {
             Files.deleteIfExists(initialConfig.swtpmSocket);
             fire(new WatchFile(initialConfig.swtpmSocket));
 
-            // Helper files
+            // Helper files (ticket is deprecated)
             var ticket = Optional.ofNullable(initialConfig.vm.display)
                 .map(d -> d.spice).map(s -> s.ticket);
             if (ticket.isPresent()) {
                 Files.write(initialConfig.runtimeDir.resolve("ticket.txt"),
-                    ticket.get().getBytes());
+                    ticket.get().getBytes(StandardCharsets.UTF_8));
             }
         } catch (IOException e) {
             logger.log(Level.SEVERE, e,

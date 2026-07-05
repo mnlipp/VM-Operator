@@ -26,6 +26,7 @@ public class Constants extends org.jdrupes.vmoperator.common.Constants {
     /**
      * Process names.
      */
+    @SuppressWarnings("PMD.UseUtilityClass")
     public static class ProcessName {
 
         /** The Constant QEMU. */

@@ -42,6 +42,7 @@ import org.jdrupes.vmoperator.common.Constants.Status;
 import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinition.Permission;
+import org.jdrupes.vmoperator.manager.events.ChannelDictionary.Value;
 import org.jdrupes.vmoperator.manager.events.ChannelTracker;
 import org.jdrupes.vmoperator.manager.events.GetDisplaySecret;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
@@ -402,8 +403,8 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
         event.stop();
         String vmName = event.param(0);
         var value = channelTracker.value(vmName);
-        var vmChannel = value.map(v -> v.channel()).orElse(null);
-        var vmDef = value.map(v -> v.associated()).orElse(null);
+        var vmChannel = value.map(Value::channel).orElse(null);
+        var vmDef = value.map(Value::associated).orElse(null);
         if (vmDef == null) {
             return;
         }
