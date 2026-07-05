@@ -77,15 +77,14 @@ public class Manager extends AbstractProject implements JavaLibraryProject {
             .required(resources(of(ApplicationTarFileType).using(Supply)))
             .required(Path.of(
                 "src/org/jdrupes/vmoperator/manager/Containerfile"))
-            .script(
-                """
-                        mkdir -p build/install/vm-manager && \
-                        tar -C build/install/vm-manager -xf $1 && \
-                        podman build --pull=always -t $2 \
-                            -f src/org/jdrupes/vmoperator/manager/Containerfile . && \
-                        mkdir -p build/generated && \
-                        touch build/generated/ContainerImage.tstamp
-                        """)
+            .script("""
+                mkdir -p build/install/vm-manager && \
+                tar -C build/install/vm-manager -xf $1 && \
+                podman build --pull=always -t $2 \
+                    -f src/org/jdrupes/vmoperator/manager/Containerfile . && \
+                mkdir -p build/generated && \
+                touch build/generated/ContainerImage.tstamp
+                """)
             .args(resources(of(ApplicationTarFileType).using(Supply)).limit(1)
                 .map(f -> f.path().toString()))
             .args(name() + ":" + branch.replace('/', '-'))
