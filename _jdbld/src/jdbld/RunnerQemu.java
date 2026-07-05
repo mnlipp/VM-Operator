@@ -69,15 +69,14 @@ public class RunnerQemu extends AbstractProject implements JavaLibraryProject {
             .required(resources(of(ApplicationTarFileType).using(Supply)))
             .required(Path.of(
                 "src/org/jdrupes/vmoperator/runner/qemu/Containerfile." + base))
-            .script(
-                """
-                        mkdir -p build/install/vm-runner.qemu && \
-                        tar -C build/install/vm-runner.qemu -xf $2 && \
-                        podman build --pull=always -t $3 \
-                          -f src/org/jdrupes/vmoperator/runner/qemu/Containerfile.$1 . && \
-                        mkdir -p build/generated && \
-                        touch build/generated/ContainerImage-$1.tstamp
-                        """)
+            .script("""
+                    mkdir -p build/install/vm-runner.qemu && \
+                    tar -C build/install/vm-runner.qemu -xf $2 && \
+                    podman build --pull=always -t $3 \
+                      -f src/org/jdrupes/vmoperator/runner/qemu/Containerfile.$1 . && \
+                    mkdir -p build/generated && \
+                    touch build/generated/ContainerImage-$1.tstamp
+                    """)
             .args(base)
             .args(resources(of(ApplicationTarFileType).using(Supply)).limit(1)
                 .map(f -> f.path().toString()))
