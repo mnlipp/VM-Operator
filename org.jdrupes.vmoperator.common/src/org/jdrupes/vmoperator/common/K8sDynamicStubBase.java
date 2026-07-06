@@ -26,7 +26,6 @@ import io.kubernetes.client.Discovery.APIResource;
  * state and can therefore be used for any kind of object, especially
  * custom objects.
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public abstract class K8sDynamicStubBase<O extends K8sDynamicModel,
         L extends K8sDynamicModelsBase<O>> extends K8sGenericStub<O, L> {
 
@@ -40,7 +39,6 @@ public abstract class K8sDynamicStubBase<O extends K8sDynamicModel,
      * @param namespace the namespace
      * @param name the name
      */
-    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public K8sDynamicStubBase(Class<O> objectClass,
             Class<L> objectListClass, DynamicTypeAdapterFactory<O, L> taf,
             K8sClient client, APIResource context, String namespace,

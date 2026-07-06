@@ -111,9 +111,8 @@ import org.jgrapes.webconsole.base.freemarker.FreeMarkerConlet;
  *     users and roles.
  *
  */
-@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.ExcessiveImports",
-    "PMD.CouplingBetweenObjects", "PMD.GodClass", "PMD.TooManyMethods",
-    "PMD.CyclomaticComplexity" })
+@SuppressWarnings({ "PMD.ExcessiveImports", "PMD.CouplingBetweenObjects",
+    "PMD.GodClass", "PMD.TooManyMethods", "PMD.CyclomaticComplexity" })
 public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
 
     private static final String VM_NAME_PROPERTY = "vmName";
@@ -167,7 +166,7 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
      * 
      * @param event the event
      */
-    @SuppressWarnings({ "unchecked", "PMD.AvoidDuplicateLiterals" })
+    @SuppressWarnings({ "unchecked" })
     @Handler
     public void onConfigurationUpdate(ConfigurationUpdate event) {
         event.structured(componentPath())
@@ -267,7 +266,7 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
     public void onConsoleConfigured(ConsoleConfigured event,
             ConsoleConnection connection) throws InterruptedException,
             IOException {
-        @SuppressWarnings({ "unchecked", "PMD.PrematureDeclaration" })
+        @SuppressWarnings({ "unchecked" })
         final var rendered
             = (Set<ResourceModel>) connection.session().get(RENDERED);
         connection.session().remove(RENDERED);
@@ -277,8 +276,7 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
         addMissingConlets(event, connection, rendered);
     }
 
-    @SuppressWarnings({ "PMD.AvoidInstantiatingObjectsInLoops",
-        "PMD.AvoidDuplicateLiterals" })
+    @SuppressWarnings({ "PMD.AvoidInstantiatingObjectsInLoops" })
     private void addMissingConlets(ConsoleConfigured event,
             ConsoleConnection connection, final Set<ResourceModel> rendered)
             throws InterruptedException {
@@ -406,7 +404,6 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
     }
 
     @Override
-    @SuppressWarnings({ "PMD.AvoidInstantiatingObjectsInLoops" })
     protected Set<RenderMode> doRenderConlet(RenderConletRequestBase<?> event,
             ConsoleConnection channel, String conletId, ResourceModel model)
             throws Exception {
@@ -655,9 +652,8 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
      * @throws InterruptedException 
      */
     @Handler(namedChannels = "manager")
-    @SuppressWarnings({ "PMD.ConfusingTernary", "PMD.CognitiveComplexity",
-        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.AvoidDuplicateLiterals",
-        "PMD.ConfusingArgumentToVarargsMethod" })
+    @SuppressWarnings({ "PMD.CognitiveComplexity",
+        "PMD.AvoidInstantiatingObjectsInLoops" })
     public void onVmResourceChanged(VmResourceChanged event, VmChannel channel)
             throws IOException, InterruptedException {
         var vmDef = event.vmDefinition();
@@ -745,7 +741,7 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
     }
 
     @SuppressWarnings({ "PMD.NcssCount", "PMD.CognitiveComplexity",
-        "PMD.AvoidLiteralsInIfCondition" })
+        "PMD.AvoidLiteralsInIfCondition", "PMD.AvoidDeeplyNestedIfStmts" })
     @Override
     protected void doUpdateConletState(NotifyConletModel event,
             ConsoleConnection channel, ResourceModel model) throws Exception {
@@ -853,8 +849,7 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
                 model.getConletId(), "openConsole", cf)));
     }
 
-    @SuppressWarnings({ "PMD.AvoidLiteralsInIfCondition",
-        "PMD.UseLocaleWithCaseConversions" })
+    @SuppressWarnings({ "PMD.UseLocaleWithCaseConversions" })
     private void selectResource(NotifyConletModel event,
             ConsoleConnection channel, ResourceModel model)
             throws JsonProcessingException, InterruptedException {
@@ -881,7 +876,6 @@ public class VmAccess extends FreeMarkerConlet<VmAccess.ResourceModel> {
     /**
      * The Class AccessModel.
      */
-    @SuppressWarnings("PMD.DataClass")
     public static class ResourceModel extends ConletBaseModel {
 
         /**

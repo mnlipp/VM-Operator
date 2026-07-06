@@ -31,7 +31,6 @@ import java.util.Collection;
  * state and can therefore be used for any kind of object, especially
  * custom objects.
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class VmDefinitionStub
         extends K8sDynamicStubBase<VmDefinition, VmDefinitions> {
 
@@ -64,8 +63,6 @@ public class VmDefinitionStub
      * @return the stub if the object exists
      * @throws ApiException the api exception
      */
-    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
-        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })
     public static VmDefinitionStub get(K8sClient client,
             GroupVersionKind gvk, String namespace, String name)
             throws ApiException {
@@ -83,8 +80,6 @@ public class VmDefinitionStub
      * @return the stub if the object exists
      * @throws ApiException the api exception
      */
-    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
-        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })
     public static VmDefinitionStub get(K8sClient client,
             APIResource context, String namespace, String name) {
         return new VmDefinitionStub(client, context, namespace, name);
@@ -103,7 +98,7 @@ public class VmDefinitionStub
             APIResource context, Reader yaml) throws ApiException {
         var model = new VmDefinition(client.getJSON().getGson(),
             K8s.yamlToJson(client, yaml));
-        return K8sGenericStub.create(VmDefinition.class,
+        return create(VmDefinition.class,
             VmDefinitions.class, client, context, model,
             (c, ns, n) -> new VmDefinitionStub(c, context, ns, n));
     }

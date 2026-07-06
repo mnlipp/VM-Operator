@@ -27,7 +27,6 @@ import org.jgrapes.core.Event;
 /**
  * Gets the known VMs' definitions and channels.
  */
-@SuppressWarnings("PMD.DataClass")
 public class GetVms extends Event<List<GetVms.VmData>> {
 
     private String name;

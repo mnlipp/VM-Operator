@@ -27,9 +27,9 @@ import java.util.List;
 /**
  * A command definition. 
  */
-class CommandDefinition {
-    public String name;
-    public final List<String> command = new ArrayList<>();
+/* default */ class CommandDefinition {
+    /* default */ String name;
+    /* default */ final List<String> command = new ArrayList<>();
 
     /**
      * Instantiates a new process definition.
@@ -37,7 +37,7 @@ class CommandDefinition {
      * @param name the name
      * @param jsonData the json data
      */
-    public CommandDefinition(String name, JsonNode jsonData) {
+    /* default */ CommandDefinition(String name, JsonNode jsonData) {
         this.name = name;
         for (JsonNode path : jsonData.get("executable")) {
             if (Files.isExecutable(Path.of(path.asText()))) {
@@ -66,7 +66,7 @@ class CommandDefinition {
      *
      * @return the string
      */
-    public String name() {
+    /* default */ String name() {
         return name;
     }
 

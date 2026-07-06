@@ -42,6 +42,7 @@ import org.jdrupes.vmoperator.common.Constants.Status;
 import org.jdrupes.vmoperator.common.K8sObserver;
 import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinition.Permission;
+import org.jdrupes.vmoperator.manager.events.ChannelDictionary.Value;
 import org.jdrupes.vmoperator.manager.events.ChannelTracker;
 import org.jdrupes.vmoperator.manager.events.GetDisplaySecret;
 import org.jdrupes.vmoperator.manager.events.ModifyVm;
@@ -75,8 +76,7 @@ import org.jgrapes.webconsole.base.freemarker.FreeMarkerConlet;
 /**
  * The Class {@link VmMgmt}.
  */
-@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.CouplingBetweenObjects",
-    "PMD.ExcessiveImports" })
+@SuppressWarnings({ "PMD.CouplingBetweenObjects", "PMD.ExcessiveImports" })
 public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
 
     private Class<?> preferredIpVersion = Inet4Address.class;
@@ -112,7 +112,7 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
      * 
      * @param event the event
      */
-    @SuppressWarnings({ "unchecked", "PMD.AvoidDuplicateLiterals" })
+    @SuppressWarnings({ "unchecked" })
     @Handler
     public void onConfigurationUpdate(ConfigurationUpdate event) {
         event.structured("/Manager/GuiHttpServer"
@@ -177,7 +177,6 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
     }
 
     @Override
-    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     protected Set<RenderMode> doRenderConlet(RenderConletRequestBase<?> event,
             ConsoleConnection channel, String conletId, VmsModel conletState)
             throws Exception {
@@ -230,7 +229,6 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
             simplifiedVmDefinition(vmDef, user, roles)));
     }
 
-    @SuppressWarnings("PMD.AvoidDuplicateLiterals")
     private Map<String, Object> simplifiedVmDefinition(VmDefinition vmDef,
             String user, List<String> roles) {
         // Convert RAM sizes to unitless numbers
@@ -270,9 +268,8 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
      * @throws IOException 
      */
     @Handler(namedChannels = "manager")
-    @SuppressWarnings({ "PMD.ConfusingTernary", "PMD.CognitiveComplexity",
-        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.AvoidDuplicateLiterals",
-        "PMD.ConfusingArgumentToVarargsMethod" })
+    @SuppressWarnings({ "PMD.CognitiveComplexity",
+        "PMD.AvoidInstantiatingObjectsInLoops" })
     public void onVmResourceChanged(VmResourceChanged event, VmChannel channel)
             throws IOException {
         var vmName = event.vmDefinition().name();
@@ -378,8 +375,6 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
 
     }
 
-    @SuppressWarnings({ "PMD.AvoidLiteralsInIfCondition",
-        "PMD.LambdaCanBeMethodReference" })
     private Summary evaluateSummary(boolean force) {
         if (!force && cachedSummary != null) {
             return cachedSummary;
@@ -402,15 +397,14 @@ public class VmMgmt extends FreeMarkerConlet<VmMgmt.VmsModel> {
     }
 
     @Override
-    @SuppressWarnings({ "PMD.AvoidDecimalLiteralsInBigDecimalConstructor",
-        "PMD.NcssCount" })
+    @SuppressWarnings({ "PMD.NcssCount" })
     protected void doUpdateConletState(NotifyConletModel event,
             ConsoleConnection channel, VmsModel model) throws Exception {
         event.stop();
         String vmName = event.param(0);
         var value = channelTracker.value(vmName);
-        var vmChannel = value.map(v -> v.channel()).orElse(null);
-        var vmDef = value.map(v -> v.associated()).orElse(null);
+        var vmChannel = value.map(Value::channel).orElse(null);
+        var vmDef = value.map(Value::associated).orElse(null);
         if (vmDef == null) {
             return;
         }

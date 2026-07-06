@@ -96,6 +96,7 @@ public class DynamicTypeAdapterFactory<O extends K8sDynamicModel,
     /**
      * The Class ModelCreator.
      */
+    @SuppressWarnings("PMD.CommentDefaultAccessModifier")
     private class ModelCreator extends TypeAdapter<O>
             implements InstanceCreator<O> {
         private final Gson delegate;
@@ -105,7 +106,7 @@ public class DynamicTypeAdapterFactory<O extends K8sDynamicModel,
          *
          * @param delegate the delegate
          */
-        public ModelCreator(Gson delegate) {
+        ModelCreator(Gson delegate) {
             this.delegate = delegate;
         }
 
@@ -145,6 +146,7 @@ public class DynamicTypeAdapterFactory<O extends K8sDynamicModel,
     /**
      * The Class ModelsCreator.
      */
+    @SuppressWarnings("PMD.CommentDefaultAccessModifier")
     private class ModelsCreator extends TypeAdapter<L>
             implements InstanceCreator<L> {
 
@@ -155,7 +157,7 @@ public class DynamicTypeAdapterFactory<O extends K8sDynamicModel,
          *
          * @param delegate the delegate
          */
-        public ModelsCreator(Gson delegate) {
+        ModelsCreator(Gson delegate) {
             this.delegate = delegate;
         }
 

@@ -51,7 +51,6 @@ import org.jgrapes.util.events.ConfigurationUpdate;
  * @param <O> the object type for the context
  * @param <L> the object list type for the context
  */
-@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis" })
 public abstract class AbstractMonitor<O extends KubernetesObject,
         L extends KubernetesListObject, C extends Channel> extends Component {
 
@@ -181,7 +180,6 @@ public abstract class AbstractMonitor<O extends KubernetesObject,
      * @param event the event
      */
     @Handler(priority = 10)
-    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     public void onStart(Start event) {
         try {
             // Get namespace

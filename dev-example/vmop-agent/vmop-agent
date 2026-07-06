@@ -72,8 +72,8 @@ doLogin() {
     return
   fi
   
-  # Check if this user is already logged in on tty1
-  curUser=$(loginctl -j | jq -r '.[] | select(.tty=="tty1") | .user')
+  # Check if this user is already logged in on tty2
+  curUser=$(loginctl -j | jq -r '.[] | select(.tty=="tty2") | .user')
   if [ "$curUser" = "$user" ]; then
     echo >&${con} "201 User already logged in"
     return
@@ -96,17 +96,14 @@ doLogin() {
       return
     fi
   fi
-  
-  # Start the desktop for the user
-  systemd-run 2>$temperr \
-    --unit vmop-user-desktop --uid=$uid --gid=$uid \
-    --working-directory="/home/$user" -p TTYPath=/dev/tty1 \
-    -p PAMName=login -p StandardInput=tty -p StandardOutput=journal \
-    -p Conflicts="gdm.service getty@tty1.service" \
-    -E XDG_RUNTIME_DIR="/run/user/$uid" \
-    -E XDG_CURRENT_DESKTOP=GNOME \
-    -p ExecStartPre="/usr/bin/chvt 1" \
-    dbus-run-session -- gnome-shell --display-server --wayland
+
+  # Configure user as auto login user
+  sed -i '/AutomaticLogin/d' /etc/gdm/custom.conf
+  sed -i '/\[daemon\]/a AutomaticLoginEnable=true\nAutomaticLogin='$user \
+    /etc/gdm/custom.conf
+
+  # Activate user    
+  systemctl restart gdm
   if [ $? -eq 0 ]; then
     echo >&${con} "201 User logged in successfully"
   else
@@ -117,14 +114,8 @@ doLogin() {
 # Attempt to log out a user currently using tty1. This is an intermediate
 # operation that can be invoked from other operations
 attemptLogout() {
-  systemctl status vmop-user-desktop > /dev/null 2>&1
-  if [ $? = 0 ]; then
-    systemctl stop vmop-user-desktop
-  fi
-  loginctl -j | jq -r '.[] | select(.tty=="tty1") | .session' \
-  | while read sid; do
-    loginctl kill-session $sid
-  done
+  sed -i '/AutomaticLogin/d' /etc/gdm/custom.conf
+  systemctl stop gdm
   echo >&${con} "102 Desktop stopped"
 }
 
@@ -133,15 +124,7 @@ attemptLogout() {
 # Also try to restart gdm, if it is not running.
 doLogout() {
   attemptLogout
-  systemctl status gdm >/dev/null 2>&1
-  if [ $? != 0 ]; then
-    systemctl restart gdm 2>$temperr
-    if [ $? -eq 0 ]; then
-      echo >&${con} "102 gdm restarted"
-    else
-      echo >&${con} "102 Restarting gdm failed: $(tr '\n' ' ' <${temperr})"
-    fi
-  fi
+  systemctl restart gdm
   echo >&${con} "202 User logged out"
 }
 
@@ -153,7 +136,7 @@ while read line <&${con}; do
 done
 
 onExit() {
-  attemptLogout
+  doLogout
   if [ -n "$temperr" ]; then
     rm -f $temperr
   fi

@@ -45,7 +45,6 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 /**
  * Delegee for reconciling the service
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 /* default */ class LoadBalancerReconciler {
 
     private static final String LOAD_BALANCER_SERVICE = "loadBalancerService";
@@ -62,7 +61,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
      *
      * @param fmConfig the fm config
      */
-    public LoadBalancerReconciler(Configuration fmConfig) {
+    /* default */ LoadBalancerReconciler(Configuration fmConfig) {
         this.fmConfig = fmConfig;
     }
 
@@ -77,7 +76,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
      * @throws TemplateException the template exception
      * @throws ApiException the api exception
      */
-    public void reconcile(VmDefinition vmDef, Map<String, Object> model,
+    /* default */ void reconcile(VmDefinition vmDef, Map<String, Object> model,
             VmChannel channel, boolean specChanged)
             throws IOException, TemplateException, ApiException {
         // Nothing to do unless spec changed
@@ -86,7 +85,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         }
 
         // Check if to be generated
-        @SuppressWarnings({ "PMD.AvoidDuplicateLiterals", "unchecked" })
+        @SuppressWarnings({ "unchecked" })
         var lbsDef = Optional.of(model)
             .map(m -> (Map<String, Object>) m.get("reconciler"))
             .map(c -> c.get(LOAD_BALANCER_SERVICE)).orElse(Boolean.FALSE);
@@ -103,7 +102,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         // Load balancer can also be turned off for VM
         if (vmDef
             .<Map<String, Map<String, String>>> fromSpec(LOAD_BALANCER_SERVICE)
-            .map(m -> m.isEmpty()).orElse(false)) {
+            .map(Map::isEmpty).orElse(false)) {
             return;
         }
 

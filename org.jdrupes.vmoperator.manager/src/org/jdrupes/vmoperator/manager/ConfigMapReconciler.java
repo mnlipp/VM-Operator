@@ -56,7 +56,6 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 /**
  * Delegee for reconciling the config map
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 /* default */ class ConfigMapReconciler {
 
     protected final Logger logger = Logger.getLogger(getClass().getName());
@@ -67,7 +66,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
      *
      * @param fmConfig the fm config
      */
-    public ConfigMapReconciler(Configuration fmConfig) {
+    /* default */ ConfigMapReconciler(Configuration fmConfig) {
         this.fmConfig = fmConfig;
     }
 
@@ -81,8 +80,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
      * @throws TemplateException the template exception
      * @throws ApiException the API exception
      */
-    @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-    public void reconcile(Map<String, Object> model, VmChannel channel,
+    /* default */ void reconcile(Map<String, Object> model, VmChannel channel,
             boolean modelChanged)
             throws IOException, TemplateException, ApiException {
         // Check if an update is needed
@@ -189,7 +187,6 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
     private final TemplateMethodModelEx adjustCloudInitMetaModel
         = new TemplateMethodModelEx() {
             @Override
-            @SuppressWarnings("PMD.PreserveStackTrace")
             public Object exec(@SuppressWarnings("rawtypes") List arguments)
                     throws TemplateModelException {
                 @SuppressWarnings("unchecked")

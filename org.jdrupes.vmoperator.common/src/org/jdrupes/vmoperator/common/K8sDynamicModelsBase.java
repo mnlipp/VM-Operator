@@ -62,7 +62,7 @@ public class K8sDynamicModelsBase<T extends K8sDynamicModel>
             } catch (InstantiationException | IllegalAccessException
                     | IllegalArgumentException | InvocationTargetException
                     | NoSuchMethodException | SecurityException exc) {
-                throw new IllegalArgumentException(exc); // NOPMD
+                throw new IllegalArgumentException(exc);
             }
         }
     }

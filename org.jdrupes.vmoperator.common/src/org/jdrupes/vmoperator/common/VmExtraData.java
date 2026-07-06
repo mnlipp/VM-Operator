@@ -34,7 +34,6 @@ import java.util.logging.Logger;
  */
 public class VmExtraData {
 
-    @SuppressWarnings("PMD.FieldNamingConventions")
     private static final Logger logger
         = Logger.getLogger(VmExtraData.class.getName());
 

@@ -58,6 +58,7 @@ public class PodMonitor extends AbstractMonitor<V1Pod, V1PodList, VmChannel> {
      * @param componentChannel the component channel
      * @param channelDictionary the channel dictionary
      */
+    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public PodMonitor(Channel componentChannel,
             ChannelDictionary<String, VmChannel, ?> channelDictionary) {
         super(componentChannel, V1Pod.class, V1PodList.class);

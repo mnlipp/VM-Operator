@@ -21,12 +21,12 @@ package org.jdrupes.vmoperator.runner.qemu;
 /**
  * Some constants.
  */
-@SuppressWarnings("PMD.DataClass")
 public class Constants extends org.jdrupes.vmoperator.common.Constants {
 
     /**
      * Process names.
      */
+    @SuppressWarnings("PMD.UseUtilityClass")
     public static class ProcessName {
 
         /** The Constant QEMU. */

@@ -24,7 +24,6 @@ import org.jgrapes.core.Event;
 /**
  * Modifies a VM.
  */
-@SuppressWarnings("PMD.DataClass")
 public class ModifyVm extends Event<Void> {
 
     private final String name;

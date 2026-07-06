@@ -53,17 +53,18 @@ public class ChannelTracker<K, C extends Channel, A>
      * @param <C> the generic type
      * @param <A> the generic type
      */
-    @SuppressWarnings("PMD.ShortClassName")
+    @SuppressWarnings({ "PMD.ShortClassName",
+        "PMD.CommentDefaultAccessModifier" })
     private static class Data<C extends Channel, A> {
-        public final WeakReference<C> channel;
-        public A associated;
+        final WeakReference<C> channel;
+        A associated;
 
         /**
          * Instantiates a new value.
          *
          * @param channel the channel
          */
-        public Data(C channel) {
+        Data(C channel) {
             this.channel = new WeakReference<>(channel);
         }
     }
@@ -95,6 +96,7 @@ public class ChannelTracker<K, C extends Channel, A>
      * @param key the key
      * @return the result
      */
+    @Override
     public Optional<Value<C, A>> value(K key) {
         var value = entries.get(key);
         if (value == null) {
@@ -155,7 +157,7 @@ public class ChannelTracker<K, C extends Channel, A>
      *
      * @param name the name
      */
-    public void remove(String name) {
+    public void remove(K name) {
         entries.remove(name);
     }
 }

@@ -49,7 +49,6 @@ public class MonitorEvent extends Event<Void> {
      * @param response the response
      * @return the optional
      */
-    @SuppressWarnings("PMD.TooFewBranchesForASwitchStatement")
     public static Optional<MonitorEvent> from(JsonNode response) {
         try {
             var kind = Kind.valueOf(response.get("event").asText());

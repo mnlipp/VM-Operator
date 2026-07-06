@@ -32,13 +32,11 @@ import java.util.regex.Pattern;
 public class Convertions {
 
     @SuppressWarnings({ "PMD.UseConcurrentHashMap",
-        "PMD.FieldNamingConventions", "PMD.VariableNamingConventions" })
+        "PMD.FieldNamingConventions" })
     private static final Map<String, BigInteger> unitMap = new HashMap<>();
-    @SuppressWarnings({ "PMD.FieldNamingConventions",
-        "PMD.VariableNamingConventions" })
+    @SuppressWarnings({ "PMD.FieldNamingConventions" })
     private static final List<Map.Entry<String, BigInteger>> unitMappings;
-    @SuppressWarnings({ "PMD.FieldNamingConventions",
-        "PMD.VariableNamingConventions" })
+    @SuppressWarnings({ "PMD.FieldNamingConventions" })
     private static final Pattern memorySize
         = Pattern.compile("^\\s*(\\d+(\\.\\d+)?)\\s*([A-Za-z]*)\\s*");
 
@@ -69,7 +67,6 @@ public class Convertions {
      * @param amount the amount
      * @return the big integer
      */
-    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
     public static BigInteger parseMemory(Object amount) {
         if (amount == null) {
             return (BigInteger) amount;

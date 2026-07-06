@@ -41,7 +41,6 @@ import org.jgrapes.core.annotation.Handler;
 /**
  * The Class CpuController.
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class CpuController extends Component {
 
     private Integer currentCpus;
@@ -106,7 +105,8 @@ public class CpuController extends Component {
         fire(new MonitorCommand(new QmpQueryHotpluggableCpus()));
     }
 
-    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+    @SuppressWarnings({ "PMD.AvoidInstantiatingObjectsInLoops",
+        "PMD.AssignmentInOperand" })
     private int addCpus(List<ObjectNode> used, List<ObjectNode> unused,
             int diff) {
         Set<String> usedIds = new HashSet<>();

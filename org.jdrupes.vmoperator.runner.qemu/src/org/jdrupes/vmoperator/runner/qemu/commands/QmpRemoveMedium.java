@@ -27,8 +27,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  */
 public class QmpRemoveMedium extends QmpCommand {
 
-    @SuppressWarnings({ "PMD.FieldNamingConventions",
-        "PMD.VariableNamingConventions" })
+    @SuppressWarnings({ "PMD.FieldNamingConventions" })
     private static final JsonNode jsonTemplate
         = parseJson("{ \"execute\": \"blockdev-remove-medium\",\"arguments\": {"
             + "\"id\": \"\" } }");

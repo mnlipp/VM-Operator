@@ -1,4 +1,4 @@
-name: Push Container Image with Gradle
+name: Push Container Image with Jdbld
 
 on:
   release:
@@ -21,10 +21,9 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    - name: Install graphviz
-      run: sudo apt-get install graphviz
-    - name: Install podman
-      run: sudo apt-get install podman
+    # jdk 25 and xmlstarlet for jdbld, graphviz for javadoc and podman
+    - name: Install required packages
+      run: sudo apt-get update && sudo apt-get install openjdk-25-jdk xmlstarlet graphviz podman
     - name: Log in to the Container registry
       uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
       with:
@@ -37,4 +36,5 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
     - name: Push with Gradle
-      run: ./gradlew -Pwebsite.push.token=${{ secrets.WEBSITE_PUSH_TOKEN }} -Pdocker.registry=ghcr.io/${{ github.actor }} stage publishImage
+      run: >
+        JAVA_HOME=/usr/lib/jvm/java-25-openjdk-amd64/ ./jdbld publication
