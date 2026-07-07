@@ -70,6 +70,7 @@ public class RunnerQemu extends AbstractProject implements JavaLibraryProject {
             .required(Path.of(
                 "src/org/jdrupes/vmoperator/runner/qemu/Containerfile." + base))
             .script("""
+                    rm -rf build/install/vm-runner.qemu && \
                     mkdir -p build/install/vm-runner.qemu && \
                     tar -C build/install/vm-runner.qemu -xf $2 && \
                     podman build --pull=always -t $3 \

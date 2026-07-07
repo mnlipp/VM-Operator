@@ -78,6 +78,7 @@ public class Manager extends AbstractProject implements JavaLibraryProject {
             .required(Path.of(
                 "src/org/jdrupes/vmoperator/manager/Containerfile"))
             .script("""
+                rm -rf build/install/vm-manager && \
                 mkdir -p build/install/vm-manager && \
                 tar -C build/install/vm-manager -xf $1 && \
                 podman build --pull=always -t $2 \
