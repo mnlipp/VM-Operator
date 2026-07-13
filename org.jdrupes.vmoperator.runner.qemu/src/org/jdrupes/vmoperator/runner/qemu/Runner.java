@@ -587,8 +587,14 @@ public class Runner extends Component {
 
     private boolean startProcess(CommandDefinition toStart) {
         logger.info(
-            () -> "Starting process: " + String.join(" ", toStart.command));
+            () -> "Starting process: " + (toStart.environment.isEmpty()
+                ? ""
+                : (toStart.environment.entrySet().stream()
+                    .map(e -> e.getKey() + "=" + e.getValue())
+                    .collect(Collectors.joining(" ")) + " "))
+                + String.join(" ", toStart.command));
         rep.fire(new StartProcess(toStart.command)
+            .environment(toStart.environment)
             .setAssociated(CommandDefinition.class, toStart));
         return true;
     }

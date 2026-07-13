@@ -19,10 +19,14 @@
 package org.jdrupes.vmoperator.runner.qemu;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A command definition. 
@@ -30,6 +34,8 @@ import java.util.List;
 /* default */ class CommandDefinition {
     /* default */ String name;
     /* default */ final List<String> command = new ArrayList<>();
+    /* default */ @SuppressWarnings("PMD.UseConcurrentHashMap")
+    final Map<String, String> environment = new HashMap<>();
 
     /**
      * Instantiates a new process definition.
@@ -48,16 +54,32 @@ import java.util.List;
         if (command.isEmpty()) {
             throw new IllegalArgumentException("No executable found.");
         }
-        collect(command, jsonData.get("arguments"));
+        assembleCommand(command, jsonData.get("arguments"));
+        collectEnvironment(jsonData);
     }
 
-    private void collect(List<String> result, JsonNode node) {
+    private void assembleCommand(List<String> result, JsonNode node) {
         if (!node.isArray()) {
             result.add(node.asText());
             return;
         }
         for (var element : node) {
-            collect(result, element);
+            assembleCommand(result, element);
+        }
+    }
+
+    private void collectEnvironment(JsonNode jsonData) {
+        if (jsonData.has("environment")) {
+            if (!jsonData.get("environment").isArray()) {
+                throw new IllegalArgumentException(
+                    "environment must be an array");
+            }
+            var envArray = (ArrayNode) jsonData.get("environment");
+            for (var element : envArray) {
+                var envEntry = (ObjectNode) element;
+                environment.put(envEntry.get("name").asText(),
+                    envEntry.get("value").asText());
+            }
         }
     }
 
