@@ -6,7 +6,7 @@ RUN pacman-key --init \
     && pacman -Sy --noconfirm archlinux-keyring && pacman -Su --noconfirm \
     && pacman -S --noconfirm which qemu-full virtiofsd \
         edk2-ovmf swtpm iproute2 jre21-openjdk-headless \
-        mtools \
+        mtools virglrenderer mesa \
     && pacman -Scc --noconfirm
 
 # Remove all targets.
