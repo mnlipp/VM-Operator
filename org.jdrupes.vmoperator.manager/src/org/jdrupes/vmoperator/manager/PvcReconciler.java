@@ -25,6 +25,8 @@ import freemarker.template.TemplateException;
 import freemarker.template.TemplateNotFoundException;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.JSON;
+import io.kubernetes.client.util.generic.dynamic.DynamicKubernetesObject;
 import io.kubernetes.client.util.generic.dynamic.Dynamics;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import io.kubernetes.client.util.generic.options.PatchOptions;
@@ -155,15 +157,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         // Do apply changes
         var pvcStub = K8sV1PvcStub.get(channel.client(),
             vmDef.namespace(), (String) model.get("runnerDataPvcName"));
-        PatchOptions opts = new PatchOptions();
-        opts.setForce(true);
-        opts.setFieldManager("kubernetes-java-kubectl-apply");
-        if (pvcStub.patch(V1Patch.PATCH_FORMAT_APPLY_YAML,
-            new V1Patch(channel.client().getJSON().serialize(pvcDef)), opts)
-            .isEmpty()) {
-            logger.warning(
-                () -> "Could not patch pvc for " + pvcStub.name());
-        }
+        applyOrPatch(channel.client().getJSON(), pvcDef, pvcStub);
     }
 
     private void reconcileRunnerDiskPvc(VmDefinition vmDef,
@@ -194,6 +188,11 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         // Apply changes
         var pvcStub
             = K8sV1PvcStub.get(channel.client(), vmDef.namespace(), pvcName);
+        applyOrPatch(channel.client().getJSON(), pvcDef, pvcStub);
+    }
+
+    private void applyOrPatch(JSON json, DynamicKubernetesObject pvcDef,
+            K8sV1PvcStub pvcStub) throws ApiException {
         var pvc = pvcStub.model();
         if (pvc.isEmpty()
             || !"Bound".equals(pvc.get().getStatus().getPhase())) {
@@ -202,8 +201,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
             opts.setForce(true);
             opts.setFieldManager("kubernetes-java-kubectl-apply");
             if (pvcStub.patch(V1Patch.PATCH_FORMAT_APPLY_YAML,
-                new V1Patch(channel.client().getJSON().serialize(pvcDef)), opts)
-                .isEmpty()) {
+                new V1Patch(json.serialize(pvcDef)), opts).isEmpty()) {
                 logger.warning(
                     () -> "Could not patch pvc for " + pvcStub.name());
             }
@@ -217,8 +215,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         PatchOptions opts = new PatchOptions();
         opts.setFieldManager("kubernetes-java-kubectl-apply");
         if (pvcStub.patch(V1Patch.PATCH_FORMAT_JSON_MERGE_PATCH,
-            new V1Patch(channel.client().getJSON().serialize(pvcDef)), opts)
-            .isEmpty()) {
+            new V1Patch(json.serialize(pvcDef)), opts).isEmpty()) {
             logger.warning(
                 () -> "Could not patch pvc for " + pvcStub.name());
         }
