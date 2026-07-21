@@ -102,7 +102,7 @@ patches:
   patch: |-
     - op: replace
       path: /spec/template/spec/containers/0/image
-      value: docker-registry.lan.mnl.de/vmoperator/org.jdrupes.vmoperator.manager:test
+      value: forgejo.mnl.de/mnl/org.jdrupes.vmoperator.manager:main
     - op: replace
       path: /spec/template/spec/containers/0/imagePullPolicy
       value: Always
