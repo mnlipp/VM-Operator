@@ -21,6 +21,7 @@ package org.jdrupes.vmoperator.manager;
 import freemarker.template.Configuration;
 import freemarker.template.TemplateException;
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.util.generic.dynamic.Dynamics;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import io.kubernetes.client.util.generic.options.PatchOptions;
@@ -35,6 +36,7 @@ import org.jdrupes.vmoperator.common.K8sV1PodStub;
 import org.jdrupes.vmoperator.common.K8sV1SecretStub;
 import org.jdrupes.vmoperator.common.VmDefinition;
 import org.jdrupes.vmoperator.common.VmDefinition.RequestedVmState;
+import org.jdrupes.vmoperator.manager.events.ModifyVm;
 import org.jdrupes.vmoperator.manager.events.VmChannel;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -78,6 +80,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
         // Nothing to do if exists and should be running
         if (vmDef.vmState() == RequestedVmState.RUNNING
             && podStub.model().isPresent()) {
+            checkContainers(channel, podStub.model().get(), vmDef);
             return;
         }
 
@@ -122,6 +125,32 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
             dsStub.get().model().ifPresent(m -> {
                 model.put("displaySecret", m.getMetadata().getName());
             });
+        }
+    }
+
+    /**
+     * Having a running pod for the VM is not sufficient. We need to check
+     * if the container is still running.
+     * @param channel 
+     *
+     * @param pod the pod
+     * @param vmDef the VM definition
+     */
+    private void checkContainers(VmChannel channel, V1Pod pod,
+            VmDefinition vmDef) {
+        var vmContainerStatus = pod.getStatus()
+            .getContainerStatuses().stream()
+            .filter(cs -> cs.getName().equals(vmDef.name()))
+            .findFirst();
+        var terminated = vmContainerStatus.map(cs -> cs.getState()
+            .getTerminated()).orElse(null);
+        if (terminated != null && vmDef.vmState() == RequestedVmState.RUNNING) {
+            // VM exited unexpectedly
+            var exitCode = terminated.getExitCode();
+            logger.warning(() -> String.format(
+                "VM %s exited unexpectedly with code %d, stopping it",
+                vmDef.name(), exitCode));
+            channel.fire(new ModifyVm(vmDef.name(), "state", "Stopped"));
         }
     }
 
