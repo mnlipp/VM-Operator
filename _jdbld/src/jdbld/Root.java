@@ -19,14 +19,22 @@
 package jdbld;
 
 import java.io.IOException;
+import java.net.URI;
+
 import static org.jdrupes.builder.api.Intent.*;
+import org.eclipse.aether.repository.RemoteRepository;
 import org.jdrupes.builder.api.ExecResult;
 import org.jdrupes.builder.api.Project;
 import org.jdrupes.builder.api.ResourceType;
 import static org.jdrupes.builder.api.ResourceType.*;
 import org.jdrupes.builder.core.AbstractRootProject;
 import org.jdrupes.builder.eclipse.EclipseConfiguration;
+import static org.jdrupes.builder.ext.git.GitTypes.*;
 import org.jdrupes.builder.ext.nodejs.NpmExecutor;
+import org.jdrupes.builder.mvnrepo.MavenContext;
+import org.jdrupes.builder.mvnrepo.MvnVersionType;
+
+import static org.jdrupes.builder.mvnrepo.MvnProperties.*;
 import static org.jdrupes.builder.java.JavaTypes.*;
 import static org.jdrupes.builder.mvnrepo.MvnProperties.GroupId;
 
@@ -42,6 +50,13 @@ public class Root extends AbstractRootProject {
 
     public Root() throws IOException {
         super(name("VM-Operator"));
+        set(LookupRepositories, new RemoteRepository[] {
+            MavenContext.mavenCentral(),
+            MavenContext.jdbldDistribution(),
+            MavenContext.createRepository("jgrapes-distribution",
+                URI.create("https://codeberg.org/api/packages/JGrapes/maven"),
+                MvnVersionType.RELEASE)
+        });
 
         dependency(Expose, project(Util.class));
         dependency(Expose, project(Common.class));
@@ -60,6 +75,8 @@ public class Root extends AbstractRootProject {
         generator(VmOpJavadoc::new);
 
         // Commands
+        commandAlias("version").projects("**")
+            .resources(of(ProjectVersionType).using(Supply));
         commandAlias("build").projects("**")
             .resources(of(new ResourceType<ContainerImage>() {}).usingAll());
         commandAlias("test").projects("**")
@@ -71,5 +88,7 @@ public class Root extends AbstractRootProject {
             .resources(of(new ResourceType<ContainerPublication>() {}));
         commandAlias("test-publication").projects("**").resources(of(
             new ResourceType<ExecResult<?>>() {}).withName("test-publisher"));
+        commandAlias("releaseTag").description("Create a release tag")
+            .projects("**").resources(of(GitVersionTagType).using(Supply));
     }
 }

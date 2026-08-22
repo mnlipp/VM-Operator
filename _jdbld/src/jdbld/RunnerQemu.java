@@ -18,7 +18,6 @@
 
 package jdbld;
 
-import static jdbld.ExtProps.GitApi;
 import static org.jdrupes.builder.api.Intent.*;
 import static org.jdrupes.builder.distribution.DistributionTypes.*;
 import java.io.IOException;
@@ -30,6 +29,9 @@ import org.jdrupes.builder.api.ResourceType;
 import org.jdrupes.builder.core.AbstractProject;
 import org.jdrupes.builder.core.ScriptExecutor;
 import org.jdrupes.builder.distribution.ApplicationBuilder;
+import static org.jdrupes.builder.ext.git.GitProperties.*;
+import static org.jdrupes.builder.mvnrepo.MvnProperties.LookupRepositories;
+
 import org.jdrupes.builder.java.JavaLibraryProject;
 import org.jdrupes.builder.mvnrepo.MvnRepoLookup;
 
@@ -37,16 +39,18 @@ public class RunnerQemu extends AbstractProject implements JavaLibraryProject {
 
     public RunnerQemu() throws IOException {
         super(name("org.jdrupes.vmoperator.runner.qemu"));
-        dependency(Consume, new MvnRepoLookup().resolve(
-            "org.jgrapes:org.jgrapes.core:[1.22.1,2)",
-            "org.jgrapes:org.jgrapes.util:[1.38.1,2)",
-            "org.jgrapes:org.jgrapes.io:[2.12.1,3)",
-            "org.jgrapes:org.jgrapes.http:[3.5.0,4)",
-            "commons-cli:commons-cli:1.5.0",
-            "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:[2.21.4]"));
+        dependency(Consume, new MvnRepoLookup()
+            .addRepositories(get(LookupRepositories)).resolve(
+                "org.jgrapes:org.jgrapes.core:[1.22.1,2)",
+                "org.jgrapes:org.jgrapes.util:[1.38.1,2)",
+                "org.jgrapes:org.jgrapes.io:[2.12.1,3)",
+                "org.jgrapes:org.jgrapes.http:[3.5.0,4)",
+                "commons-cli:commons-cli:1.5.0",
+                "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:[2.21.4]"));
         dependency(Consume, project(Common.class));
-        dependency(Forward, new MvnRepoLookup().resolve(
-            "org.slf4j:slf4j-jdk14:[2.0.7,3)"));
+        dependency(Forward, new MvnRepoLookup()
+            .addRepositories(get(LookupRepositories)).resolve(
+                "org.slf4j:slf4j-jdk14:[2.0.7,3)"));
         dependency(Supply, ApplicationBuilder::new)
             .executableName("vm-runner.qemu")
             .applicationJvmOpts(l -> l.addAll(List.of(

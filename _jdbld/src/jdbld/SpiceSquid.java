@@ -18,12 +18,12 @@
 
 package jdbld;
 
-import static jdbld.ExtProps.GitApi;
 import org.eclipse.jgit.api.Git;
 import static org.jdrupes.builder.api.Intent.*;
 import org.jdrupes.builder.api.ResourceType;
 import org.jdrupes.builder.core.AbstractProject;
 import org.jdrupes.builder.core.ScriptExecutor;
+import static org.jdrupes.builder.ext.git.GitProperties.*;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.stream.Stream;

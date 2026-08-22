@@ -32,6 +32,7 @@ import org.jdrupes.builder.java.JavaLibraryProject;
 import org.jdrupes.builder.java.JavaProject;
 import org.jdrupes.builder.java.JavaResourceTree;
 import static org.jdrupes.builder.java.JavaTypes.*;
+import static org.jdrupes.builder.mvnrepo.MvnProperties.LookupRepositories;
 import static org.jdrupes.builder.mvnrepo.MvnRepoTypes.*;
 import org.jdrupes.builder.mvnrepo.MvnRepoLookup;
 
@@ -41,10 +42,11 @@ public class VmAccess extends AbstractProject
     public VmAccess() {
         super(name("org.jdrupes.vmoperator.vmaccess"));
         dependency(Reveal, project(ManagerEvents.class));
-        dependency(Reveal, new MvnRepoLookup().resolve(
-            "org.jgrapes:org.jgrapes.webconsole.base:[2.1.0,3)",
-            "org.jgrapes:org.jgrapes.webconsole.provider.vue:[1,2)",
-            "org.jgrapes:org.jgrapes.webconsole.provider.jgwcvuecomponents:[1.2,2)"));
+        dependency(Reveal, new MvnRepoLookup()
+            .addRepositories(get(LookupRepositories)).resolve(
+                "org.jgrapes:org.jgrapes.webconsole.base:[2.4.0,3)",
+                "org.jgrapes:org.jgrapes.webconsole.provider.vue:[1,2)",
+                "org.jgrapes:org.jgrapes.webconsole.provider.jgwcvuecomponents:[1.6,2)"));
         dependency(Consume, FileTreeBuilder::new)
             .into(buildDirectory().resolve("unpacked"))
             .add(resources(of(MvnRepoLibraryJarFileType).using(Reveal))

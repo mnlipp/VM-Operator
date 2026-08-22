@@ -18,16 +18,17 @@
 
 package jdbld;
 
-import static jdbld.ExtProps.GitApi;
 import org.eclipse.jgit.api.Git;
 import static org.jdrupes.builder.api.Intent.*;
-
 import org.jdrupes.builder.api.MergedTestProject;
 import org.jdrupes.builder.api.ResourceType;
 import org.jdrupes.builder.core.AbstractProject;
 import org.jdrupes.builder.core.ScriptExecutor;
 import org.jdrupes.builder.distribution.ApplicationBuilder;
 import static org.jdrupes.builder.distribution.DistributionTypes.*;
+import static org.jdrupes.builder.ext.git.GitProperties.*;
+import static org.jdrupes.builder.mvnrepo.MvnProperties.*;
+import org.jdrupes.builder.mvnrepo.MvnRepoLookup;
 import org.jdrupes.builder.java.JavaLibraryProject;
 import org.jdrupes.builder.java.JavaProject;
 import java.io.IOException;
@@ -35,30 +36,30 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
 
-import org.jdrupes.builder.mvnrepo.MvnRepoLookup;
-
 public class Manager extends AbstractProject implements JavaLibraryProject {
 
     public Manager() throws IOException {
         super(name("org.jdrupes.vmoperator.manager"));
         dependency(Expose, project(ManagerEvents.class));
-        dependency(Expose, new MvnRepoLookup().resolve(
-            "commons-cli:commons-cli:1.5.0",
-            "org.jgrapes:org.jgrapes.util:[1.38.1,2)",
-            "org.jgrapes:org.jgrapes.io:[2.12.1,3)",
-            "org.jgrapes:org.jgrapes.http:[3.5.0,4)",
-            "org.jgrapes:org.jgrapes.webconsole.base:[2.3.0,3)",
-            "org.jgrapes:org.jgrapes.webconsole.vuejs:[1.8.0,2)",
-            "org.jgrapes:org.jgrapes.webconsole.rbac:[1.4.0,2)",
-            "org.jgrapes:org.jgrapes.webconlet.oidclogin:[1.7.0,2)",
-            "org.jgrapes:org.jgrapes.webconlet.markdowndisplay:[1.2.0,2)"));
-        dependency(Forward, new MvnRepoLookup().resolve(
-            "org.jgrapes:org.jgrapes.webconlet.sysinfo:[1.4.0,2)",
-            "org.jgrapes:org.jgrapes.webconlet.logviewer:[0.2.0,2)",
-            "com.electronwill.night-config:yaml:[3.6.7,3.7)",
-            "org.eclipse.angus:angus-activation:[1.0.0,2.0.0)",
-            "org.slf4j:slf4j-jdk14:[2.0.7,3)",
-            "org.apache.logging.log4j:log4j-to-jul:2.20.0"));
+        dependency(Expose, new MvnRepoLookup()
+            .addRepositories(get(LookupRepositories)).resolve(
+                "commons-cli:commons-cli:1.5.0",
+                "org.jgrapes:org.jgrapes.util:[1.38.1,2)",
+                "org.jgrapes:org.jgrapes.io:[2.12.1,3)",
+                "org.jgrapes:org.jgrapes.http:[3.5.0,4)",
+                "org.jgrapes:org.jgrapes.webconsole.base:[2.4.0,3)",
+                "org.jgrapes:org.jgrapes.webconsole.vuejs:[1.9.0,2)",
+                "org.jgrapes:org.jgrapes.webconsole.rbac:[1.6.0,2)",
+                "org.jgrapes:org.jgrapes.webconlet.oidclogin:[1.9.0,2)",
+                "org.jgrapes:org.jgrapes.webconlet.markdowndisplay:[1.5.0,2)"));
+        dependency(Forward, new MvnRepoLookup()
+            .addRepositories(get(LookupRepositories)).resolve(
+                "org.jgrapes:org.jgrapes.webconlet.sysinfo:[1.6.0,2)",
+                "org.jgrapes:org.jgrapes.webconlet.logviewer:[1.2.0,2)",
+                "com.electronwill.night-config:yaml:[3.6.7,3.7)",
+                "org.eclipse.angus:angus-activation:[1.0.0,2.0.0)",
+                "org.slf4j:slf4j-jdk14:[2.0.7,3)",
+                "org.apache.logging.log4j:log4j-to-jul:2.20.0"));
         dependency(Forward, project(VmMgmt.class));
         dependency(Forward, project(VmAccess.class));
         dependency(Supply, ApplicationBuilder::new)

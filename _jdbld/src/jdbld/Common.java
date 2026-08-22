@@ -19,6 +19,7 @@
 package jdbld;
 
 import static org.jdrupes.builder.api.Intent.*;
+import static org.jdrupes.builder.mvnrepo.MvnProperties.LookupRepositories;
 import org.jdrupes.builder.core.AbstractProject;
 import org.jdrupes.builder.java.JavaLibraryProject;
 import org.jdrupes.builder.mvnrepo.MvnRepoLookup;
@@ -28,10 +29,16 @@ public class Common extends AbstractProject implements JavaLibraryProject {
     public Common() {
         super(name("org.jdrupes.vmoperator.common"));
         dependency(Expose, project(Util.class));
-        dependency(Expose, new MvnRepoLookup().resolve(
-            "org.jgrapes:org.jgrapes.core:[1.21.1,2)",
-            "io.kubernetes:client-java:[19.0.0,20.0.0)",
-            "org.yaml:snakeyaml:[2.4,3]",
-            "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:[2.16.1,3]"));
+        dependency(Expose, new MvnRepoLookup()
+            .addRepositories(get(LookupRepositories)).resolve(
+                "org.jgrapes:org.jgrapes.core:[1.21.1,2)",
+                "io.kubernetes:client-java:[19.0.0,20.0.0)",
+                "org.yaml:snakeyaml:[2.4,3]",
+                "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:[2.16.1,3]"));
+        // io.kubernetes:client-java depends on okhttp, which should have
+        // kotlin-stdlib as dependency but it doesn't
+        dependency(Forward, new MvnRepoLookup()
+            .addRepositories(get(LookupRepositories)).resolve(
+                "org.jetbrains.kotlin:kotlin-stdlib:2.4.10"));
     }
 }

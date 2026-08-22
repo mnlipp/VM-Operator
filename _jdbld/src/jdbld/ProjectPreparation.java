@@ -21,19 +21,17 @@ package jdbld;
 import static java.util.jar.Attributes.Name.IMPLEMENTATION_TITLE;
 import static java.util.jar.Attributes.Name.IMPLEMENTATION_VENDOR;
 import static java.util.jar.Attributes.Name.IMPLEMENTATION_VERSION;
-import static jdbld.ExtProps.GitApi;
 import static org.jdrupes.builder.api.Intent.Consume;
 import static org.jdrupes.builder.api.Intent.Supply;
 import static org.jdrupes.builder.api.CoreProperties.*;
 import static org.jdrupes.builder.api.ResourceType.ExecResultType;
-
+import static org.jdrupes.builder.ext.git.GitProperties.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
 import java.util.jar.Attributes;
-
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.InvalidPatternException;
@@ -42,7 +40,9 @@ import org.jdrupes.builder.api.BuildException;
 import org.jdrupes.builder.api.MergedTestProject;
 import org.jdrupes.builder.api.Project;
 import org.jdrupes.builder.api.RootProject;
+import org.jdrupes.builder.core.VersionReporter;
 import org.jdrupes.builder.eclipse.EclipseConfigurator;
+import org.jdrupes.builder.ext.git.VersionTagger;
 import org.jdrupes.builder.ext.nodejs.NpmExecutor;
 import org.jdrupes.builder.java.JavaCompiler;
 import org.jdrupes.builder.java.JavaLibraryProject;
@@ -65,8 +65,8 @@ public class ProjectPreparation {
 
     public static void setupVersion(Project project)
             throws IOException, GitAPIException, InvalidPatternException {
-        if (project instanceof RootProject) {
-            project.set(GitApi, Git.open(project.directory().toFile()));
+        if (project instanceof RootProject rootPrj) {
+            project.set(GitApi, VersionTagger.setGitApi(rootPrj));
         }
 
         // Use shortened project name for tags
@@ -85,6 +85,8 @@ public class ProjectPreparation {
             .tagProcessor(new MavenStyleTagProcessor()
                 .ignoreBranches("testing/.*", "release/.*", "develop/.*"));
         project.set(Version, evaluator.version());
+        project.generator(VersionReporter::new);
+        project.generator(VersionTagger::new).prefixEvaluator(_ -> tagPrefix);
     }
 
     public static void setupCommonGenerators(Project project) {
@@ -101,6 +103,7 @@ public class ProjectPreparation {
                 project.generator(JavaResourceCollector::new).add(Path.of(
                     "test-resources"), "**/*");
                 project.dependency(Consume, new MvnRepoLookup()
+                    .addRepositories(project.get(LookupRepositories))
                     .resolve("junit:junit:4.13.2")
                     .bom("org.junit:junit-bom:5.14.2")
                     .resolve("org.junit.jupiter:junit-jupiter-api")
