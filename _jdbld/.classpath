@@ -8,10 +8,10 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/jdrupes-builder-last-used.jar"/>
-	<classpathentry kind="lib" path="/home/mnl/.m2/repository/org/jdrupes/jdbld-ext-nodejs/0.5.0/jdbld-ext-nodejs-0.5.0.jar"/>
-	<classpathentry kind="lib" path="/home/mnl/.m2/repository/org/jdrupes/jdbld-ext-git/0.8.0/jdbld-ext-git-0.8.0.jar"/>
 	<classpathentry kind="lib" path="/home/mnl/.m2/repository/org/eclipse/jgit/org.eclipse.jgit/7.7.1.202607240634-r/org.eclipse.jgit-7.7.1.202607240634-r.jar"/>
 	<classpathentry kind="lib" path="/home/mnl/.m2/repository/org/jdrupes/gitversioning/api/0.7.0/api-0.7.0.jar"/>
 	<classpathentry kind="lib" path="/home/mnl/.m2/repository/org/jdrupes/gitversioning/core/0.7.0/core-0.7.0.jar"/>
+	<classpathentry kind="lib" path="/home/mnl/.m2/repository/org/jdrupes/jdbld-ext-nodejs/0.7.0/jdbld-ext-nodejs-0.7.0.jar"/>
+	<classpathentry kind="lib" path="/home/mnl/.m2/repository/org/jdrupes/jdbld-ext-git/0.10.0/jdbld-ext-git-0.10.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
