@@ -94,12 +94,12 @@ public class ProjectPreparation {
             if (!(project instanceof MergedTestProject)) {
                 project.generator(JavaCompiler::new)
                     .addSources(Path.of("src"), "**/*.java")
-                    .options("--release", "21");
+                    .options("--release", "25");
                 project.generator(JavaResourceCollector::new)
                     .add(Path.of("resources"), "**/*");
             } else {
                 project.generator(JavaCompiler::new).addSources(Path.of("test"),
-                    "**/*.java").options("--release", "21");
+                    "**/*.java").options("--release", "25");
                 project.generator(JavaResourceCollector::new).add(Path.of(
                     "test-resources"), "**/*");
                 project.dependency(Consume, new MvnRepoLookup()

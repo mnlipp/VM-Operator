@@ -113,7 +113,7 @@ public class VmOpJavadoc extends AbstractGenerator implements Renamable {
                 project().project(RunnerQemu.class).get(Version),
                 project().project(Manager.class).get(Version)),
             "-use", "-linksource",
-            "-link", "https://docs.oracle.com/en/java/javase/21/docs/api/",
+            "-link", "https://docs.oracle.com/en/java/javase/25/docs/api/",
             "-link", "https://mnlipp.github.io/jdrupes-httpcodec/javadoc/",
             "-link", "https://jakarta.ee/specifications/mail/2.1/apidocs/",
             "--add-exports",

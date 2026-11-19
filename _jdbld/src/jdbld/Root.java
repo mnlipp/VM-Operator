@@ -28,6 +28,7 @@ import org.jdrupes.builder.api.Project;
 import org.jdrupes.builder.api.ResourceType;
 import static org.jdrupes.builder.api.ResourceType.*;
 import org.jdrupes.builder.core.AbstractRootProject;
+import org.jdrupes.builder.eclipse.DefaultEclipseLauncherRequest;
 import org.jdrupes.builder.eclipse.EclipseConfiguration;
 import static org.jdrupes.builder.ext.git.GitTypes.*;
 import org.jdrupes.builder.ext.nodejs.NpmExecutor;
@@ -84,6 +85,14 @@ public class Root extends AbstractRootProject {
         commandAlias("javadoc").resources(of(JavadocDirectoryType));
         commandAlias("eclipse").projects("**")
             .resources(of(new ResourceType<EclipseConfiguration>() {}));
+        commandAlias("eclipseManagerLauncher")
+            .projects("org.jdrupes.vmoperator.manager")
+            .resources(DefaultEclipseLauncherRequest
+                .create("Manager (default context)")
+                .withMainClass("org.jdrupes.vmoperator.manager.Manager")
+                .withVmArguments("-ea -Djava.util.logging.manager"
+                    + "=org.jdrupes.vmoperator.util.LongLoggingManager -Xmx64m")
+                .withArguments("-c ../dev-example/config.yaml"));
         commandAlias("publication").projects("**")
             .resources(of(new ResourceType<ContainerPublication>() {}));
         commandAlias("test-publication").projects("**").resources(of(

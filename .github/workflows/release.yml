@@ -23,18 +23,17 @@ jobs:
         fetch-depth: 0
     # jdk 25 and xmlstarlet for jdbld, graphviz for javadoc and podman
     - name: Install required packages
-      run: sudo apt-get update && sudo apt-get install openjdk-25-jdk xmlstarlet graphviz podman
+      run: sudo apt-get update && sudo apt-get install xmlstarlet graphviz podman
     - name: Log in to the Container registry
       uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Set up JDK 21
+    - name: Set up JDK 25
       uses: actions/setup-java@v3
       with:
-        java-version: '21'
+        java-version: '25'
         distribution: 'temurin'
     - name: Push with Gradle
-      run: >
-        JAVA_HOME=/usr/lib/jvm/java-25-openjdk-amd64/ ./jdbld publication
+      run: ./jdbld publication
