@@ -83,7 +83,8 @@ public class ProjectPreparation {
             .forRepository(project.<Git> get(GitApi).getRepository())
             .tagFilter(new DefaultTagFilter().prepend(tagPrefix))
             .tagProcessor(new MavenStyleTagProcessor()
-                .ignoreBranches("testing/.*", "release/.*", "develop/.*"));
+                .ignoreBranches("testing/.*", "release/.*", "develop/.*"))
+            .subDirectory(project.directory());
         project.set(Version, evaluator.version());
         project.generator(VersionReporter::new);
         project.generator(VersionTagger::new).prefixEvaluator(_ -> tagPrefix);
