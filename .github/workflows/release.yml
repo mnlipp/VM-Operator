@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 0
     # jdk 25 and xmlstarlet for jdbld, graphviz for javadoc and podman
@@ -31,7 +31,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     - name: Set up JDK 25
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v6
       with:
         java-version: '25'
         distribution: 'temurin'
