@@ -7,9 +7,9 @@
     "declaration": true,
     "importHelpers": true,
     "strict": true,
-    "moduleResolution": "node",
     "experimentalDecorators": true,
     "lib": ["DOM", "ES2020"],
+    "rootDir": "src/org/jdrupes/vmoperator/vmaccess/browser",
     "paths": {
       "aash-plugin": ["./build/unpacked/org/jgrapes/webconsole/provider/jgwcvuecomponents/aash-vue-components/lib/AashPlugin"],
       "jgconsole": ["./build/unpacked/org/jgrapes/webconsole/base/JGConsole"],

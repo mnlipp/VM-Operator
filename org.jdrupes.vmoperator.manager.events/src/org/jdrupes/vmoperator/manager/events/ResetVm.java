@@ -23,7 +23,6 @@ import org.jgrapes.core.Event;
 /**
  * Triggers a reset of the VM.
  */
-@SuppressWarnings("PMD.DataClass")
 public class ResetVm extends Event<String> {
 
     private final String vmName;

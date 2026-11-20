@@ -24,7 +24,6 @@ import org.jgrapes.core.Event;
 /**
  * Assign a VM from a pool to a user.
  */
-@SuppressWarnings("PMD.DataClass")
 public class AssignVm extends Event<VmData> {
 
     private final String fromPool;

@@ -53,7 +53,6 @@ import org.jgrapes.core.events.Attached;
  * {@link VmPoolChanged} events fired on a special pipeline to
  * avoid concurrent change informations.
  */
-@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.ExcessiveImports" })
 public class PoolMonitor extends
         AbstractMonitor<K8sDynamicModel, K8sDynamicModels, Channel> {
 

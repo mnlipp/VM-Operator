@@ -56,11 +56,11 @@
     # VM configuration
     - [ "-name", "guest=${ vm.name },debug-threads=on" ]
     - [ "-uuid", "${ vm.uuid }"]
-    # * Configure "modern" machine (pc-q35-7.0). USB is off, because we
+    # * Configure "modern" machine (pc-q35-9.2). USB is off, because we
     #   configure (better) xhci later. No VMWare IO port (obviously). 
     #   For smm=on see https://scumjr.github.io/2016/01/04/playing-with-smm-and-qemu/.
     #   Configure ROM/EEPROM for UEFI.
-    - [ "-machine", "pc-q35-7.0,usb=off,vmport=off,dump-guest-core=off\
+    - [ "-machine", "pc-q35-9.2,usb=off,vmport=off,dump-guest-core=off\
         <#if vm.firmware?starts_with("secure")>,smm=on</#if>\
         <#if firmwareRom??>,pflash0=fw-rom-device\
         ,pflash1=fw-eeprom-device</#if>,memory-backend=pc.ram,hpet=off" ]

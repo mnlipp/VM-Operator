@@ -5,7 +5,9 @@ metadata:
   name: test-vm
 spec:
   image:
-    source: registry.mnl.de/org/jdrupes/vm-operator/org.jdrupes.vmoperator.runner.qemu-arch:testing
+    # Adapt to your own test registry
+    # source: registry.mnl.de/org/jdrupes/vm-operator/org.jdrupes.vmoperator.runner.qemu-arch:testing
+    source: docker-registry.lan.mnl.de/vmoperator/org.jdrupes.vmoperator.runner.qemu-alpine:test
     pullPolicy: Always
 
   permissions:
@@ -17,6 +19,9 @@ spec:
     requests:
       cpu: 1
       memory: 2Gi
+
+  runnerTemplate:
+    update: true
 
   guestShutdownStops: true
   
@@ -51,8 +56,8 @@ spec:
               storage: 40Gi
     - cdrom:
         image: ""
-        # image: https://download.fedoraproject.org/pub/fedora/linux/releases/38/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-38-1.6.iso
-        # image: "Fedora-Workstation-Live-x86_64-38-1.6.iso"
+        # image: "https://download.fedoraproject.org/pub/fedora/linux/releases/44/Workstation/x86_64/iso/Fedora-Workstation-Live-44-1.7.x86_64.iso"
+        # image: "Fedora-Workstation-Live-44-1.7.x86_64.iso"
 
     display:
       spice:

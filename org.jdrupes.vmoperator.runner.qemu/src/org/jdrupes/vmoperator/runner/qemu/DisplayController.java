@@ -43,7 +43,6 @@ import org.jgrapes.util.events.WatchFile;
 /**
  * The Class DisplayController.
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class DisplayController extends Component {
 
     private String currentPassword;
@@ -59,8 +58,7 @@ public class DisplayController extends Component {
      * @param componentChannel the component channel
      * @param configDir 
      */
-    @SuppressWarnings({ "PMD.AssignmentToNonFinalStatic",
-        "PMD.ConstructorCallsOverridableMethod" })
+    @SuppressWarnings({ "PMD.ConstructorCallsOverridableMethod" })
     public DisplayController(Channel componentChannel, Path configDir) {
         super(componentChannel);
         this.configDir = configDir;
@@ -114,7 +112,6 @@ public class DisplayController extends Component {
      * @param event the event
      */
     @Handler
-    @SuppressWarnings("PMD.EmptyCatchBlock")
     public void onFileChanged(FileChanged event) {
         if (event.path().equals(configDir.resolve(DisplaySecret.PASSWORD))) {
             logger.fine(() -> "Display password updated");

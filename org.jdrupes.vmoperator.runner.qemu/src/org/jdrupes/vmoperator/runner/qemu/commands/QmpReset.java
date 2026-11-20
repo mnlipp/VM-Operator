@@ -25,8 +25,7 @@ import com.fasterxml.jackson.databind.JsonNode;
  */
 public class QmpReset extends QmpCommand {
 
-    @SuppressWarnings({ "PMD.FieldNamingConventions",
-        "PMD.VariableNamingConventions" })
+    @SuppressWarnings({ "PMD.FieldNamingConventions" })
     private static final JsonNode jsonTemplate
         = parseJson("{ \"execute\": \"system_reset\" }");
 

@@ -21,6 +21,7 @@ package org.jdrupes.vmoperator.manager;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
@@ -105,7 +106,7 @@ public class AvoidEmptyPolicy extends Component {
                 AvoidEmptyPolicy.class.getResourceAsStream(
                     "ManagerIntro-Preview" + (locale.isEmpty() ? ""
                         : "_" + locale) + ".md"),
-                "utf-8"))) {
+                StandardCharsets.UTF_8))) {
             shortDesc
                 = shortDescReader.lines().collect(Collectors.joining("\n"));
         }

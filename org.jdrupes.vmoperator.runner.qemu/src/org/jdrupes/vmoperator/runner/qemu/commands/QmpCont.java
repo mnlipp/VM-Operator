@@ -25,8 +25,7 @@ import com.fasterxml.jackson.databind.JsonNode;
  */
 public class QmpCont extends QmpCommand {
 
-    @SuppressWarnings({ "PMD.FieldNamingConventions",
-        "PMD.VariableNamingConventions" })
+    @SuppressWarnings({ "PMD.FieldNamingConventions" })
     private static final JsonNode jsonTemplate
         = parseJson("{ \"execute\": \"cont\" }");
 

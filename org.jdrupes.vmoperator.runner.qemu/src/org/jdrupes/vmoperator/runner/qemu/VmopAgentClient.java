@@ -87,8 +87,7 @@ public class VmopAgentClient extends AgentConnector {
     }
 
     @Override
-    @SuppressWarnings({ "PMD.UnnecessaryReturn",
-        "PMD.AvoidLiteralsInIfCondition" })
+    @SuppressWarnings({ "PMD.AvoidLiteralsInIfCondition" })
     protected void processInput(String line) throws IOException {
         logger.finer(() -> "vmop agent(in): " + line);
 

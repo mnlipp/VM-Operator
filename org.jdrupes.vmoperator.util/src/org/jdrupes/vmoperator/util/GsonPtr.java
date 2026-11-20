@@ -32,8 +32,7 @@ import java.util.function.Supplier;
 /**
  * Utility class for pointing to elements on a Gson (Json) tree.
  */
-@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",
-    "PMD.ClassWithOnlyPrivateConstructorsShouldBeFinal", "PMD.GodClass" })
+@SuppressWarnings({ "PMD.ClassWithOnlyPrivateConstructorsShouldBeFinal" })
 public class GsonPtr {
 
     private final JsonElement position;
@@ -102,7 +101,7 @@ public class GsonPtr {
      * @param selectors the selectors
      * @return the Gson pointer
      */
-    @SuppressWarnings({ "PMD.ShortMethodName", "PMD.PreserveStackTrace" })
+    @SuppressWarnings({ "PMD.PreserveStackTrace" })
     public Optional<GsonPtr> get(Object... selectors) {
         JsonElement element = position;
         for (Object sel : selectors) {
@@ -146,7 +145,6 @@ public class GsonPtr {
      * @param cls the cls
      * @return the result
      */
-    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop" })
     public <T extends JsonElement> T getAs(Class<T> cls) {
         if (cls.isAssignableFrom(position.getClass())) {
             return cls.cast(position);

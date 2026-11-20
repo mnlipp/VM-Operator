@@ -30,8 +30,7 @@ import java.util.logging.Logger;
  */
 public abstract class QmpCommand {
 
-    @SuppressWarnings({ "PMD.FieldNamingConventions",
-        "PMD.VariableNamingConventions" })
+    @SuppressWarnings({ "PMD.FieldNamingConventions" })
     protected static final ObjectMapper mapper = new ObjectMapper();
 
     /**

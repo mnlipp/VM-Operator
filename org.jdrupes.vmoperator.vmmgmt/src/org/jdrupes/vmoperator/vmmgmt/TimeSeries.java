@@ -28,7 +28,6 @@ import java.util.List;
 /**
  * The Class TimeSeries.
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class TimeSeries {
 
     @SuppressWarnings("PMD.LooseCoupling")

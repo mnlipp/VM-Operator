@@ -39,7 +39,6 @@ public class RamController extends Component {
      *
      * @param componentChannel the component channel
      */
-    @SuppressWarnings("PMD.AssignmentToNonFinalStatic")
     public RamController(Channel componentChannel) {
         super(componentChannel);
     }

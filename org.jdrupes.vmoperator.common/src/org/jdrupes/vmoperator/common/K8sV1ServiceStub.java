@@ -29,7 +29,6 @@ import java.util.List;
 /**
  * A stub for secrets (v1).
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class K8sV1ServiceStub extends K8sGenericStub<V1Service, V1ServiceList> {
 
     public static final APIResource CONTEXT = new APIResource("", List.of("v1"),
