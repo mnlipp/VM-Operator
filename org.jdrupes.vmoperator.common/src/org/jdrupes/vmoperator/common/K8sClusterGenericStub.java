@@ -45,8 +45,7 @@ import java.util.function.Function;
  * @param <O> the generic type
  * @param <L> the generic type
  */
-@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",
-    "PMD.CouplingBetweenObjects" })
+@SuppressWarnings({ "PMD.CouplingBetweenObjects" })
 public class K8sClusterGenericStub<O extends KubernetesObject,
         L extends KubernetesListObject> {
     protected final K8sClient client;
@@ -255,7 +254,6 @@ public class K8sClusterGenericStub<O extends KubernetesObject,
          * @param name the name
          * @return the result
          */
-        @SuppressWarnings("PMD.UseObjectForClearerAPI")
         R get(Class<O> objectClass, Class<L> objectListClass, K8sClient client,
                 APIResource context, String name);
     }
@@ -284,7 +282,6 @@ public class K8sClusterGenericStub<O extends KubernetesObject,
      * @return the stub if the object exists
      * @throws ApiException the api exception
      */
-    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop" })
     public static <O extends KubernetesObject, L extends KubernetesListObject,
             R extends K8sClusterGenericStub<O, L>>
             R get(Class<O> objectClass, Class<L> objectListClass,
@@ -315,8 +312,6 @@ public class K8sClusterGenericStub<O extends KubernetesObject,
      * @return the stub if the object exists
      * @throws ApiException the api exception
      */
-    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
-        "PMD.UseObjectForClearerAPI" })
     public static <O extends KubernetesObject, L extends KubernetesListObject,
             R extends K8sClusterGenericStub<O, L>>
             R get(Class<O> objectClass, Class<L> objectListClass,
@@ -341,8 +336,6 @@ public class K8sClusterGenericStub<O extends KubernetesObject,
      * @return the stub if the object exists
      * @throws ApiException the api exception
      */
-    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
-        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })
     public static <O extends KubernetesObject, L extends KubernetesListObject,
             R extends K8sClusterGenericStub<O, L>>
             R create(Class<O> objectClass, Class<L> objectListClass,

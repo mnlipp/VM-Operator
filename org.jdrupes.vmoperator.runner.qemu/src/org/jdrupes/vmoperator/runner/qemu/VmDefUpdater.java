@@ -43,7 +43,6 @@ import org.jgrapes.util.events.InitialConfiguration;
 /**
  * Updates the CR status.
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class VmDefUpdater extends Component {
 
     protected String namespace;

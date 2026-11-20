@@ -35,7 +35,6 @@ import org.jdrupes.vmoperator.util.DataPath;
 /**
  * Represents a VM pool.
  */
-@SuppressWarnings({ "PMD.DataClass" })
 public class VmPool {
 
     private final String name;

@@ -46,11 +46,10 @@ import org.jdrupes.vmoperator.util.DataPath;
 /**
  * Represents a VM definition.
  */
-@SuppressWarnings({ "PMD.DataClass", "PMD.TooManyMethods",
-    "PMD.CouplingBetweenObjects" })
+@SuppressWarnings({ "PMD.DataClass", "PMD.TooManyMethods" })
 public class VmDefinition extends K8sDynamicModel {
 
-    @SuppressWarnings({ "PMD.FieldNamingConventions", "unused" })
+    @SuppressWarnings({ "unused" })
     private static final Logger logger
         = Logger.getLogger(VmDefinition.class.getName());
     @SuppressWarnings("PMD.FieldNamingConventions")
@@ -402,7 +401,7 @@ public class VmDefinition extends K8sDynamicModel {
 
         // If no login is requested, allow access, else check if user matches
         if (condition(Condition.USER_LOGGED_IN).map(V1Condition::getReason)
-            .map(r -> Reason.NOT_REQUESTED.equals(r)).orElse(false)) {
+            .map(Reason.NOT_REQUESTED::equals).orElse(false)) {
             return true;
         }
         return user.equals(status().get(Status.LOGGED_IN_USER));

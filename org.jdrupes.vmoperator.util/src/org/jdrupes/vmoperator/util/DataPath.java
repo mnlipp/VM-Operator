@@ -32,7 +32,6 @@ import java.util.logging.Logger;
  */
 public final class DataPath {
 
-    @SuppressWarnings("PMD.FieldNamingConventions")
     private static final Logger logger
         = Logger.getLogger(DataPath.class.getName());
 
@@ -56,7 +55,6 @@ public final class DataPath {
      * @param selectors the selectors
      * @return the result
      */
-    @SuppressWarnings("PMD.UseLocaleWithCaseConversions")
     public static <T> Optional<T> get(Object from, Object... selectors) {
         Object cur = from;
         for (var selector : selectors) {
@@ -132,7 +130,6 @@ public final class DataPath {
     @SuppressWarnings({ "PMD.CognitiveComplexity", "unchecked" })
     public static <T> T deepCopy(T object) {
         if (object instanceof Map map) {
-            @SuppressWarnings("PMD.UseConcurrentHashMap")
             Map<Object, Object> copy;
             try {
                 copy = (Map<Object, Object>) object.getClass().getConstructor()

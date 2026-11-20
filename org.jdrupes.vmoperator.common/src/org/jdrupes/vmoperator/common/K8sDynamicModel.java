@@ -29,7 +29,6 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
  * notably the metadata, is made available through the methods
  * defined by {@link KubernetesObject}.
  */
-@SuppressWarnings("PMD.DataClass")
 public class K8sDynamicModel implements KubernetesObject {
 
     private final V1ObjectMeta metadata;

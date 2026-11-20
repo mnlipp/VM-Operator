@@ -48,7 +48,7 @@ import java.util.function.Function;
  * @param <O> the generic type
  * @param <L> the generic type
  */
-@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.TooManyMethods" })
+@SuppressWarnings({ "PMD.TooManyMethods" })
 public class K8sGenericStub<O extends KubernetesObject,
         L extends KubernetesListObject> {
     protected final K8sClient client;
@@ -200,7 +200,6 @@ public class K8sGenericStub<O extends KubernetesObject,
      * @return the updated model or empty if the object was not found
      * @throws ApiException the api exception
      */
-    @SuppressWarnings("PMD.AssignmentInOperand")
     public Optional<O> updateStatus(O object, Function<O, Object> updater)
             throws ApiException {
         return K8s.optional(api.updateStatus(object, updater));
@@ -218,7 +217,7 @@ public class K8sGenericStub<O extends KubernetesObject,
      * @return the updated model or empty if the object was not found
      * @throws ApiException the api exception
      */
-    @SuppressWarnings({ "PMD.AssignmentInOperand", "PMD.UnusedAssignment" })
+    @SuppressWarnings({ "PMD.AssignmentInOperand" })
     public Optional<O> updateStatus(Function<O, Object> updater, O current,
             int retries) throws ApiException {
         while (true) {
@@ -248,7 +247,6 @@ public class K8sGenericStub<O extends KubernetesObject,
      * @return the updated model or empty if the object was not found
      * @throws ApiException the api exception
      */
-    @SuppressWarnings({ "PMD.AssignmentInOperand", "PMD.UnusedAssignment" })
     public Optional<O> updateStatus(Function<O, Object> updater, int retries)
             throws ApiException {
         return updateStatus(updater, null, retries);
@@ -371,7 +369,6 @@ public class K8sGenericStub<O extends KubernetesObject,
          * @param name the name
          * @return the result
          */
-        @SuppressWarnings("PMD.UseObjectForClearerAPI")
         R get(K8sClient client, String namespace, String name);
     }
 
@@ -397,8 +394,6 @@ public class K8sGenericStub<O extends KubernetesObject,
      * @return the stub if the object exists
      * @throws ApiException the api exception
      */
-    @SuppressWarnings({ "PMD.AvoidBranchingStatementAsLastInLoop",
-        "PMD.AvoidInstantiatingObjectsInLoops", "PMD.UseObjectForClearerAPI" })
     public static <O extends KubernetesObject, L extends KubernetesListObject,
             R extends K8sGenericStub<O, L>>
             R create(Class<O> objectClass, Class<L> objectListClass,

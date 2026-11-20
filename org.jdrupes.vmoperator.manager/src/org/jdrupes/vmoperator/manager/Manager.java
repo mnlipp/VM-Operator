@@ -81,7 +81,7 @@ import org.jgrapes.webconsole.vuejs.VueJsConsoleWeblet;
 /**
  * The application class.
  */
-@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis", "PMD.ExcessiveImports" })
+@SuppressWarnings({ "PMD.ExcessiveImports" })
 public class Manager extends Component {
 
     private static String version;
@@ -97,8 +97,8 @@ public class Manager extends Component {
      * @throws IOException Signals that an I/O exception has occurred.
      * @throws URISyntaxException 
      */
-    @SuppressWarnings({ "PMD.TooFewBranchesForASwitchStatement",
-        "PMD.NcssCount", "PMD.ConstructorCallsOverridableMethod" })
+    @SuppressWarnings({ "PMD.NcssCount",
+        "PMD.ConstructorCallsOverridableMethod" })
     public Manager(CommandLine cmdLine) throws IOException, URISyntaxException {
         super(new NamedChannel("manager"));
         // Prepare component tree
@@ -217,7 +217,6 @@ public class Manager extends Component {
      * @param event the event
      */
     @Handler
-    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
     public void onConfigurationUpdate(ConfigurationUpdate event) {
         event.structured(componentPath()).ifPresent(c -> {
             if (c.containsKey("clusterName")) {
@@ -291,7 +290,6 @@ public class Manager extends Component {
      * @param args the arguments
      * @throws Exception the exception
      */
-    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     public static void main(String[] args) {
         try {
             // Instance logger is not available yet.

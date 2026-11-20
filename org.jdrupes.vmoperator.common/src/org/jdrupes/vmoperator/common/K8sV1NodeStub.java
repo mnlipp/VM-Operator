@@ -29,7 +29,6 @@ import java.util.List;
 /**
  * A stub for nodes (v1).
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class K8sV1NodeStub extends K8sClusterGenericStub<V1Node, V1NodeList> {
 
     public static final APIResource CONTEXT = new APIResource("", List.of("v1"),
@@ -74,8 +73,7 @@ public class K8sV1NodeStub extends K8sClusterGenericStub<V1Node, V1NodeList> {
     /**
      * Provide {@link GenericSupplier}.
      */
-    @SuppressWarnings({ "PMD.UnusedFormalParameter",
-        "PMD.UnusedPrivateMethod" })
+    @SuppressWarnings({ "PMD.UnusedFormalParameter" })
     private static K8sV1NodeStub getGeneric(Class<V1Node> objectClass,
             Class<V1NodeList> objectListClass, K8sClient client,
             APIResource context, String name) {

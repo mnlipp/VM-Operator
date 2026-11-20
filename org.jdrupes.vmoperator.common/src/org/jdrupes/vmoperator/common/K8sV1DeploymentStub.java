@@ -29,7 +29,6 @@ import java.util.Optional;
 /**
  * A stub for pods (v1).
  */
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class K8sV1DeploymentStub
         extends K8sGenericStub<V1Deployment, V1DeploymentList> {
 

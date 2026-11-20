@@ -24,7 +24,6 @@ import org.jgrapes.core.Event;
 /**
  * Note the assignment to a user in the VM status.
  */
-@SuppressWarnings("PMD.DataClass")
 public class UpdateAssignment extends Event<Boolean> {
 
     private final VmPool fromPool;

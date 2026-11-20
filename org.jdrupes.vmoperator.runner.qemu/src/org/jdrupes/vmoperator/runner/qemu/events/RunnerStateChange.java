@@ -26,7 +26,6 @@ import org.jgrapes.core.Event;
 /**
  * The Class RunnerStateChange.
  */
-@SuppressWarnings("PMD.DataClass")
 public class RunnerStateChange extends Event<Void> {
 
     /**

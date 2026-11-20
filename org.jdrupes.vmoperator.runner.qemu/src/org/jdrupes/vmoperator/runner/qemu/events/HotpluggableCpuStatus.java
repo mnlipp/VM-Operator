@@ -41,6 +41,8 @@ public class HotpluggableCpuStatus extends MonitorResult {
      * @param command the command
      * @param response the response
      */
+    @SuppressWarnings({ "PMD.ConstructorCallsOverridableMethod",
+        "PMD.ForLoopCanBeForeach" })
     public HotpluggableCpuStatus(QmpCommand command, JsonNode response) {
         super(command, response);
         if (!successful()) {

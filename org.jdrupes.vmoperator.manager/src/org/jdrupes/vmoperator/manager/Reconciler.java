@@ -137,15 +137,13 @@ import org.jgrapes.util.events.ConfigurationUpdate;
  *   
  * @see org.jdrupes.vmoperator.manager.DisplaySecretReconciler
  */
-@SuppressWarnings({ "PMD.DataflowAnomalyAnalysis",
-    "PMD.AvoidDuplicateLiterals" })
+@SuppressWarnings({ "PMD.AvoidDuplicateLiterals" })
 public class Reconciler extends Component {
 
     /** The Constant mapper. */
     @SuppressWarnings("PMD.FieldNamingConventions")
     protected static final ObjectMapper mapper = new ObjectMapper();
 
-    @SuppressWarnings("PMD.SingularField")
     private final Configuration fmConfig;
     private final ConfigMapReconciler cmReconciler;
     private final DisplaySecretReconciler dsReconciler;
@@ -203,7 +201,6 @@ public class Reconciler extends Component {
      * @throws IOException Signals that an I/O exception has occurred.
      */
     @Handler
-    @SuppressWarnings("PMD.ConfusingTernary")
     public void onVmResourceChanged(VmResourceChanged event, VmChannel channel)
             throws ApiException, TemplateException, IOException {
         // Ownership relationships takes care of deletions
@@ -338,7 +335,6 @@ public class Reconciler extends Component {
     private final TemplateMethodModelEx formatMemoryModel
         = new TemplateMethodModelEx() {
             @Override
-            @SuppressWarnings("PMD.PreserveStackTrace")
             public Object exec(@SuppressWarnings("rawtypes") List arguments)
                     throws TemplateModelException {
                 var arg = arguments.get(0);
@@ -368,8 +364,7 @@ public class Reconciler extends Component {
     private final TemplateMethodModelEx imgageLocationModel
         = new TemplateMethodModelEx() {
             @Override
-            @SuppressWarnings({ "PMD.PreserveStackTrace",
-                "PMD.AvoidLiteralsInIfCondition" })
+            @SuppressWarnings({ "PMD.AvoidLiteralsInIfCondition" })
             public Object exec(@SuppressWarnings("rawtypes") List arguments)
                     throws TemplateModelException {
                 var image = ((SimpleScalar) arguments.get(0)).getAsString();
@@ -394,7 +389,6 @@ public class Reconciler extends Component {
     private final TemplateMethodModelEx toJsonModel
         = new TemplateMethodModelEx() {
             @Override
-            @SuppressWarnings("PMD.PreserveStackTrace")
             public Object exec(@SuppressWarnings("rawtypes") List arguments)
                     throws TemplateModelException {
                 try {

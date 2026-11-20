@@ -39,11 +39,9 @@ import org.jdrupes.vmoperator.util.FsdUtils;
 /**
  * The configuration information from the configuration file.
  */
-@SuppressWarnings({ "PMD.ExcessivePublicCount", "PMD.TooManyFields" })
 public class Configuration implements Dto {
     private static final String CI_INSTANCE_ID = "instance-id";
 
-    @SuppressWarnings("PMD.FieldNamingConventions")
     protected final Logger logger = Logger.getLogger(getClass().getName());
 
     /** Configuration timestamp. */
@@ -95,15 +93,12 @@ public class Configuration implements Dto {
     public static class CloudInit implements Dto {
 
         /** The meta data. */
-        @SuppressWarnings("PMD.UseConcurrentHashMap")
         public Map<String, Object> metaData;
 
         /** The user data. */
-        @SuppressWarnings("PMD.UseConcurrentHashMap")
         public Map<String, Object> userData;
 
         /** The network config. */
-        @SuppressWarnings("PMD.UseConcurrentHashMap")
         public Map<String, Object> networkConfig;
     }
 
@@ -299,7 +294,6 @@ public class Configuration implements Dto {
         return true;
     }
 
-    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
     private void checkDrives() {
         for (Drive drive : vm.drives) {
             if (drive.file != null || drive.device != null
@@ -319,7 +313,6 @@ public class Configuration implements Dto {
         }
     }
 
-    @SuppressWarnings("PMD.AvoidDeeplyNestedIfStmts")
     private boolean checkRuntimeDir() {
         // Runtime directory (sockets etc.)
         if (runtimeDir == null) {
@@ -355,7 +348,6 @@ public class Configuration implements Dto {
         return true;
     }
 
-    @SuppressWarnings("PMD.AvoidDeeplyNestedIfStmts")
     private boolean checkDataDir() {
         // Data directory
         if (dataDir == null) {

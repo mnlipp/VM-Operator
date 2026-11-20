@@ -27,7 +27,6 @@ import org.jgrapes.core.Event;
 /**
  * Gets the known pools' definitions.
  */
-@SuppressWarnings("PMD.DataClass")
 public class GetPools extends Event<List<VmPool>> {
 
     private String name;
