@@ -18,6 +18,7 @@
 
 package jdbld;
 
+import static org.jdrupes.builder.api.CoreProperties.Version;
 import static org.jdrupes.builder.api.Intent.*;
 import static org.jdrupes.builder.distribution.DistributionTypes.*;
 import java.io.IOException;
@@ -68,6 +69,7 @@ public class RunnerQemu extends AbstractProject implements JavaLibraryProject {
     private void containerBuild(String base) throws IOException {
         var branch = ((Git) get(GitApi)).getRepository().getBranch();
         var imageName = name() + "-" + base;
+        var branchTag = imageName + ":" + branch.replace('/', '-');
         dependency(Supply, ScriptExecutor::new)
             .name("VM-Runner.qemu-" + base + "-container-builder")
             .required(resources(of(ApplicationTarFileType).using(Supply)))
@@ -80,12 +82,11 @@ public class RunnerQemu extends AbstractProject implements JavaLibraryProject {
                     podman build --pull=always -t $3 \
                       -f src/org/jdrupes/vmoperator/runner/qemu/Containerfile.$1 . && \
                     mkdir -p build/generated && \
-                    touch build/generated/ContainerImage-$1.tstamp
-                    """)
+                    touch build/generated/ContainerImage-$1.tstamp""")
             .args(base)
             .args(resources(of(ApplicationTarFileType).using(Supply)).limit(1)
                 .map(f -> f.path().toString()))
-            .args(imageName + ":" + branch.replace('/', '-'))
+            .args(branchTag)
             .provideResources(of(new ResourceType<ContainerImage>() {}),
                 _ -> Stream.of(ContainerImage.of(buildDirectory()
                     .resolve("generated/ContainerImage-" + base + ".tstamp"))));
@@ -96,19 +97,23 @@ public class RunnerQemu extends AbstractProject implements JavaLibraryProject {
                 of(new ResourceType<ContainerImage>() {}).using(Supply)))
             .script("""
                     podman push --tls-verify=false $2 $1/$2 && \
-                    touch build/generated/ContainerPublication.tstamp
-                    """)
-            .args(registry, imageName + ":" + branch.replace('/', '-'))
+                    touch build/generated/ContainerPublication.tstamp""")
+            .args(registry, branchTag)
             .provideResources(of(new ResourceType<ContainerPublication>() {}),
                 _ -> Stream.of(ContainerImage.of(buildDirectory()
                     .resolve("generated/ContainerPublication-" + base
                         + ".tstamp"))));
-        dependency(Supply, ScriptExecutor::new)
-            .name("test-publisher")
+        dependency(Supply, ScriptExecutor::new).name("test-publisher")
             .required(resources(
                 of(new ResourceType<ContainerImage>() {}).using(Supply)))
             .script("podman push --tls-verify=false $1 $2/$3")
-            .args(imageName + ":" + branch.replace('/', '-'),
-                registry, imageName + ":test");
+            .args(branchTag, registry, imageName + ":test");
+        dependency(Supply, ScriptExecutor::new)
+            .name("release-publisher").required(resources(
+                of(new ResourceType<ContainerImage>() {}).using(Supply)))
+            .script("""
+            podman push --tls-verify=false $1 $2/$3:$4 && \
+            podman push --tls-verify=false $1 $2/$3:latest""")
+            .args(branchTag, registry, imageName, get(Version));
     }
 }

@@ -36,4 +36,4 @@ jobs:
         java-version: '25'
         distribution: 'temurin'
     - name: Push with Gradle
-      run: ./jdbld -Pdocker.registry=ghcr.io/${{ github.actor }} publication
+      run: ./jdbld -Pdocker.registry=ghcr.io/${{ github.actor }} releasePublication

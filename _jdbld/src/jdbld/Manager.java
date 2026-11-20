@@ -19,6 +19,7 @@
 package jdbld;
 
 import org.eclipse.jgit.api.Git;
+import static org.jdrupes.builder.api.CoreProperties.*;
 import static org.jdrupes.builder.api.Intent.*;
 import org.jdrupes.builder.api.MergedTestProject;
 import org.jdrupes.builder.api.ResourceType;
@@ -73,6 +74,7 @@ public class Manager extends AbstractProject implements JavaLibraryProject {
 
         // Container image build
         var branch = ((Git) get(GitApi)).getRepository().getBranch();
+        var branchTag = name() + ":" + branch.replace('/', '-');
         dependency(Supply, ScriptExecutor::new)
             .name("VM-Operator-container-builder")
             .required(resources(of(ApplicationTarFileType).using(Supply)))
@@ -89,10 +91,11 @@ public class Manager extends AbstractProject implements JavaLibraryProject {
                 """)
             .args(resources(of(ApplicationTarFileType).using(Supply)).limit(1)
                 .map(f -> f.path().toString()))
-            .args(name() + ":" + branch.replace('/', '-'))
+            .args(branchTag)
             .provideResources(of(new ResourceType<ContainerImage>() {}),
                 _ -> Stream.of(ContainerImage.of(buildDirectory()
                     .resolve("generated/ContainerImage.tstamp"))));
+        // Uploads
         var registry = context().property("docker.registry", "");
         dependency(Supply, ScriptExecutor::new)
             .name("VM-Operator-publisher")
@@ -100,19 +103,23 @@ public class Manager extends AbstractProject implements JavaLibraryProject {
                 of(new ResourceType<ContainerImage>() {}).using(Supply)))
             .script("""
                     podman push --tls-verify=false $2 $1/$2 && \
-                        touch build/generated/ContainerPublication.tstamp
-                    """)
-            .args(registry, name() + ":" + branch.replace('/', '-'))
+                        touch build/generated/ContainerPublication.tstamp""")
+            .args(registry, branchTag)
             .provideResources(of(new ResourceType<ContainerPublication>() {}),
                 _ -> Stream.of(ContainerImage.of(buildDirectory()
                     .resolve("generated/ContainerPublication.tstamp"))));
-        dependency(Supply, ScriptExecutor::new)
-            .name("test-publisher")
+        dependency(Supply, ScriptExecutor::new).name("test-publisher")
             .required(resources(
                 of(new ResourceType<ContainerImage>() {}).using(Supply)))
             .script("podman push --tls-verify=false $1 $2/$3")
-            .args(name() + ":" + branch.replace('/', '-'), registry,
-                name() + ":test");
+            .args(branchTag, registry, name() + ":test");
+        dependency(Supply, ScriptExecutor::new)
+            .name("release-publisher").required(resources(
+                of(new ResourceType<ContainerImage>() {}).using(Supply)))
+            .script("""
+                podman push --tls-verify=false $1 $2/$3:$4 && \
+                podman push --tls-verify=false $1 $2/$3:latest""")
+            .args(branchTag, registry, name(), get(Version));
     }
 
     public static class ManagerTest extends AbstractProject

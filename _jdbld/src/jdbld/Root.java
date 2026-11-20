@@ -95,8 +95,11 @@ public class Root extends AbstractRootProject {
                 .withArguments("-c ../dev-example/config.yaml"));
         commandAlias("publication").projects("**")
             .resources(of(new ResourceType<ContainerPublication>() {}));
-        commandAlias("test-publication").projects("**").resources(of(
+        commandAlias("testPublication").projects("**").resources(of(
             new ResourceType<ExecResult<?>>() {}).withName("test-publisher"));
+        commandAlias("releasePublication").projects("**")
+            .resources(of(new ResourceType<ExecResult<?>>() {})
+                .withName("release-publisher"));
         commandAlias("releaseTag").description("Create a release tag")
             .projects("**").resources(of(GitVersionTagType).using(Supply));
     }
