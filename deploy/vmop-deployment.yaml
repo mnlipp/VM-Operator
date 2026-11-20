@@ -20,7 +20,7 @@ spec:
       containers:
         - name: vm-operator
           image: >-
-            registry.mnl.de/org/jdrupes/vm-operator/org.jdrupes.vmoperator.manager:testing
+            ghcr.io/mnlipp/org.jdrupes.vmoperator.manager:latest
           imagePullPolicy: Always
           env:
           - name: JAVA_OPTS
